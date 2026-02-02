@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, ChevronDown, Plus } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -84,15 +84,14 @@ export default function FilterBar({ onCreatePost, onSearch, onFilterChange }) {
         />
 
         {/* Filters */}
-        <Button variant="outline" className="gap-1 bg-gray-50">
-          Filters
-          <ChevronDown className="w-4 h-4" />
+        <Button variant="outline" size="icon" className="bg-gray-50">
+          <SlidersHorizontal className="w-4 h-4" />
         </Button>
 
         {/* Sort */}
         <Select value={filters.sort} onValueChange={(value) => handleFilterChange('sort', value)}>
           <SelectTrigger className="w-[120px] bg-gray-50">
-            <SelectValue placeholder="Sort" />
+            <SelectValue>Sort</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="newest">Newest</SelectItem>
@@ -101,11 +100,6 @@ export default function FilterBar({ onCreatePost, onSearch, onFilterChange }) {
             <SelectItem value="price-low">Price: Low to High</SelectItem>
           </SelectContent>
         </Select>
-
-        {/* My Posts */}
-        <Button variant="outline" className="bg-gray-50">
-          My Posts
-        </Button>
 
         {/* Post Button */}
         <Button
