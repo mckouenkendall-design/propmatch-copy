@@ -51,6 +51,9 @@ import Dashboard from './pages/Dashboard';
 import Listings from './pages/Listings';
 import Matches from './pages/Matches';
 import Requirements from './pages/Requirements';
+import Dealboard from './pages/Dealboard';
+import MyPosts from './pages/MyPosts';
+import Messages from './pages/Messages';
 import __Layout from './Layout.jsx';
 
 
@@ -59,6 +62,9 @@ export const PAGES = {
     "Listings": Listings,
     "Matches": Matches,
     "Requirements": Requirements,
+    "Dealboard": Dealboard,
+    "MyPosts": MyPosts,
+    "Messages": Messages,
 }
 
 export const pagesConfig = {
