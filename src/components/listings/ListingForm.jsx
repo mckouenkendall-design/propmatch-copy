@@ -209,21 +209,22 @@ export default function ListingForm({ listing, onSubmit, onCancel }) {
             </div>
           </div>
         </form>
+          <div className="flex justify-end gap-3 pt-6 border-t mt-6">
+            <Button variant="outline" onClick={onCancel}>
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              className="text-white"
+              style={{ backgroundColor: 'var(--tiffany-blue)' }}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {listing ? 'Update' : 'Create'} Listing
+            </Button>
+          </div>
+        </form>
       </CardContent>
-      <CardFooter className="border-t flex justify-end gap-3 pt-6">
-        <Button variant="outline" onClick={onCancel}>
-          <X className="w-4 h-4 mr-2" />
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          className="text-white"
-          style={{ backgroundColor: 'var(--tiffany-blue)' }}
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {listing ? 'Update' : 'Create'} Listing
-        </Button>
-      </CardFooter>
     </Card>
   );
 }

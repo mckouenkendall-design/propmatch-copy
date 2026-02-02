@@ -191,21 +191,22 @@ export default function RequirementForm({ requirement, onSubmit, onCancel }) {
             </div>
           </div>
         </form>
+          <div className="flex justify-end gap-3 pt-6 border-t mt-6">
+            <Button variant="outline" onClick={onCancel}>
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              className="text-white"
+              style={{ backgroundColor: 'var(--tiffany-blue)' }}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {requirement ? 'Update' : 'Create'} Requirement
+            </Button>
+          </div>
+        </form>
       </CardContent>
-      <CardFooter className="border-t flex justify-end gap-3 pt-6">
-        <Button variant="outline" onClick={onCancel}>
-          <X className="w-4 h-4 mr-2" />
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          className="text-white"
-          style={{ backgroundColor: 'var(--tiffany-blue)' }}
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {requirement ? 'Update' : 'Create'} Requirement
-        </Button>
-      </CardFooter>
     </Card>
   );
 }

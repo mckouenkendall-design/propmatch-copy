@@ -1,171 +1,106 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Search, Sparkles, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Building2, Search, Plus } from 'lucide-react';
+import DealPost from '../components/dashboard/DealPost';
+import CreatePostModal from '../components/dashboard/CreatePostModal';
 
 export default function Dashboard() {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [filter, setFilter] = useState('all');
+  const queryClient = useQueryClient();
+
   const { data: listings = [] } = useQuery({
     queryKey: ['listings'],
-    queryFn: () => base44.entities.Listing.list()
+    queryFn: () => base44.entities.Listing.list('-created_date')
   });
 
   const { data: requirements = [] } = useQuery({
     queryKey: ['requirements'],
-    queryFn: () => base44.entities.Requirement.list()
+    queryFn: () => base44.entities.Requirement.list('-created_date')
   });
 
-  const activeListings = listings.filter(l => l.status === 'active');
-  const activeRequirements = requirements.filter(r => r.status === 'active');
+  // Combine and sort by creation date
+  const allPosts = [...listings.map(l => ({ ...l, postType: 'listing' })), 
+                     ...requirements.map(r => ({ ...r, postType: 'requirement' }))]
+    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
-  // Calculate match count
-  const calculateMatches = () => {
-    let matchCount = 0;
-    activeRequirements.forEach(req => {
-      activeListings.forEach(listing => {
-        if (isMatch(listing, req)) {
-          matchCount++;
-        }
-      });
-    });
-    return matchCount;
-  };
-
-  const isMatch = (listing, requirement) => {
-    if (listing.property_type !== requirement.property_type) return false;
-    if (listing.transaction_type !== requirement.transaction_type) return false;
-    if (requirement.cities && requirement.cities.length > 0) {
-      if (!requirement.cities.includes(listing.city)) return false;
-    }
-    if (requirement.max_price && listing.price > requirement.max_price) return false;
-    if (requirement.min_price && listing.price < requirement.min_price) return false;
-    if (requirement.min_size_sqft && listing.size_sqft < requirement.min_size_sqft) return false;
-    if (requirement.max_size_sqft && listing.size_sqft > requirement.max_size_sqft) return false;
-    return true;
-  };
-
-  const totalMatches = calculateMatches();
-
-  const stats = [
-    {
-      title: 'Active Listings',
-      value: activeListings.length,
-      icon: Building2,
-      color: 'var(--tiffany-blue)',
-      link: 'Listings'
-    },
-    {
-      title: 'Active Requirements',
-      value: activeRequirements.length,
-      icon: Search,
-      color: '#6366F1',
-      link: 'Requirements'
-    },
-    {
-      title: 'Total Matches',
-      value: totalMatches,
-      icon: Sparkles,
-      color: '#F59E0B',
-      link: 'Matches'
-    }
-  ];
+  const filteredPosts = filter === 'all' ? allPosts : 
+                        filter === 'listings' ? allPosts.filter(p => p.postType === 'listing') :
+                        allPosts.filter(p => p.postType === 'requirement');
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Overview of your real estate matchmaking activity</p>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900">Dealboard</h1>
+          <p className="text-gray-600 mt-2">Your real estate marketplace feed</p>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Link key={stat.title} to={createPageUrl(stat.link)}>
-              <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer bg-white border-0 shadow-md">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium text-gray-600">
-                      {stat.title}
-                    </CardTitle>
-                    <div
-                      className="p-3 rounded-xl"
-                      style={{ backgroundColor: `${stat.color}15` }}
-                    >
-                      <Icon className="w-5 h-5" style={{ color: stat.color }} />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-gray-900">{stat.value}</div>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-white border-0 shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="w-5 h-5" style={{ color: 'var(--tiffany-blue)' }} />
-              Recent Listings
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {activeListings.slice(0, 5).map((listing) => (
-                <div key={listing.id} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-900">{listing.title}</p>
-                    <p className="text-sm text-gray-600">{listing.city}, {listing.state}</p>
-                  </div>
-                  <p className="font-semibold" style={{ color: 'var(--tiffany-blue)' }}>
-                    ${listing.price?.toLocaleString()}
-                  </p>
-                </div>
-              ))}
-              {activeListings.length === 0 && (
-                <p className="text-gray-500 text-center py-4">No active listings yet</p>
-              )}
+      {/* Create Post Card */}
+      <Card 
+        className="bg-white border-0 shadow-md hover:shadow-lg transition-all cursor-pointer"
+        onClick={() => setShowCreateModal(true)}
+      >
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4">
+            <div 
+              className="w-12 h-12 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'var(--tiffany-blue)', opacity: 0.15 }}
+            >
+              <Plus className="w-6 h-6" style={{ color: 'var(--tiffany-blue)' }} />
             </div>
-          </CardContent>
-        </Card>
+            <p className="text-gray-500 text-lg">Post a listing or requirement...</p>
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card className="bg-white border-0 shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="w-5 h-5 text-indigo-600" />
-              Recent Requirements
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {activeRequirements.slice(0, 5).map((req) => (
-                <div key={req.id} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-900">{req.title}</p>
-                    <p className="text-sm text-gray-600">
-                      {req.cities?.join(', ') || 'Any location'}
-                    </p>
-                  </div>
-                  <p className="font-semibold text-indigo-600">
-                    ${req.max_price?.toLocaleString()}
-                  </p>
-                </div>
-              ))}
-              {activeRequirements.length === 0 && (
-                <p className="text-gray-500 text-center py-4">No active requirements yet</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Filter Tabs */}
+      <Tabs value={filter} onValueChange={setFilter} className="w-full">
+        <TabsList className="w-full grid grid-cols-3 bg-gray-100">
+          <TabsTrigger value="all" className="data-[state=active]:bg-white">
+            All Posts
+          </TabsTrigger>
+          <TabsTrigger value="listings" className="data-[state=active]:bg-white">
+            <Building2 className="w-4 h-4 mr-2" />
+            Listings
+          </TabsTrigger>
+          <TabsTrigger value="requirements" className="data-[state=active]:bg-white">
+            <Search className="w-4 h-4 mr-2" />
+            Requirements
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Feed */}
+      <div className="space-y-4">
+        {filteredPosts.map((post) => (
+          <DealPost key={`${post.postType}-${post.id}`} post={post} />
+        ))}
+
+        {filteredPosts.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-xl shadow-md">
+            <p className="text-gray-500">No posts yet. Create your first one!</p>
+          </div>
+        )}
       </div>
+
+      {/* Create Post Modal */}
+      {showCreateModal && (
+        <CreatePostModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            queryClient.invalidateQueries({ queryKey: ['listings'] });
+            queryClient.invalidateQueries({ queryKey: ['requirements'] });
+          }}
+        />
+      )}
     </div>
   );
 }

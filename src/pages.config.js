@@ -49,16 +49,16 @@
  */
 import Dashboard from './pages/Dashboard';
 import Listings from './pages/Listings';
-import Requirements from './pages/Requirements';
 import Matches from './pages/Matches';
+import Requirements from './pages/Requirements';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Dashboard": Dashboard,
     "Listings": Listings,
-    "Requirements": Requirements,
     "Matches": Matches,
+    "Requirements": Requirements,
 }
 
 export const pagesConfig = {
