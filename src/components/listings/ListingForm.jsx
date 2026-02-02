@@ -207,15 +207,14 @@ export default function ListingForm({ listing, onSubmit, onCancel }) {
                 placeholder="(555) 123-4567"
               />
             </div>
-          </div>
-        </form>
+          
           <div className="flex justify-end gap-3 pt-6 border-t mt-6">
-            <Button variant="outline" onClick={onCancel}>
+            <Button variant="outline" onClick={onCancel} type="button">
               <X className="w-4 h-4 mr-2" />
               Cancel
             </Button>
             <Button
-              onClick={handleSubmit}
+              type="submit"
               className="text-white"
               style={{ backgroundColor: 'var(--tiffany-blue)' }}
             >
