@@ -61,7 +61,7 @@ export default function CreatePostModal({ onClose, onSuccess }) {
   }
 
   if (step === 'category') {
-    return <PropertyCategoryModal onClose={onClose} onSelectCategory={handleSelectCategory} postType={postType} />;
+    return <PropertyCategoryModal onClose={onClose} onSelectCategory={handleSelectCategory} onBack={handleBack} postType={postType} />;
   }
 
   return (
