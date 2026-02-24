@@ -117,8 +117,12 @@ export default function DealPost({ post }) {
               <p className="text-lg font-bold" style={{ color: isListing ? 'var(--tiffany-blue)' : '#6366F1' }}>
                 {price}
               </p>
-              {post.price_period && post.price_period !== 'total' && (
-                <p className="text-xs text-gray-400">{PERIOD_LABELS[post.price_period]}</p>
+              {/* For lease listings: show calculated monthly & annual from SF */}
+              {isListing && post.price_period === 'per_sf_per_year' && post.size_sqft && (
+                <div className="text-xs text-gray-400 space-y-0.5 mt-0.5">
+                  <p>${(post.price * post.size_sqft / 12).toLocaleString('en-US', { maximumFractionDigits: 0 })}/mo</p>
+                  <p>${(post.price * post.size_sqft).toLocaleString('en-US', { maximumFractionDigits: 0 })}/yr</p>
+                </div>
               )}
             </div>
           )}
