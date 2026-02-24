@@ -100,6 +100,9 @@ export default function DealPost({ post }) {
                 {post.transaction_type && (
                   <Badge variant="outline" className="text-xs capitalize">{post.transaction_type}</Badge>
                 )}
+                {post.lease_type && (
+                  <Badge variant="outline" className="text-xs">{LEASE_TYPE_LABELS[post.lease_type] || post.lease_type}</Badge>
+                )}
               </div>
               <h3 className="text-lg font-bold text-gray-900 leading-tight">{post.title}</h3>
               <p className="text-xs text-gray-400 mt-0.5">
