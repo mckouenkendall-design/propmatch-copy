@@ -20,7 +20,7 @@ export default function ListStep3({ data, update, onNext }) {
   return (
     <div className="space-y-6">
       <div className="space-y-1.5">
-        <Label>Listing Title <span className="text-red-500">*</span></Label>
+        <Label>Listing Title <span className="text-gray-400 text-xs font-normal">(optional — auto-generated if blank)</span></Label>
         <Input value={data.title} onChange={e => update({ title: e.target.value })} placeholder="e.g. Modern Class A Office – 5,000 SF in Ferndale" />
       </div>
 
@@ -47,7 +47,7 @@ export default function ListStep3({ data, update, onNext }) {
       </div>
 
       <div className="flex justify-end pt-2">
-        <Button onClick={onNext} disabled={!data.title} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
+        <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
           Next <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
