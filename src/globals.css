@@ -1,0 +1,6 @@
+@import 'leaflet/dist/leaflet.css';
+
+/* Ensure leaflet tiles render above nothing but below modals */
+.leaflet-container {
+  z-index: 1;
+}
