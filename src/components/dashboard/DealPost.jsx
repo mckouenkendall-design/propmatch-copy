@@ -36,12 +36,14 @@ export default function DealPost({ post }) {
   const priceDisplay = () => {
     if (isListing) {
       if (!post.price) return null;
-      return `$${Number(post.price).toLocaleString()}${PERIOD_LABELS[post.price_period] || ''}`;
+      const period = PERIOD_LABELS[post.price_period] ?? '';
+      return `$${Number(post.price).toLocaleString()}${period}`;
     } else {
       const min = post.min_price ? `$${Number(post.min_price).toLocaleString()}` : null;
       const max = post.max_price ? `$${Number(post.max_price).toLocaleString()}` : null;
-      if (min && max) return `${min} – ${max}${PERIOD_LABELS[post.price_period] || ''}`;
-      if (max) return `Up to ${max}${PERIOD_LABELS[post.price_period] || ''}`;
+      const period = PERIOD_LABELS[post.price_period] ?? '';
+      if (min && max) return `${min} – ${max}${period}`;
+      if (max) return `Up to ${max}${period}`;
       return null;
     }
   };
