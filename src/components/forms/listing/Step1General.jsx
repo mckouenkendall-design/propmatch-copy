@@ -3,91 +3,135 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
-import { ArrowRight, Building2, ShoppingBag, Package, Map, LayoutGrid, Home, Building, Users, Hotel, Layers } from 'lucide-react';
+import { ArrowRight, Building2, ShoppingBag, Package, Map, LayoutGrid, Home, Building, Users, Hotel, Layers, ChevronRight } from 'lucide-react';
 
+// ── Property type options ────────────────────────────────────────────────────
 const COMMERCIAL_TYPES = [
-  { value: 'office', label: 'Office', icon: Building2 },
-  { value: 'retail', label: 'Retail', icon: ShoppingBag },
-  { value: 'industrial', label: 'Industrial', icon: Package },
+  { value: 'office',         label: 'Office',          icon: Building2 },
+  { value: 'retail',         label: 'Retail',          icon: ShoppingBag },
+  { value: 'industrial',     label: 'Industrial',      icon: Package },
   { value: 'flex_warehouse', label: 'Flex / Warehouse', icon: Layers },
-  { value: 'land', label: 'Land', icon: Map },
-  { value: 'mixed_use', label: 'Mixed Use', icon: LayoutGrid },
+  { value: 'land',           label: 'Land',            icon: Map },
+  { value: 'mixed_use',      label: 'Mixed Use',       icon: LayoutGrid },
 ];
 
 const RESIDENTIAL_TYPES = [
   { value: 'single_family', label: 'Single Family', icon: Home },
-  { value: 'condo', label: 'Condo', icon: Building },
-  { value: 'apartment', label: 'Apartment', icon: Hotel },
-  { value: 'multi_family', label: 'Multi-Family', icon: Users },
-  { value: 'townhouse', label: 'Townhouse', icon: Building2 },
+  { value: 'condo',         label: 'Condo',         icon: Building },
+  { value: 'apartment',     label: 'Apartment',     icon: Hotel },
+  { value: 'multi_family',  label: 'Multi-Family',  icon: Users },
+  { value: 'townhouse',     label: 'Townhouse',     icon: Building2 },
 ];
 
-const COMMERCIAL_TRANSACTION_TYPES = [
-  { value: 'lease', label: 'Lease' },
-  { value: 'sale', label: 'Sale' },
+const COMMERCIAL_TX = [
+  { value: 'lease',    label: 'Lease' },
   { value: 'sublease', label: 'Sublease' },
+  { value: 'sale',     label: 'Sale' },
 ];
 
-const RESIDENTIAL_TRANSACTION_TYPES = [
-  { value: 'sale', label: 'Sale' },
+const RESIDENTIAL_TX = [
   { value: 'rent', label: 'Rent' },
+  { value: 'sale', label: 'Sale' },
 ];
 
+// ── Lease type tree ──────────────────────────────────────────────────────────
 const LEASE_TYPES = [
-  { value: 'nnn', label: 'NNN (Triple Net)' },
-  { value: 'modified_gross', label: 'Modified Gross' },
   { value: 'full_service_gross', label: 'Full Service Gross' },
-  { value: 'gross', label: 'Gross' },
-  { value: 'plus_utilities', label: '+ Utilities' },
+  {
+    value: 'modified_gross', label: 'Modified Gross',
+    subLabel: 'Select tenant expenses',
+    subOptions: [
+      { value: 'electricity', label: 'Electricity' },
+      { value: 'water',       label: 'Water' },
+      { value: 'janitorial',  label: 'Janitorial' },
+      { value: 'trash',       label: 'Trash' },
+    ],
+  },
+  {
+    value: 'net_lease', label: 'Net Lease',
+    subLabel: 'Select net lease type',
+    subOptions: [
+      { value: 'n',            label: 'N (Single Net)' },
+      { value: 'nn',           label: 'NN (Double Net)' },
+      { value: 'nnn',          label: 'NNN (Triple Net)' },
+      { value: 'absolute_net', label: 'Absolute Net' },
+    ],
+    singleSelect: true, // radio-style
+  },
+  { value: 'ground_lease',     label: 'Ground Lease' },
+  { value: 'percentage_lease', label: 'Percentage Lease' },
 ];
 
-// Derive price label and placeholder from transaction type
-function getPriceConfig(transactionType, category) {
-  if (transactionType === 'sale') {
-    return {
-      label: 'Asking Price ($)',
-      placeholder: 'e.g. 1,250,000',
-      helpText: 'Total sale price',
-      period: 'total',
-    };
-  }
-  if (transactionType === 'rent') {
-    return {
-      label: 'Monthly Rent ($/mo)',
-      placeholder: 'e.g. 2,500',
-      helpText: 'Per month',
-      period: 'per_month',
-    };
-  }
-  // lease or sublease (commercial)
-  return {
-    label: 'Asking Rate ($ / SF / yr)',
-    placeholder: 'e.g. 24.00',
-    helpText: 'Price per square foot per year — monthly and annual totals will be calculated from SF',
-    period: 'per_sf_per_year',
-  };
-}
+// ── Utilities for residential rent ──────────────────────────────────────────
+const UTILITIES = [
+  { value: 'none',         label: 'None (Tenant Pays All)' },
+  { value: 'water',        label: 'Water' },
+  { value: 'sewer',        label: 'Sewer' },
+  { value: 'trash',        label: 'Trash' },
+  { value: 'electricity',  label: 'Electricity' },
+  { value: 'gas',          label: 'Gas' },
+  { value: 'lawn_snow',    label: 'Lawn / Snow Maintenance' },
+];
 
 const isLeaseType = (t) => t === 'lease' || t === 'sublease';
 
+// ── Chip / toggle button ─────────────────────────────────────────────────────
+function Chip({ label, selected, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="px-3 py-2 rounded-lg border-2 text-sm font-medium text-left transition-all"
+      style={{
+        borderColor: selected ? 'var(--tiffany-blue)' : '#e5e7eb',
+        backgroundColor: selected ? '#e6f7f5' : 'white',
+        color: selected ? '#3A8A82' : '#6b7280',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
 export default function ListStep1({ data, update, onNext }) {
   const isCommercial = data.property_category === 'commercial';
-  const types = isCommercial ? COMMERCIAL_TYPES : RESIDENTIAL_TYPES;
-  const txTypes = isCommercial ? COMMERCIAL_TRANSACTION_TYPES : RESIDENTIAL_TRANSACTION_TYPES;
+  const types  = isCommercial ? COMMERCIAL_TYPES : RESIDENTIAL_TYPES;
+  const txTypes = isCommercial ? COMMERCIAL_TX : RESIDENTIAL_TX;
+  const showLease = isCommercial && isLeaseType(data.transaction_type);
+  const showSalePrice = data.transaction_type === 'sale';
+  const showRent = !isCommercial && data.transaction_type === 'rent';
 
-  const priceConfig = data.transaction_type ? getPriceConfig(data.transaction_type, data.property_category) : null;
+  // Selected lease type object (with sub-options)
+  const selectedLeaseType = LEASE_TYPES.find(l => l.value === data.lease_type);
 
-  // Auto-set price_period when transaction type changes
   const handleTransactionType = (v) => {
-    const config = getPriceConfig(v, data.property_category);
-    update({ transaction_type: v, price_period: config.period, lease_type: isLeaseType(v) ? data.lease_type : undefined });
+    const period = v === 'sale' ? 'total' : v === 'rent' ? 'per_month' : 'per_sf_per_year';
+    update({ transaction_type: v, price_period: period, lease_type: undefined, lease_sub: undefined, utilities_included: undefined });
+  };
+
+  // Toggle a multi-select sub-option (Modified Gross expenses)
+  const toggleMultiSub = (val) => {
+    const cur = data.lease_sub || [];
+    update({ lease_sub: cur.includes(val) ? cur.filter(x => x !== val) : [...cur, val] });
+  };
+
+  // Toggle utilities
+  const toggleUtility = (val) => {
+    let cur = data.utilities_included || [];
+    if (val === 'none') {
+      update({ utilities_included: cur.includes('none') ? [] : ['none'] });
+      return;
+    }
+    cur = cur.filter(x => x !== 'none');
+    update({ utilities_included: cur.includes(val) ? cur.filter(x => x !== val) : [...cur, val] });
   };
 
   const canNext = data.property_type && data.transaction_type && data.city;
 
   return (
     <div className="space-y-6">
-      {/* Property Type */}
+      {/* ── Property Type ── */}
       <div className="space-y-2">
         <Label>Property Type <span className="text-red-500">*</span></Label>
         <div className="grid grid-cols-3 gap-3">
@@ -105,7 +149,7 @@ export default function ListStep1({ data, update, onNext }) {
         </div>
       </div>
 
-      {/* Transaction Type */}
+      {/* ── Transaction Type ── */}
       <ToggleGroup
         label="Transaction Type *"
         value={data.transaction_type}
@@ -113,31 +157,135 @@ export default function ListStep1({ data, update, onNext }) {
         options={txTypes}
       />
 
-      {/* Lease Type — only for lease/sublease on commercial */}
-      {isCommercial && isLeaseType(data.transaction_type) && (
-        <div className="space-y-2">
-          <Label>Lease Type</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {LEASE_TYPES.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => update({ lease_type: value })}
-                className="px-3 py-2.5 rounded-lg border-2 text-sm font-medium text-left transition-all"
-                style={{
-                  borderColor: data.lease_type === value ? 'var(--tiffany-blue)' : '#e5e7eb',
-                  backgroundColor: data.lease_type === value ? '#e6f7f5' : 'white',
-                  color: data.lease_type === value ? '#3A8A82' : '#6b7280',
-                }}
-              >
-                {label}
-              </button>
-            ))}
+      {/* ── COMMERCIAL LEASE: Rate + Lease Type ── */}
+      {showLease && (
+        <>
+          {/* Rate input */}
+          <div className="space-y-1.5">
+            <Label>Asking Rate ($ / SF / yr) <span className="text-red-500">*</span></Label>
+            <Input
+              type="number"
+              value={data.price || ''}
+              onChange={e => update({ price: e.target.value })}
+              placeholder="e.g. 24.00"
+            />
+            <p className="text-xs text-gray-400">Price per square foot per year</p>
+            {data.price && data.size_sqft && (
+              <div className="mt-2 p-3 rounded-lg text-sm space-y-1" style={{ backgroundColor: '#e6f7f5' }}>
+                <p className="font-medium" style={{ color: '#3A8A82' }}>Estimated totals:</p>
+                <p className="text-gray-700">Monthly: <strong>${(parseFloat(data.price) * parseFloat(data.size_sqft) / 12).toLocaleString('en-US', { maximumFractionDigits: 0 })}/mo</strong></p>
+                <p className="text-gray-700">Annual: <strong>${(parseFloat(data.price) * parseFloat(data.size_sqft)).toLocaleString('en-US', { maximumFractionDigits: 0 })}/yr</strong></p>
+              </div>
+            )}
           </div>
+
+          {/* Lease Type */}
+          <div className="space-y-2">
+            <Label>Lease Type</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {LEASE_TYPES.map(lt => (
+                <Chip
+                  key={lt.value}
+                  label={lt.subOptions ? <span className="flex items-center gap-1">{lt.label} <ChevronRight className="w-3 h-3" /></span> : lt.label}
+                  selected={data.lease_type === lt.value}
+                  onClick={() => update({ lease_type: lt.value, lease_sub: undefined })}
+                />
+              ))}
+            </div>
+
+            {/* Sub-options for Modified Gross (multi) */}
+            {data.lease_type === 'modified_gross' && (
+              <div className="mt-3 p-3 rounded-xl border border-gray-200 space-y-2 bg-gray-50">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tenant Pays (select all that apply)</p>
+                <div className="flex flex-wrap gap-2">
+                  {LEASE_TYPES.find(l => l.value === 'modified_gross').subOptions.map(opt => (
+                    <Chip
+                      key={opt.value}
+                      label={opt.label}
+                      selected={(data.lease_sub || []).includes(opt.value)}
+                      onClick={() => toggleMultiSub(opt.value)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sub-options for Net Lease (single select) */}
+            {data.lease_type === 'net_lease' && (
+              <div className="mt-3 p-3 rounded-xl border border-gray-200 space-y-2 bg-gray-50">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Net Lease Type</p>
+                <div className="flex flex-wrap gap-2">
+                  {LEASE_TYPES.find(l => l.value === 'net_lease').subOptions.map(opt => (
+                    <Chip
+                      key={opt.value}
+                      label={opt.label}
+                      selected={data.lease_sub === opt.value}
+                      onClick={() => update({ lease_sub: opt.value })}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── COMMERCIAL SALE: Total Price ── */}
+      {isCommercial && showSalePrice && (
+        <div className="space-y-1.5">
+          <Label>Total Purchase Price ($) <span className="text-red-500">*</span></Label>
+          <Input
+            type="number"
+            value={data.price || ''}
+            onChange={e => update({ price: e.target.value })}
+            placeholder="e.g. 1,250,000"
+          />
         </div>
       )}
 
-      {/* Address */}
+      {/* ── RESIDENTIAL RENT: Monthly Rent + Utilities ── */}
+      {showRent && (
+        <>
+          <div className="space-y-1.5">
+            <Label>Monthly Rent ($/mo) <span className="text-red-500">*</span></Label>
+            <Input
+              type="number"
+              value={data.price || ''}
+              onChange={e => update({ price: e.target.value })}
+              placeholder="e.g. 2,500"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Utilities Included in Rent</Label>
+            <div className="flex flex-wrap gap-2">
+              {UTILITIES.map(u => (
+                <Chip
+                  key={u.value}
+                  label={u.label}
+                  selected={(data.utilities_included || []).includes(u.value)}
+                  onClick={() => toggleUtility(u.value)}
+                />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── RESIDENTIAL SALE: Total Price ── */}
+      {!isCommercial && showSalePrice && (
+        <div className="space-y-1.5">
+          <Label>Total Purchase Price ($) <span className="text-red-500">*</span></Label>
+          <Input
+            type="number"
+            value={data.price || ''}
+            onChange={e => update({ price: e.target.value })}
+            placeholder="e.g. 450,000"
+          />
+        </div>
+      )}
+
+      {/* ── Address / Location / Size ── */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5 col-span-2">
           <Label>Address</Label>
@@ -160,28 +308,6 @@ export default function ListStep1({ data, update, onNext }) {
           <Input type="number" value={data.size_sqft || ''} onChange={e => update({ size_sqft: e.target.value })} placeholder="5,000" />
         </div>
       </div>
-
-      {/* Price — conditional on transaction type */}
-      {priceConfig && (
-        <div className="space-y-1.5">
-          <Label>{priceConfig.label} <span className="text-red-500">*</span></Label>
-          <Input
-            type="number"
-            value={data.price || ''}
-            onChange={e => update({ price: e.target.value })}
-            placeholder={priceConfig.placeholder}
-          />
-          <p className="text-xs text-gray-400">{priceConfig.helpText}</p>
-          {/* Show calculated monthly/annual for leases */}
-          {isLeaseType(data.transaction_type) && data.price && data.size_sqft && (
-            <div className="mt-2 p-3 rounded-lg text-sm space-y-1" style={{ backgroundColor: '#e6f7f5' }}>
-              <p className="font-medium" style={{ color: '#3A8A82' }}>Estimated totals:</p>
-              <p className="text-gray-700">Monthly: <strong>${(parseFloat(data.price) * parseFloat(data.size_sqft) / 12).toLocaleString('en-US', { maximumFractionDigits: 0 })}/mo</strong></p>
-              <p className="text-gray-700">Annual: <strong>${(parseFloat(data.price) * parseFloat(data.size_sqft)).toLocaleString('en-US', { maximumFractionDigits: 0 })}/yr</strong></p>
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} disabled={!canNext} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
