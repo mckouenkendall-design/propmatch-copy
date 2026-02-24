@@ -20,6 +20,7 @@ export default function ListingWizard({ category, onClose, onSuccess }) {
     property_type: '',
     transaction_type: '',
     price_period: 'total',
+    lease_type: '',
     address: '',
     city: '',
     state: '',
