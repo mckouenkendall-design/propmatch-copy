@@ -41,6 +41,8 @@ export default function ListingWizard({ category, onClose, onSuccess }) {
       const submitData = {
         ...data,
         property_details: JSON.stringify(data.property_details || {}),
+        // Auto-generate title if not set
+        title: data.title || [data.property_type?.replace(/_/g, ' '), data.transaction_type, data.city].filter(Boolean).join(' · '),
       };
       if (submitData.price) submitData.price = parseFloat(submitData.price);
       if (submitData.size_sqft) submitData.size_sqft = parseFloat(submitData.size_sqft);
