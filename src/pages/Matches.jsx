@@ -59,7 +59,7 @@ export default function Matches() {
 
     activeRequirements.forEach(req => {
       activeListings.forEach(listing => {
-        const compatibility = calculateCompatibility(listing, requirement);
+        const compatibility = calculateCompatibility(listing, req);
         if (compatibility >= 60) {
           allMatches.push({
             id: `${listing.id}-${req.id}`,
