@@ -9,7 +9,7 @@ export default function FormProgress({ currentStep, steps }) {
         const done = num < currentStep;
         const active = num === currentStep;
         return (
-          <React.Fragment key={i}>
+          <div key={i} className="contents">
             <div className="flex flex-col items-center flex-shrink-0">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200"
