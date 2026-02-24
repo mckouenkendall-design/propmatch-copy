@@ -14,9 +14,18 @@ const TIMELINE_LABELS = {
 };
 
 const PERIOD_LABELS = {
-  total: 'total',
+  total: '',
   per_month: '/mo',
+  per_sf_per_year: '/SF/yr',
   annually: '/yr',
+};
+
+const LEASE_TYPE_LABELS = {
+  nnn: 'NNN',
+  modified_gross: 'Modified Gross',
+  full_service_gross: 'Full Service Gross',
+  gross: 'Gross',
+  plus_utilities: '+ Utilities',
 };
 
 export default function DealPost({ post }) {
