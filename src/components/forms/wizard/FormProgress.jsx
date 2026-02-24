@@ -30,7 +30,7 @@ export default function FormProgress({ currentStep, steps }) {
                 style={{ backgroundColor: done ? 'var(--tiffany-blue)' : '#e5e7eb' }}
               />
             )}
-          </React.Fragment>
+          </div>
         );
       })}
     </div>
