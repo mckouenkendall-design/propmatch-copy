@@ -9,13 +9,13 @@ export default function FormProgress({ currentStep, steps }) {
         const done = num < currentStep;
         const active = num === currentStep;
         return (
-          <div key={i} className="contents">
+          <React.Fragment key={i}>
             <div className="flex flex-col items-center flex-shrink-0">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200"
                 style={{
                   backgroundColor: done || active ? 'var(--tiffany-blue)' : '#e5e7eb',
-                  color: done || active ? 'white' : '#9ca3af'
+                  color: done || active ? 'white' : '#9ca3af',
                 }}
               >
                 {done ? <Check className="w-4 h-4" /> : num}
@@ -30,7 +30,7 @@ export default function FormProgress({ currentStep, steps }) {
                 style={{ backgroundColor: done ? 'var(--tiffany-blue)' : '#e5e7eb' }}
               />
             )}
-          </div>
+          </React.Fragment>
         );
       })}
     </div>
