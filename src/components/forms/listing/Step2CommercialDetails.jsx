@@ -346,20 +346,6 @@ function MedicalOfficeDetails({ details, setDetail }) {
         <Field label="Waiting Room Capacity"><Num field="waiting_capacity" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
       </div>
 
-      {/* Practice Type */}
-      <Field label="Practice Type">
-        <div className="flex flex-wrap gap-2">
-          {PRACTICE_TYPES.map(pt => (
-            <Chip key={pt} label={pt} selected={details.practice_type === pt} onClick={() => setDetail('practice_type', pt)} />
-          ))}
-        </div>
-      </Field>
-      {details.practice_type === 'Other Specialty' && (
-        <Field label="Specify Practice Type">
-          <Input value={details.practice_type_other || ''} onChange={e => setDetail('practice_type_other', e.target.value)} placeholder="e.g., Oncology, Ophthalmology" />
-        </Field>
-      )}
-
       {/* Medical Features */}
       <SectionTitle>Medical Features</SectionTitle>
       <Field label="Select all that apply">
