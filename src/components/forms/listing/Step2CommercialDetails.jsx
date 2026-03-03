@@ -480,7 +480,8 @@ export default function ListStep2Commercial({ data, update, onNext }) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-gray-500 -mt-2">Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong> space.</p>
-      {type === 'office'         && <OfficeDetails     details={details} setDetail={setDetail} />}
+      {type === 'office'         && <OfficeDetails        details={details} setDetail={setDetail} />}
+      {type === 'medical_office' && <MedicalOfficeDetails details={details} setDetail={setDetail} />}
       {type === 'retail'         && <RetailDetails     details={details} setDetail={setDetail} />}
       {type === 'industrial'     && <IndustrialDetails details={details} setDetail={setDetail} />}
       {type === 'flex_warehouse' && <FlexDetails       details={details} setDetail={setDetail} />}
