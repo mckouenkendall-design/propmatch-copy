@@ -285,6 +285,131 @@ function OfficeDetails({ details, setDetail }) {
   );
 }
 
+// ── Medical Office Details ────────────────────────────────────────────────────
+const PRACTICE_TYPES = [
+  'General Practice', 'Dental', 'Cardiology', 'Orthopedic',
+  'Dermatology', 'Pediatrics', 'Physical Therapy', 'Urgent Care', 'Other Specialty',
+];
+
+const MEDICAL_FEATURES = [
+  { value: 'xray',         label: 'X-Ray Room / Shielding' },
+  { value: 'medical_gas',  label: 'Medical Gas Lines' },
+  { value: 'sterilization',label: 'Sterilization Area' },
+  { value: 'ada',          label: 'ADA Compliant' },
+  { value: 'hipaa',        label: 'HIPAA Compliant Layout' },
+];
+
+function TagsInput({ value = [], onChange }) {
+  const [input, setInput] = React.useState('');
+  const handleKey = (e) => {
+    if (e.key === 'Enter' && input.trim()) {
+      e.preventDefault();
+      if (!value.includes(input.trim())) onChange([...value, input.trim()]);
+      setInput('');
+    }
+  };
+  const remove = (tag) => onChange(value.filter(t => t !== tag));
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {value.map(tag => (
+          <span key={tag} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
+            {tag}
+            <button type="button" onClick={() => remove(tag)}><X className="w-3 h-3" /></button>
+          </span>
+        ))}
+      </div>
+      <Input
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={handleKey}
+        placeholder="e.g., move-in ready, high visibility (press Enter to add)"
+      />
+    </div>
+  );
+}
+
+function MedicalOfficeDetails({ details, setDetail }) {
+  const features = details.medical_features || [];
+  const toggleFeature = (val) => {
+    setDetail('medical_features', features.includes(val) ? features.filter(f => f !== val) : [...features, val]);
+  };
+
+  return (
+    <>
+      {/* Capacity */}
+      <SectionTitle>Exam & Procedure Capacity</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Exam Rooms"><Num field="exam_rooms" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
+        <Field label="Procedure Rooms"><Num field="procedure_rooms" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
+        <Field label="Lab Space (SF)"><Num field="lab_sf" placeholder="e.g. 400" details={details} setDetail={setDetail} /></Field>
+        <Field label="Waiting Room Capacity"><Num field="waiting_capacity" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
+      </div>
+
+      {/* Practice Type */}
+      <Field label="Practice Type">
+        <div className="flex flex-wrap gap-2">
+          {PRACTICE_TYPES.map(pt => (
+            <Chip key={pt} label={pt} selected={details.practice_type === pt} onClick={() => setDetail('practice_type', pt)} />
+          ))}
+        </div>
+      </Field>
+      {details.practice_type === 'Other Specialty' && (
+        <Field label="Specify Practice Type">
+          <Input value={details.practice_type_other || ''} onChange={e => setDetail('practice_type_other', e.target.value)} placeholder="e.g., Oncology, Ophthalmology" />
+        </Field>
+      )}
+
+      {/* Medical Features */}
+      <SectionTitle>Medical Features</SectionTitle>
+      <Field label="Select all that apply">
+        <div className="flex flex-wrap gap-2">
+          {MEDICAL_FEATURES.map(f => (
+            <Chip key={f.value} label={f.label} selected={features.includes(f.value)} onClick={() => toggleFeature(f.value)} />
+          ))}
+        </div>
+      </Field>
+      <Field label="Medical Waste Disposal">
+        <Input value={details.waste_disposal || ''} onChange={e => setDetail('waste_disposal', e.target.value)} placeholder="e.g., Sharps containers, biohazard" />
+      </Field>
+
+      {/* Specs & Docs */}
+      <SectionTitle>Property Specs & Documentation</SectionTitle>
+      <Field label="Description">
+        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space, its highlights, and what makes it ideal…" rows={4} />
+      </Field>
+
+      <Field label="Tags" hint="Press Enter to add each tag">
+        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
+      </Field>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Parking">
+          <Input value={details.parking || ''} onChange={e => setDetail('parking', e.target.value)} placeholder="e.g. 20 spaces, surface lot" />
+        </Field>
+        <Field label="Ceiling Height">
+          <Input value={details.ceiling_height || ''} onChange={e => setDetail('ceiling_height', e.target.value)} placeholder="e.g. 9 ft" />
+        </Field>
+        <Field label="Zoning">
+          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. O-1 Medical" />
+        </Field>
+      </div>
+
+      <ToggleGroup
+        label="Building Class"
+        value={details.building_class || ''}
+        onChange={v => setDetail('building_class', v)}
+        options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]}
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
+      </div>
+    </>
+  );
+}
+
 // ── Other property type forms (unchanged) ────────────────────────────────────
 function RetailDetails({ details, setDetail }) {
   return <>

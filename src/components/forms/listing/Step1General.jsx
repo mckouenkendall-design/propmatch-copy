@@ -3,16 +3,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
-import { ArrowRight, Building2, ShoppingBag, Package, Map, LayoutGrid, Home, Building, Users, Hotel, Layers, ChevronRight } from 'lucide-react';
+import { ArrowRight, Building2, ShoppingBag, Package, Map, LayoutGrid, Home, Building, Users, Hotel, Layers, ChevronRight, Stethoscope } from 'lucide-react';
 
 // ── Property type options ────────────────────────────────────────────────────
 const COMMERCIAL_TYPES = [
-  { value: 'office',         label: 'Office',          icon: Building2 },
+  { value: 'office',         label: 'General Office',  icon: Building2 },
+  { value: 'medical_office', label: 'Medical Office',  icon: Stethoscope },
   { value: 'retail',         label: 'Retail',          icon: ShoppingBag },
   { value: 'industrial',     label: 'Industrial',      icon: Package },
-  { value: 'flex_warehouse', label: 'Flex / Warehouse', icon: Layers },
   { value: 'land',           label: 'Land',            icon: Map },
   { value: 'mixed_use',      label: 'Mixed Use',       icon: LayoutGrid },
+  { value: 'flex_warehouse', label: 'Flex',            icon: Layers },
 ];
 
 const RESIDENTIAL_TYPES = [
