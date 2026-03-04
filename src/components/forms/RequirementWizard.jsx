@@ -79,6 +79,11 @@ export default function RequirementWizard({ category, onClose, onSuccess }) {
             {step === 3 && <ReqStep3 data={formData} update={update} onNext={next} />}
             {step === 4 && <ReqStep4 data={formData} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />}
           </div>
+          {step === 2 && (
+            <div className="px-6 pb-4 text-left">
+              <p className="text-xs text-gray-400">Fields left blank will be treated as "No Preference" and will not impact the Match Score.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
