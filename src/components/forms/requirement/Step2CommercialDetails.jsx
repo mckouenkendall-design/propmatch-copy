@@ -1,9 +1,10 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, X } from 'lucide-react';
 
 function Field({ label, children }) {
   return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
