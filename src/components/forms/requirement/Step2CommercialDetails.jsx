@@ -75,7 +75,7 @@ function TagsInput({ value = [], onChange }) {
         value={input}
         onChange={e => setInput(e.target.value)}
         onKeyDown={handleKey}
-        placeholder="e.g., Food Grade, Hazardous Materials (press Enter to add)"
+        placeholder="e.g., Ground Floor Only, Corner Unit (press Enter to add)"
       />
     </div>
   );
