@@ -318,20 +318,116 @@ function MedicalOfficeReqDetails({ details, setDetail }) {
   );
 }
 
+const OFFICE_FEATURES = [
+  { key: 'reception',      label: 'Reception Area' },
+  { key: 'kitchenette',    label: 'Kitchenette' },
+  { key: 'server_room',    label: 'Server Room' },
+  { key: 'file_storage',   label: 'File / Storage Room' },
+  { key: 'natural_light',  label: 'Natural Light' },
+  { key: 'access_247',     label: '24/7 Access' },
+];
+
 function OfficeDetails({ details, setDetail }) {
-  return <>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Min Private Offices"><Num field="min_offices" placeholder="e.g. 10" details={details} setDetail={setDetail} /></Field>
-      <Field label="Min Conference Rooms"><Num field="min_conf_rooms" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
-      <Field label="Min Parking Spaces"><Num field="min_parking" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
-    </div>
-    <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
-      options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }, { value: 'any', label: 'Any' }]} />
-    <ToggleGroup label="Floor Preference" value={details.floor_pref || ''} onChange={v => setDetail('floor_pref', v)}
-      options={[{ value: 'ground', label: 'Ground Floor' }, { value: 'upper', label: 'Upper Floor' }, { value: 'any', label: 'Any' }]} />
-    <ToggleGroup label="Layout" value={details.layout || ''} onChange={v => setDetail('layout', v)}
-      options={[{ value: 'open', label: 'Open Plan' }, { value: 'private', label: 'Private Offices' }, { value: 'hybrid', label: 'Hybrid' }]} />
-  </>;
+  const toggleBool = (key) => setDetail(key, !details[key]);
+  const buildingClasses = details.building_classes || [];
+  const toggleClass = (c) => setDetail('building_classes', buildingClasses.includes(c) ? buildingClasses.filter(x => x !== c) : [...buildingClasses, c]);
+
+  return (
+    <>
+      {/* Intended Use */}
+      <SectionTitle>Intended Use & Profile</SectionTitle>
+      <Field label="Intended Use / Tenant Profile *">
+        <Textarea
+          value={details.intended_use || ''}
+          onChange={e => setDetail('intended_use', e.target.value)}
+          placeholder="e.g., Professional services firm needing private offices and conference rooms."
+          rows={3}
+        />
+      </Field>
+
+      {/* Office & Meeting Rooms */}
+      <SectionTitle>Office & Meeting Space</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min. Private Offices"><Num field="min_offices" placeholder="e.g. 5" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max. Private Offices"><Num field="max_offices" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Conference Rooms"><Num field="min_conf_rooms" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max. Conference Rooms"><Num field="max_conf_rooms" placeholder="e.g. 4" details={details} setDetail={setDetail} /></Field>
+      </div>
+
+      {/* Restrooms */}
+      <div className="rounded-xl border border-gray-100 px-4 py-1">
+        <Toggle label="In-Suite Restrooms Required?" value={!!details.insuit_restrooms} onChange={() => toggleBool('insuit_restrooms')} />
+      </div>
+      {details.insuit_restrooms && (
+        <Field label="Min. Restroom Count">
+          <Num field="min_restrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
+        </Field>
+      )}
+
+      {/* Layout & Floor */}
+      <SectionTitle>Layout & Floor</SectionTitle>
+      <ToggleGroup label="Layout Type" value={details.layout || ''} onChange={v => setDetail('layout', v)}
+        options={[{ value: 'open', label: 'Open Plan' }, { value: 'private', label: 'Private' }, { value: 'hybrid', label: 'Hybrid' }, { value: 'any', label: 'No Preference' }]} />
+      <ToggleGroup label="Floor Preference" value={details.floor_pref || ''} onChange={v => setDetail('floor_pref', v)}
+        options={[{ value: 'ground', label: 'Ground Floor' }, { value: 'upper', label: 'Upper Floor' }, { value: 'any', label: 'No Preference' }]} />
+
+      {/* Ceiling Height */}
+      <SectionTitle>Ceiling Height</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min. Ceiling Height (ft)"><Num field="min_ceiling_height" placeholder="e.g. 9" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max. Ceiling Height (ft)"><Num field="max_ceiling_height" placeholder="e.g. 14" details={details} setDetail={setDetail} /></Field>
+      </div>
+
+      {/* Must-Have Features */}
+      <SectionTitle>Must-Have Features</SectionTitle>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        {OFFICE_FEATURES.map(f => (
+          <Toggle key={f.key} label={f.label} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
+        ))}
+      </div>
+      <Field label="Other Must-Have Feature">
+        <Input
+          value={details.other_feature || ''}
+          onChange={e => setDetail('other_feature', e.target.value)}
+          placeholder="e.g., Dedicated server closet with cooling"
+        />
+      </Field>
+
+      {/* Parking */}
+      <SectionTitle>Parking</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min. Parking Spaces"><Num field="min_parking" placeholder="e.g. 10" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max. Parking Spaces"><Num field="max_parking" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
+      </div>
+
+      {/* Building Class */}
+      <SectionTitle>General Preferences & Search Filters</SectionTitle>
+      <Field label="Building Class (select all acceptable)">
+        <div className="flex gap-3">
+          {BUILDING_CLASSES.map(c => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => toggleClass(c)}
+              className="px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all"
+              style={{
+                borderColor: buildingClasses.includes(c) ? 'var(--tiffany-blue)' : '#e5e7eb',
+                backgroundColor: buildingClasses.includes(c) ? '#e6f7f5' : 'white',
+                color: buildingClasses.includes(c) ? '#3A8A82' : '#6b7280',
+              }}
+            >
+              Class {c}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      {/* Tags */}
+      <Field label="Tags">
+        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
+      </Field>
+    </>
+  );
 }
 
 function RetailDetails({ details, setDetail }) {
