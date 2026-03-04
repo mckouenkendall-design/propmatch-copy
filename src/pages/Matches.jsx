@@ -27,9 +27,12 @@ export default function Matches() {
     maxScore += 30;
     if (listing.property_type === requirement.property_type) score += 30;
 
-    // Transaction type match (required)
+    // Transaction type match — 'purchase' requirement matches 'sale' listing; 'lease' matches 'sublease'
     maxScore += 30;
-    if (listing.transaction_type === requirement.transaction_type) score += 30;
+    const txMatch = listing.transaction_type === requirement.transaction_type
+      || (requirement.transaction_type === 'purchase' && listing.transaction_type === 'sale')
+      || (requirement.transaction_type === 'lease' && listing.transaction_type === 'sublease');
+    if (txMatch) score += 30;
 
     // City match
     maxScore += 20;
