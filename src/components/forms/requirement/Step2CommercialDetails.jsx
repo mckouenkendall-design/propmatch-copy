@@ -242,25 +242,25 @@ function MedicalOfficeReqDetails({ details, setDetail }) {
 
   return (
     <>
-      {/* Practice Type */}
-      <SectionTitle>Practice Profile</SectionTitle>
-      <Field label="Practice Type">
-        <div className="flex flex-wrap gap-2">
+      {/* Intended Use */}
+      <SectionTitle>Intended Use & Practice Profile</SectionTitle>
+      <Field label="Intended Use / Tenant Profile *">
+        <div className="flex flex-wrap gap-2 mb-2">
           {PRACTICE_TYPES.map(pt => (
             <Chip
               key={pt}
               label={pt}
-              selected={details.practice_type === pt}
-              onClick={() => setDetail('practice_type', pt)}
+              selected={details.intended_use === pt}
+              onClick={() => setDetail('intended_use', pt)}
             />
           ))}
         </div>
       </Field>
-      {details.practice_type === 'Other Specialty' && (
+      {details.intended_use === 'Other Specialty' && (
         <Field label="Specify Practice Type">
           <Input
-            value={details.practice_type_other || ''}
-            onChange={e => setDetail('practice_type_other', e.target.value)}
+            value={details.intended_use_other || ''}
+            onChange={e => setDetail('intended_use_other', e.target.value)}
             placeholder="e.g., Oncology, Ophthalmology"
           />
         </Field>

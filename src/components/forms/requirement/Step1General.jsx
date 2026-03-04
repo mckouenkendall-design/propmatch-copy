@@ -79,7 +79,7 @@ export default function ReqStep1({ data, update, onNext }) {
       </div>
 
       <ToggleGroup label="Transaction Type *" value={data.transaction_type} onChange={v => update({ transaction_type: v })}
-        options={[{ value: 'lease', label: 'Lease' }, { value: 'sale', label: 'Sale' }, { value: 'rent', label: 'Rent' }, { value: 'sublease', label: 'Sublease' }]} />
+        options={[{ value: 'lease', label: 'Lease' }, { value: 'purchase', label: 'Purchase' }, { value: 'rent', label: 'Rent' }]} />
 
       <ToggleGroup label="Price Period" value={data.price_period} onChange={v => update({ price_period: v })}
         options={[{ value: 'total', label: 'Total' }, { value: 'per_month', label: 'Per Month' }, { value: 'annually', label: 'Annually' }]} />
