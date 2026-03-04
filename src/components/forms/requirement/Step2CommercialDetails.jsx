@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -297,8 +297,7 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
       <p className="text-sm text-gray-500 -mt-2">Specific needs for a <strong className="capitalize">{typeName}</strong> space.</p>
       {type === 'office' && <OfficeDetails details={details} setDetail={setDetail} />}
       {type === 'retail' && <RetailDetails details={details} setDetail={setDetail} />}
-      {type === 'industrial' && <IndustrialDetails details={details} setDetail={setDetail} />}
-      {type === 'flex_warehouse' && <FlexDetails details={details} setDetail={setDetail} />}
+      {type === 'industrial_flex' && <IndustrialFlexReqDetails details={details} setDetail={setDetail} />}
       {type === 'land' && <LandDetails details={details} setDetail={setDetail} />}
       {type === 'mixed_use' && <MixedUseDetails details={details} setDetail={setDetail} />}
       <div className="flex justify-end pt-2">
