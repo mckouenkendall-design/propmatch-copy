@@ -422,7 +422,8 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-gray-500 -mt-2">Specific needs for a <strong className="capitalize">{typeName}</strong> space.</p>
-      {type === 'office' && <OfficeDetails details={details} setDetail={setDetail} />}
+      {type === 'office'          && <OfficeDetails              details={details} setDetail={setDetail} />}
+      {type === 'medical_office' && <MedicalOfficeReqDetails     details={details} setDetail={setDetail} />}
       {type === 'retail' && <RetailDetails details={details} setDetail={setDetail} />}
       {type === 'industrial_flex' && <IndustrialFlexReqDetails details={details} setDetail={setDetail} />}
       {type === 'land' && <LandDetails details={details} setDetail={setDetail} />}
