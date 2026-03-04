@@ -204,6 +204,133 @@ function IndustrialFlexReqDetails({ details, setDetail }) {
   );
 }
 
+// ── Medical Office Requirement ────────────────────────────────────────────────
+const PRACTICE_TYPES = [
+  'General Practice', 'Dental', 'Cardiology', 'Orthopedic',
+  'Dermatology', 'Pediatrics', 'Physical Therapy', 'Urgent Care', 'Other Specialty',
+];
+
+const MEDICAL_FEATURES = [
+  { key: 'xray',          label: 'X-Ray Shielding Required' },
+  { key: 'medical_gas',   label: 'Medical Gas Lines Required' },
+  { key: 'sterilization', label: 'Sterilization Area Required' },
+  { key: 'ada',           label: 'ADA Compliant Required' },
+  { key: 'hipaa',         label: 'HIPAA Compliant Layout Required' },
+];
+
+function Chip({ label, selected, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all"
+      style={{
+        borderColor: selected ? 'var(--tiffany-blue)' : '#e5e7eb',
+        backgroundColor: selected ? '#e6f7f5' : 'white',
+        color: selected ? '#3A8A82' : '#6b7280',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function MedicalOfficeReqDetails({ details, setDetail }) {
+  const toggleBool = (key) => setDetail(key, !details[key]);
+  const buildingClasses = details.building_classes || [];
+  const toggleClass = (c) => setDetail('building_classes', buildingClasses.includes(c) ? buildingClasses.filter(x => x !== c) : [...buildingClasses, c]);
+
+  return (
+    <>
+      {/* Match Score Disclaimer */}
+      <div className="rounded-xl p-3 text-sm text-gray-600 border border-blue-100 bg-blue-50">
+        💡 <strong>Match Score:</strong> Fields left blank will be treated as "No Preference" and will not impact the Match Score.
+      </div>
+
+      {/* Intended Use / Practice Type */}
+      <SectionTitle>Intended Use & Practice Profile</SectionTitle>
+      <Field label="Intended Use / Tenant Profile *">
+        <Textarea
+          value={details.intended_use || ''}
+          onChange={e => setDetail('intended_use', e.target.value)}
+          placeholder="e.g., Multi-physician group practice seeking turnkey medical suite with exam rooms and procedure room."
+          rows={3}
+        />
+      </Field>
+      <Field label="Practice Type">
+        <div className="flex flex-wrap gap-2">
+          {PRACTICE_TYPES.map(pt => (
+            <Chip
+              key={pt}
+              label={pt}
+              selected={details.practice_type === pt}
+              onClick={() => setDetail('practice_type', pt)}
+            />
+          ))}
+        </div>
+      </Field>
+      {details.practice_type === 'Other Specialty' && (
+        <Field label="Specify Practice Type">
+          <Input
+            value={details.practice_type_other || ''}
+            onChange={e => setDetail('practice_type_other', e.target.value)}
+            placeholder="e.g., Oncology, Ophthalmology"
+          />
+        </Field>
+      )}
+
+      {/* Exam & Procedure Capacity */}
+      <SectionTitle>Exam & Procedure Capacity</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min. Exam Rooms"><Num field="min_exam_rooms" placeholder="e.g. 6" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Procedure Rooms"><Num field="min_procedure_rooms" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Lab Space (SF)"><Num field="min_lab_sf" placeholder="e.g. 300" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Waiting Room Capacity"><Num field="min_waiting_capacity" placeholder="e.g. 15" details={details} setDetail={setDetail} /></Field>
+      </div>
+
+      {/* Medical Features */}
+      <SectionTitle>Medical Feature Requirements</SectionTitle>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        {MEDICAL_FEATURES.map(f => (
+          <Toggle key={f.key} label={f.label} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
+        ))}
+        <Toggle label="Medical Waste Disposal Required?" value={!!details.waste_disposal_required} onChange={() => toggleBool('waste_disposal_required')} />
+      </div>
+
+      {/* General Preferences */}
+      <SectionTitle>General Preferences & Search Filters</SectionTitle>
+      <Field label="Tags" hint="Press Enter to add specific needs">
+        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
+      </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min. Parking Spaces"><Num field="min_parking" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
+        <Field label="Zoning Preference">
+          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. O-1 Medical" />
+        </Field>
+      </div>
+      <Field label="Building Class (select all acceptable)">
+        <div className="flex gap-3">
+          {BUILDING_CLASSES.map(c => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => toggleClass(c)}
+              className="px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all"
+              style={{
+                borderColor: buildingClasses.includes(c) ? 'var(--tiffany-blue)' : '#e5e7eb',
+                backgroundColor: buildingClasses.includes(c) ? '#e6f7f5' : 'white',
+                color: buildingClasses.includes(c) ? '#3A8A82' : '#6b7280',
+              }}
+            >
+              Class {c}
+            </button>
+          ))}
+        </div>
+      </Field>
+    </>
+  );
+}
+
 function OfficeDetails({ details, setDetail }) {
   return <>
     <div className="grid grid-cols-2 gap-4">
