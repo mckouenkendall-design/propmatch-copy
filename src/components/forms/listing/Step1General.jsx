@@ -7,13 +7,12 @@ import { ArrowRight, Building2, ShoppingBag, Package, Map, LayoutGrid, Home, Bui
 
 // ── Property type options ────────────────────────────────────────────────────
 const COMMERCIAL_TYPES = [
-  { value: 'office',         label: 'General Office',  icon: Building2 },
-  { value: 'medical_office', label: 'Medical Office',  icon: Stethoscope },
-  { value: 'retail',         label: 'Retail',          icon: ShoppingBag },
-  { value: 'industrial',     label: 'Industrial',      icon: Package },
-  { value: 'land',           label: 'Land',            icon: Map },
-  { value: 'mixed_use',      label: 'Mixed Use',       icon: LayoutGrid },
-  { value: 'flex_warehouse', label: 'Flex',            icon: Layers },
+  { value: 'office',             label: 'General Office',           icon: Building2 },
+  { value: 'medical_office',     label: 'Medical Office',           icon: Stethoscope },
+  { value: 'retail',             label: 'Retail',                   icon: ShoppingBag },
+  { value: 'industrial_flex',    label: 'Industrial / Warehouse / Flex', icon: Package },
+  { value: 'land',               label: 'Land',                     icon: Map },
+  { value: 'mixed_use',          label: 'Mixed Use',                icon: LayoutGrid },
 ];
 
 const RESIDENTIAL_TYPES = [

@@ -410,28 +410,133 @@ function RetailDetails({ details, setDetail }) {
   </>;
 }
 
-function IndustrialDetails({ details, setDetail }) {
-  return <>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Clear Height (ft)"><Num field="clear_height" placeholder="e.g. 24" details={details} setDetail={setDetail} /></Field>
-      <Field label="Dock Doors"><Num field="dock_doors" placeholder="e.g. 4" details={details} setDetail={setDetail} /></Field>
-      <Field label="Drive-In Doors"><Num field="drive_in_doors" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
-      <Field label="Power (Amps)"><Num field="power_amps" placeholder="e.g. 800" details={details} setDetail={setDetail} /></Field>
-      <Field label="Office SF"><Num field="office_sf" placeholder="e.g. 2000" details={details} setDetail={setDetail} /></Field>
-    </div>
-    <ToggleGroup label="Rail Access?" value={details.rail || ''} onChange={v => setDetail('rail', v)}
-      options={[{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }]} />
-  </>;
-}
+const AMPERAGE_OPTIONS = ['200A', '400A', '600A', '800A', '1000A', '1200A', '1600A', '2000A+'];
 
-function FlexDetails({ details, setDetail }) {
-  return <>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Clear Height (ft)"><Num field="clear_height" placeholder="e.g. 18" details={details} setDetail={setDetail} /></Field>
-      <Field label="Dock Doors"><Num field="dock_doors" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
-      <Field label="Office Component (%)"><Num field="office_pct" placeholder="e.g. 30" details={details} setDetail={setDetail} /></Field>
-    </div>
-  </>;
+const SYSTEMS_CHECKLIST = [
+  { key: 'sprinkler',      label: 'Sprinkler System' },
+  { key: 'esfr',           label: 'ESFR Sprinklers' },
+  { key: 'hvac_warehouse', label: 'Warehouse HVAC (Conditioned)' },
+  { key: 'led_lighting',   label: 'LED Warehouse Lighting' },
+  { key: 'skylights',      label: 'Skylights' },
+];
+
+const DOCK_EQUIPMENT = [
+  { key: 'dock_levelers',   label: 'Levelers' },
+  { key: 'dock_seals',      label: 'Seals' },
+  { key: 'dock_restraints', label: 'Restraints' },
+];
+
+function IndustrialFlexDetails({ details, setDetail }) {
+  const toggleBool = (key) => setDetail(key, !details[key]);
+  const systems = details.systems || [];
+  const toggleSystem = (key) => setDetail('systems', systems.includes(key) ? systems.filter(s => s !== key) : [...systems, key]);
+  const dockEq = details.dock_equipment || [];
+  const toggleDockEq = (key) => setDetail('dock_equipment', dockEq.includes(key) ? dockEq.filter(d => d !== key) : [...dockEq, key]);
+
+  return (
+    <>
+      {/* Loading & Access */}
+      <SectionTitle>Primary Loading & Access</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Loading Docks / Dock-Height Doors"><Num field="dock_doors" placeholder="e.g. 4" details={details} setDetail={setDetail} /></Field>
+        <Field label="Drive-In / Grade-Level Doors"><Num field="drive_in_doors" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
+        <Field label="Clear Height (ft)"><Num field="clear_height" placeholder="e.g. 24" details={details} setDetail={setDetail} /></Field>
+        <Field label="Truck Court Depth (ft)">
+          <Input value={details.truck_court_depth || ''} onChange={e => setDetail('truck_court_depth', e.target.value)} placeholder="e.g. 130" />
+        </Field>
+        <Field label="Column Spacing (ft)">
+          <Input value={details.column_spacing || ''} onChange={e => setDetail('column_spacing', e.target.value)} placeholder="e.g. 50 x 50" />
+        </Field>
+      </div>
+
+      {/* Power & Infrastructure */}
+      <SectionTitle>Power & Infrastructure</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Amperage">
+          <select
+            className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2"
+            style={{ '--tw-ring-color': 'var(--tiffany-blue)' }}
+            value={details.power_amps || ''}
+            onChange={e => setDetail('power_amps', e.target.value)}
+          >
+            <option value="">Select amperage</option>
+            {AMPERAGE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+        </Field>
+        <Field label="Additional Power Specs">
+          <Input value={details.power_specs || ''} onChange={e => setDetail('power_specs', e.target.value)} placeholder="e.g. 480V, 3-Phase" />
+        </Field>
+      </div>
+      <div className="rounded-xl border border-gray-100 px-4 py-2">
+        <Toggle label="3-Phase Power" value={!!details.three_phase} onChange={() => toggleBool('three_phase')} />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Crane System">
+          <Input value={details.crane_system || ''} onChange={e => setDetail('crane_system', e.target.value)} placeholder="e.g. 10-ton bridge crane" />
+        </Field>
+        <Field label="Hook Height (ft)"><Num field="hook_height" placeholder="e.g. 22" details={details} setDetail={setDetail} /></Field>
+        <Field label="Floor Load (lbs/sqft)"><Num field="floor_load" placeholder="e.g. 600" details={details} setDetail={setDetail} /></Field>
+      </div>
+
+      {/* Space Composition */}
+      <SectionTitle>Space Composition & Systems</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Office % of Total" hint="Helps distinguish Flex vs. Warehouse">
+          <Num field="office_pct" placeholder="e.g. 20" details={details} setDetail={setDetail} />
+        </Field>
+        <Field label="Showroom SF"><Num field="showroom_sf" placeholder="e.g. 1000" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <Field label="Systems Checklist">
+        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+          {SYSTEMS_CHECKLIST.map(s => (
+            <Toggle key={s.key} label={s.label} value={systems.includes(s.key)} onChange={() => toggleSystem(s.key)} />
+          ))}
+        </div>
+      </Field>
+
+      {/* Exterior & Site */}
+      <SectionTitle>Exterior & Site Details</SectionTitle>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        <Toggle label="Rail Access" value={!!details.rail_access} onChange={() => toggleBool('rail_access')} />
+        <Toggle label="Fenced / Secured Yard" value={!!details.fenced_yard} onChange={() => toggleBool('fenced_yard')} />
+        <Toggle label="Outside Storage Allowed" value={!!details.outside_storage} onChange={() => toggleBool('outside_storage')} />
+      </div>
+      <Field label="Dock Equipment">
+        <div className="flex flex-wrap gap-2">
+          {DOCK_EQUIPMENT.map(d => (
+            <Chip key={d.key} label={d.label} selected={dockEq.includes(d.key)} onClick={() => toggleDockEq(d.key)} />
+          ))}
+        </div>
+      </Field>
+
+      {/* Universal Details */}
+      <SectionTitle>Property Specs & Documentation</SectionTitle>
+      <Field label="Description">
+        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space, highlights, and ideal use…" rows={4} />
+      </Field>
+      <Field label="Tags" hint="Press Enter to add each tag">
+        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
+      </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Parking">
+          <Input value={details.parking || ''} onChange={e => setDetail('parking', e.target.value)} placeholder="e.g. 40 spaces, truck parking" />
+        </Field>
+        <Field label="Zoning">
+          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. M-1, I-2" />
+        </Field>
+      </div>
+      <ToggleGroup
+        label="Building Class"
+        value={details.building_class || ''}
+        onChange={v => setDetail('building_class', v)}
+        options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]}
+      />
+      <div className="grid grid-cols-2 gap-4">
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
+      </div>
+    </>
+  );
 }
 
 function LandDetails({ details, setDetail }) {
