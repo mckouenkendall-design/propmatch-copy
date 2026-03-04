@@ -242,21 +242,8 @@ function MedicalOfficeReqDetails({ details, setDetail }) {
 
   return (
     <>
-      {/* Match Score Disclaimer */}
-      <div className="rounded-xl p-3 text-sm text-gray-600 border border-blue-100 bg-blue-50">
-        💡 <strong>Match Score:</strong> Fields left blank will be treated as "No Preference" and will not impact the Match Score.
-      </div>
-
-      {/* Intended Use / Practice Type */}
-      <SectionTitle>Intended Use & Practice Profile</SectionTitle>
-      <Field label="Intended Use / Tenant Profile *">
-        <Textarea
-          value={details.intended_use || ''}
-          onChange={e => setDetail('intended_use', e.target.value)}
-          placeholder="e.g., Multi-physician group practice seeking turnkey medical suite with exam rooms and procedure room."
-          rows={3}
-        />
-      </Field>
+      {/* Practice Type */}
+      <SectionTitle>Practice Profile</SectionTitle>
       <Field label="Practice Type">
         <div className="flex flex-wrap gap-2">
           {PRACTICE_TYPES.map(pt => (

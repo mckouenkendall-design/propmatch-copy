@@ -84,7 +84,7 @@ export default function ReqStep1({ data, update, onNext }) {
       <ToggleGroup label="Price Period" value={data.price_period} onChange={v => update({ price_period: v })}
         options={[{ value: 'total', label: 'Total' }, { value: 'per_month', label: 'Per Month' }, { value: 'annually', label: 'Annually' }]} />
 
-      <ToggleGroup label="Timeline" value={data.timeline} onChange={v => update({ timeline: v })}
+      <ToggleGroup label="Move-In Timeline" value={data.timeline} onChange={v => update({ timeline: v })}
         options={[
           { value: 'asap', label: 'ASAP' },
           { value: 'flexible', label: 'Flexible' },
