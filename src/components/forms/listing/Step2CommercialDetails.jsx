@@ -573,11 +573,10 @@ export default function ListStep2Commercial({ data, update, onNext }) {
       <p className="text-sm text-gray-500 -mt-2">Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong> space.</p>
       {type === 'office'         && <OfficeDetails        details={details} setDetail={setDetail} />}
       {type === 'medical_office' && <MedicalOfficeDetails details={details} setDetail={setDetail} />}
-      {type === 'retail'         && <RetailDetails     details={details} setDetail={setDetail} />}
-      {type === 'industrial'     && <IndustrialDetails details={details} setDetail={setDetail} />}
-      {type === 'flex_warehouse' && <FlexDetails       details={details} setDetail={setDetail} />}
-      {type === 'land'           && <LandDetails       details={details} setDetail={setDetail} />}
-      {type === 'mixed_use'      && <MixedUseDetails   details={details} setDetail={setDetail} />}
+      {type === 'retail'           && <RetailDetails          details={details} setDetail={setDetail} />}
+      {type === 'industrial_flex' && <IndustrialFlexDetails   details={details} setDetail={setDetail} />}
+      {type === 'land'            && <LandDetails             details={details} setDetail={setDetail} />}
+      {type === 'mixed_use'       && <MixedUseDetails         details={details} setDetail={setDetail} />}
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
           Next <ArrowRight className="w-4 h-4" />
