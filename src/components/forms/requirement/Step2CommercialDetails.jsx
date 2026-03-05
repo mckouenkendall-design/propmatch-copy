@@ -430,18 +430,138 @@ function OfficeDetails({ details, setDetail }) {
   );
 }
 
+const RETAIL_SPECIAL_FEATURES = [
+  { key: 'drive_thru',        label: 'Drive-Thru Window' },
+  { key: 'grease_trap',       label: 'Grease Trap' },
+  { key: 'venting_hood',      label: 'Venting / Hood' },
+  { key: 'cold_storage',      label: 'Cold Storage / Walk-in Freezer' },
+  { key: 'outdoor_seating',   label: 'Outdoor Seating / Patio' },
+  { key: 'capped_utilities',  label: 'Capped / Stubbed Utilities' },
+  { key: 'showroom',          label: 'Dedicated Showroom' },
+  { key: 'fitting_rooms',     label: 'Fitting Rooms' },
+  { key: 'high_end_lighting', label: 'High-End Lighting' },
+  { key: 'rear_loading',      label: 'Rear Loading / Alley Access' },
+  { key: 'vault',             label: 'Secure Vault / Safe Room' },
+  { key: 'medical_flooring',  label: 'Medical Grade Flooring' },
+  { key: 'auto_bay',          label: 'Auto Bay / Garage Doors' },
+];
+
 function RetailDetails({ details, setDetail }) {
-  return <>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Min Frontage (ft)"><Num field="min_frontage" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
-    </div>
-    <ToggleGroup label="Location Type" value={details.location_type || ''} onChange={v => setDetail('location_type', v)}
-      options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'corner', label: 'Corner' }]} />
-    <ToggleGroup label="Drive-Through" value={details.drive_through || ''} onChange={v => setDetail('drive_through', v)}
-      options={[{ value: 'required', label: 'Required' }, { value: 'preferred', label: 'Preferred' }, { value: 'not_needed', label: 'Not Needed' }]} />
-    <ToggleGroup label="Signage" value={details.signage || ''} onChange={v => setDetail('signage', v)}
-      options={[{ value: 'required', label: 'Required' }, { value: 'preferred', label: 'Preferred' }, { value: 'not_needed', label: 'Not Needed' }]} />
-  </>;
+  const [featuresOpen, setFeaturesOpen] = useState(false);
+  const features = details.retail_features || [];
+  const toggleFeature = (key) =>
+    setDetail('retail_features', features.includes(key) ? features.filter(k => k !== key) : [...features, key]);
+
+  const buildingClasses = details.building_classes || [];
+  const toggleClass = (c) => setDetail('building_classes', buildingClasses.includes(c) ? buildingClasses.filter(x => x !== c) : [...buildingClasses, c]);
+
+  const hasRestrooms = !!details.in_suite_restrooms;
+
+  return (
+    <>
+      {/* Primary Specs */}
+      <SectionTitle>Primary Retail Specs</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min. Total SF"><Num field="min_total_sf" placeholder="e.g. 1500" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max. Total SF"><Num field="max_total_sf" placeholder="e.g. 4000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Sales Floor SF"><Num field="min_sales_floor_sf" placeholder="e.g. 1000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Street Frontage (ft)"><Num field="min_frontage" placeholder="e.g. 30" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Ceiling Height (ft)"><Num field="min_ceiling_height" placeholder="e.g. 10" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Traffic Count (vehicles/day)"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
+      </div>
+
+      <Field label="Signage Preference">
+        <select
+          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none"
+          value={details.signage_pref || ''}
+          onChange={e => setDetail('signage_pref', e.target.value)}
+        >
+          <option value="">No preference</option>
+          {['Building', 'Pylon / Monument', 'Electronic', 'Window'].map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </Field>
+
+      <ToggleGroup label="Location Type" value={details.location_type || ''} onChange={v => setDetail('location_type', v)}
+        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'corner', label: 'Corner' }]} />
+
+      {/* Collapsible Required Features */}
+      <div className="rounded-xl border border-gray-200 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setFeaturesOpen(o => !o)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+        >
+          <span>Required Features {features.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>{features.length} selected</span>}</span>
+          <span className="text-lg leading-none">{featuresOpen ? '−' : '+'}</span>
+        </button>
+        {featuresOpen && (
+          <div className="px-4 py-3 divide-y divide-gray-50">
+            {RETAIL_SPECIAL_FEATURES.map(f => (
+              <Toggle key={f.key} label={f.label} value={features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
+            ))}
+            <Toggle label="Other" value={details.feature_other !== undefined} onChange={v => setDetail('feature_other', v ? '' : undefined)} />
+            {details.feature_other !== undefined && (
+              <div className="pb-2 pt-1">
+                <Input
+                  value={details.feature_other || ''}
+                  onChange={e => setDetail('feature_other', e.target.value)}
+                  placeholder="Describe the required feature…"
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ADA & Restrooms */}
+      <div className="rounded-xl border border-gray-100 px-4 py-2 divide-y divide-gray-50">
+        <Toggle label="ADA Compliant Required" value={!!details.ada_required} onChange={v => setDetail('ada_required', v)} />
+        <Toggle label="In-Suite Restrooms Required" value={hasRestrooms} onChange={v => setDetail('in_suite_restrooms', v ? 1 : 0)} />
+        {hasRestrooms && (
+          <div className="pb-2 pt-1">
+            <Field label="Min. Restroom Pairs">
+              <Num field="in_suite_restrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
+            </Field>
+          </div>
+        )}
+      </div>
+
+      {/* General Preferences */}
+      <SectionTitle>General Preferences</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min. Parking Spaces"><Num field="min_parking" placeholder="e.g. 10" details={details} setDetail={setDetail} /></Field>
+        <Field label="Zoning Preference">
+          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. C-2" />
+        </Field>
+      </div>
+
+      <Field label="Building Class (select all acceptable)">
+        <div className="flex gap-3">
+          {BUILDING_CLASSES.map(c => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => toggleClass(c)}
+              className="px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all"
+              style={{
+                borderColor: buildingClasses.includes(c) ? 'var(--tiffany-blue)' : '#e5e7eb',
+                backgroundColor: buildingClasses.includes(c) ? '#e6f7f5' : 'white',
+                color: buildingClasses.includes(c) ? '#3A8A82' : '#6b7280',
+              }}
+            >
+              Class {c}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <Field label="Tags" hint="Press Enter to add each tag">
+        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
+      </Field>
+    </>
+  );
 }
 
 function IndustrialDetails({ details, setDetail }) {
