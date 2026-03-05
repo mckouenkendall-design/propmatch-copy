@@ -396,18 +396,142 @@ function MedicalOfficeDetails({ details, setDetail }) {
   );
 }
 
-// ── Other property type forms (unchanged) ────────────────────────────────────
+// ── Retail Details ─────────────────────────────────────────────────────────────
+const RETAIL_SPECIAL_FEATURES = [
+  { key: 'drive_thru',       label: 'Drive-Thru Window' },
+  { key: 'grease_trap',      label: 'Grease Trap' },
+  { key: 'venting_hood',     label: 'Venting / Hood' },
+  { key: 'cold_storage',     label: 'Cold Storage / Walk-in Freezer' },
+  { key: 'outdoor_seating',  label: 'Outdoor Seating / Patio' },
+  { key: 'capped_utilities', label: 'Capped / Stubbed Utilities' },
+  { key: 'showroom',         label: 'Dedicated Showroom' },
+  { key: 'fitting_rooms',    label: 'Fitting Rooms' },
+  { key: 'high_end_lighting',label: 'High-End Lighting' },
+  { key: 'rear_loading',     label: 'Rear Loading / Alley Access' },
+  { key: 'vault',            label: 'Secure Vault / Safe Room' },
+  { key: 'medical_flooring', label: 'Medical Grade Flooring' },
+  { key: 'auto_bay',         label: 'Auto Bay / Garage Doors' },
+];
+
 function RetailDetails({ details, setDetail }) {
-  return <>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Frontage (ft)"><Num field="frontage" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
-      <Field label="Parking Spaces"><Num field="parking" placeholder="e.g. 15" details={details} setDetail={setDetail} /></Field>
-    </div>
-    <ToggleGroup label="Location Type" value={details.location_type || ''} onChange={v => setDetail('location_type', v)}
-      options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'corner', label: 'Corner' }]} />
-    <ToggleGroup label="Drive-Through?" value={details.drive_through || ''} onChange={v => setDetail('drive_through', v)}
-      options={[{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }]} />
-  </>;
+  const [featuresOpen, setFeaturesOpen] = React.useState(false);
+  const features = details.retail_features || [];
+  const toggleFeature = (key) =>
+    setDetail('retail_features', features.includes(key) ? features.filter(k => k !== key) : [...features, key]);
+
+  const hasRestrooms = !!details.in_suite_restrooms;
+
+  return (
+    <>
+      {/* Primary Specs */}
+      <SectionTitle>Primary Retail Specs</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Total SF"><Num field="total_sf" placeholder="e.g. 2500" details={details} setDetail={setDetail} /></Field>
+        <Field label="Sales Floor SF"><Num field="sales_floor_sf" placeholder="e.g. 1800" details={details} setDetail={setDetail} /></Field>
+        <Field label="Street Frontage (ft)"><Num field="frontage" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
+        <Field label="Ceiling Height (ft)"><Num field="ceiling_height" placeholder="e.g. 12" details={details} setDetail={setDetail} /></Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Signage Rights">
+          <select
+            className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2"
+            value={details.signage_rights || ''}
+            onChange={e => setDetail('signage_rights', e.target.value)}
+          >
+            <option value="">Select signage type</option>
+            {['Building', 'Pylon / Monument', 'Electronic', 'Window', 'None'].map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Traffic Count (vehicles/day)"><Num field="traffic_count" placeholder="e.g. 25000" details={details} setDetail={setDetail} /></Field>
+      </div>
+
+      <ToggleGroup label="Location Type" value={details.location_type || ''} onChange={v => setDetail('location_type', v)}
+        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'corner', label: 'Corner' }]} />
+
+      {/* Collapsible Special Features */}
+      <div className="rounded-xl border border-gray-200 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setFeaturesOpen(o => !o)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+        >
+          <span>Special Features {features.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>{features.length} selected</span>}</span>
+          <span className="text-lg leading-none">{featuresOpen ? '−' : '+'}</span>
+        </button>
+        {featuresOpen && (
+          <div className="px-4 py-3 divide-y divide-gray-50">
+            {RETAIL_SPECIAL_FEATURES.map(f => (
+              <Toggle key={f.key} label={f.label} value={features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
+            ))}
+            {/* Other */}
+            <Toggle label="Other" value={!!details.feature_other} onChange={v => setDetail('feature_other', v ? '' : undefined)} />
+            {details.feature_other !== undefined && (
+              <div className="pb-2 pt-1">
+                <Input
+                  value={details.feature_other || ''}
+                  onChange={e => setDetail('feature_other', e.target.value)}
+                  placeholder="Describe the feature…"
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ADA & Restrooms */}
+      <div className="rounded-xl border border-gray-100 px-4 py-2 space-y-1 divide-y divide-gray-50">
+        <Toggle label="ADA Compliant" value={!!details.ada_compliant} onChange={v => setDetail('ada_compliant', v)} />
+        <Toggle
+          label="In-Suite Restrooms"
+          value={hasRestrooms}
+          onChange={v => setDetail('in_suite_restrooms', v ? 1 : 0)}
+        />
+        {hasRestrooms && (
+          <div className="pb-2 pt-1">
+            <Field label="Restroom Pairs" hint={`${details.in_suite_restrooms || 1} Men's + ${details.in_suite_restrooms || 1} Women's`}>
+              <Num field="in_suite_restrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
+            </Field>
+          </div>
+        )}
+      </div>
+
+      {/* Property Details */}
+      <SectionTitle>Property Details & Media</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Parking Spaces"><Num field="parking" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
+        <Field label="Zoning">
+          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. C-2" />
+        </Field>
+      </div>
+
+      <ToggleGroup
+        label="Building Class"
+        value={details.building_class || ''}
+        onChange={v => setDetail('building_class', v)}
+        options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]}
+      />
+
+      <Field label="Anchor Tenants">
+        <Textarea value={details.anchor_tenants || ''} onChange={e => setDetail('anchor_tenants', e.target.value)} placeholder="e.g. Target, Starbucks" rows={2} />
+      </Field>
+
+      <Field label="Description">
+        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space, its highlights, and what makes it ideal for tenants…" rows={4} />
+      </Field>
+
+      <Field label="Tags" hint="Press Enter to add each tag">
+        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
+      </Field>
+
+      <div className="grid grid-cols-2 gap-4">
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
+      </div>
+    </>
+  );
 }
 
 const AMPERAGE_OPTIONS = ['200A', '400A', '600A', '800A', '1000A', '1200A', '1600A', '2000A+'];
