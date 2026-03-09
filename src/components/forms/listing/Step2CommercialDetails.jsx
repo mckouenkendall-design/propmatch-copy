@@ -674,58 +674,66 @@ function LandDetails({ details, setDetail }) {
 
   return (
     <>
-      {/* Property Access & Road Quality */}
-      <SectionTitle>Property Access & Road Quality</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Road Surface">
-          <select className={selectCls} value={details.road_surface || ''} onChange={e => setDetail('road_surface', e.target.value)}>
-            <option value="">Select surface</option>
-            {['Paved/Asphalt', 'Concrete', 'Gravel', 'Dirt/Unimproved'].map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </Field>
-        <Field label="Access Type">
-          <select className={selectCls} value={details.access_type || ''} onChange={e => setDetail('access_type', e.target.value)}>
-            <option value="">Select access type</option>
-            {['Direct Frontage', 'Easement/Deeded', 'Shared Drive', 'Private Road'].map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </Field>
-      </div>
-      <div className="rounded-xl border border-gray-100 px-4 py-2 divide-y divide-gray-50">
-        <Toggle
-          label={`Road Maintenance: ${details.road_maintenance === 'private' ? 'Privately Maintained' : 'Publicly Maintained'}`}
-          value={details.road_maintenance === 'private'}
-          onChange={v => setDetail('road_maintenance', v ? 'private' : 'public')}
-        />
-        <Toggle label="Highway Access" value={!!details.highway_access} onChange={v => setDetail('highway_access', v)} />
-        {details.highway_access && (
-          <div className="py-2">
-            <Field label="Distance to Nearest Interchange (miles)">
-              <Num field="interchange_distance" placeholder="e.g. 1.5" step="0.1" details={details} setDetail={setDetail} />
-            </Field>
-          </div>
-        )}
-      </div>
+      {/* Property Access & Road Quality — collapsible */}
+      <CollapsiblePanel
+        title="Property Access & Road Quality"
+        summary={[details.road_surface, details.access_type].filter(Boolean).join(' · ') || 'Tap to configure'}
+      >
+        <div className="grid grid-cols-2 gap-4 mb-3">
+          <Field label="Road Surface">
+            <select className={selectCls} value={details.road_surface || ''} onChange={e => setDetail('road_surface', e.target.value)}>
+              <option value="">Select surface</option>
+              {['Paved/Asphalt', 'Concrete', 'Gravel', 'Dirt/Unimproved'].map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+          <Field label="Access Type">
+            <select className={selectCls} value={details.access_type || ''} onChange={e => setDetail('access_type', e.target.value)}>
+              <option value="">Select access type</option>
+              {['Direct Frontage', 'Easement/Deeded', 'Shared Drive', 'Private Road'].map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div className="divide-y divide-gray-50">
+          <Toggle
+            label={`Road Maintenance: ${details.road_maintenance === 'private' ? 'Privately Maintained' : 'Publicly Maintained'}`}
+            value={details.road_maintenance === 'private'}
+            onChange={v => setDetail('road_maintenance', v ? 'private' : 'public')}
+          />
+          <Toggle label="Highway Access" value={!!details.highway_access} onChange={v => setDetail('highway_access', v)} />
+          {details.highway_access && (
+            <div className="py-2">
+              <Field label="Distance to Nearest Interchange (miles)">
+                <Num field="interchange_distance" placeholder="e.g. 1.5" step="0.1" details={details} setDetail={setDetail} />
+              </Field>
+            </div>
+          )}
+        </div>
+      </CollapsiblePanel>
 
-      {/* Location Setting & Environment */}
-      <SectionTitle>Location Setting & Environment</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Location Setting">
-          <select className={selectCls} value={details.location_setting || ''} onChange={e => setDetail('location_setting', e.target.value)}>
-            <option value="">Select setting</option>
-            {['Highway Frontage', 'Main Road', 'Industrial Park', 'Suburban/Residential', 'Rural/Country'].map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </Field>
-        <Field label="Visibility">
-          <select className={selectCls} value={details.visibility || ''} onChange={e => setDetail('visibility', e.target.value)}>
-            <option value="">Select visibility</option>
-            {['High Visibility', 'Average', 'Hidden/Private'].map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </Field>
-      </div>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-        <Toggle label="Corner Lot" value={!!details.corner_lot} onChange={v => setDetail('corner_lot', v)} />
-        <Toggle label="Cul-de-sac" value={!!details.cul_de_sac} onChange={v => setDetail('cul_de_sac', v)} />
-      </div>
+      {/* Location Setting & Environment — collapsible */}
+      <CollapsiblePanel
+        title="Location Setting & Environment"
+        summary={[details.location_setting, details.visibility, details.corner_lot && 'Corner Lot', details.cul_de_sac && 'Cul-de-sac'].filter(Boolean).join(' · ') || 'Tap to configure'}
+      >
+        <div className="grid grid-cols-2 gap-4 mb-3">
+          <Field label="Location Setting">
+            <select className={selectCls} value={details.location_setting || ''} onChange={e => setDetail('location_setting', e.target.value)}>
+              <option value="">Select setting</option>
+              {['Highway Frontage', 'Main Road', 'Industrial Park', 'Suburban/Residential', 'Rural/Country'].map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+          <Field label="Visibility">
+            <select className={selectCls} value={details.visibility || ''} onChange={e => setDetail('visibility', e.target.value)}>
+              <option value="">Select visibility</option>
+              {['High Visibility', 'Average', 'Hidden/Private'].map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div className="divide-y divide-gray-50">
+          <Toggle label="Corner Lot" value={!!details.corner_lot} onChange={v => setDetail('corner_lot', v)} />
+          <Toggle label="Cul-de-sac" value={!!details.cul_de_sac} onChange={v => setDetail('cul_de_sac', v)} />
+        </div>
+      </CollapsiblePanel>
 
       {/* Primary Land Dimensions */}
       <SectionTitle>Primary Land Dimensions</SectionTitle>
