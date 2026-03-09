@@ -66,6 +66,26 @@ function Toggle({ label, value, onChange }) {
   );
 }
 
+function CollapsiblePanel({ title, summary, children }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="rounded-xl border border-gray-200 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+      >
+        <div>
+          <p className="text-sm font-semibold text-gray-700">{title}</p>
+          {!open && <p className="text-xs text-gray-400 mt-0.5">{summary}</p>}
+        </div>
+        <span className="text-lg leading-none text-gray-400 ml-2">{open ? '−' : '+'}</span>
+      </button>
+      {open && <div className="px-4 py-3">{children}</div>}
+    </div>
+  );
+}
+
 function SectionTitle({ children }) {
   return (
     <div className="pt-2">
