@@ -664,15 +664,167 @@ function IndustrialFlexDetails({ details, setDetail }) {
 }
 
 function LandDetails({ details, setDetail }) {
-  return <>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Acreage"><Num field="acres" placeholder="e.g. 5.0" step="0.1" details={details} setDetail={setDetail} /></Field>
-    </div>
-    <ToggleGroup label="Zoning" value={details.zoning || ''} onChange={v => setDetail('zoning', v)}
-      options={[{ value: 'commercial', label: 'Commercial' }, { value: 'industrial', label: 'Industrial' }, { value: 'mixed', label: 'Mixed Use' }]} />
-    <ToggleGroup label="Utilities" value={details.utilities || ''} onChange={v => setDetail('utilities', v)}
-      options={[{ value: 'all', label: 'All Utilities' }, { value: 'partial', label: 'Partial' }, { value: 'raw', label: 'Raw Land' }]} />
-  </>;
+  const toggleBool = (key) => setDetail(key, !details[key]);
+  const utilities = details.utilities_to_site || [];
+  const toggleUtility = (key) => setDetail('utilities_to_site', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
+  const topography = details.topography || [];
+  const toggleTopo = (key) => setDetail('topography', topography.includes(key) ? topography.filter(t => t !== key) : [...topography, key]);
+
+  const selectCls = "w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2";
+
+  return (
+    <>
+      {/* Property Access & Road Quality */}
+      <SectionTitle>Property Access & Road Quality</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Road Surface">
+          <select className={selectCls} value={details.road_surface || ''} onChange={e => setDetail('road_surface', e.target.value)}>
+            <option value="">Select surface</option>
+            {['Paved/Asphalt', 'Concrete', 'Gravel', 'Dirt/Unimproved'].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </Field>
+        <Field label="Access Type">
+          <select className={selectCls} value={details.access_type || ''} onChange={e => setDetail('access_type', e.target.value)}>
+            <option value="">Select access type</option>
+            {['Direct Frontage', 'Easement/Deeded', 'Shared Drive', 'Private Road'].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="rounded-xl border border-gray-100 px-4 py-2 divide-y divide-gray-50">
+        <Toggle
+          label={`Road Maintenance: ${details.road_maintenance === 'private' ? 'Privately Maintained' : 'Publicly Maintained'}`}
+          value={details.road_maintenance === 'private'}
+          onChange={v => setDetail('road_maintenance', v ? 'private' : 'public')}
+        />
+        <Toggle label="Highway Access" value={!!details.highway_access} onChange={v => setDetail('highway_access', v)} />
+        {details.highway_access && (
+          <div className="py-2">
+            <Field label="Distance to Nearest Interchange (miles)">
+              <Num field="interchange_distance" placeholder="e.g. 1.5" step="0.1" details={details} setDetail={setDetail} />
+            </Field>
+          </div>
+        )}
+      </div>
+
+      {/* Location Setting & Environment */}
+      <SectionTitle>Location Setting & Environment</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Location Setting">
+          <select className={selectCls} value={details.location_setting || ''} onChange={e => setDetail('location_setting', e.target.value)}>
+            <option value="">Select setting</option>
+            {['Highway Frontage', 'Main Road', 'Industrial Park', 'Suburban/Residential', 'Rural/Country'].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </Field>
+        <Field label="Visibility">
+          <select className={selectCls} value={details.visibility || ''} onChange={e => setDetail('visibility', e.target.value)}>
+            <option value="">Select visibility</option>
+            {['High Visibility', 'Average', 'Hidden/Private'].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        <Toggle label="Corner Lot" value={!!details.corner_lot} onChange={v => setDetail('corner_lot', v)} />
+        <Toggle label="Cul-de-sac" value={!!details.cul_de_sac} onChange={v => setDetail('cul_de_sac', v)} />
+      </div>
+
+      {/* Primary Land Dimensions */}
+      <SectionTitle>Primary Land Dimensions</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Total Acreage"><Num field="acres" placeholder="e.g. 5.0" step="0.1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Lot Dimensions (ft × ft)">
+          <Input value={details.lot_dimensions || ''} onChange={e => setDetail('lot_dimensions', e.target.value)} placeholder="e.g. 300 x 725" />
+        </Field>
+        <Field label="Gross Square Feet"><Num field="gross_sqft" placeholder="e.g. 217800" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <div className="rounded-xl border border-gray-100 px-4 py-1">
+        <Toggle label="Divisible" value={!!details.divisible} onChange={v => setDetail('divisible', v)} />
+      </div>
+
+      {/* Zoning & Development Status */}
+      <SectionTitle>Zoning & Development Status</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Current Zoning">
+          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. B-2, M-1" />
+        </Field>
+        <Field label="Entitlements">
+          <select className={selectCls} value={details.entitlements || ''} onChange={e => setDetail('entitlements', e.target.value)}>
+            <option value="">Select status</option>
+            {['Raw', 'Shovel Ready', 'Site Plan Approved'].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </Field>
+        <Field label="Curb Cuts"><Num field="curb_cuts" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max Build SF"><Num field="max_build_sf" placeholder="e.g. 50000" details={details} setDetail={setDetail} /></Field>
+      </div>
+
+      {/* Utilities & Infrastructure */}
+      <SectionTitle>Utilities & Infrastructure</SectionTitle>
+      <Field label="Utilities to Site">
+        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+          {[
+            { key: 'municipal_water', label: 'Municipal Water' },
+            { key: 'sanitary_sewer',  label: 'Sanitary Sewer' },
+            { key: 'electric',        label: 'Electric' },
+            { key: 'natural_gas',     label: 'Natural Gas' },
+            { key: 'fiber_internet',  label: 'Fiber / Internet' },
+          ].map(u => (
+            <Toggle key={u.key} label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
+          ))}
+        </div>
+      </Field>
+      <Field label="Perc Test Status">
+        <select className={selectCls} value={details.perc_test || ''} onChange={e => setDetail('perc_test', e.target.value)}>
+          <option value="">Select status</option>
+          {['Completed', 'Needs Testing', 'Not Required'].map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </Field>
+
+      {/* Physical Site Characteristics */}
+      <SectionTitle>Physical Site Characteristics</SectionTitle>
+      <Field label="Topography (select all that apply)">
+        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+          {[
+            { key: 'level',    label: 'Level / Flat' },
+            { key: 'wooded',   label: 'Wooded' },
+            { key: 'cleared',  label: 'Cleared' },
+            { key: 'wetlands', label: 'Wetlands / Marsh' },
+            { key: 'sloped',   label: 'Sloped' },
+          ].map(t => (
+            <Toggle key={t.key} label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />
+          ))}
+        </div>
+      </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Road Frontage (ft)"><Num field="road_frontage" placeholder="e.g. 300" details={details} setDetail={setDetail} /></Field>
+        <Field label="Traffic Count (vehicles/day)"><Num field="traffic_count" placeholder="e.g. 25000" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        <Toggle label="Environmental Phase 1 Completed" value={!!details.phase1_completed} onChange={v => setDetail('phase1_completed', v)} />
+        <Toggle label="Survey Available" value={!!details.survey_available} onChange={v => setDetail('survey_available', v)} />
+      </div>
+
+      {/* Property Details & Media */}
+      <SectionTitle>Property Details & Media</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Annual Property Tax ($)"><Num field="annual_tax" placeholder="e.g. 8500" details={details} setDetail={setDetail} /></Field>
+        <Field label="Parcel Number">
+          <Input value={details.parcel_number || ''} onChange={e => setDetail('parcel_number', e.target.value)} placeholder="e.g. 12-34-567-890" />
+        </Field>
+        <Field label="Zoning Overlay">
+          <Input value={details.zoning_overlay || ''} onChange={e => setDetail('zoning_overlay', e.target.value)} placeholder="e.g. Opportunity Zone" />
+        </Field>
+      </div>
+      <Field label="Description">
+        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the site, its highlights, and development potential…" rows={4} />
+      </Field>
+      <Field label="Tags" hint="Press Enter to add each tag">
+        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
+      </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <FileUpload label="Brochure / Site Plan (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF" />
+      </div>
+    </>
+  );
 }
 
 function MixedUseDetails({ details, setDetail }) {
