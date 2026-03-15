@@ -592,17 +592,171 @@ function FlexDetails({ details, setDetail }) {
   </>;
 }
 
+const LOCATION_SETTINGS = [
+  { key: 'highway_frontage', label: 'Highway Frontage' },
+  { key: 'main_road',        label: 'Main Road' },
+  { key: 'industrial_park',  label: 'Industrial Park' },
+  { key: 'suburban',         label: 'Suburban' },
+  { key: 'rural',            label: 'Rural' },
+];
+
+const ENTITLEMENTS_OPTIONS = [
+  { key: 'raw',               label: 'Raw Land' },
+  { key: 'shovel_ready',      label: 'Shovel Ready' },
+  { key: 'site_plan_approved',label: 'Site Plan Approved' },
+];
+
 function LandDetails({ details, setDetail }) {
-  return <>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Min Acreage"><Num field="min_acres" placeholder="e.g. 2.5" step="0.1" details={details} setDetail={setDetail} /></Field>
-      <Field label="Max Acreage"><Num field="max_acres" placeholder="e.g. 10" step="0.1" details={details} setDetail={setDetail} /></Field>
-    </div>
-    <ToggleGroup label="Zoning Preference" value={details.zoning || ''} onChange={v => setDetail('zoning', v)}
-      options={[{ value: 'commercial', label: 'Commercial' }, { value: 'industrial', label: 'Industrial' }, { value: 'mixed', label: 'Mixed Use' }, { value: 'any', label: 'Any' }]} />
-    <ToggleGroup label="Utilities" value={details.utilities || ''} onChange={v => setDetail('utilities', v)}
-      options={[{ value: 'all', label: 'All Utilities' }, { value: 'partial', label: 'Partial' }, { value: 'raw', label: 'Raw Land OK' }]} />
-  </>;
+  const toggleBool = (key) => setDetail(key, !details[key]);
+  const utilities = details.utilities_required || [];
+  const toggleUtility = (key) => setDetail('utilities_required', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
+  const locationSettings = details.location_settings || [];
+  const toggleLocationSetting = (key) => setDetail('location_settings', locationSettings.includes(key) ? locationSettings.filter(l => l !== key) : [...locationSettings, key]);
+  const entitlements = details.entitlements_preferred || [];
+  const toggleEntitlement = (key) => setDetail('entitlements_preferred', entitlements.includes(key) ? entitlements.filter(e => e !== key) : [...entitlements, key]);
+  const siteChars = details.site_characteristics || [];
+  const toggleSiteChar = (key) => setDetail('site_characteristics', siteChars.includes(key) ? siteChars.filter(s => s !== key) : [...siteChars, key]);
+
+  return (
+    <>
+      {/* Match Score Disclaimer */}
+      <div className="rounded-xl p-3 text-sm text-gray-600 border border-blue-100 bg-blue-50">
+        💡 <strong>Match Score:</strong> Fields left blank will be treated as "No Preference" and will not impact the Match Score.
+      </div>
+
+      {/* Intended Use */}
+      <SectionTitle>Intended Use & Profile</SectionTitle>
+      <Field label="Intended Use / Tenant Profile *">
+        <Textarea
+          value={details.intended_use || ''}
+          onChange={e => setDetail('intended_use', e.target.value)}
+          placeholder="e.g., Retail pad site for a fast-food drive-thru requiring high traffic count and visibility."
+          rows={3}
+        />
+      </Field>
+
+      {/* Size Requirements */}
+      <SectionTitle>Size Requirements</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min. Acreage"><Num field="min_acres" placeholder="e.g. 2.5" step="0.1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max. Acreage"><Num field="max_acres" placeholder="e.g. 10" step="0.1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Total SF"><Num field="min_sqft" placeholder="e.g. 10000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max. Total SF"><Num field="max_sqft" placeholder="e.g. 50000" details={details} setDetail={setDetail} /></Field>
+      </div>
+
+      {/* Access & Visibility */}
+      <SectionTitle>Access & Visibility</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min. Road Frontage (ft)"><Num field="min_road_frontage" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max. Road Frontage (ft)"><Num field="max_road_frontage" placeholder="e.g. 600" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Traffic Count (Cars/Day)"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Build SF">
+          <Num field="min_build_sf" placeholder="e.g. 20000" details={details} setDetail={setDetail} />
+          <p className="text-xs text-gray-400 mt-1">Ensures the lot legally supports the client's building size</p>
+        </Field>
+      </div>
+
+      <Field label="Road Surface Required">
+        <select
+          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2"
+          value={details.road_surface_required || ''}
+          onChange={e => setDetail('road_surface_required', e.target.value)}
+        >
+          <option value="">No Preference</option>
+          <option value="paved">Paved/Asphalt Only</option>
+          <option value="gravel">Gravel OK</option>
+          <option value="no_preference">No Preference</option>
+        </select>
+      </Field>
+
+      <Field label="Location Setting Preference (select all that apply)">
+        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+          {LOCATION_SETTINGS.map(s => (
+            <Toggle key={s.key} label={s.label} value={locationSettings.includes(s.key)} onChange={() => toggleLocationSetting(s.key)} />
+          ))}
+        </div>
+      </Field>
+
+      {/* Zoning & Development */}
+      <SectionTitle>Zoning & Development</SectionTitle>
+      <Field label="Zoning Required">
+        <Input
+          value={details.zoning_required || ''}
+          onChange={e => setDetail('zoning_required', e.target.value)}
+          placeholder="e.g., Must allow for Heavy Industrial M-2"
+        />
+      </Field>
+
+      {/* Utilities Required */}
+      <SectionTitle>Utilities Required</SectionTitle>
+      <p className="text-xs text-gray-500 -mt-3">Must be at Site / Curb</p>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        {[
+          { key: 'municipal_water', label: 'Municipal Water' },
+          { key: 'sanitary_sewer',  label: 'Sanitary Sewer' },
+          { key: 'electric_3phase', label: 'Electric (3-Phase)' },
+          { key: 'natural_gas',     label: 'Natural Gas' },
+          { key: 'fiber_internet',  label: 'Fiber / Internet' },
+        ].map(u => (
+          <Toggle key={u.key} label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
+        ))}
+        <Toggle label="Perc Test Required" value={!!details.perc_test_required} onChange={() => toggleBool('perc_test_required')} />
+      </div>
+
+      {/* Site Characteristics */}
+      <SectionTitle>Site Characteristic Preferences</SectionTitle>
+      <p className="text-xs text-gray-500 -mt-3">Required State</p>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        {[
+          { key: 'level',           label: 'Level / Flat' },
+          { key: 'cleared',         label: 'Cleared' },
+          { key: 'wooded',          label: 'Wooded' },
+          { key: 'build_to_suit',   label: 'Build-to-Suit Only' },
+        ].map(s => (
+          <Toggle key={s.key} label={s.label} value={siteChars.includes(s.key)} onChange={() => toggleSiteChar(s.key)} />
+        ))}
+        <Toggle label="Other" value={!!details.site_char_other_enabled} onChange={v => setDetail('site_char_other_enabled', v)} />
+        {details.site_char_other_enabled && (
+          <div className="py-2">
+            <Input
+              value={details.site_char_other || ''}
+              onChange={e => setDetail('site_char_other', e.target.value)}
+              placeholder="Describe specific land requirement…"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Development Readiness */}
+      <SectionTitle>Development Readiness</SectionTitle>
+      <Field label="Entitlements Preferred (select all acceptable)">
+        <div className="flex flex-wrap gap-2">
+          {ENTITLEMENTS_OPTIONS.map(e => (
+            <Chip
+              key={e.key}
+              label={e.label}
+              selected={entitlements.includes(e.key)}
+              onClick={() => toggleEntitlement(e.key)}
+            />
+          ))}
+        </div>
+      </Field>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        <Toggle label="Survey Available Required" value={!!details.survey_required} onChange={() => toggleBool('survey_required')} />
+        <Toggle label="Environmental Phase 1 Required" value={!!details.phase1_required} onChange={() => toggleBool('phase1_required')} />
+      </div>
+
+      {/* General Search Details */}
+      <SectionTitle>General Search Details</SectionTitle>
+      <Field label="Tags">
+        <TagsInput
+          value={details.tags || []}
+          onChange={v => setDetail('tags', v)}
+          placeholder="e.g., corner lot, opportunity zone, rail access (press ENTER to add)"
+        />
+      </Field>
+    </>
+  );
 }
 
 function MixedUseDetails({ details, setDetail }) {
