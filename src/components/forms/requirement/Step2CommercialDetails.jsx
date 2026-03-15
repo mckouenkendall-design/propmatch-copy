@@ -51,7 +51,7 @@ function Toggle({ label, value, onChange }) {
   );
 }
 
-function TagsInput({ value = [], onChange }) {
+function TagsInput({ value = [], onChange, placeholder }) {
   const [input, setInput] = React.useState('');
   const handleKey = (e) => {
     if (e.key === 'Enter' && input.trim()) {
@@ -75,7 +75,7 @@ function TagsInput({ value = [], onChange }) {
         value={input}
         onChange={e => setInput(e.target.value)}
         onKeyDown={handleKey}
-        placeholder="e.g., Ground Floor Only, Corner Unit (press Enter to add)"
+        placeholder={placeholder || "e.g., Ground Floor Only, Corner Unit (press Enter to add)"}
       />
     </div>
   );
