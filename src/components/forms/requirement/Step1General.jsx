@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import LocationAreaInput from '../wizard/LocationAreaInput';
 import ToggleGroup from '../wizard/ToggleGroup';
-import { ArrowRight, Building2, ShoppingBag, Package, Map, Home, Building, Users, Hotel, Stethoscope, Star } from 'lucide-react';
+import { ArrowRight, Building2, ShoppingBag, Package, Map, Home, Building, Users, Hotel, Stethoscope, Star, Truck, TreePine } from 'lucide-react';
 
 const COMMERCIAL_TYPES = [
   { value: 'office',          label: 'General Office',           icon: Building2 },
@@ -16,11 +16,13 @@ const COMMERCIAL_TYPES = [
 ];
 
 const RESIDENTIAL_TYPES = [
-  { value: 'single_family', label: 'Single Family', icon: Home },
-  { value: 'condo', label: 'Condo', icon: Building },
-  { value: 'apartment', label: 'Apartment', icon: Hotel },
-  { value: 'multi_family', label: 'Multi-Family', icon: Users },
-  { value: 'townhouse', label: 'Townhouse', icon: Building2 },
+  { value: 'single_family',   label: 'Single Family',        icon: Home },
+  { value: 'condo',           label: 'Condo',                icon: Building },
+  { value: 'apartment',       label: 'Apartment',            icon: Hotel },
+  { value: 'multi_family',    label: 'Multi-Family',         icon: Users },
+  { value: 'townhouse',       label: 'Townhouse',            icon: Building2 },
+  { value: 'manufactured',    label: 'Manufactured / Mobile', icon: Truck },
+  { value: 'land_residential', label: 'Land (Residential)',  icon: TreePine },
 ];
 
 export default function ReqStep1({ data, update, onNext }) {
