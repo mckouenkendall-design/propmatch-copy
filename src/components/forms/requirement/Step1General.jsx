@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import LocationAreaInput from '../wizard/LocationAreaInput';
 import ToggleGroup from '../wizard/ToggleGroup';
-import { ArrowRight, Building2, ShoppingBag, Package, Map, LayoutGrid, Home, Building, Users, Hotel, Stethoscope } from 'lucide-react';
+import { ArrowRight, Building2, ShoppingBag, Package, Map, LayoutGrid, Home, Building, Users, Hotel, Stethoscope, Star } from 'lucide-react';
 
 const COMMERCIAL_TYPES = [
   { value: 'office',          label: 'General Office',           icon: Building2 },
