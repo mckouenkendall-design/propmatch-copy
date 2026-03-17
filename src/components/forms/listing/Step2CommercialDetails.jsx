@@ -854,6 +854,122 @@ function MixedUseDetails({ details, setDetail }) {
   </>;
 }
 
+// ── Special Use Details ───────────────────────────────────────────────────────
+const SPECIAL_USE_TYPES = [
+  'Religious/Church',
+  'Educational/School',
+  'Hospitality/Hotel',
+  'Event Center/Banquet',
+  'Sports/Recreation',
+  'Automotive/Specialty',
+  'Other',
+];
+
+const SPECIAL_INFRA = [
+  { key: 'commercial_kitchen',   label: 'Commercial Kitchen' },
+  { key: 'stage_platform',       label: 'Stage / Platform' },
+  { key: 'gymnasium',            label: 'Gymnasium' },
+  { key: 'assembly_hall',        label: 'Large Assembly Hall' },
+  { key: 'sound_acoustic',       label: 'Sound / Acoustic Treatment' },
+  { key: 'commercial_laundry',   label: 'Commercial Laundry' },
+  { key: 'elevator_access',      label: 'Elevator Access' },
+];
+
+function SpecialUseDetails({ details, setDetail }) {
+  const toggleBool = (key) => setDetail(key, !details[key]);
+
+  return (
+    <>
+      {/* Current Use */}
+      <SectionTitle>Current Use & Classification</SectionTitle>
+      <Field label="Current Specific Use">
+        <select
+          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2"
+          value={details.specific_use || ''}
+          onChange={e => setDetail('specific_use', e.target.value)}
+        >
+          <option value="">Select current use</option>
+          {SPECIAL_USE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </Field>
+      {details.specific_use === 'Other' && (
+        <Field label="Describe Current Use">
+          <Input
+            value={details.specific_use_other || ''}
+            onChange={e => setDetail('specific_use_other', e.target.value)}
+            placeholder="e.g., Funeral Home, Bowling Alley"
+          />
+        </Field>
+      )}
+
+      {/* Key Capacity & Size */}
+      <SectionTitle>Key Capacity & Size</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Total SF"><Num field="total_sf" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Acreage"><Num field="acres" placeholder="e.g. 2.5" step="0.1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Seating Capacity" hint="Sanctuaries, theaters, stadiums">
+          <Num field="seating_capacity" placeholder="e.g. 500" details={details} setDetail={setDetail} />
+        </Field>
+        <Field label="Bed / Room Count" hint="Hotels or Assisted Living">
+          <Num field="bed_room_count" placeholder="e.g. 80" details={details} setDetail={setDetail} />
+        </Field>
+      </div>
+
+      {/* Specialty Infrastructure */}
+      <SectionTitle>Specialty Infrastructure</SectionTitle>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        {SPECIAL_INFRA.map(f => (
+          <Toggle key={f.key} label={f.label} value={!!details[f.key]} onChange={() => toggleBool(f.key)} />
+        ))}
+        <Toggle label="ADA Compliant" value={!!details.ada_compliant} onChange={() => toggleBool('ada_compliant')} />
+      </div>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        <Toggle label="Specialty Equipment Included" value={!!details.specialty_equipment} onChange={() => toggleBool('specialty_equipment')} />
+      </div>
+      {details.specialty_equipment && (
+        <Field label="List Specialty Equipment">
+          <Textarea
+            value={details.specialty_equipment_list || ''}
+            onChange={e => setDetail('specialty_equipment_list', e.target.value)}
+            placeholder="e.g., Dental chairs, Commercial ovens, Industrial lifts…"
+            rows={3}
+          />
+        </Field>
+      )}
+
+      {/* Site & Compliance */}
+      <SectionTitle>Site & Compliance</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Parking Spaces"><Num field="parking" placeholder="e.g. 100" details={details} setDetail={setDetail} /></Field>
+        <Field label="Zoning">
+          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. C-3, P-1" />
+        </Field>
+        <Field label="Zoning Overlay">
+          <Input value={details.zoning_overlay || ''} onChange={e => setDetail('zoning_overlay', e.target.value)} placeholder="e.g. Historical District" />
+        </Field>
+      </div>
+
+      <Field label="Description">
+        <Textarea
+          value={details.description || ''}
+          onChange={e => setDetail('description', e.target.value)}
+          placeholder="Describe the property, its unique features, and ideal use…"
+          rows={4}
+        />
+      </Field>
+
+      <Field label="Tags" hint="Press Enter to add each tag">
+        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
+      </Field>
+
+      <div className="grid grid-cols-2 gap-4">
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
+      </div>
+    </>
+  );
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function ListStep2Commercial({ data, update, onNext }) {
   const details = data.property_details || {};
@@ -869,6 +985,7 @@ export default function ListStep2Commercial({ data, update, onNext }) {
       {type === 'industrial_flex' && <IndustrialFlexDetails   details={details} setDetail={setDetail} />}
       {type === 'land'            && <LandDetails             details={details} setDetail={setDetail} />}
       {type === 'mixed_use'       && <MixedUseDetails         details={details} setDetail={setDetail} />}
+      {type === 'special_use'     && <SpecialUseDetails        details={details} setDetail={setDetail} />}
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
           Next <ArrowRight className="w-4 h-4" />

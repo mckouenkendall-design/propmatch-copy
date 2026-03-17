@@ -770,6 +770,119 @@ function MixedUseDetails({ details, setDetail }) {
   </>;
 }
 
+// ── Special Use Requirement ───────────────────────────────────────────────────
+const SPECIAL_INFRA_REQ = [
+  { key: 'commercial_kitchen', label: 'Commercial Kitchen' },
+  { key: 'stage_platform',     label: 'Stage / Platform' },
+  { key: 'gymnasium',          label: 'Gymnasium' },
+  { key: 'assembly_hall',      label: 'Large Assembly Hall' },
+  { key: 'sound_acoustic',     label: 'Sound / Acoustic Treatment' },
+  { key: 'commercial_laundry', label: 'Commercial Laundry' },
+  { key: 'elevator_access',    label: 'Elevator Access' },
+];
+
+function SpecialUseReqDetails({ details, setDetail }) {
+  const toggleBool = (key) => setDetail(key, !details[key]);
+  const buildingClasses = details.building_classes || [];
+  const toggleClass = (c) => setDetail('building_classes', buildingClasses.includes(c) ? buildingClasses.filter(x => x !== c) : [...buildingClasses, c]);
+
+  return (
+    <>
+      {/* Match Score Disclaimer */}
+      <div className="rounded-xl p-3 text-sm text-gray-600 border border-blue-100 bg-blue-50">
+        💡 <strong>Match Score:</strong> Fields left blank will be treated as "No Preference" and will not impact the Match Score.
+      </div>
+
+      {/* Intended Use */}
+      <SectionTitle>Intended Use & Profile</SectionTitle>
+      <Field label="Intended Use / Tenant Profile *">
+        <Textarea
+          value={details.intended_use || ''}
+          onChange={e => setDetail('intended_use', e.target.value)}
+          placeholder="e.g., Religious organization seeking a sanctuary with a commercial kitchen and parking for 200+ vehicles."
+          rows={3}
+        />
+      </Field>
+
+      {/* Size Requirements */}
+      <SectionTitle>Size Requirements</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min. Total SF"><Num field="min_total_sf" placeholder="e.g. 5000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max. Total SF"><Num field="max_total_sf" placeholder="e.g. 30000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min. Seating Capacity" hint="Sanctuaries, theaters, stadiums">
+          <Num field="min_seating_capacity" placeholder="e.g. 200" details={details} setDetail={setDetail} />
+        </Field>
+        <Field label="Max. Seating Capacity">
+          <Num field="max_seating_capacity" placeholder="e.g. 1000" details={details} setDetail={setDetail} />
+        </Field>
+        <Field label="Min. Bed / Room Count" hint="Hotels or Assisted Living">
+          <Num field="min_bed_room_count" placeholder="e.g. 20" details={details} setDetail={setDetail} />
+        </Field>
+        <Field label="Max. Bed / Room Count">
+          <Num field="max_bed_room_count" placeholder="e.g. 100" details={details} setDetail={setDetail} />
+        </Field>
+      </div>
+
+      {/* Required Specialty Features */}
+      <SectionTitle>Required Specialty Features</SectionTitle>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        {SPECIAL_INFRA_REQ.map(f => (
+          <Toggle key={f.key} label={f.key === 'commercial_kitchen' ? 'Commercial Kitchen Required' : f.label + ' Required'} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
+        ))}
+        <Toggle label="ADA Compliant Required" value={!!details.ada_required} onChange={() => toggleBool('ada_required')} />
+        <Toggle label="Other" value={!!details.other_feature_enabled} onChange={v => setDetail('other_feature_enabled', v)} />
+      </div>
+      {details.other_feature_enabled && (
+        <Field label="Describe Required Feature">
+          <Input
+            value={details.other_feature || ''}
+            onChange={e => setDetail('other_feature', e.target.value)}
+            placeholder="e.g., Baptismal pool, Indoor track, Recording studio"
+          />
+        </Field>
+      )}
+
+      {/* General Preferences */}
+      <SectionTitle>General Preferences</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min. Parking Spaces"><Num field="min_parking" placeholder="e.g. 50" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max. Parking Spaces"><Num field="max_parking" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
+        <Field label="Zoning Preference">
+          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g., Must allow for School use" />
+        </Field>
+      </div>
+
+      <Field label="Building Class (select all acceptable)">
+        <div className="flex gap-3">
+          {['A', 'B', 'C'].map(c => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => toggleClass(c)}
+              className="px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all"
+              style={{
+                borderColor: buildingClasses.includes(c) ? 'var(--tiffany-blue)' : '#e5e7eb',
+                backgroundColor: buildingClasses.includes(c) ? '#e6f7f5' : 'white',
+                color: buildingClasses.includes(c) ? '#3A8A82' : '#6b7280',
+              }}
+            >
+              Class {c}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <Field label="Tags">
+        <TagsInput
+          value={details.tags || []}
+          onChange={v => setDetail('tags', v)}
+          placeholder="e.g., soundproof, ground floor (press ENTER to add)"
+        />
+      </Field>
+    </>
+  );
+}
+
 export default function ReqStep2Commercial({ data, update, onNext }) {
   const details = data.property_details || {};
   const setDetail = (key, val) => update({ property_details: { ...details, [key]: val } });
@@ -785,6 +898,7 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
       {type === 'industrial_flex' && <IndustrialFlexReqDetails details={details} setDetail={setDetail} />}
       {type === 'land' && <LandDetails details={details} setDetail={setDetail} />}
       {type === 'mixed_use' && <MixedUseDetails details={details} setDetail={setDetail} />}
+      {type === 'special_use' && <SpecialUseReqDetails details={details} setDetail={setDetail} />}
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
           Next <ArrowRight className="w-4 h-4" />
