@@ -8,16 +8,12 @@ export default function LocationAreaInput({ areas = [], mapAreas = [], onChange 
   const [input, setInput] = useState('');
   const [showMap, setShowMap] = useState(false);
 
-  const addArea = () => {
-    const val = input.trim();
-    if (val && !areas.includes(val)) {
-      onChange({ areas: [...areas, val], mapAreas });
+  const addArea = (val) => {
+    const trimmed = val.trim();
+    if (trimmed && !areas.includes(trimmed)) {
+      onChange({ areas: [...areas, trimmed], mapAreas });
       setInput('');
     }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); addArea(); }
   };
 
   return (
@@ -56,12 +52,11 @@ export default function LocationAreaInput({ areas = [], mapAreas = [], onChange 
 
       {/* Input row */}
       <div className="flex gap-2">
-        <Input
+        <CityAutocomplete
           value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onChange={setInput}
+          onEnter={addArea}
           placeholder='e.g. "Ferndale" — press Enter to add'
-          className="flex-1"
         />
         <Button type="button" variant="outline" onClick={() => setShowMap(true)} className="flex-shrink-0 gap-1.5">
           <Map className="w-4 h-4" />
@@ -69,7 +64,7 @@ export default function LocationAreaInput({ areas = [], mapAreas = [], onChange 
         </Button>
       </div>
       <p className="text-xs text-gray-400">
-        Type a city or neighborhood and press Enter. Or use "Draw on Map" to draw a polygon or set a radius.
+        Type a city or neighborhood and press Enter to add it. Use "Draw on Map" for custom areas.
       </p>
 
       {showMap && (
