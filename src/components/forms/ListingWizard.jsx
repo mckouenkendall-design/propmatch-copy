@@ -82,8 +82,7 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
             {step === 1 && <ListStep1 data={formData} update={update} onNext={next} />}
             {step === 2 && category === 'commercial' && <ListStep2Commercial data={formData} update={update} onNext={next} />}
             {step === 2 && category === 'residential' && <ListStep2Residential data={formData} update={update} onNext={next} />}
-            {step === 3 && <ListStep3 data={formData} update={update} onNext={next} />}
-            {step === 4 && <ListStep4 data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />}
+            {step === 3 && <ListStep3ContactSubmit data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />}
           </div>
         </div>
       </div>
