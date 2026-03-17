@@ -100,11 +100,6 @@ function IndustrialFlexReqDetails({ details, setDetail }) {
 
   return (
     <>
-      {/* Match Score Disclaimer */}
-      <div className="rounded-xl p-3 text-sm text-gray-600 border border-blue-100 bg-blue-50">
-        💡 <strong>Match Score:</strong> Fields left blank will be treated as "No Preference" and will not impact the Match Score.
-      </div>
-
       {/* Intended Use */}
       <SectionTitle>Intended Use & Profile</SectionTitle>
       <Field label="Intended Use / Tenant Profile *">
@@ -619,11 +614,6 @@ function LandDetails({ details, setDetail }) {
 
   return (
     <>
-      {/* Match Score Disclaimer */}
-      <div className="rounded-xl p-3 text-sm text-gray-600 border border-blue-100 bg-blue-50">
-        💡 <strong>Match Score:</strong> Fields left blank will be treated as "No Preference" and will not impact the Match Score.
-      </div>
-
       {/* Intended Use */}
       <SectionTitle>Intended Use & Profile</SectionTitle>
       <Field label="Intended Use / Tenant Profile *">
@@ -788,11 +778,6 @@ function SpecialUseReqDetails({ details, setDetail }) {
 
   return (
     <>
-      {/* Match Score Disclaimer */}
-      <div className="rounded-xl p-3 text-sm text-gray-600 border border-blue-100 bg-blue-50">
-        💡 <strong>Match Score:</strong> Fields left blank will be treated as "No Preference" and will not impact the Match Score.
-      </div>
-
       {/* Intended Use */}
       <SectionTitle>Intended Use & Profile</SectionTitle>
       <Field label="Intended Use / Tenant Profile *">
