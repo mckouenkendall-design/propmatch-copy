@@ -198,6 +198,7 @@ function BuildingAmenitiesSection({ details, setDetail }) {
   const toggle = (val) =>
     setDetail('building_amenities', amenities.includes(val) ? amenities.filter(a => a !== val) : [...amenities, val]);
 
+  const hasOther = amenities.includes('other');
   const selected = amenities.length;
   return (
     <CollapsiblePanel
@@ -208,7 +209,17 @@ function BuildingAmenitiesSection({ details, setDetail }) {
         {BUILDING_AMENITIES.map(a => (
           <Chip key={a.value} label={a.label} selected={amenities.includes(a.value)} onClick={() => toggle(a.value)} />
         ))}
+        <Chip label="Other" selected={hasOther} onClick={() => toggle('other')} />
       </div>
+      {hasOther && (
+        <div className="mt-3">
+          <Input
+            value={details.building_amenities_other || ''}
+            onChange={e => setDetail('building_amenities_other', e.target.value)}
+            placeholder="Describe the amenity…"
+          />
+        </div>
+      )}
     </CollapsiblePanel>
   );
 }

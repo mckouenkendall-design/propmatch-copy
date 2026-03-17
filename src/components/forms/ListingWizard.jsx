@@ -8,9 +8,9 @@ import ListStep1 from './listing/Step1General';
 import ListStep2Commercial from './listing/Step2CommercialDetails';
 import ListStep2Residential from './listing/Step2ResidentialDetails';
 import ListStep3 from './listing/Step3Description';
-import ListStep4 from './listing/Step4Contact';
+import ListStep3ContactSubmit from './listing/Step3ContactSubmit';
 
-const STEPS = ['Property', 'Details', 'Description', 'Contact'];
+const STEPS = ['Property', 'Details', 'Post'];
 
 export default function ListingWizard({ category, onClose, onSuccess, initialData }) {
   const [step, setStep] = useState(1);
