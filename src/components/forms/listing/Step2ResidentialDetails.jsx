@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -33,6 +33,26 @@ function SectionTitle({ children }) {
   return (
     <div className="pt-2">
       <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-2">{children}</h3>
+    </div>
+  );
+}
+
+function CollapsiblePanel({ title, summary, children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-gray-200 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+      >
+        <div>
+          <p className="text-sm font-semibold text-gray-700">{title}</p>
+          {!open && <p className="text-xs text-gray-400 mt-0.5">{summary}</p>}
+        </div>
+        <span className="text-lg leading-none text-gray-400 ml-2">{open ? '−' : '+'}</span>
+      </button>
+      {open && <div className="px-4 py-3">{children}</div>}
     </div>
   );
 }
@@ -491,76 +511,159 @@ function ManufacturedDetails({ details, setDetail }) {
 }
 
 // ── Land (Residential) ────────────────────────────────────────────────────────
-const RES_LOCATION_SETTINGS = [
-  { key: 'subdivision', label: 'Platted Subdivision' },
-  { key: 'rural',       label: 'Rural / Country' },
-  { key: 'lakefront',   label: 'Lakefront / Waterfront' },
-  { key: 'wooded',      label: 'Wooded / Treed' },
-  { key: 'corner_lot',  label: 'Corner Lot' },
-  { key: 'cul_de_sac',  label: 'Cul-de-Sac' },
-];
-
 function ResidentialLandDetails({ details, setDetail }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   const utilities = details.utilities_at_site || [];
   const toggleUtility = (key) => setDetail('utilities_at_site', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
-  const locationSettings = details.location_settings || [];
-  const toggleLocationSetting = (key) => setDetail('location_settings', locationSettings.includes(key) ? locationSettings.filter(l => l !== key) : [...locationSettings, key]);
+  const topography = details.topography_tags || [];
+  const toggleTopo = (key) => setDetail('topography_tags', topography.includes(key) ? topography.filter(t => t !== key) : [...topography, key]);
+
+  const selectCls = "w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2";
 
   return (
     <>
-      <SectionTitle>Site Details</SectionTitle>
+      {/* Property Access & Road Quality — collapsible */}
+      <CollapsiblePanel
+        title="Property Access & Road Quality"
+        summary={[details.road_surface, details.access_type].filter(Boolean).join(' · ') || 'Tap to configure'}
+      >
+        <div className="grid grid-cols-2 gap-4 mb-3">
+          <Field label="Road Surface">
+            <select className={selectCls} value={details.road_surface || ''} onChange={e => setDetail('road_surface', e.target.value)}>
+              <option value="">Select surface</option>
+              {['Paved/Asphalt', 'Concrete', 'Gravel', 'Dirt/Unimproved'].map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+          <Field label="Access Type">
+            <select className={selectCls} value={details.access_type || ''} onChange={e => setDetail('access_type', e.target.value)}>
+              <option value="">Select access type</option>
+              {['Direct Frontage', 'Easement/Deeded', 'Shared Drive', 'Private Road'].map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div className="divide-y divide-gray-50">
+          <Toggle
+            label={`Road Maintenance: ${details.road_maintenance === 'private' ? 'Privately Maintained' : 'Publicly Maintained'}`}
+            value={details.road_maintenance === 'private'}
+            onChange={v => setDetail('road_maintenance', v ? 'private' : 'public')}
+          />
+        </div>
+      </CollapsiblePanel>
+
+      {/* Location Setting & Environment — collapsible */}
+      <CollapsiblePanel
+        title="Location Setting & Environment"
+        summary={[details.location_setting, details.neighborhood_type].filter(Boolean).join(' · ') || 'Tap to configure'}
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Location Setting">
+            <select className={selectCls} value={details.location_setting || ''} onChange={e => setDetail('location_setting', e.target.value)}>
+              <option value="">Select setting</option>
+              {['Platted Subdivision', 'Cul-de-Sac', 'Corner Lot', 'Lakefront / Waterfront', 'Rural / Country', 'Wooded / Private'].map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+          <Field label="Neighborhood Type">
+            <select className={selectCls} value={details.neighborhood_type || ''} onChange={e => setDetail('neighborhood_type', e.target.value)}>
+              <option value="">Select type</option>
+              {['Established Neighborhood', 'New Development', 'Rural/Acreage', 'Waterfront Community', 'Gated Community'].map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+        </div>
+      </CollapsiblePanel>
+
+      {/* Primary Land Dimensions */}
+      <SectionTitle>Primary Land Dimensions</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Acreage"><Num field="acres" placeholder="e.g. 0.5" step="0.01" details={details} setDetail={setDetail} /></Field>
-        <Field label="Lot Size (sqft)"><Num field="lot_sqft" placeholder="e.g. 21780" details={details} setDetail={setDetail} /></Field>
+        <Field label="Total Acreage"><Num field="acres" placeholder="e.g. 0.5" step="0.01" details={details} setDetail={setDetail} /></Field>
+        <Field label="Lot Dimensions (ft × ft)">
+          <Input value={details.lot_dimensions || ''} onChange={e => setDetail('lot_dimensions', e.target.value)} placeholder="e.g. 80 x 120" />
+        </Field>
+        <Field label="Gross Square Feet"><Num field="gross_sqft" placeholder="e.g. 9600" details={details} setDetail={setDetail} /></Field>
         <Field label="Road Frontage (ft)"><Num field="road_frontage" placeholder="e.g. 80" details={details} setDetail={setDetail} /></Field>
-        <Field label="Buildable Area (sqft)"><Num field="buildable_area" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <div className="rounded-xl border border-gray-100 px-4 py-1">
+        <Toggle label="Subdividable" value={!!details.subdividable} onChange={v => setDetail('subdividable', v)} />
       </div>
 
-      <SectionTitle>Zoning & Development</SectionTitle>
-      <Field label="Zoning Code">
-        <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. R-1, R-2" />
-      </Field>
+      {/* Zoning & Development Status */}
+      <SectionTitle>Zoning & Development Status</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Current Zoning">
+          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. R-1, R-2" />
+        </Field>
+        <Field label="Entitlements">
+          <select className={selectCls} value={details.entitlements || ''} onChange={e => setDetail('entitlements', e.target.value)}>
+            <option value="">Select status</option>
+            {['Raw Land', 'Perc Tested', 'Site Plan Approved', 'Shovel Ready'].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </Field>
+        <Field label="Buildable Area (sqft)"><Num field="buildable_area" placeholder="e.g. 7500" details={details} setDetail={setDetail} /></Field>
+      </div>
       <Field label="Permitted Uses">
-        <TagsInput value={details.permitted_uses || []} onChange={v => setDetail('permitted_uses', v)} placeholder="e.g. Single Family, ADU (press Enter)" />
+        <TagsInput value={details.permitted_uses || []} onChange={v => setDetail('permitted_uses', v)} placeholder="e.g. Single Family, ADU, Barn (press Enter)" />
       </Field>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-        <Toggle label="Survey Available" value={!!details.survey_available} onChange={() => toggleBool('survey_available')} />
-        <Toggle label="Perc Test Completed" value={!!details.perc_test_done} onChange={() => toggleBool('perc_test_done')} />
-        <Toggle label="Wetlands Present" value={!!details.wetlands} onChange={() => toggleBool('wetlands')} />
-        <Toggle label="Subdivision Potential" value={!!details.subdivision_potential} onChange={() => toggleBool('subdivision_potential')} />
-      </div>
 
-      <SectionTitle>Utilities at Lot Line</SectionTitle>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-        {[
-          { key: 'municipal_water', label: 'Municipal Water' },
-          { key: 'sanitary_sewer',  label: 'Sanitary Sewer' },
-          { key: 'electric',        label: 'Electric' },
-          { key: 'natural_gas',     label: 'Natural Gas' },
-          { key: 'fiber_internet',  label: 'Fiber / Internet' },
-        ].map(u => (
-          <Toggle key={u.key} label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
-        ))}
-      </div>
-
-      <SectionTitle>Location & Character</SectionTitle>
-      <Field label="Location Setting (select all that apply)">
+      {/* Utilities & Infrastructure */}
+      <SectionTitle>Utilities & Infrastructure</SectionTitle>
+      <Field label="Utilities at Lot Line">
         <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-          {RES_LOCATION_SETTINGS.map(s => (
-            <Toggle key={s.key} label={s.label} value={locationSettings.includes(s.key)} onChange={() => toggleLocationSetting(s.key)} />
+          {[
+            { key: 'municipal_water', label: 'Municipal Water' },
+            { key: 'sanitary_sewer',  label: 'Sanitary Sewer' },
+            { key: 'electric',        label: 'Electric' },
+            { key: 'natural_gas',     label: 'Natural Gas' },
+            { key: 'fiber_internet',  label: 'Fiber / Internet' },
+          ].map(u => (
+            <Toggle key={u.key} label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
           ))}
         </div>
       </Field>
-      <ToggleGroup label="Topography" value={details.topography || ''} onChange={v => setDetail('topography', v)}
-        options={[{ value: 'flat', label: 'Flat' }, { value: 'sloped', label: 'Sloped' }, { value: 'rolling', label: 'Rolling' }, { value: 'wooded', label: 'Wooded' }]} />
-      <ToggleGroup label="Road Access" value={details.road_access || ''} onChange={v => setDetail('road_access', v)}
-        options={[{ value: 'paved', label: 'Paved' }, { value: 'gravel', label: 'Gravel' }, { value: 'private', label: 'Private Road' }, { value: 'none', label: 'No Road' }]} />
+      <Field label="Perc Test Status">
+        <select className={selectCls} value={details.perc_test || ''} onChange={e => setDetail('perc_test', e.target.value)}>
+          <option value="">Select status</option>
+          {['Completed', 'Needs Testing', 'Not Required (Municipal Sewer)'].map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </Field>
 
-      <SectionTitle>Additional Details</SectionTitle>
-      <Field label="Environmental Notes">
-        <Textarea value={details.environmental_notes || ''} onChange={e => setDetail('environmental_notes', e.target.value)}
-          placeholder="e.g., Phase 1 available, no known environmental issues" rows={2} />
+      {/* Physical Site Characteristics */}
+      <SectionTitle>Physical Site Characteristics</SectionTitle>
+      <Field label="Topography (select all that apply)">
+        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+          {[
+            { key: 'level',    label: 'Level / Flat' },
+            { key: 'wooded',   label: 'Wooded' },
+            { key: 'cleared',  label: 'Cleared' },
+            { key: 'wetlands', label: 'Wetlands / Marsh' },
+            { key: 'sloped',   label: 'Sloped' },
+            { key: 'rolling',  label: 'Rolling' },
+          ].map(t => (
+            <Toggle key={t.key} label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />
+          ))}
+        </div>
+      </Field>
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        <Toggle label="Survey Available" value={!!details.survey_available} onChange={v => setDetail('survey_available', v)} />
+        <Toggle label="Wetlands Delineation Completed" value={!!details.wetlands_delineated} onChange={v => setDetail('wetlands_delineated', v)} />
+        <Toggle label="Subdivision Potential" value={!!details.subdivision_potential} onChange={v => setDetail('subdivision_potential', v)} />
+      </div>
+
+      {/* Property Details & Media */}
+      <SectionTitle>Property Details & Media</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Annual Property Tax ($)"><Num field="annual_tax" placeholder="e.g. 2400" details={details} setDetail={setDetail} /></Field>
+        <Field label="Parcel Number">
+          <Input value={details.parcel_number || ''} onChange={e => setDetail('parcel_number', e.target.value)} placeholder="e.g. 12-34-567-890" />
+        </Field>
+        <Field label="HOA ($/yr)" hint="If in a subdivision"><Num field="hoa_annual" placeholder="e.g. 800" details={details} setDetail={setDetail} /></Field>
+        <Field label="School District">
+          <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" />
+        </Field>
+      </div>
+      <Field label="Description">
+        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the lot, its highlights, and development potential…" rows={4} />
+      </Field>
+      <Field label="Tags" hint="Press Enter to add each tag">
+        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
       </Field>
     </>
   );

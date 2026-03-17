@@ -414,23 +414,52 @@ function ManufacturedReq({ details, setDetail }) {
 }
 
 // ── Land (Residential) ────────────────────────────────────────────────────────
-const RES_LOCATION_SETTINGS = [
-  { key: 'subdivision', label: 'Platted Subdivision' },
-  { key: 'rural',       label: 'Rural / Country' },
-  { key: 'lakefront',   label: 'Lakefront / Waterfront' },
-  { key: 'wooded',      label: 'Wooded / Treed' },
-  { key: 'corner_lot',  label: 'Corner Lot' },
-  { key: 'cul_de_sac',  label: 'Cul-de-Sac' },
-];
-
 function ResidentialLandReq({ details, setDetail }) {
   const utilities = details.utilities_required || [];
   const toggleUtility = (key) => setDetail('utilities_required', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
-  const locationSettings = details.location_settings || [];
-  const toggleLocationSetting = (key) => setDetail('location_settings', locationSettings.includes(key) ? locationSettings.filter(l => l !== key) : [...locationSettings, key]);
+  const topography = details.topography_tags || [];
+  const toggleTopo = (key) => setDetail('topography_tags', topography.includes(key) ? topography.filter(t => t !== key) : [...topography, key]);
+
+  const selectCls = "w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2";
 
   return (
     <>
+      {/* Property Access & Road Quality — collapsible */}
+      <CollapsiblePanel
+        title="Property Access & Road Quality"
+        summary={details.road_surface_pref || 'Tap to configure'}
+      >
+        <Field label="Road Surface Preference">
+          <select className={selectCls} value={details.road_surface_pref || ''} onChange={e => setDetail('road_surface_pref', e.target.value)}>
+            <option value="">No Preference</option>
+            {['Paved/Asphalt Required', 'Gravel OK', 'Private Road OK', 'Any'].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </Field>
+        <div className="divide-y divide-gray-50 mt-3">
+          <Toggle label="Direct Frontage Required (no easement)" value={!!details.direct_frontage_required} onChange={v => setDetail('direct_frontage_required', v)} />
+        </div>
+      </CollapsiblePanel>
+
+      {/* Location Setting & Environment — collapsible */}
+      <CollapsiblePanel
+        title="Location Setting & Environment"
+        summary={details.location_setting_pref || 'Tap to configure'}
+      >
+        <Field label="Preferred Location Setting">
+          <select className={selectCls} value={details.location_setting_pref || ''} onChange={e => setDetail('location_setting_pref', e.target.value)}>
+            <option value="">No Preference</option>
+            {['Platted Subdivision', 'Cul-de-Sac', 'Corner Lot', 'Lakefront / Waterfront', 'Rural / Country', 'Wooded / Private', 'Any'].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </Field>
+        <Field label="Neighborhood Type Preference" hint="Optional">
+          <select className={selectCls} value={details.neighborhood_type_pref || ''} onChange={e => setDetail('neighborhood_type_pref', e.target.value)}>
+            <option value="">No Preference</option>
+            {['Established Neighborhood', 'New Development', 'Rural/Acreage', 'Waterfront Community', 'Gated Community'].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </Field>
+      </CollapsiblePanel>
+
+      {/* Size Requirements */}
       <SectionTitle>Size Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Min Acreage"><Num field="min_acres" placeholder="e.g. 0.25" step="0.01" details={details} setDetail={setDetail} /></Field>
@@ -439,7 +468,8 @@ function ResidentialLandReq({ details, setDetail }) {
         <Field label="Min Buildable Area (sqft)"><Num field="min_buildable_area" placeholder="e.g. 10000" details={details} setDetail={setDetail} /></Field>
       </div>
 
-      <SectionTitle>Development Goals</SectionTitle>
+      {/* Zoning & Development Goals */}
+      <SectionTitle>Zoning & Development Goals</SectionTitle>
       <Field label="Intended Use">
         <Textarea value={details.intended_use || ''} onChange={e => setDetail('intended_use', e.target.value)}
           placeholder="e.g., Build a custom single family home with a large backyard" rows={2} />
@@ -447,37 +477,79 @@ function ResidentialLandReq({ details, setDetail }) {
       <Field label="Desired Zoning">
         <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. R-1, must allow ADU" />
       </Field>
+      <Field label="Entitlements Preferred">
+        <select className={selectCls} value={details.entitlements_pref || ''} onChange={e => setDetail('entitlements_pref', e.target.value)}>
+          <option value="">No Preference</option>
+          {['Raw Land OK', 'Perc Tested Required', 'Site Plan Approved', 'Shovel Ready', 'Any'].map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </Field>
 
-      <SectionTitle>Required Utilities at Lot Line</SectionTitle>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-        {[
-          { key: 'municipal_water', label: 'Municipal Water' },
-          { key: 'sanitary_sewer',  label: 'Sanitary Sewer' },
-          { key: 'electric',        label: 'Electric' },
-          { key: 'natural_gas',     label: 'Natural Gas' },
-          { key: 'fiber_internet',  label: 'Fiber / Internet' },
-        ].map(u => (
-          <Toggle key={u.key} label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
-        ))}
-        <Toggle label="Perc Test Required" value={!!details.perc_test_required} onChange={() => setDetail('perc_test_required', !details.perc_test_required)} />
-      </div>
-
-      <SectionTitle>Location Preferences</SectionTitle>
-      <Field label="Location Setting (select all acceptable)">
+      {/* Utilities & Infrastructure */}
+      <SectionTitle>Utilities & Infrastructure</SectionTitle>
+      <Field label="Required Utilities at Lot Line">
         <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-          {RES_LOCATION_SETTINGS.map(s => (
-            <Toggle key={s.key} label={s.label} value={locationSettings.includes(s.key)} onChange={() => toggleLocationSetting(s.key)} />
+          {[
+            { key: 'municipal_water', label: 'Municipal Water' },
+            { key: 'sanitary_sewer',  label: 'Sanitary Sewer' },
+            { key: 'electric',        label: 'Electric' },
+            { key: 'natural_gas',     label: 'Natural Gas' },
+            { key: 'fiber_internet',  label: 'Fiber / Internet' },
+          ].map(u => (
+            <Toggle key={u.key} label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
+          ))}
+          <Toggle label="Perc Test Required" value={!!details.perc_test_required} onChange={() => setDetail('perc_test_required', !details.perc_test_required)} />
+        </div>
+      </Field>
+
+      {/* Physical Site Characteristics */}
+      <SectionTitle>Physical Site Characteristics</SectionTitle>
+      <Field label="Topography Preference (select all acceptable)">
+        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+          {[
+            { key: 'level',   label: 'Level / Flat' },
+            { key: 'wooded',  label: 'Wooded' },
+            { key: 'cleared', label: 'Cleared' },
+            { key: 'sloped',  label: 'Sloped OK' },
+            { key: 'rolling', label: 'Rolling OK' },
+          ].map(t => (
+            <Toggle key={t.key} label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />
           ))}
         </div>
       </Field>
-      <ToggleGroup label="Topography Preference" value={details.topography || ''} onChange={v => setDetail('topography', v)}
-        options={[{ value: 'flat', label: 'Flat' }, { value: 'sloped', label: 'Sloped OK' }, { value: 'any', label: 'Any' }]} />
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        <Toggle label="No Wetlands" value={!!details.no_wetlands_required} onChange={v => setDetail('no_wetlands_required', v)} />
+        <Toggle label="Survey Available Required" value={!!details.survey_required} onChange={v => setDetail('survey_required', v)} />
+      </div>
 
+      {/* Additional Preferences */}
       <SectionTitle>Additional Preferences</SectionTitle>
+      <Field label="School District Preference">
+        <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" />
+      </Field>
       <Field label="Other Requirements">
-        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} placeholder="e.g. no wetlands, survey available (press Enter)" />
+        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} placeholder="e.g. HOA allowed, subdivision lot (press Enter)" />
       </Field>
     </>
+  );
+}
+
+function CollapsiblePanel({ title, summary, children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-gray-200 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+      >
+        <div>
+          <p className="text-sm font-semibold text-gray-700">{title}</p>
+          {!open && <p className="text-xs text-gray-400 mt-0.5">{summary}</p>}
+        </div>
+        <span className="text-lg leading-none text-gray-400 ml-2">{open ? '−' : '+'}</span>
+      </button>
+      {open && <div className="px-4 py-3">{children}</div>}
+    </div>
   );
 }
 
