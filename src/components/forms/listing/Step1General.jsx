@@ -16,13 +16,14 @@ const COMMERCIAL_TYPES = [
 ];
 
 const RESIDENTIAL_TYPES = [
-  { value: 'single_family',  label: 'Single Family',    icon: Home },
-  { value: 'condo',          label: 'Condo',            icon: Building },
-  { value: 'apartment',      label: 'Apartment',        icon: Hotel },
-  { value: 'multi_family',   label: 'Multi-Family',     icon: Users },
-  { value: 'townhouse',      label: 'Townhouse',        icon: Building2 },
-  { value: 'manufactured',   label: 'Manufactured / Mobile', icon: Truck },
-  { value: 'land_residential', label: 'Land (Residential)', icon: TreePine },
+  { value: 'single_family',   label: 'Single Family',        icon: Home },
+  { value: 'condo',           label: 'Condo',                icon: Building },
+  { value: 'apartment',       label: 'Apartment',            icon: Hotel },
+  { value: 'multi_family',    label: 'Multi-Family (2–4)',   icon: Users },
+  { value: 'multi_family_5',  label: 'Multi-Family (5+)',    icon: Users },
+  { value: 'townhouse',       label: 'Townhouse',            icon: Building2 },
+  { value: 'manufactured',    label: 'Manufactured / Mobile', icon: Truck },
+  { value: 'land_residential', label: 'Land (Residential)',  icon: TreePine },
 ];
 
 const COMMERCIAL_TX = [
