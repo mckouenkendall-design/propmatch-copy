@@ -10,6 +10,7 @@ export default function TopNav() {
     { name: 'Home', path: 'Dashboard' },
     { name: 'Dealboard', path: 'Dealboard' },
     { name: 'My Posts', path: 'MyPosts' },
+    { name: 'My Templates', path: 'MyTemplates' },
     { name: 'Messages', path: 'Messages' }
   ];
 

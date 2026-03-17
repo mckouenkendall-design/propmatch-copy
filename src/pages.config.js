@@ -54,6 +54,7 @@ import Matches from './pages/Matches';
 import Messages from './pages/Messages';
 import MyPosts from './pages/MyPosts';
 import Requirements from './pages/Requirements';
+import MyTemplates from './pages/MyTemplates';
 import __Layout from './Layout.jsx';
 
 
@@ -65,6 +66,7 @@ export const PAGES = {
     "Messages": Messages,
     "MyPosts": MyPosts,
     "Requirements": Requirements,
+    "MyTemplates": MyTemplates,
 }
 
 export const pagesConfig = {
