@@ -3,11 +3,14 @@ import PostTypeModal from './PostTypeModal';
 import PropertyCategoryModal from './PropertyCategoryModal';
 import RequirementWizard from '../forms/RequirementWizard';
 import ListingWizard from '../forms/ListingWizard';
+import LoadTemplateModal from '../templates/LoadTemplateModal';
 
 export default function CreatePostModal({ onClose, onSuccess }) {
   const [step, setStep] = useState('type');
   const [postType, setPostType] = useState(null);
   const [category, setCategory] = useState(null);
+  const [initialData, setInitialData] = useState(null);
+  const [showLoadTemplate, setShowLoadTemplate] = useState(false);
 
   const handleSelectType = (type) => {
     setPostType(type);
@@ -21,7 +24,7 @@ export default function CreatePostModal({ onClose, onSuccess }) {
 
   const handleWizardClose = (reason) => {
     if (reason === 'back') {
-      if (step === 'form') setStep('category');
+      if (step === 'form') { setStep('category'); setInitialData(null); }
       else if (step === 'category') { setStep('type'); setPostType(null); }
       else onClose();
     } else {
@@ -29,8 +32,20 @@ export default function CreatePostModal({ onClose, onSuccess }) {
     }
   };
 
+  const handleLoadTemplate = ({ data, templateType, category: cat }) => {
+    setInitialData(data);
+    setPostType(templateType);
+    setCategory(cat || data.property_category);
+    setShowLoadTemplate(false);
+    setStep('form');
+  };
+
+  if (showLoadTemplate) {
+    return <LoadTemplateModal onClose={() => setShowLoadTemplate(false)} onLoad={handleLoadTemplate} />;
+  }
+
   if (step === 'type') {
-    return <PostTypeModal onClose={onClose} onSelectType={handleSelectType} />;
+    return <PostTypeModal onClose={onClose} onSelectType={handleSelectType} onLoadTemplate={() => setShowLoadTemplate(true)} />;
   }
 
   if (step === 'category') {
@@ -45,11 +60,11 @@ export default function CreatePostModal({ onClose, onSuccess }) {
   }
 
   if (step === 'form' && postType === 'requirement') {
-    return <RequirementWizard category={category} onClose={handleWizardClose} onSuccess={onSuccess} />;
+    return <RequirementWizard category={category} onClose={handleWizardClose} onSuccess={onSuccess} initialData={initialData} />;
   }
 
   if (step === 'form' && postType === 'listing') {
-    return <ListingWizard category={category} onClose={handleWizardClose} onSuccess={onSuccess} />;
+    return <ListingWizard category={category} onClose={handleWizardClose} onSuccess={onSuccess} initialData={initialData} />;
   }
 
   return null;

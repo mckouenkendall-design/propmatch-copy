@@ -12,9 +12,9 @@ import ListStep4 from './listing/Step4Contact';
 
 const STEPS = ['Property', 'Details', 'Description', 'Contact'];
 
-export default function ListingWizard({ category, onClose, onSuccess }) {
+export default function ListingWizard({ category, onClose, onSuccess, initialData }) {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(initialData || {
     property_category: category,
     title: '',
     property_type: '',

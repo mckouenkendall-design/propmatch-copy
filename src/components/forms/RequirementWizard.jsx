@@ -12,9 +12,9 @@ import ReqStep4 from './requirement/Step4Review';
 
 const STEPS = ['General', 'Details', 'Notes', 'Review'];
 
-export default function RequirementWizard({ category, onClose, onSuccess }) {
+export default function RequirementWizard({ category, onClose, onSuccess, initialData }) {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(initialData || {
     property_category: category,
     title: '',
     client_name: '',
