@@ -13,6 +13,7 @@ const COMMERCIAL_TYPES = [
   { value: 'industrial_flex',    label: 'Industrial / Warehouse / Flex', icon: Package },
   { value: 'land',               label: 'Land',                     icon: Map },
   { value: 'mixed_use',          label: 'Mixed Use',                icon: LayoutGrid },
+  { value: 'special_use',        label: 'Special Use',              icon: Star },
 ];
 
 const RESIDENTIAL_TYPES = [
