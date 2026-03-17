@@ -843,17 +843,6 @@ function LandDetails({ details, setDetail }) {
   );
 }
 
-function MixedUseDetails({ details, setDetail }) {
-  return <>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Residential Units"><Num field="units" placeholder="e.g. 12" details={details} setDetail={setDetail} /></Field>
-      <Field label="Commercial SF"><Num field="commercial_sf" placeholder="e.g. 5000" details={details} setDetail={setDetail} /></Field>
-    </div>
-    <ToggleGroup label="Ground Floor Retail?" value={details.ground_retail || ''} onChange={v => setDetail('ground_retail', v)}
-      options={[{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }]} />
-  </>;
-}
-
 // ── Special Use Details ───────────────────────────────────────────────────────
 const SPECIAL_USE_TYPES = [
   'Religious/Church',
@@ -984,7 +973,6 @@ export default function ListStep2Commercial({ data, update, onNext }) {
       {type === 'retail'           && <RetailDetails          details={details} setDetail={setDetail} />}
       {type === 'industrial_flex' && <IndustrialFlexDetails   details={details} setDetail={setDetail} />}
       {type === 'land'            && <LandDetails             details={details} setDetail={setDetail} />}
-      {type === 'mixed_use'       && <MixedUseDetails         details={details} setDetail={setDetail} />}
       {type === 'special_use'     && <SpecialUseDetails        details={details} setDetail={setDetail} />}
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
