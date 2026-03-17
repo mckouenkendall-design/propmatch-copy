@@ -13,6 +13,8 @@ const AMENITIES = [
 ];
 
 export default function ReqStep3({ data, update, onNext }) {
+  const [showSave, setShowSave] = useState(false);
+
   const toggle = (a) => {
     const cur = data.required_amenities || [];
     update({ required_amenities: cur.includes(a) ? cur.filter(x => x !== a) : [...cur, a] });
@@ -48,11 +50,18 @@ export default function ReqStep3({ data, update, onNext }) {
           placeholder="Any deal-breakers, special requirements, or context about the client..." rows={4} />
       </div>
 
-      <div className="flex justify-end pt-2">
+      <div className="flex items-center justify-between pt-2">
+        <Button variant="outline" onClick={() => setShowSave(true)} className="gap-2 text-gray-600">
+          <Bookmark className="w-4 h-4" /> Save as Template
+        </Button>
         <Button onClick={onNext} disabled={!data.title} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
           Review <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
+
+      {showSave && (
+        <SaveTemplateModal formData={data} templateType="requirement" onClose={() => setShowSave(false)} />
+      )}
     </div>
   );
 }

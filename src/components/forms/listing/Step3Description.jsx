@@ -13,6 +13,8 @@ const AMENITIES = [
 ];
 
 export default function ListStep3({ data, update, onNext }) {
+  const [showSave, setShowSave] = useState(false);
+
   const toggle = (a) => {
     const cur = data.amenities || [];
     update({ amenities: cur.includes(a) ? cur.filter(x => x !== a) : [...cur, a] });
@@ -47,11 +49,18 @@ export default function ListStep3({ data, update, onNext }) {
         </div>
       </div>
 
-      <div className="flex justify-end pt-2">
+      <div className="flex items-center justify-between pt-2">
+        <Button variant="outline" onClick={() => setShowSave(true)} className="gap-2 text-gray-600">
+          <Bookmark className="w-4 h-4" /> Save as Template
+        </Button>
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
           Next <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
+
+      {showSave && (
+        <SaveTemplateModal formData={data} templateType="listing" onClose={() => setShowSave(false)} />
+      )}
     </div>
   );
 }
