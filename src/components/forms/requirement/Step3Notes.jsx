@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Bookmark } from 'lucide-react';
+import SaveTemplateModal from '@/components/templates/SaveTemplateModal';
 
 const AMENITIES = [
   'Elevator', 'ADA Compliant', 'High Speed Internet', 'Generator', 'Storage',
