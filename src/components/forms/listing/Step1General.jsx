@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
+import AddressAutocomplete from '../wizard/AddressAutocomplete';
 import { ArrowRight, Building2, ShoppingBag, Package, Map, Home, Building, Users, Hotel, ChevronRight, Stethoscope, Star, Truck, TreePine } from 'lucide-react';
 
 // ── Property type options ────────────────────────────────────────────────────
@@ -152,6 +153,12 @@ export default function ListStep1({ data, update, onNext }) {
         </div>
       </div>
 
+      {/* ── Size (SF) ── */}
+      <div className="space-y-1.5">
+        <Label>Size (SF)</Label>
+        <Input type="number" value={data.size_sqft || ''} onChange={e => update({ size_sqft: e.target.value })} placeholder="5,000" />
+      </div>
+
       {/* ── Transaction Type ── */}
       <ToggleGroup
         label="Transaction Type *"
@@ -288,11 +295,15 @@ export default function ListStep1({ data, update, onNext }) {
         </div>
       )}
 
-      {/* ── Address / Location / Size ── */}
+      {/* ── Address / Location ── */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5 col-span-2">
           <Label>Address</Label>
-          <Input value={data.address || ''} onChange={e => update({ address: e.target.value })} placeholder="123 Main Street" />
+          <AddressAutocomplete
+            value={data.address || ''}
+            onChange={(patch) => update(patch)}
+            placeholder="123 Main Street"
+          />
         </div>
         <div className="space-y-1.5">
           <Label>City <span className="text-red-500">*</span></Label>
@@ -305,10 +316,6 @@ export default function ListStep1({ data, update, onNext }) {
         <div className="space-y-1.5">
           <Label>Zip Code</Label>
           <Input value={data.zip_code || ''} onChange={e => update({ zip_code: e.target.value })} placeholder="48220" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Size (SF)</Label>
-          <Input type="number" value={data.size_sqft || ''} onChange={e => update({ size_sqft: e.target.value })} placeholder="5,000" />
         </div>
       </div>
 

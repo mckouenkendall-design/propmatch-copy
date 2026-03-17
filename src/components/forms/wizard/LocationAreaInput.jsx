@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, MapPin, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import CityAutocomplete from './CityAutocomplete';
 import MapAreaSelector from './MapAreaSelector';
 
 export default function LocationAreaInput({ areas = [], mapAreas = [], onChange }) {
