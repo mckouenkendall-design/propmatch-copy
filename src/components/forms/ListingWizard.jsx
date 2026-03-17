@@ -33,6 +33,12 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
     contact_agent_name: '',
     contact_agent_email: '',
     contact_agent_phone: '',
+    company_name: '',
+    brokerage_id: '',
+    visibility: 'public',
+    visibility_groups: '',
+    visibility_recipient_email: '',
+    allow_direct_contact: true,
     status: 'active'
   });
 
@@ -52,7 +58,7 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
   });
 
   const update = (patch) => setFormData(prev => ({ ...prev, ...patch }));
-  const next = () => setStep(s => Math.min(s + 1, 4));
+  const next = () => setStep(s => Math.min(s + 1, 3));
   const back = () => step === 1 ? onClose('back') : setStep(s => s - 1);
 
   return (
