@@ -66,8 +66,8 @@ function Toggle({ label, value, onChange }) {
   );
 }
 
-function CollapsiblePanel({ title, summary, children }) {
-  const [open, setOpen] = React.useState(false);
+function CollapsiblePanel({ title, summary, children, defaultOpen }) {
+  const [open, setOpen] = React.useState(defaultOpen || false);
   return (
     <div className="rounded-xl border border-gray-200 overflow-hidden">
       <button
@@ -138,8 +138,83 @@ function FileUpload({ label, accept, field, details, setDetail, hint }) {
   );
 }
 
+function TagsInput({ value = [], onChange }) {
+  const [input, setInput] = React.useState('');
+  const handleKey = (e) => {
+    if (e.key === 'Enter' && input.trim()) {
+      e.preventDefault();
+      if (!value.includes(input.trim())) onChange([...value, input.trim()]);
+      setInput('');
+    }
+  };
+  const remove = (tag) => onChange(value.filter(t => t !== tag));
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {value.map(tag => (
+          <span key={tag} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
+            {tag}
+            <button type="button" onClick={() => remove(tag)}><X className="w-3 h-3" /></button>
+          </span>
+        ))}
+      </div>
+      <Input
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={handleKey}
+        placeholder="e.g., move-in ready, high visibility (press Enter to add)"
+      />
+    </div>
+  );
+}
+
+// ── Building Amenities (Office & Medical Office) ──────────────────────────────
+const BUILDING_AMENITIES = [
+  { value: 'on_site_management',   label: 'On-Site Management' },
+  { value: 'security_247',         label: '24/7 Security / Controlled Access' },
+  { value: 'concierge',            label: 'Concierge Services' },
+  { value: 'janitorial_common',    label: 'Janitorial (Common Areas)' },
+  { value: 'mail_room',            label: 'Mail Room / Package Handling' },
+  { value: 'shared_loading_dock',  label: 'Shared Loading Dock' },
+  { value: 'lobby_reception',      label: 'Lobby / Reception Area' },
+  { value: 'shared_conference',    label: 'Shared Conference Rooms' },
+  { value: 'tenant_lounge',        label: 'Tenant Lounge / Break Room' },
+  { value: 'fitness_center',       label: 'Fitness Center / Gym' },
+  { value: 'outdoor_space',        label: 'Outdoor Space / Patio / Terrace' },
+  { value: 'fiber_optic',          label: 'Fiber Optic Connectivity' },
+  { value: 'multi_isp',            label: 'Multiple Internet Providers' },
+  { value: 'backup_generator',     label: 'Backup Generator' },
+  { value: 'ada_building',         label: 'ADA Compliant Building' },
+  { value: 'elevators',            label: 'Elevators' },
+  { value: 'covered_parking',      label: 'Covered / Garage Parking' },
+  { value: 'ev_charging',          label: 'EV Charging Stations' },
+  { value: 'bicycle_storage',      label: 'Bicycle Storage' },
+  { value: 'energy_efficient',     label: 'Energy Efficient Building' },
+  { value: 'leed_certified',       label: 'LEED Certified / Green Building' },
+];
+
+function BuildingAmenitiesSection({ details, setDetail }) {
+  const amenities = details.building_amenities || [];
+  const toggle = (val) =>
+    setDetail('building_amenities', amenities.includes(val) ? amenities.filter(a => a !== val) : [...amenities, val]);
+
+  const selected = amenities.length;
+  return (
+    <CollapsiblePanel
+      title="Building Amenities"
+      summary={selected > 0 ? `${selected} selected` : 'Shared building-level features & services'}
+    >
+      <div className="flex flex-wrap gap-2 pt-1">
+        {BUILDING_AMENITIES.map(a => (
+          <Chip key={a.value} label={a.label} selected={amenities.includes(a.value)} onClick={() => toggle(a.value)} />
+        ))}
+      </div>
+    </CollapsiblePanel>
+  );
+}
+
 // ── Office Details ────────────────────────────────────────────────────────────
-const AMENITIES = [
+const SPACE_AMENITIES = [
   { value: 'reception',     label: 'Reception Area' },
   { value: 'kitchenette',   label: 'Kitchenette' },
   { value: 'server_room',   label: 'Server Room' },
@@ -211,11 +286,11 @@ function OfficeDetails({ details, setDetail }) {
         </div>
       </Field>
 
-      {/* Features & Amenities */}
-      <SectionTitle>Features & Amenities</SectionTitle>
+      {/* In-Suite / Space Features */}
+      <SectionTitle>In-Suite / Space Features</SectionTitle>
       <Field label="Select all that apply">
         <div className="flex flex-wrap gap-2">
-          {AMENITIES.map(a => (
+          {SPACE_AMENITIES.map(a => (
             <Chip
               key={a.value}
               label={a.label}
@@ -226,13 +301,17 @@ function OfficeDetails({ details, setDetail }) {
         </div>
       </Field>
 
-      <Field label="IT Infrastructure">
+      <Field label="In-Suite IT Infrastructure">
         <Input
           value={details.it_infrastructure || ''}
           onChange={e => setDetail('it_infrastructure', e.target.value)}
-          placeholder="e.g., Cat6 wiring, fiber ready"
+          placeholder="e.g., Cat6 wiring, dedicated fiber drop"
         />
       </Field>
+
+      {/* Building Amenities */}
+      <SectionTitle>Building Amenities</SectionTitle>
+      <BuildingAmenitiesSection details={details} setDetail={setDetail} />
 
       {/* Property Specs */}
       <SectionTitle>Property Specs & Documentation</SectionTitle>
@@ -253,12 +332,15 @@ function OfficeDetails({ details, setDetail }) {
             placeholder="e.g. renovated, corner location"
           />
         </Field>
-        <Field label="Parking">
+        <Field label="Parking Ratio" hint="Spaces per 1,000 SF">
           <Input
-            value={details.parking || ''}
-            onChange={e => setDetail('parking', e.target.value)}
-            placeholder="e.g. 20 spaces, surface lot"
+            value={details.parking_ratio || ''}
+            onChange={e => setDetail('parking_ratio', e.target.value)}
+            placeholder="e.g. 4/1,000 SF"
           />
+        </Field>
+        <Field label="Total Parking Spaces">
+          <Num field="total_parking_spaces" placeholder="e.g. 80" details={details} setDetail={setDetail} />
         </Field>
         <Field label="Ceiling Height">
           <Input
@@ -274,6 +356,10 @@ function OfficeDetails({ details, setDetail }) {
             placeholder="e.g. B-2"
           />
         </Field>
+      </div>
+
+      <div className="rounded-xl border border-gray-100 px-4 py-2">
+        <Toggle label="Dedicated Parking Available" value={!!details.dedicated_parking} onChange={v => setDetail('dedicated_parking', v)} />
       </div>
 
       <ToggleGroup
@@ -312,42 +398,12 @@ const PRACTICE_TYPES = [
 ];
 
 const MEDICAL_FEATURES = [
-  { value: 'xray',         label: 'X-Ray Room / Shielding' },
-  { value: 'medical_gas',  label: 'Medical Gas Lines' },
-  { value: 'sterilization',label: 'Sterilization Area' },
-  { value: 'ada',          label: 'ADA Compliant' },
-  { value: 'hipaa',        label: 'HIPAA Compliant Layout' },
+  { value: 'xray',          label: 'X-Ray Room / Shielding' },
+  { value: 'medical_gas',   label: 'Medical Gas Lines' },
+  { value: 'sterilization', label: 'Sterilization Area' },
+  { value: 'ada',           label: 'ADA Compliant' },
+  { value: 'hipaa',         label: 'HIPAA Compliant Layout' },
 ];
-
-function TagsInput({ value = [], onChange }) {
-  const [input, setInput] = React.useState('');
-  const handleKey = (e) => {
-    if (e.key === 'Enter' && input.trim()) {
-      e.preventDefault();
-      if (!value.includes(input.trim())) onChange([...value, input.trim()]);
-      setInput('');
-    }
-  };
-  const remove = (tag) => onChange(value.filter(t => t !== tag));
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-1.5">
-        {value.map(tag => (
-          <span key={tag} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
-            {tag}
-            <button type="button" onClick={() => remove(tag)}><X className="w-3 h-3" /></button>
-          </span>
-        ))}
-      </div>
-      <Input
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        onKeyDown={handleKey}
-        placeholder="e.g., move-in ready, high visibility (press Enter to add)"
-      />
-    </div>
-  );
-}
 
 function MedicalOfficeDetails({ details, setDetail }) {
   const features = details.medical_features || [];
@@ -366,8 +422,8 @@ function MedicalOfficeDetails({ details, setDetail }) {
         <Field label="Waiting Room Capacity"><Num field="waiting_capacity" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
       </div>
 
-      {/* Medical Features */}
-      <SectionTitle>Medical Features</SectionTitle>
+      {/* In-Suite / Practice-Specific Features */}
+      <SectionTitle>In-Suite / Practice-Specific Features</SectionTitle>
       <Field label="Select all that apply">
         <div className="flex flex-wrap gap-2">
           {MEDICAL_FEATURES.map(f => (
@@ -378,6 +434,10 @@ function MedicalOfficeDetails({ details, setDetail }) {
       <Field label="Medical Waste Disposal">
         <Input value={details.waste_disposal || ''} onChange={e => setDetail('waste_disposal', e.target.value)} placeholder="e.g., Sharps containers, biohazard" />
       </Field>
+
+      {/* Building Amenities */}
+      <SectionTitle>Building Amenities</SectionTitle>
+      <BuildingAmenitiesSection details={details} setDetail={setDetail} />
 
       {/* Specs & Docs */}
       <SectionTitle>Property Specs & Documentation</SectionTitle>
@@ -390,8 +450,11 @@ function MedicalOfficeDetails({ details, setDetail }) {
       </Field>
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Parking">
-          <Input value={details.parking || ''} onChange={e => setDetail('parking', e.target.value)} placeholder="e.g. 20 spaces, surface lot" />
+        <Field label="Parking Ratio" hint="Spaces per 1,000 SF">
+          <Input value={details.parking_ratio || ''} onChange={e => setDetail('parking_ratio', e.target.value)} placeholder="e.g. 5/1,000 SF" />
+        </Field>
+        <Field label="Total Parking Spaces">
+          <Num field="total_parking_spaces" placeholder="e.g. 40" details={details} setDetail={setDetail} />
         </Field>
         <Field label="Ceiling Height">
           <Input value={details.ceiling_height || ''} onChange={e => setDetail('ceiling_height', e.target.value)} placeholder="e.g. 9 ft" />
@@ -399,6 +462,11 @@ function MedicalOfficeDetails({ details, setDetail }) {
         <Field label="Zoning">
           <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. O-1 Medical" />
         </Field>
+      </div>
+
+      <div className="rounded-xl border border-gray-100 px-4 py-2 divide-y divide-gray-50">
+        <Toggle label="Dedicated Parking Available" value={!!details.dedicated_parking} onChange={v => setDetail('dedicated_parking', v)} />
+        <Toggle label="Valet Parking Available" value={!!details.valet_parking} onChange={v => setDetail('valet_parking', v)} />
       </div>
 
       <ToggleGroup
@@ -471,6 +539,13 @@ function RetailDetails({ details, setDetail }) {
       <ToggleGroup label="Location Type" value={details.location_type || ''} onChange={v => setDetail('location_type', v)}
         options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'corner', label: 'Corner' }]} />
 
+      <ToggleGroup
+        label="Foot Traffic"
+        value={details.foot_traffic || ''}
+        onChange={v => setDetail('foot_traffic', v)}
+        options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }]}
+      />
+
       {/* Collapsible Special Features */}
       <div className="rounded-xl border border-gray-200 overflow-hidden">
         <button
@@ -486,7 +561,6 @@ function RetailDetails({ details, setDetail }) {
             {RETAIL_SPECIAL_FEATURES.map(f => (
               <Toggle key={f.key} label={f.label} value={features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
             ))}
-            {/* Other */}
             <Toggle label="Other" value={!!details.feature_other} onChange={v => setDetail('feature_other', v ? '' : undefined)} />
             {details.feature_other !== undefined && (
               <div className="pb-2 pt-1">
@@ -521,11 +595,22 @@ function RetailDetails({ details, setDetail }) {
       {/* Property Details */}
       <SectionTitle>Property Details & Media</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Parking Spaces"><Num field="parking" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
+        <Field label="Total Parking Spaces"><Num field="total_parking_spaces" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
         <Field label="Zoning">
           <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. C-2" />
         </Field>
       </div>
+
+      <div className="rounded-xl border border-gray-100 px-4 py-2 divide-y divide-gray-50">
+        <Toggle label="Shared Parking Access" value={!!details.shared_parking_access} onChange={v => setDetail('shared_parking_access', v)} />
+      </div>
+
+      <ToggleGroup
+        label="Parking Type"
+        value={details.parking_type || ''}
+        onChange={v => setDetail('parking_type', v)}
+        options={[{ value: 'surface_lot', label: 'Surface Lot' }, { value: 'garage', label: 'Garage' }, { value: 'street', label: 'Street' }, { value: 'valet', label: 'Valet' }]}
+      />
 
       <ToggleGroup
         label="Building Class"
@@ -536,6 +621,10 @@ function RetailDetails({ details, setDetail }) {
 
       <Field label="Anchor Tenants">
         <Textarea value={details.anchor_tenants || ''} onChange={e => setDetail('anchor_tenants', e.target.value)} placeholder="e.g. Target, Starbucks" rows={2} />
+      </Field>
+
+      <Field label="Nearby Businesses">
+        <TagsInput value={details.nearby_businesses || []} onChange={v => setDetail('nearby_businesses', v)} />
       </Field>
 
       <Field label="Description">
@@ -591,6 +680,13 @@ function IndustrialFlexDetails({ details, setDetail }) {
         <Field label="Column Spacing (ft)">
           <Input value={details.column_spacing || ''} onChange={e => setDetail('column_spacing', e.target.value)} placeholder="e.g. 50 x 50" />
         </Field>
+        <Field label="Loading Bay Size (ft)">
+          <Input value={details.loading_bay_size || ''} onChange={e => setDetail('loading_bay_size', e.target.value)} placeholder="e.g. 100 x 50" />
+        </Field>
+      </div>
+
+      <div className="rounded-xl border border-gray-100 px-4 py-1">
+        <Toggle label="Cross-Dock Capable" value={!!details.cross_dock} onChange={() => toggleBool('cross_dock')} />
       </div>
 
       {/* Power & Infrastructure */}
@@ -599,7 +695,6 @@ function IndustrialFlexDetails({ details, setDetail }) {
         <Field label="Amperage">
           <select
             className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2"
-            style={{ '--tw-ring-color': 'var(--tiffany-blue)' }}
             value={details.power_amps || ''}
             onChange={e => setDetail('power_amps', e.target.value)}
           >
@@ -611,9 +706,19 @@ function IndustrialFlexDetails({ details, setDetail }) {
           <Input value={details.power_specs || ''} onChange={e => setDetail('power_specs', e.target.value)} placeholder="e.g. 480V, 3-Phase" />
         </Field>
       </div>
-      <div className="rounded-xl border border-gray-100 px-4 py-2">
+
+      <ToggleGroup
+        label="Power Voltage"
+        value={details.power_voltage || ''}
+        onChange={v => setDetail('power_voltage', v)}
+        options={[{ value: '240v', label: '240V' }, { value: '480v', label: '480V' }, { value: 'other', label: 'Other' }]}
+      />
+
+      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
         <Toggle label="3-Phase Power" value={!!details.three_phase} onChange={() => toggleBool('three_phase')} />
+        <Toggle label="Substation On-Site" value={!!details.substation_on_site} onChange={() => toggleBool('substation_on_site')} />
       </div>
+
       <div className="grid grid-cols-2 gap-4">
         <Field label="Crane System">
           <Input value={details.crane_system || ''} onChange={e => setDetail('crane_system', e.target.value)} placeholder="e.g. 10-ton bridge crane" />
@@ -644,6 +749,8 @@ function IndustrialFlexDetails({ details, setDetail }) {
         <Toggle label="Rail Access" value={!!details.rail_access} onChange={() => toggleBool('rail_access')} />
         <Toggle label="Fenced / Secured Yard" value={!!details.fenced_yard} onChange={() => toggleBool('fenced_yard')} />
         <Toggle label="Outside Storage Allowed" value={!!details.outside_storage} onChange={() => toggleBool('outside_storage')} />
+        <Toggle label="Gated Access" value={!!details.gated_access} onChange={() => toggleBool('gated_access')} />
+        <Toggle label="Security Cameras" value={!!details.security_cameras} onChange={() => toggleBool('security_cameras')} />
       </div>
       <Field label="Dock Equipment">
         <div className="flex flex-wrap gap-2">
@@ -864,8 +971,27 @@ const SPECIAL_INFRA = [
   { key: 'elevator_access',      label: 'Elevator Access' },
 ];
 
+// Subset of building amenities relevant for special use
+const SPECIAL_USE_BUILDING_AMENITIES = [
+  { value: 'on_site_management',   label: 'On-Site Management' },
+  { value: 'security_247',         label: '24/7 Security / Controlled Access' },
+  { value: 'janitorial_common',    label: 'Janitorial (Common Areas)' },
+  { value: 'outdoor_space',        label: 'Outdoor Space / Patio / Terrace' },
+  { value: 'fiber_optic',          label: 'Fiber Optic Connectivity' },
+  { value: 'backup_generator',     label: 'Backup Generator' },
+  { value: 'ada_building',         label: 'ADA Compliant Building' },
+  { value: 'elevators',            label: 'Elevators' },
+  { value: 'covered_parking',      label: 'Covered / Garage Parking' },
+  { value: 'ev_charging',          label: 'EV Charging Stations' },
+  { value: 'energy_efficient',     label: 'Energy Efficient Building' },
+  { value: 'leed_certified',       label: 'LEED Certified / Green Building' },
+];
+
 function SpecialUseDetails({ details, setDetail }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
+  const buildingAmenities = details.building_amenities || [];
+  const toggleBuildingAmenity = (val) =>
+    setDetail('building_amenities', buildingAmenities.includes(val) ? buildingAmenities.filter(a => a !== val) : [...buildingAmenities, val]);
 
   return (
     <>
@@ -926,6 +1052,28 @@ function SpecialUseDetails({ details, setDetail }) {
         </Field>
       )}
 
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Structural Modifications">
+          <Input value={details.structural_modifications || ''} onChange={e => setDetail('structural_modifications', e.target.value)} placeholder="e.g., Reinforced floors, soundproofing" />
+        </Field>
+        <Field label="HVAC / Environmental Systems">
+          <Input value={details.hvac_systems_details || ''} onChange={e => setDetail('hvac_systems_details', e.target.value)} placeholder="e.g., High-capacity HVAC, air filtration" />
+        </Field>
+      </div>
+
+      {/* Building Amenities */}
+      <SectionTitle>Building Amenities</SectionTitle>
+      <CollapsiblePanel
+        title="Building Amenities"
+        summary={buildingAmenities.length > 0 ? `${buildingAmenities.length} selected` : 'Shared building-level features & services'}
+      >
+        <div className="flex flex-wrap gap-2 pt-1">
+          {SPECIAL_USE_BUILDING_AMENITIES.map(a => (
+            <Chip key={a.value} label={a.label} selected={buildingAmenities.includes(a.value)} onClick={() => toggleBuildingAmenity(a.value)} />
+          ))}
+        </div>
+      </CollapsiblePanel>
+
       {/* Site & Compliance */}
       <SectionTitle>Site & Compliance</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
@@ -935,6 +1083,9 @@ function SpecialUseDetails({ details, setDetail }) {
         </Field>
         <Field label="Zoning Overlay">
           <Input value={details.zoning_overlay || ''} onChange={e => setDetail('zoning_overlay', e.target.value)} placeholder="e.g. Historical District" />
+        </Field>
+        <Field label="Licensing Status">
+          <Input value={details.licensing_status || ''} onChange={e => setDetail('licensing_status', e.target.value)} placeholder="e.g., Licensed daycare, State-approved school" />
         </Field>
       </div>
 
