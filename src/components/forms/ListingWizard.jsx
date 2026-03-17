@@ -7,7 +7,6 @@ import FormProgress from './wizard/FormProgress';
 import ListStep1 from './listing/Step1General';
 import ListStep2Commercial from './listing/Step2CommercialDetails';
 import ListStep2Residential from './listing/Step2ResidentialDetails';
-import ListStep3 from './listing/Step3Description';
 import ListStep3ContactSubmit from './listing/Step3ContactSubmit';
 
 const STEPS = ['Property', 'Details', 'Post'];
