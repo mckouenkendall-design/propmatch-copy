@@ -62,6 +62,7 @@ import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Landing": Landing,
     "Dashboard": Dashboard,
     "Dealboard": Dealboard,
     "Listings": Listings,
@@ -75,7 +76,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Dashboard",
+    mainPage: "Landing",
     Pages: PAGES,
     Layout: __Layout,
 };
