@@ -31,17 +31,30 @@ export default function AddressAutocomplete({ value, onChange, placeholder = '12
 
     timer.current = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(val)}&countrycodes=us`,
-          { headers: { 'Accept-Language': 'en' } }
-        );
+        // Use structured search for better accuracy — search full query as street
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&countrycodes=us&q=${encodeURIComponent(val)}`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
         const data = await res.json();
-        setSuggestions(data);
-        setOpen(data.length > 0);
+        // Deduplicate by display_name to avoid identical results
+        const seen = new Set();
+        const unique = data.filter(item => {
+          const key = item.display_name;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        // Prefer results that actually contain a house number (more specific)
+        const sorted = [...unique].sort((a, b) => {
+          const aHas = a.address?.house_number ? 1 : 0;
+          const bHas = b.address?.house_number ? 1 : 0;
+          return bHas - aHas;
+        });
+        setSuggestions(sorted.slice(0, 6));
+        setOpen(sorted.length > 0);
       } catch {
         setSuggestions([]);
       }
-    }, 350);
+    }, 400);
   };
 
   const select = (item) => {
