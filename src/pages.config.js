@@ -55,6 +55,8 @@ import Messages from './pages/Messages';
 import MyPosts from './pages/MyPosts';
 import Requirements from './pages/Requirements';
 import MyTemplates from './pages/MyTemplates';
+import Groups from './pages/Groups';
+import GroupDetail from './pages/GroupDetail';
 import __Layout from './Layout.jsx';
 
 
@@ -67,6 +69,8 @@ export const PAGES = {
     "MyPosts": MyPosts,
     "Requirements": Requirements,
     "MyTemplates": MyTemplates,
+    "Groups": Groups,
+    "GroupDetail": GroupDetail,
 }
 
 export const pagesConfig = {

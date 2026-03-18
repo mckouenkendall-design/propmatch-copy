@@ -8,6 +8,7 @@ export default function TopNav() {
 
   const menuItems = [
     { name: 'Home', path: 'Dashboard' },
+    { name: 'Groups', path: 'Groups' },
     { name: 'Dealboard', path: 'Dealboard' },
     { name: 'My Posts', path: 'MyPosts' },
     { name: 'My Templates', path: 'MyTemplates' },
