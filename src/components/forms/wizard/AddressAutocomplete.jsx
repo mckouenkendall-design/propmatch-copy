@@ -35,10 +35,13 @@ export default function AddressAutocomplete({ value, onChange, placeholder = '12
         const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&countrycodes=us&q=${encodeURIComponent(val)}`;
         const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
         const data = await res.json();
-        // Deduplicate by display_name to avoid identical results
+        // Deduplicate by the actual rendered text the user would see
         const seen = new Set();
         const unique = data.filter(item => {
-          const key = item.display_name;
+          const a = item.address || {};
+          const line1 = [a.house_number, a.road || a.pedestrian].filter(Boolean).join(' ') || item.display_name.split(',')[0];
+          const line2 = [a.city || a.town || a.village, a.state, a.postcode].filter(Boolean).join(', ');
+          const key = `${line1}|${line2}`.toLowerCase();
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
