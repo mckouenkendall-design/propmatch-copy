@@ -92,7 +92,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
             {step === 2 && category === 'commercial' && <ReqStep2Commercial data={formData} update={update} onNext={next} />}
             {step === 2 && category === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
             {step === 3 && <ReqStep3 data={formData} update={update} onNext={next} />}
-            {step === 4 && <ReqStep4 data={formData} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />}
+            {step === 4 && <ReqStep4 data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />}
           </div>
           {step === 2 && (
             <div className="px-6 pb-4 text-left">
