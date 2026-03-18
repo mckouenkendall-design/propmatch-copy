@@ -30,7 +30,10 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     property_details: {},
     required_amenities: [],
     notes: '',
-    status: 'active'
+    status: 'active',
+    visibility: 'public',
+    visibility_groups: '',
+    visibility_recipient_email: '',
   });
 
   const generateTitle = (data) => {
