@@ -39,6 +39,15 @@ function FitBounds({ bounds }) {
   return null;
 }
 
+// ── Force Leaflet to recalculate size after modal renders ─────────────────────
+function InvalidateSize() {
+  const map = useMap();
+  useEffect(() => {
+    setTimeout(() => map.invalidateSize(), 100);
+  }, [map]);
+  return null;
+}
+
 // ── Geocoder search bar (reused in multiple modes) ────────────────────────────
 function GeoSearch({ placeholder, onSelect, onBoundsFound, small }) {
   const [query, setQuery] = useState('');
