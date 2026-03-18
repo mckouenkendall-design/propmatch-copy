@@ -2,11 +2,10 @@ import React from 'react';
 import LandingNav from '../components/landing/LandingNav';
 import HeroSection from '../components/landing/HeroSection';
 import ProblemSolution from '../components/landing/ProblemSolution';
-
 import FeaturesSection from '../components/landing/FeaturesSection';
 import HowItWorks from '../components/landing/HowItWorks';
-import PricingSection from '../components/landing/PricingSection';
 import TestimonialsSection from '../components/landing/TestimonialsSection';
+import PricingSection from '../components/landing/PricingSection';
 import CtaSection from '../components/landing/CtaSection';
 import LandingFooter from '../components/landing/LandingFooter';
 
@@ -18,8 +17,8 @@ export default function Landing() {
       <ProblemSolution />
       <FeaturesSection />
       <HowItWorks />
-      <PricingSection />
       <TestimonialsSection />
+      <PricingSection />
       <CtaSection />
       <LandingFooter />
     </div>
