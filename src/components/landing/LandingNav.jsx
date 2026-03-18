@@ -39,15 +39,12 @@ export default function LandingNav() {
       <nav style={navStyle}>
         <div style={{ display: 'flex', alignItems: 'center', flex: 1, maxWidth: '1240px', margin: '0 auto', width: '100%' }}>
           {/* Logo */}
-          <Link to="/Landing" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-            <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-              <circle cx="9" cy="13" r="9" fill="none" stroke={ACCENT} strokeWidth="1.8" />
-              <circle cx="17" cy="13" r="9" fill="none" stroke={ACCENT} strokeWidth="1.8" opacity="0.6" />
-              <circle cx="13" cy="13" r="2.5" fill={ACCENT} />
-            </svg>
-            <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: '20px', color: '#111827' }}>
-              Prop<span style={{ color: ACCENT }}>Match</span>
-            </span>
+          <Link to="/Landing" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <img
+              src="https://media.base44.com/images/public/6980c9695693a9fd14759060/731eb765f_propmatchlogo.png"
+              alt="PropMatch"
+              style={{ height: '36px', width: 'auto', display: 'block', objectFit: 'contain' }}
+            />
           </Link>
 
           {/* Desktop Nav Links */}
