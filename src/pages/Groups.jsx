@@ -181,14 +181,13 @@ function GroupCard({ group, isMember, onJoin, joinLoading }) {
               <Users className="w-3 h-3" /> {group.member_count || 0} members
             </p>
           </div>
-          <div className="flex-shrink-0">
-            {isMember ? (
-              <Link to={`/GroupDetail?id=${group.id}`}>
-                <Button size="sm" style={{ backgroundColor: 'var(--tiffany-blue)' }} className="text-white">
-                  View
-                </Button>
-              </Link>
-            ) : (
+          <div className="flex-shrink-0 flex flex-col gap-2 items-end">
+            <Link to={`/GroupDetail?id=${group.id}`}>
+              <Button size="sm" style={{ backgroundColor: 'var(--tiffany-blue)' }} className="text-white">
+                View
+              </Button>
+            </Link>
+            {!isMember && (
               <Button
                 size="sm"
                 variant="outline"
