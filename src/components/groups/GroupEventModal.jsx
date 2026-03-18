@@ -128,38 +128,22 @@ export default function GroupEventModal({ groupId, onClose, onSuccess, existingE
 
           {/* Location */}
           <div className="space-y-1.5">
-            <Label>Location Type</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: 'physical', label: 'In Person', Icon: MapPin },
-                { value: 'online', label: 'Online', Icon: Video },
-                { value: 'tba', label: 'TBA', Icon: HelpCircle },
-              ].map(({ value, label, Icon }) => (
-                <button key={value} type="button" onClick={() => update({ location_type: value })}
-                  className="py-2 px-3 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-1.5"
-                  style={{
-                    borderColor: form.location_type === value ? 'var(--tiffany-blue)' : '#e5e7eb',
-                    backgroundColor: form.location_type === value ? '#e6f7f5' : 'white',
-                    color: form.location_type === value ? '#3A8A82' : '#6b7280',
-                  }}>
-                  <Icon className="w-3.5 h-3.5" /> {label}
-                </button>
-              ))}
-            </div>
+            <Label>Address</Label>
+            <AddressAutocomplete
+              value={form.address}
+              onChange={({ address }) => update({ address })}
+              placeholder="123 Main St, Detroit, MI"
+            />
           </div>
 
-          {form.location_type === 'physical' && (
-            <div className="space-y-1.5">
-              <Label>Address</Label>
-              <Input value={form.address} onChange={e => update({ address: e.target.value })} placeholder="123 Main St, Detroit, MI" />
-            </div>
-          )}
-          {form.location_type === 'online' && (
-            <div className="space-y-1.5">
-              <Label>Meeting Link</Label>
-              <Input value={form.online_link} onChange={e => update({ online_link: e.target.value })} placeholder="https://zoom.us/j/..." />
-            </div>
-          )}
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5"><Video className="w-3.5 h-3.5" /> Virtual Link <span className="text-gray-400 font-normal">(optional)</span></Label>
+            <Input
+              value={form.online_link}
+              onChange={e => update({ online_link: e.target.value })}
+              placeholder="Zoom, Google Meet, Teams link..."
+            />
+          </div>
 
           {/* Attendance */}
           <div className="grid grid-cols-2 gap-4">
