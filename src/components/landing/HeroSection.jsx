@@ -423,7 +423,7 @@ export default function HeroSection() {
               {expandedMatch !== null && (
                 <MatchBreakdown
                   match={matches[expandedMatch]}
-                  propType={scenario.propType}
+                  scenario={scenario}
                   onClose={() => setExpandedMatch(null)}
                 />
               )}
