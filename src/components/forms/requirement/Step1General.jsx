@@ -68,7 +68,7 @@ export default function ReqStep1({ data, update, onNext }) {
       </div>
 
       <ToggleGroup label="Transaction Type *" value={data.transaction_type} onChange={v => {
-          const defaultPeriod = v === 'purchase' ? 'purchase' : v === 'rent' ? 'per_month' : 'per_sf_per_year';
+          const defaultPeriod = v === 'purchase' ? 'purchase' : 'per_month';
           update({ transaction_type: v, price_period: defaultPeriod });
         }}
         options={[{ value: 'lease', label: 'Lease' }, { value: 'purchase', label: 'Purchase' }, { value: 'rent', label: 'Rent' }]} />
