@@ -35,7 +35,7 @@ const BROKERAGE_FEATURES = [
 
 function CheckIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#29F2DE" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#00DBC5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
       <polyline points="2 7 5.5 10.5 12 3.5" />
     </svg>
   );
@@ -61,7 +61,7 @@ export default function PricingSection() {
             fontSize: '11px',
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            color: '#29F2DE',
+            color: '#00DBC5',
             border: '1px solid rgba(41,242,222,0.4)',
             padding: '4px 12px',
             borderRadius: '4px',
@@ -99,7 +99,7 @@ export default function PricingSection() {
           >
             <span style={{
               fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase',
-              letterSpacing: '0.1em', color: '#29F2DE', border: '1px solid rgba(41,242,222,0.4)',
+              letterSpacing: '0.1em', color: '#00DBC5', border: '1px solid rgba(41,242,222,0.4)',
               padding: '4px 12px', borderRadius: '4px', background: 'rgba(41,242,222,0.06)',
               display: 'inline-block', marginBottom: '20px',
             }}>Individual Agent</span>
@@ -116,14 +116,14 @@ export default function PricingSection() {
               style={{
                 display: 'block', width: '100%', textAlign: 'center',
                 fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 400,
-                color: '#29F2DE', background: 'transparent',
-                border: '1.5px solid #29F2DE', borderRadius: '6px',
+                color: '#00DBC5', background: 'transparent',
+                border: '1.5px solid #00DBC5', borderRadius: '6px',
                 padding: '12px', textDecoration: 'none',
                 transition: 'background 0.2s ease, color 0.2s ease', boxSizing: 'border-box',
                 marginBottom: '24px',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#29F2DE'; e.currentTarget.style.color = '#111827'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#29F2DE'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#00DBC5'; e.currentTarget.style.color = '#111827'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#00DBC5'; }}
             >
               Get Started
             </Link>
@@ -142,11 +142,11 @@ export default function PricingSection() {
 
           {/* Brokerage Card — Featured */}
           <div style={{
-            border: '2px solid #29F2DE',
+            border: '2px solid #00DBC5',
             borderRadius: '10px',
             padding: '40px 36px',
             position: 'relative',
-            boxShadow: '0 0 0 1px #29F2DE, 0 12px 40px rgba(41,242,222,0.12)',
+            boxShadow: '0 0 0 1px #00DBC5, 0 12px 40px rgba(41,242,222,0.12)',
             opacity: visible ? 1 : 0,
             transform: visible ? 'translateY(0)' : 'translateY(24px)',
             transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1) 0.14s, transform 0.55s cubic-bezier(0.22,1,0.36,1) 0.14s',
@@ -154,7 +154,7 @@ export default function PricingSection() {
             {/* Most Popular label */}
             <div style={{
               position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-              background: '#29F2DE', color: 'white',
+              background: '#00DBC5', color: 'white',
               fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 400,
               textTransform: 'uppercase', letterSpacing: '0.08em',
               padding: '4px 16px', borderRadius: '0 0 6px 6px',
@@ -164,7 +164,7 @@ export default function PricingSection() {
 
             <span style={{
               fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase',
-              letterSpacing: '0.1em', color: '#29F2DE', border: '1px solid rgba(41,242,222,0.4)',
+              letterSpacing: '0.1em', color: '#00DBC5', border: '1px solid rgba(41,242,222,0.4)',
               padding: '4px 12px', borderRadius: '4px', background: 'rgba(41,242,222,0.06)',
               display: 'inline-block', marginBottom: '20px',
             }}>Brokerage</span>
@@ -181,14 +181,14 @@ export default function PricingSection() {
               style={{
                 display: 'block', width: '100%', textAlign: 'center',
                 fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500,
-                color: '#111827', background: '#29F2DE',
+                color: '#111827', background: '#00DBC5',
                 border: 'none', borderRadius: '6px',
                 padding: '12px', textDecoration: 'none',
                 transition: 'background 0.2s ease', boxSizing: 'border-box',
                 marginBottom: '24px',
               }}
               onMouseEnter={e => e.currentTarget.style.background = '#3A8C84'}
-              onMouseLeave={e => e.currentTarget.style.background = '#29F2DE'}
+              onMouseLeave={e => e.currentTarget.style.background = '#00DBC5'}
             >
               Request a Demo
             </Link>
@@ -233,7 +233,7 @@ export default function PricingSection() {
               padding: '9px 18px', cursor: 'pointer', whiteSpace: 'nowrap',
               transition: 'border-color 0.2s ease, color 0.2s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#29F2DE'; e.currentTarget.style.color = '#29F2DE'; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#00DBC5'; e.currentTarget.style.color = '#00DBC5'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#374151'; }}
           >
             Learn More

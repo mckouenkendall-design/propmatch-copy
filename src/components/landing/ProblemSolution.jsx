@@ -45,13 +45,13 @@ function StatBar({ label, pct, visible, delay }) {
     <div style={{ marginBottom: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
         <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>{label}</span>
-        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#29F2DE' }}>{pct}%</span>
+        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#00DBC5' }}>{pct}%</span>
       </div>
       <div style={{ height: '3px', background: 'rgba(255,255,255,0.07)', borderRadius: '3px', overflow: 'hidden' }}>
         <div style={{
           height: '100%',
           width: `${width}%`,
-          background: '#29F2DE',
+          background: '#00DBC5',
           borderRadius: '3px',
           transition: `width 1.1s cubic-bezier(0.22,1,0.36,1)`,
         }} />
@@ -103,13 +103,13 @@ function LineChart({ visible }) {
             stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
         ))}
         {/* Residential line */}
-        <polyline points={polyline(RES_DATA)} fill="none" stroke="#29F2DE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        <polyline points={polyline(RES_DATA)} fill="none" stroke="#00DBC5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
           strokeDasharray={totalLen} strokeDashoffset={dashOffset}
           style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1)' }}
         />
         {/* Dots on residential */}
         {xs.map((x, i) => (
-          <circle key={i} cx={x} cy={ys(RES_DATA)[i]} r="3.5" fill="#29F2DE"
+          <circle key={i} cx={x} cy={ys(RES_DATA)[i]} r="3.5" fill="#00DBC5"
             style={{ opacity: dashOffset === 0 ? 1 : 0, transition: `opacity 0.3s ease ${0.8 + i * 0.08}s` }}
           />
         ))}
@@ -127,7 +127,7 @@ function LineChart({ visible }) {
       {/* Legend */}
       <div style={{ display: 'flex', gap: '20px', marginTop: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '20px', height: '2px', background: '#29F2DE', borderRadius: '2px' }} />
+          <div style={{ width: '20px', height: '2px', background: '#00DBC5', borderRadius: '2px' }} />
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Residential</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -148,7 +148,7 @@ export default function ProblemSolution() {
     fontWeight: 400,
     textTransform: 'uppercase',
     letterSpacing: '0.1em',
-    color: '#29F2DE',
+    color: '#00DBC5',
     border: '1px solid rgba(41,242,222,0.4)',
     padding: '4px 12px',
     borderRadius: '4px',

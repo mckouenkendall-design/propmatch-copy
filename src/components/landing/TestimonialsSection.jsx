@@ -54,7 +54,7 @@ export default function TestimonialsSection() {
             fontSize: '11px',
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            color: '#29F2DE',
+            color: '#00DBC5',
             border: '1px solid rgba(41,242,222,0.4)',
             padding: '4px 12px',
             borderRadius: '4px',
@@ -94,7 +94,7 @@ export default function TestimonialsSection() {
               <div style={{
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
                 fontSize: '48px',
-                color: '#29F2DE',
+                color: '#00DBC5',
                 lineHeight: 1,
                 marginBottom: '14px',
                 fontWeight: 300,

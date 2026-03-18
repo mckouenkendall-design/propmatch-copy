@@ -20,12 +20,12 @@ export default function LandingFooter() {
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
-            <circle cx="9" cy="13" r="9" fill="none" stroke="#29F2DE" strokeWidth="1.8" />
-            <circle cx="17" cy="13" r="9" fill="none" stroke="#29F2DE" strokeWidth="1.8" opacity="0.6" />
-            <circle cx="13" cy="13" r="2.5" fill="#29F2DE" />
+            <circle cx="9" cy="13" r="9" fill="none" stroke="#00DBC5" strokeWidth="1.8" />
+            <circle cx="17" cy="13" r="9" fill="none" stroke="#00DBC5" strokeWidth="1.8" opacity="0.6" />
+            <circle cx="13" cy="13" r="2.5" fill="#00DBC5" />
           </svg>
           <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: '17px', color: 'rgba(255,255,255,0.9)' }}>
-            Prop<span style={{ color: '#29F2DE' }}>Match</span>
+            Prop<span style={{ color: '#00DBC5' }}>Match</span>
           </span>
         </div>
 
@@ -53,7 +53,7 @@ export default function LandingFooter() {
                 textDecoration: 'none',
                 transition: 'color 0.2s ease',
               }}
-              onMouseEnter={e => e.currentTarget.style.color = '#29F2DE'}
+              onMouseEnter={e => e.currentTarget.style.color = '#00DBC5'}
               onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
             >
               {label}

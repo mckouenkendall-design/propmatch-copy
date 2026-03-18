@@ -19,10 +19,10 @@ function useScrollReveal(threshold = 0.12) {
 const FEATURES = [
   {
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#29F2DE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00DBC5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="9" cy="12" r="6" />
         <circle cx="15" cy="12" r="6" />
-        <circle cx="12" cy="12" r="1.5" fill="#29F2DE" stroke="none" />
+        <circle cx="12" cy="12" r="1.5" fill="#00DBC5" stroke="none" />
       </svg>
     ),
     title: 'Intelligent Matching',
@@ -30,7 +30,7 @@ const FEATURES = [
   },
   {
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#29F2DE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00DBC5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2" />
         <line x1="9" y1="9" x2="15" y2="9" />
         <line x1="9" y1="13" x2="15" y2="13" />
@@ -43,7 +43,7 @@ const FEATURES = [
   },
   {
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#29F2DE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00DBC5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="6" cy="12" r="2.5" />
         <circle cx="18" cy="6" r="2.5" />
         <circle cx="18" cy="18" r="2.5" />
@@ -76,7 +76,7 @@ export default function FeaturesSection() {
             fontWeight: 400,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            color: '#29F2DE',
+            color: '#00DBC5',
             border: '1px solid rgba(41,242,222,0.4)',
             padding: '4px 12px',
             borderRadius: '4px',

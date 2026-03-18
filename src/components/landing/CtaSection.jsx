@@ -47,7 +47,7 @@ export default function CtaSection() {
           fontSize: '11px',
           textTransform: 'uppercase',
           letterSpacing: '0.1em',
-          color: '#29F2DE',
+          color: '#00DBC5',
           border: '1px solid rgba(41,242,222,0.4)',
           padding: '4px 12px',
           borderRadius: '4px',
@@ -89,14 +89,14 @@ export default function CtaSection() {
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
               color: '#111827',
-              background: '#29F2DE',
+              background: '#00DBC5',
               padding: '13px 28px',
               borderRadius: '6px',
               textDecoration: 'none',
               transition: 'background 0.2s ease',
             }}
             onMouseEnter={e => e.currentTarget.style.background = '#3A8C84'}
-            onMouseLeave={e => e.currentTarget.style.background = '#29F2DE'}
+            onMouseLeave={e => e.currentTarget.style.background = '#00DBC5'}
           >
             Join PropMatch
           </Link>
@@ -113,7 +113,7 @@ export default function CtaSection() {
               textDecoration: 'none',
               transition: 'border-color 0.2s ease, color 0.2s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#29F2DE'; e.currentTarget.style.color = '#29F2DE'; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#00DBC5'; e.currentTarget.style.color = '#00DBC5'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = 'white'; }}
           >
             Request a Demo
