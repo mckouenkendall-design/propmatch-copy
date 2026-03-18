@@ -17,7 +17,9 @@ const fmt = (v) => {
   return String(v).replace(/_/g, ' ');
 };
 
-export default function ReqStep4({ data, onSubmit, isLoading }) {
+export default function ReqStep4({ data, update, onSubmit, isLoading }) {
+  const visibility = data.visibility || 'public';
+
   const rows = [
     { label: 'Client', value: data.client_name },
     { label: 'Property Type', value: data.property_type },
