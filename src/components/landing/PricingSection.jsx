@@ -1,188 +1,252 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+function useScrollReveal(threshold = 0.12) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, visible];
+}
 
 const INDIVIDUAL_FEATURES = [
   'Unlimited listings & requirements',
-  'Intelligent matching engine',
-  'Verified agent profile',
-  'In-platform messaging',
-  'Deal board & pipeline tracker',
-  'Group networking access',
-  'Market insights dashboard',
-  'Template library',
-  'Priority support',
+  'Intelligent match scoring',
+  'Saved search templates',
+  'Professional network access',
+  'Email support',
 ];
 
+const BROKERAGE_FEATURES = [
+  'Everything in Individual',
+  'All agents under one subscription',
+  'Brokerage-level admin dashboard',
+  'Team collaboration tools',
+  'A powerful recruiting advantage — agents join brokerages that invest in their tools',
+];
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#29F2DE" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <polyline points="2 7 5.5 10.5 12 3.5" />
+    </svg>
+  );
+}
+
 export default function PricingSection() {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  const [billing, setBilling] = useState('monthly'); // 'monthly' | 'annual'
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold: 0.2 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
-  const price = billing === 'annual' ? 79 : 99;
+  const [ref, visible] = useScrollReveal(0.12);
+  const [hovered1, setHovered1] = useState(false);
 
   return (
-    <section id="pricing" ref={ref} className="py-24 px-6 bg-white">
-      <div className="max-w-5xl mx-auto">
-        <div className={`text-center mb-12 fade-in-up ${visible ? 'visible' : ''}`}>
-          <p className="font-inter text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#4FB3A9' }}>
+    <section id="pricing" ref={ref} style={{ background: '#FFFFFF', padding: '120px 64px', borderTop: '1px solid #E5E7EB' }}>
+      <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '56px',
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+        }}>
+          <span style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '11px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: '#29F2DE',
+            border: '1px solid rgba(41,242,222,0.4)',
+            padding: '4px 12px',
+            borderRadius: '4px',
+            background: 'rgba(41,242,222,0.06)',
+            display: 'inline-block',
+            marginBottom: '20px',
+          }}>
             Pricing
-          </p>
-          <h2 className="font-playfair text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-            Simple, transparent <span style={{ color: '#4FB3A9' }}>pricing</span>
+          </span>
+          <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '46px', color: '#111827', lineHeight: 1.15, margin: '0 0 14px' }}>
+            Simple, transparent plans.
           </h2>
-          <p className="font-inter text-lg text-gray-500 max-w-xl mx-auto">
-            One plan for individual agents. Brokerage plans coming soon — built for teams of any size.
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: '#6B7280', margin: 0 }}>
+            Whether you're a solo agent or managing an entire brokerage.
           </p>
-
-          {/* Billing Toggle */}
-          <div className="inline-flex items-center gap-3 mt-8 p-1 rounded-lg border" style={{ borderColor: '#E0F0EE', background: '#F8FFFE' }}>
-            <button
-              onClick={() => setBilling('monthly')}
-              className="px-5 py-2 rounded-md text-sm font-semibold font-inter transition-all duration-200"
-              style={{
-                background: billing === 'monthly' ? 'linear-gradient(135deg, #4FB3A9, #3A8A82)' : 'transparent',
-                color: billing === 'monthly' ? 'white' : '#6B7280',
-              }}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setBilling('annual')}
-              className="px-5 py-2 rounded-md text-sm font-semibold font-inter transition-all duration-200 flex items-center gap-2"
-              style={{
-                background: billing === 'annual' ? 'linear-gradient(135deg, #4FB3A9, #3A8A82)' : 'transparent',
-                color: billing === 'annual' ? 'white' : '#6B7280',
-              }}
-            >
-              Annual
-              <span
-                className="text-xs px-1.5 py-0.5 rounded font-semibold"
-                style={{ background: billing === 'annual' ? 'rgba(255,255,255,0.25)' : '#E8F7F6', color: billing === 'annual' ? 'white' : '#3A8A82' }}
-              >
-                Save 20%
-              </span>
-            </button>
-          </div>
         </div>
 
-        <div className={`grid md:grid-cols-2 gap-8 fade-in-up stagger-2 ${visible ? 'visible' : ''}`}>
-          {/* Individual Plan */}
+        {/* Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', maxWidth: '860px', margin: '0 auto 28px' }}>
+
+          {/* Individual Card */}
           <div
-            className="relative rounded-2xl p-8 border-2"
+            onMouseEnter={() => setHovered1(true)}
+            onMouseLeave={() => setHovered1(false)}
             style={{
-              borderColor: '#4FB3A9',
-              background: 'white',
-              boxShadow: '0 8px 40px rgba(79,179,169,0.15)',
+              border: `1px solid ${hovered1 ? 'rgba(41,242,222,0.5)' : '#E5E7EB'}`,
+              borderRadius: '10px',
+              padding: '40px 36px',
+              boxShadow: hovered1 ? '0 8px 32px rgba(41,242,222,0.12)' : 'none',
+              transform: hovered1 ? 'translateY(-2px)' : 'translateY(0)',
+              transition: 'border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease',
+              opacity: visible ? 1 : 0,
+              transitionDelay: visible ? '0.07s' : '0s',
             }}
           >
-            <div
-              className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-xs font-semibold px-4 py-1 rounded-full font-inter"
-              style={{ background: 'linear-gradient(135deg, #4FB3A9, #3A8A82)', color: 'white' }}
+            <span style={{
+              fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase',
+              letterSpacing: '0.1em', color: '#29F2DE', border: '1px solid rgba(41,242,222,0.4)',
+              padding: '4px 12px', borderRadius: '4px', background: 'rgba(41,242,222,0.06)',
+              display: 'inline-block', marginBottom: '20px',
+            }}>Individual Agent</span>
+
+            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '52px', color: '#111827', lineHeight: 1 }}>$99</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#9CA3AF' }}>/ month</span>
+            </div>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 24px' }}>
+              Everything you need to match listings and requirements — built for the solo agent.
+            </p>
+
+            <Link to="/Dashboard"
+              style={{
+                display: 'block', width: '100%', textAlign: 'center',
+                fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 400,
+                color: '#29F2DE', background: 'transparent',
+                border: '1.5px solid #29F2DE', borderRadius: '6px',
+                padding: '12px', textDecoration: 'none',
+                transition: 'background 0.2s ease, color 0.2s ease', boxSizing: 'border-box',
+                marginBottom: '24px',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#29F2DE'; e.currentTarget.style.color = '#111827'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#29F2DE'; }}
             >
-              Most Popular
-            </div>
+              Get Started
+            </Link>
 
-            <div className="mb-6">
-              <h3 className="font-playfair text-2xl font-bold text-gray-900 mb-1">Individual Agent</h3>
-              <p className="font-inter text-sm text-gray-500">Everything you need to close more deals, solo.</p>
-            </div>
-
-            <div className="flex items-end gap-1 mb-8">
-              <span className="font-playfair text-6xl font-bold" style={{ color: '#2D6B65' }}>${price}</span>
-              <span className="font-inter text-gray-400 mb-2">/month</span>
-            </div>
-            {billing === 'annual' && (
-              <p className="font-inter text-xs text-gray-400 -mt-6 mb-6">Billed annually at ${price * 12}/yr · Save $240</p>
-            )}
-
-            <button
-              onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
-              className="w-full tiffany-btn py-3.5 text-base font-inter mb-8 rounded-lg"
-            >
-              Start Free Trial
-            </button>
-
-            <ul className="space-y-3">
-              {INDIVIDUAL_FEATURES.map((f, i) => (
-                <li key={i} className="flex items-center gap-3 font-inter text-sm text-gray-700">
-                  <div
-                    className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ background: '#E8F7F6' }}
-                  >
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 6l3 3 5-5" stroke="#4FB3A9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Brokerage Plan */}
-          <div
-            className="rounded-2xl p-8 border-2 flex flex-col"
-            style={{
-              borderColor: '#E5E7EB',
-              background: '#FAFFFE',
-            }}
-          >
-            <div className="mb-6">
-              <h3 className="font-playfair text-2xl font-bold text-gray-900 mb-1">Brokerage</h3>
-              <p className="font-inter text-sm text-gray-500">For teams and brokerages who want platform-wide access.</p>
-            </div>
-
-            <div className="flex items-end gap-1 mb-8">
-              <span className="font-playfair text-4xl font-bold text-gray-400">Coming</span>
-              <span className="font-inter text-gray-300 mb-1 text-2xl ml-2">Soon</span>
-            </div>
-
-            <div
-              className="rounded-xl p-5 mb-8"
-              style={{ background: '#F0FAFA', border: '1px solid #A8DDD9' }}
-            >
-              <p className="font-inter text-sm font-semibold text-gray-700 mb-3">What to expect:</p>
-              <ul className="space-y-2">
-                {[
-                  'Team seat management',
-                  'Brokerage-wide visibility controls',
-                  'Shared listing & requirement pools',
-                  'Admin reporting & analytics',
-                  'Dedicated account manager',
-                  'Custom onboarding',
-                ].map((f, i) => (
-                  <li key={i} className="flex items-center gap-2 font-inter text-sm text-gray-600">
-                    <span style={{ color: '#4FB3A9' }}>→</span> {f}
+            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '24px' }}>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {INDIVIDUAL_FEATURES.map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#374151' }}>
+                    <CheckIcon />
+                    {f}
                   </li>
                 ))}
               </ul>
             </div>
+          </div>
 
-            <button
-              onClick={() => document.getElementById('cta')?.scrollIntoView({ behavior: 'smooth' })}
-              className="mt-auto tiffany-btn-outline py-3.5 text-base font-inter rounded-lg w-full"
-            >
-              Get Notified
-            </button>
+          {/* Brokerage Card — Featured */}
+          <div style={{
+            border: '2px solid #29F2DE',
+            borderRadius: '10px',
+            padding: '40px 36px',
+            position: 'relative',
+            boxShadow: '0 0 0 1px #29F2DE, 0 12px 40px rgba(41,242,222,0.12)',
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(24px)',
+            transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1) 0.14s, transform 0.55s cubic-bezier(0.22,1,0.36,1) 0.14s',
+          }}>
+            {/* Most Popular label */}
+            <div style={{
+              position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+              background: '#29F2DE', color: 'white',
+              fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 400,
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+              padding: '4px 16px', borderRadius: '0 0 6px 6px',
+            }}>
+              Most Popular
+            </div>
 
-            <p className="font-inter text-xs text-gray-400 text-center mt-3">
-              We'll reach out when brokerage plans launch
+            <span style={{
+              fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase',
+              letterSpacing: '0.1em', color: '#29F2DE', border: '1px solid rgba(41,242,222,0.4)',
+              padding: '4px 12px', borderRadius: '4px', background: 'rgba(41,242,222,0.06)',
+              display: 'inline-block', marginBottom: '20px',
+            }}>Brokerage</span>
+
+            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '52px', color: '#111827', lineHeight: 1 }}>Custom</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#9CA3AF' }}>pricing</span>
+            </div>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 24px' }}>
+              Your entire team on one platform. Centralized billing, dedicated onboarding, and admin controls.
             </p>
+
+            <Link to="/Dashboard"
+              style={{
+                display: 'block', width: '100%', textAlign: 'center',
+                fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500,
+                color: '#111827', background: '#29F2DE',
+                border: 'none', borderRadius: '6px',
+                padding: '12px', textDecoration: 'none',
+                transition: 'background 0.2s ease', boxSizing: 'border-box',
+                marginBottom: '24px',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#3A8C84'}
+              onMouseLeave={e => e.currentTarget.style.background = '#29F2DE'}
+            >
+              Request a Demo
+            </Link>
+
+            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '24px' }}>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {BROKERAGE_FEATURES.map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#374151' }}>
+                    <CheckIcon />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
 
-        <p className="text-center font-inter text-xs text-gray-400 mt-8">
-          No contracts. Cancel anytime. 14-day free trial on all plans.
-        </p>
+        {/* Solo agent info bar */}
+        <div style={{
+          maxWidth: '860px', margin: '0 auto',
+          background: '#F9FAFB', border: '1px solid #E5E7EB',
+          borderRadius: '8px', padding: '20px 28px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px',
+          flexWrap: 'wrap',
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1) 0.21s, transform 0.55s cubic-bezier(0.22,1,0.36,1) 0.21s',
+        }}>
+          <div>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: '#111827', margin: '0 0 4px' }}>
+              Solo agent at a brokerage that hasn't subscribed?
+            </p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#6B7280', margin: 0 }}>
+              No problem — individual plans give you full access regardless of your brokerage.
+            </p>
+          </div>
+          <button
+            style={{
+              fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 400,
+              color: '#374151', background: 'transparent',
+              border: '1px solid #E5E7EB', borderRadius: '6px',
+              padding: '9px 18px', cursor: 'pointer', whiteSpace: 'nowrap',
+              transition: 'border-color 0.2s ease, color 0.2s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#29F2DE'; e.currentTarget.style.color = '#29F2DE'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#374151'; }}
+          >
+            Learn More
+          </button>
+        </div>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          #pricing { padding: 80px 24px !important; }
+          #pricing > div > div { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </section>
   );
 }
