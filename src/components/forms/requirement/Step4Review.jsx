@@ -1,6 +1,15 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Check, Loader2 } from 'lucide-react';
+
+const VISIBILITY_OPTIONS = [
+  { value: 'public', label: 'Public', desc: 'Visible to all users on PropMatch' },
+  { value: 'team', label: 'Team / Group Only', desc: 'Only members of selected networking groups' },
+  { value: 'brokerage', label: 'Brokerage Only', desc: 'Only users sharing your Brokerage ID' },
+  { value: 'private', label: 'Private (Invite Only)', desc: 'Direct access link sent to a specific person' },
+];
 
 const fmt = (v) => {
   if (!v && v !== 0) return null;
