@@ -93,29 +93,52 @@ function LineChart({ visible }) {
       padding: '20px 24px',
       marginTop: '28px',
     }}>
-      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', margin: '0 0 16px' }}>
-        Match Activity — Sample Data
-      </p>
+      <div style={{ marginBottom: '12px' }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', margin: '0 0 4px' }}>
+          Matches Surfaced Per Month — Sample Data
+        </p>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.2)', margin: 0 }}>
+          Number of listing ↔ requirement matches automatically found by PropMatch
+        </p>
+      </div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
-        {/* Grid lines */}
-        {[0.25, 0.5, 0.75, 1].map((f, i) => (
-          <line key={i} x1={PAD.l} y1={PAD.t + f * chartH} x2={W - PAD.r} y2={PAD.t + f * chartH}
-            stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-        ))}
+        {/* Y-axis gridlines + labels */}
+        {[0, 25, 50, 75, 100].map((v, i) => {
+          const y = PAD.t + chartH - ((v - minV) / (maxV - minV)) * chartH;
+          return (
+            <g key={i}>
+              <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+              <text x={PAD.l - 6} y={y + 3.5} textAnchor="end"
+                style={{ fontFamily: "'Inter', sans-serif", fontSize: '9px', fill: 'rgba(255,255,255,0.22)' }}>
+                {v}
+              </text>
+            </g>
+          );
+        })}
         {/* Residential line */}
         <polyline points={polyline(RES_DATA)} fill="none" stroke="#00DBC5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
           strokeDasharray={totalLen} strokeDashoffset={dashOffset}
           style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1)' }}
         />
-        {/* Dots on residential */}
+        {/* Dots + value labels on residential */}
         {xs.map((x, i) => (
-          <circle key={i} cx={x} cy={ys(RES_DATA)[i]} r="3.5" fill="#00DBC5"
-            style={{ opacity: dashOffset === 0 ? 1 : 0, transition: `opacity 0.3s ease ${0.8 + i * 0.08}s` }}
-          />
+          <g key={i} style={{ opacity: dashOffset === 0 ? 1 : 0, transition: `opacity 0.3s ease ${0.8 + i * 0.08}s` }}>
+            <circle cx={x} cy={ys(RES_DATA)[i]} r="3.5" fill="#00DBC5" />
+            <text x={x} y={ys(RES_DATA)[i] - 8} textAnchor="middle"
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: '9px', fill: 'rgba(0,219,197,0.7)' }}>
+              {RES_DATA[i]}
+            </text>
+          </g>
         ))}
         {/* Commercial line (dashed) */}
         <polyline points={polyline(COM_DATA)} fill="none" stroke="rgba(0,219,197,0.35)" strokeWidth="1.5"
           strokeDasharray="5 4" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Dots on commercial */}
+        {xs.map((x, i) => (
+          <circle key={i} cx={x} cy={ys(COM_DATA)[i]} r="2.5" fill="rgba(0,219,197,0.4)"
+            style={{ opacity: dashOffset2 === 0 ? 1 : 0, transition: `opacity 0.3s ease ${1 + i * 0.08}s` }}
+          />
+        ))}
         {/* X-axis labels */}
         {MONTHS.map((m, i) => (
           <text key={m} x={xs[i]} y={H - 2} textAnchor="middle"
