@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Users, Lock, Globe, MapPin, Rss, Compass, LayoutGrid } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CreateGroupModal from '../components/groups/CreateGroupModal';
-import GroupsFeed from '../components/groups/GroupsFeed';
+import GroupsFeed from '@/components/groups/GroupsFeed';
 
 const FOCUS_LABELS = {
   commercial: 'Commercial',
