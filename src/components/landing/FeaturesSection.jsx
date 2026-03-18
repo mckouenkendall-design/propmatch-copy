@@ -118,10 +118,6 @@ export default function FeaturesSection() {
                 opacity: visible ? 1 : 0,
                 transitionDelay: visible ? `${i * 0.07}s` : '0s',
               }}
-              style2={{
-                opacity: visible ? 1 : 0,
-                transform: visible ? 'translateY(0)' : 'translateY(24px)',
-              }}
             >
               <div style={{ marginBottom: '20px' }}>{feat.icon}</div>
               <h3 style={{
