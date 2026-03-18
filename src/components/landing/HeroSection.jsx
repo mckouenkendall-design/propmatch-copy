@@ -1,230 +1,418 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
-const PROPERTY_TYPES = ['Office Space', 'Retail Storefront', 'Industrial Flex', 'Single Family Home', 'Multi-Family Unit'];
-const LOCATIONS = ['Detroit, MI', 'Ann Arbor, MI', 'Troy, MI', 'Birmingham, MI', 'Bloomfield Hills, MI'];
+const PROPERTY_TYPES = ['Office Space', 'Retail', 'Industrial', 'Single Family', 'Multi-Family', 'Condo'];
+const CITIES = ['Detroit, MI', 'Ann Arbor, MI', 'Troy, MI', 'Bloomfield Hills, MI', 'Rochester Hills, MI'];
+const BUDGETS = ['$250,000', '$500,000', '$750,000', '$1,200,000', '$2,500,000'];
+
+const MOCK_RESULTS = [
+  { address: '4820 Woodward Ave, Detroit', price: '$485,000', match: 94 },
+  { address: '211 W Fort St, Detroit', price: '$512,000', match: 88 },
+  { address: '1901 St Antoine St, Detroit', price: '$467,500', match: 81 },
+];
 
 export default function HeroSection() {
-  const [typeIndex, setTypeIndex] = useState(0);
-  const [locIndex, setLocIndex] = useState(0);
-  const [matchPulse, setMatchPulse] = useState(false);
-  const [matched, setMatched] = useState(false);
-  const [score, setScore] = useState(0);
-  const [searching, setSearching] = useState(false);
+  const [propType, setPropType] = useState('');
+  const [city, setCity] = useState('');
+  const [budget, setBudget] = useState('');
+  const [state, setState] = useState('idle'); // idle | searching | results
+  const [visibleResults, setVisibleResults] = useState([]);
 
-  // Cycle through property types for the animated demo
+  // Load animation phases
+  const [phase, setPhase] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => {
-      setTypeIndex(i => (i + 1) % PROPERTY_TYPES.length);
-    }, 2800);
-    return () => clearInterval(t);
+    const timers = [0, 120, 240, 360, 480].map((delay, i) =>
+      setTimeout(() => setPhase(p => Math.max(p, i + 1)), delay + 100)
+    );
+    return () => timers.forEach(clearTimeout);
   }, []);
 
-  useEffect(() => {
-    const t = setInterval(() => {
-      setLocIndex(i => (i + 1) % LOCATIONS.length);
-    }, 3200);
-    return () => clearInterval(t);
-  }, []);
-
-  const runMatch = () => {
-    setSearching(true);
-    setMatched(false);
-    setScore(0);
+  const handleFind = () => {
+    if (!propType && !city && !budget) return;
+    setState('searching');
+    setVisibleResults([]);
     setTimeout(() => {
-      setSearching(false);
-      setMatched(true);
-      let s = 0;
-      const interval = setInterval(() => {
-        s += 3;
-        setScore(s);
-        if (s >= 94) clearInterval(interval);
-      }, 20);
-      setMatchPulse(true);
-      setTimeout(() => setMatchPulse(false), 800);
-    }, 1800);
+      setState('results');
+      MOCK_RESULTS.forEach((_, i) => {
+        setTimeout(() => setVisibleResults(r => [...r, i]), i * 120);
+      });
+    }, 1600);
+  };
+
+  const inputStyle = {
+    width: '100%',
+    background: 'rgba(255,255,255,0.07)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: '6px',
+    padding: '10px 12px',
+    fontFamily: "'Inter', sans-serif",
+    fontSize: '13px',
+    color: 'rgba(255,255,255,0.85)',
+    outline: 'none',
+    fontWeight: 300,
+  };
+
+  const labelStyle = {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: '10px',
+    fontWeight: 400,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: 'rgba(255,255,255,0.3)',
+    display: 'block',
+    marginBottom: '6px',
   };
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden" style={{ background: 'linear-gradient(160deg, #f0fafa 0%, #ffffff 50%, #e8f7f6 100%)' }}>
-      {/* Decorative blobs */}
-      <div className="absolute top-20 right-[-100px] w-[500px] h-[500px] rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #4FB3A9, transparent 70%)' }} />
-      <div className="absolute bottom-10 left-[-80px] w-[350px] h-[350px] rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #3A8A82, transparent 70%)' }} />
+    <section style={{
+      background: '#0E1318',
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0 64px',
+      position: 'relative',
+    }}>
+      {/* Radial glow behind right column */}
+      <div style={{
+        position: 'absolute',
+        right: '5%',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        width: '600px',
+        height: '600px',
+        background: 'radial-gradient(ellipse at center, rgba(41,242,222,0.07) 0%, transparent 65%)',
+        pointerEvents: 'none',
+      }} />
 
-      <div className="max-w-7xl mx-auto px-6 pt-28 pb-16 w-full grid lg:grid-cols-2 gap-16 items-center">
-        {/* Left: Copy */}
+      <div style={{ maxWidth: '1240px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'center', paddingTop: '68px' }}>
+
+        {/* Left Column */}
         <div>
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6 font-inter"
-            style={{ background: '#E8F7F6', color: '#3A8A82', border: '1px solid #A8DDD9' }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-tiffany animate-pulse" style={{ background: '#4FB3A9' }} />
-            Now matching agents across Michigan
+          {/* Tag label */}
+          <div style={{
+            opacity: phase >= 1 ? 1 : 0,
+            transform: phase >= 1 ? 'translateY(0)' : 'translateY(24px)',
+            transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+            marginBottom: '28px',
+          }}>
+            <span style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '11px',
+              fontWeight: 400,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: '#29F2DE',
+              border: '1px solid rgba(41,242,222,0.4)',
+              padding: '4px 12px',
+              borderRadius: '4px',
+              background: 'rgba(41,242,222,0.06)',
+            }}>
+              For Licensed Real Estate Professionals
+            </span>
           </div>
 
-          <h1 className="font-playfair text-5xl lg:text-6xl font-700 text-gray-900 leading-tight mb-6">
-            <span style={{ color: '#4FB3A9' }}>PropMatch</span> intelligently pairs property listings with client requirements
-          </h1>
+          {/* H1 */}
+          <div style={{
+            opacity: phase >= 2 ? 1 : 0,
+            transform: phase >= 2 ? 'translateY(0)' : 'translateY(24px)',
+            transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+            marginBottom: '24px',
+          }}>
+            <h1 style={{
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontWeight: 300,
+              fontSize: 'clamp(48px, 5.5vw, 72px)',
+              color: '#FFFFFF',
+              lineHeight: 1.08,
+              margin: 0,
+            }}>
+              Built for Connections.<br />
+              Designed for Closings.
+            </h1>
+          </div>
 
-          <p className="font-inter text-lg text-gray-500 leading-relaxed mb-8 max-w-xl">
-            So you spend less time searching — and more time closing.
-          </p>
+          {/* Subheadline */}
+          <div style={{
+            opacity: phase >= 3 ? 1 : 0,
+            transform: phase >= 3 ? 'translateY(0)' : 'translateY(24px)',
+            transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+            marginBottom: '36px',
+          }}>
+            <p style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '17px',
+              fontWeight: 300,
+              color: 'rgba(255,255,255,0.55)',
+              lineHeight: 1.7,
+              maxWidth: '440px',
+              margin: 0,
+            }}>
+              PropMatch intelligently pairs property listings with client requirements — so you spend less time searching and more time closing.
+            </p>
+          </div>
 
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-              className="tiffany-btn px-7 py-3 text-base font-inter"
+          {/* Buttons */}
+          <div style={{
+            opacity: phase >= 4 ? 1 : 0,
+            transform: phase >= 4 ? 'translateY(0)' : 'translateY(24px)',
+            transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+            display: 'flex',
+            gap: '14px',
+            flexWrap: 'wrap',
+          }}>
+            <Link
+              to="/Dashboard"
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '13px',
+                fontWeight: 500,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                color: '#111827',
+                background: '#29F2DE',
+                padding: '13px 28px',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                transition: 'background 0.2s ease',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#3A8C84'}
+              onMouseLeave={e => e.currentTarget.style.background = '#29F2DE'}
             >
               Join PropMatch
-            </button>
+            </Link>
             <button
               onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
-              className="tiffany-btn-outline px-7 py-3 text-base font-inter"
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '13px',
+                fontWeight: 400,
+                color: 'white',
+                background: 'transparent',
+                border: '1.5px solid rgba(255,255,255,0.3)',
+                padding: '13px 28px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'border-color 0.2s ease, color 0.2s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#29F2DE'; e.currentTarget.style.color = '#29F2DE'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = 'white'; }}
             >
-              See How It Works
+              See It In Action
             </button>
-          </div>
-
-          {/* Trust indicators */}
-          <div className="mt-10 flex items-center gap-6 flex-wrap">
-            {[
-              { value: '2,400+', label: 'Active Agents' },
-              { value: '$1.2B+', label: 'Deals Matched' },
-              { value: '94%', label: 'Match Accuracy' },
-            ].map(stat => (
-              <div key={stat.label} className="text-center">
-                <div className="font-playfair text-2xl font-bold" style={{ color: '#3A8A82' }}>{stat.value}</div>
-                <div className="font-inter text-xs text-gray-400 mt-0.5">{stat.label}</div>
-              </div>
-            ))}
           </div>
         </div>
 
-        {/* Right: Interactive Demo Card */}
-        <div className="relative">
-          <div
-            className="rounded-2xl p-6 shadow-2xl border"
-            style={{ background: 'white', borderColor: '#E0F0EE' }}
-          >
-            <div className="text-xs font-semibold uppercase tracking-widest mb-4 font-inter" style={{ color: '#4FB3A9' }}>
-              Live Match Simulator
+        {/* Right Column — Demo Widget */}
+        <div style={{
+          opacity: phase >= 5 ? 1 : 0,
+          transform: phase >= 5 ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+        }}>
+          <div style={{
+            background: 'rgba(255,255,255,0.05)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            overflow: 'hidden',
+          }}>
+            {/* Widget top bar */}
+            <div style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid rgba(255,255,255,0.07)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+            }}>
+              <div style={{
+                width: '8px', height: '8px', borderRadius: '50%', background: '#29F2DE',
+                boxShadow: '0 0 6px #29F2DE',
+                animation: 'pulse-dot 1.8s ease-in-out infinite',
+              }} />
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.4)' }}>
+                Live Match Engine Demo
+              </span>
             </div>
 
-            <div className="space-y-4 mb-5">
-              {/* Property Type */}
-              <div>
-                <label className="block text-xs text-gray-400 font-inter mb-1">Property Type</label>
-                <div
-                  className="rounded-md px-3 py-2.5 text-sm font-inter font-medium border transition-all"
-                  style={{ borderColor: '#A8DDD9', background: '#F0FAFA', color: '#2D6B65', minHeight: '38px' }}
-                >
-                  <span key={typeIndex} className="inline-block animate-pulse">{PROPERTY_TYPES[typeIndex]}</span>
+            {/* Widget inputs */}
+            <div style={{ padding: '24px 24px 20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                <div>
+                  <label style={labelStyle}>Property Type</label>
+                  <select value={propType} onChange={e => setPropType(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+                    <option value="">Any</option>
+                    {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>City</label>
+                  <select value={city} onChange={e => setCity(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+                    <option value="">Any</option>
+                    {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>Max Budget</label>
+                  <select value={budget} onChange={e => setBudget(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+                    <option value="">Any</option>
+                    {BUDGETS.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
                 </div>
               </div>
-
-              {/* Location */}
-              <div>
-                <label className="block text-xs text-gray-400 font-inter mb-1">Location</label>
-                <div
-                  className="rounded-md px-3 py-2.5 text-sm font-inter font-medium border"
-                  style={{ borderColor: '#A8DDD9', background: '#F0FAFA', color: '#2D6B65' }}
-                >
-                  <span key={locIndex}>{LOCATIONS[locIndex]}</span>
-                </div>
-              </div>
-
-              {/* Budget */}
-              <div>
-                <label className="block text-xs text-gray-400 font-inter mb-1">Max Budget</label>
-                <div
-                  className="rounded-md px-3 py-2.5 text-sm font-inter font-medium border"
-                  style={{ borderColor: '#A8DDD9', background: '#F0FAFA', color: '#2D6B65' }}
-                >
-                  $750,000
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={runMatch}
-              disabled={searching}
-              className="w-full tiffany-btn py-3 text-sm font-inter rounded-md flex items-center justify-center gap-2"
-            >
-              {searching ? (
-                <>
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                  </svg>
-                  Scanning listings...
-                </>
-              ) : '⚡ Find My Matches'}
-            </button>
-
-            {/* Match Result */}
-            {matched && (
-              <div
-                className="mt-4 rounded-xl p-4 border"
+              <button
+                onClick={handleFind}
                 style={{
-                  background: 'linear-gradient(135deg, #E8F7F6, #F0FAFA)',
-                  borderColor: '#4FB3A9',
-                  animation: matchPulse ? 'none' : undefined
+                  width: '100%',
+                  background: '#29F2DE',
+                  color: '#111827',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '11px',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'background 0.2s ease',
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = '#3A8C84'}
+                onMouseLeave={e => e.currentTarget.style.background = '#29F2DE'}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold font-inter text-gray-700">🎯 Top Match Found</span>
-                  <span
-                    className="text-xs font-bold px-2 py-1 rounded font-inter"
-                    style={{ background: '#4FB3A9', color: 'white' }}
-                  >
-                    {score}% Match
-                  </span>
+                Find Matches →
+              </button>
+            </div>
+
+            {/* Results area */}
+            <div style={{ minHeight: '200px', borderTop: '1px solid rgba(255,255,255,0.07)', padding: '20px 24px 24px' }}>
+              {state === 'idle' && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '160px', gap: '10px' }}>
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" strokeLinecap="round">
+                    <circle cx="14" cy="14" r="9" />
+                    <line x1="21" y1="21" x2="27" y2="27" />
+                  </svg>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', margin: 0, lineHeight: 1.6 }}>
+                    Enter criteria above to see<br />intelligent property matches
+                  </p>
                 </div>
-                <div className="space-y-1.5">
-                  {[
-                    { label: 'Property', value: '3,200 SF Office · Troy, MI' },
-                    { label: 'Price', value: '$28/SF/yr · Gross Lease' },
-                    { label: 'Agent', value: 'Sarah K. · Signature Sotheby\'s' },
-                  ].map(row => (
-                    <div key={row.label} className="flex justify-between text-xs font-inter">
-                      <span className="text-gray-400">{row.label}</span>
-                      <span className="text-gray-700 font-medium">{row.value}</span>
+              )}
+
+              {state === 'searching' && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '160px', gap: '14px' }}>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {[0, 1, 2].map(i => (
+                      <div key={i} style={{
+                        width: '7px', height: '7px', borderRadius: '50%', background: '#29F2DE',
+                        animation: `bounce-dot 1.2s ease-in-out ${i * 0.2}s infinite`,
+                      }} />
+                    ))}
+                  </div>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.35)', margin: 0 }}>
+                    Analyzing compatibility vectors…
+                  </p>
+                </div>
+              )}
+
+              {state === 'results' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+                    <ScoreRing score={94} />
+                    <div>
+                      <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>
+                        {MOCK_RESULTS.length} matches found
+                      </p>
+                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: 0 }}>
+                        {city || 'Detroit area'} · up to {budget || '$500,000'}
+                      </p>
                     </div>
-                  ))}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {MOCK_RESULTS.map((r, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          padding: '10px 14px',
+                          borderRadius: '6px',
+                          border: i === 0 ? '1px solid rgba(41,242,222,0.25)' : '1px solid rgba(255,255,255,0.07)',
+                          background: i === 0 ? 'rgba(41,242,222,0.08)' : 'rgba(255,255,255,0.03)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          opacity: visibleResults.includes(i) ? 1 : 0,
+                          transform: visibleResults.includes(i) ? 'translateY(0)' : 'translateY(10px)',
+                          transition: 'opacity 0.4s ease, transform 0.4s ease',
+                        }}
+                      >
+                        <div>
+                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.8)', margin: '0 0 2px' }}>{r.address}</p>
+                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: 0 }}>{r.price}</p>
+                        </div>
+                        <span style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          color: '#29F2DE',
+                          background: 'rgba(41,242,222,0.1)',
+                          border: '1px solid rgba(41,242,222,0.25)',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                        }}>
+                          {r.match}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="mt-3 h-1.5 rounded-full" style={{ background: '#E0F0EE' }}>
-                  <div
-                    className="h-1.5 rounded-full transition-all duration-1000"
-                    style={{ width: `${score}%`, background: 'linear-gradient(90deg, #4FB3A9, #3A8A82)' }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Floating badges */}
-          <div
-            className="absolute -top-4 -right-4 px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg font-inter hidden lg:block"
-            style={{ background: 'white', color: '#3A8A82', border: '1px solid #A8DDD9' }}
-          >
-            ✓ Verified Agents Only
-          </div>
-          <div
-            className="absolute -bottom-4 -left-4 px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg font-inter hidden lg:block"
-            style={{ background: 'white', color: '#3A8A82', border: '1px solid #A8DDD9' }}
-          >
-            🔒 License Verified
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40">
-        <span className="text-xs font-inter text-gray-500">Scroll to explore</span>
-        <div className="w-5 h-8 rounded-full border-2 border-gray-300 flex items-start justify-center p-1">
-          <div className="w-1 h-2 rounded-full bg-gray-400 animate-bounce" />
-        </div>
-      </div>
+      <style>{`
+        @keyframes pulse-dot {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+        @keyframes bounce-dot {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+        @media (max-width: 768px) {
+          section[data-section="hero"] { padding: 80px 24px !important; }
+        }
+      `}</style>
     </section>
+  );
+}
+
+function ScoreRing({ score }) {
+  const r = 22;
+  const circ = 2 * Math.PI * r;
+  const [offset, setOffset] = useState(circ);
+
+  useEffect(() => {
+    const t = setTimeout(() => setOffset(circ * (1 - score / 100)), 200);
+    return () => clearTimeout(t);
+  }, [score, circ]);
+
+  return (
+    <div style={{ position: 'relative', width: '58px', height: '58px', flexShrink: 0 }}>
+      <svg width="58" height="58" viewBox="0 0 58 58">
+        <circle cx="29" cy="29" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
+        <circle
+          cx="29" cy="29" r={r} fill="none" stroke="#29F2DE" strokeWidth="4"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform="rotate(-90 29 29)"
+          style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1)' }}
+        />
+      </svg>
+      <span style={{
+        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+        fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500, color: '#29F2DE',
+      }}>
+        {score}%
+      </span>
+    </div>
   );
 }
