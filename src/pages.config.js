@@ -47,6 +47,7 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import Dealboard from './pages/Dealboard';
 import Listings from './pages/Listings';
