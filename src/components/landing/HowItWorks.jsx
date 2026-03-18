@@ -1,160 +1,174 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+function useScrollReveal(threshold = 0.12) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, visible];
+}
+
 const STEPS = [
   {
-    number: '01',
-    title: 'Create Your Verified Profile',
-    desc: 'Sign up with your name, brokerage, and employing broker license ID. PropMatch verifies your credentials so clients and fellow agents know you\'re the real deal.',
-    outcome: 'Your verified badge unlocks full platform access.',
-    icon: '🪪',
+    num: '01',
+    title: 'List Your Inventory',
+    body: 'Add your active property listings and client requirements. The more detail you provide, the smarter the matching.',
   },
   {
-    number: '02',
-    title: 'Post Listings & Requirements',
-    desc: 'Enter your active listings and active buyer or tenant requirements in minutes. Our smart forms guide you through every relevant detail — property type, size, price, amenities, and more.',
-    outcome: 'Your listings and requirements are live and searchable instantly.',
-    icon: '📝',
+    num: '02',
+    title: 'Receive Ranked Matches',
+    body: "PropMatch's engine instantly calculates compatibility scores across your entire portfolio — surfacing your highest-value connections first.",
   },
   {
-    number: '03',
-    title: 'PropMatch Finds Your Matches',
-    desc: 'Our matching engine continuously scans the network, comparing your requirements against active listings — and your listings against active requirements — scoring every potential match.',
-    outcome: 'You get ranked matches with compatibility scores, not noise.',
-    icon: '⚡',
-  },
-  {
-    number: '04',
-    title: 'Connect & Collaborate',
-    desc: 'Reach out directly to the listing or requirement holder via in-platform messaging. Join groups, attend events, and build the relationships that turn matches into closed deals.',
-    outcome: 'Warm introductions backed by data — not cold calls.',
-  },
-  {
-    number: '05',
-    title: 'Close the Deal',
-    desc: 'Track your pipeline on the Deal Board. Move opportunities through stages, stay on top of follow-ups, and record your wins. Your performance data informs every future recommendation.',
-    outcome: 'More closings, less chaos, every quarter.',
-    icon: '🏆',
+    num: '03',
+    title: 'Close With Confidence',
+    body: 'Approach every showing backed by data. Spend less time prospecting, more time at the closing table.',
   },
 ];
 
 export default function HowItWorks() {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  const [activeStep, setActiveStep] = useState(0);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold: 0.1 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
-  // Auto-advance active step
-  useEffect(() => {
-    if (!visible) return;
-    const interval = setInterval(() => {
-      setActiveStep(s => (s + 1) % STEPS.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [visible]);
+  const [ref, visible] = useScrollReveal(0.12);
 
   return (
-    <section id="how-it-works" ref={ref} className="py-24 px-6" style={{ background: '#F8FFFE' }}>
-      <div className="max-w-7xl mx-auto">
-        <div className={`text-center mb-16 fade-in-up ${visible ? 'visible' : ''}`}>
-          <p className="font-inter text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#4FB3A9' }}>
+    <section id="how-it-works" ref={ref} style={{ background: '#F9FAFB', padding: '120px 64px', borderTop: '1px solid #E5E7EB' }}>
+      <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{
+          marginBottom: '56px',
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+        }}>
+          <span style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '11px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: '#29F2DE',
+            border: '1px solid rgba(41,242,222,0.4)',
+            padding: '4px 12px',
+            borderRadius: '4px',
+            background: 'rgba(41,242,222,0.06)',
+            display: 'inline-block',
+            marginBottom: '20px',
+          }}>
             How It Works
-          </p>
-          <h2 className="font-playfair text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-            From signup to <span style={{ color: '#4FB3A9' }}>closed deal</span> in five steps
+          </span>
+          <h2 style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontWeight: 300,
+            fontSize: '46px',
+            color: '#111827',
+            lineHeight: 1.15,
+            margin: 0,
+          }}>
+            From listing to closing, faster.
           </h2>
-          <p className="font-inter text-lg text-gray-500 max-w-xl mx-auto">
-            Straightforward. Powerful. Built around how agents actually work.
+        </div>
+
+        {/* Video placeholder */}
+        <div style={{
+          background: '#0E1318',
+          borderRadius: '8px',
+          aspectRatio: '16/9',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '16px',
+          marginBottom: '56px',
+          border: '1px solid #E5E7EB',
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1) 0.07s, transform 0.55s cubic-bezier(0.22,1,0.36,1) 0.07s',
+        }}>
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '50%',
+            border: '1.5px solid rgba(41,242,222,0.4)',
+            background: 'rgba(41,242,222,0.06)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#29F2DE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          </div>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>
+            Demo coming soon
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-16 items-start">
-          {/* Step List */}
-          <div className="space-y-3">
-            {STEPS.map((step, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveStep(i)}
-                className={`w-full text-left p-5 rounded-xl border transition-all duration-300 fade-in-left stagger-${i + 1} ${visible ? 'visible' : ''}`}
-                style={{
-                  borderColor: activeStep === i ? '#4FB3A9' : '#E5E7EB',
-                  background: activeStep === i ? 'white' : 'transparent',
-                  boxShadow: activeStep === i ? '0 4px 20px rgba(79,179,169,0.12)' : 'none',
-                }}
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-playfair font-bold text-lg transition-all duration-300"
-                    style={{
-                      background: activeStep === i ? 'linear-gradient(135deg, #4FB3A9, #3A8A82)' : '#E8F7F6',
-                      color: activeStep === i ? 'white' : '#4FB3A9',
-                    }}
-                  >
-                    {step.number}
-                  </div>
-                  <div>
-                    <div className="font-inter font-semibold text-gray-900 text-sm">{step.title}</div>
-                    {activeStep !== i && (
-                      <div className="font-inter text-xs text-gray-400 mt-0.5 line-clamp-1">{step.desc.slice(0, 60)}...</div>
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Step Detail */}
-          <div
-            className={`sticky top-24 p-8 rounded-2xl border fade-in-right ${visible ? 'visible' : ''}`}
-            style={{ background: 'white', borderColor: '#A8DDD9', boxShadow: '0 8px 40px rgba(79,179,169,0.12)' }}
-          >
-            <div className="text-5xl mb-6">{STEPS[activeStep].icon || '📌'}</div>
+        {/* Step grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', border: '1px solid #E5E7EB' }}>
+          {STEPS.map((step, i) => (
             <div
-              className="inline-block font-playfair text-6xl font-bold mb-4"
-              style={{ color: '#E8F7F6', WebkitTextStroke: '2px #4FB3A9' }}
+              key={i}
+              style={{
+                padding: '40px 36px',
+                borderRight: i < STEPS.length - 1 ? '1px solid #E5E7EB' : 'none',
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'translateY(0)' : 'translateY(24px)',
+                transition: `opacity 0.55s cubic-bezier(0.22,1,0.36,1) ${0.14 + i * 0.07}s, transform 0.55s cubic-bezier(0.22,1,0.36,1) ${0.14 + i * 0.07}s`,
+              }}
             >
-              {STEPS[activeStep].number}
-            </div>
-            <h3 className="font-playfair text-2xl font-bold text-gray-900 mb-4">
-              {STEPS[activeStep].title}
-            </h3>
-            <p className="font-inter text-gray-500 leading-relaxed mb-6">
-              {STEPS[activeStep].desc}
-            </p>
-            <div
-              className="flex items-start gap-3 p-4 rounded-xl"
-              style={{ background: '#F0FAFA', borderLeft: '3px solid #4FB3A9' }}
-            >
-              <span className="text-lg mt-0.5">✅</span>
-              <p className="font-inter text-sm font-medium" style={{ color: '#2D6B65' }}>
-                {STEPS[activeStep].outcome}
+              {/* Oversized step number */}
+              <div style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontWeight: 300,
+                fontSize: '72px',
+                color: 'rgba(41,242,222,0.15)',
+                lineHeight: 1,
+                marginBottom: '12px',
+              }}>
+                {step.num}
+              </div>
+              {/* Tiffany circle accent */}
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '50%',
+                border: '1px solid #29F2DE',
+                background: 'rgba(41,242,222,0.06)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: '20px',
+              }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#29F2DE' }} />
+              </div>
+              <h4 style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontWeight: 500,
+                fontSize: '20px',
+                color: '#111827',
+                margin: '0 0 12px',
+              }}>
+                {step.title}
+              </h4>
+              <p style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                color: '#6B7280',
+                lineHeight: 1.75,
+                margin: 0,
+              }}>
+                {step.body}
               </p>
             </div>
-
-            {/* Progress dots */}
-            <div className="flex gap-2 mt-6">
-              {STEPS.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveStep(i)}
-                  className="w-2 h-2 rounded-full transition-all duration-300"
-                  style={{
-                    background: activeStep === i ? '#4FB3A9' : '#D1E8E6',
-                    width: activeStep === i ? '20px' : '8px',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          #how-it-works { padding: 80px 24px !important; }
+          #how-it-works > div > div:last-child { grid-template-columns: 1fr !important; }
+          #how-it-works > div > div:last-child > div { border-right: none !important; border-bottom: 1px solid #E5E7EB; }
+        }
+      `}</style>
     </section>
   );
 }

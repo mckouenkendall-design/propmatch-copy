@@ -1,132 +1,158 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+function useScrollReveal(threshold = 0.12) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, visible];
+}
+
 const FEATURES = [
   {
     icon: (
-      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#29F2DE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="9" cy="12" r="6" />
+        <circle cx="15" cy="12" r="6" />
+        <circle cx="12" cy="12" r="1.5" fill="#29F2DE" stroke="none" />
       </svg>
     ),
-    title: 'Intelligent Matching Engine',
-    desc: 'Our algorithm compares dozens of attributes — property type, size, budget, location, amenities — and returns a compatibility score so you focus on the right opportunities first.',
-    highlight: '94% accuracy',
+    title: 'Intelligent Matching',
+    body: 'Proprietary compatibility scoring analyzes 40+ property attributes against client requirements to surface deals you\'d otherwise miss.',
   },
   {
     icon: (
-      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#29F2DE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <line x1="9" y1="9" x2="15" y2="9" />
+        <line x1="9" y1="13" x2="15" y2="13" />
+        <line x1="9" y1="17" x2="12" y2="17" />
+        <polyline points="17 16 19 18 23 14" />
       </svg>
     ),
-    title: 'Verified Agent Network',
-    desc: 'Every user is verified against their state broker ID. Connect, collaborate, and co-broker with confidence — knowing every agent on the platform is licensed and legitimate.',
-    highlight: 'License verified',
+    title: 'Streamlined Workflow',
+    body: 'Templates, saved searches, and automated requirement tracking eliminate the manual overhead of managing active buyer and seller pipelines.',
   },
   {
     icon: (
-      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#29F2DE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="6" cy="12" r="2.5" />
+        <circle cx="18" cy="6" r="2.5" />
+        <circle cx="18" cy="18" r="2.5" />
+        <line x1="8.5" y1="11" x2="15.5" y2="7" />
+        <line x1="8.5" y1="13" x2="15.5" y2="17" />
       </svg>
     ),
-    title: 'Deal Board & Pipeline',
-    desc: 'Track every deal from introduction to close. A visual Kanban-style board keeps your pipeline organized, your follow-ups timely, and your commissions visible.',
-    highlight: 'Full pipeline view',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-    ),
-    title: 'Agent-to-Agent Messaging',
-    desc: 'Communicate directly with agents whose listings or requirements match yours. No email chains, no cold calls — just clean, contextual conversations around a deal.',
-    highlight: 'In-platform comms',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
-      </svg>
-    ),
-    title: 'Market Insights & Analytics',
-    desc: 'Know your market. See trends in demand by area, property type, and price range. Use live data to advise your clients with authority and close deals faster.',
-    highlight: 'Live market data',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      </svg>
-    ),
-    title: 'Visibility Controls',
-    desc: 'Choose who sees each listing or requirement — public, team-only, brokerage-only, or private. Share selectively and protect sensitive client information at all times.',
-    highlight: 'Granular privacy',
+    title: 'Professional Network',
+    body: 'Connect with agents across brokerages, share off-market opportunities, and build co-op relationships through verified professional groups.',
   },
 ];
 
 export default function FeaturesSection() {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  const [activeCard, setActiveCard] = useState(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold: 0.1 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
+  const [ref, visible] = useScrollReveal(0.12);
+  const [hovered, setHovered] = useState(null);
 
   return (
-    <section id="features" ref={ref} className="py-24 px-6 bg-white">
-      <div className="max-w-7xl mx-auto">
-        <div className={`text-center mb-16 fade-in-up ${visible ? 'visible' : ''}`}>
-          <p className="font-inter text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#4FB3A9' }}>
+    <section id="features" ref={ref} style={{ background: '#FFFFFF', padding: '120px 64px' }}>
+      <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{
+          marginBottom: '64px',
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+        }}>
+          <span style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '11px',
+            fontWeight: 400,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: '#29F2DE',
+            border: '1px solid rgba(41,242,222,0.4)',
+            padding: '4px 12px',
+            borderRadius: '4px',
+            background: 'rgba(41,242,222,0.06)',
+            display: 'inline-block',
+            marginBottom: '20px',
+          }}>
             Platform Features
-          </p>
-          <h2 className="font-playfair text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-            Everything you need to <span style={{ color: '#4FB3A9' }}>close more deals</span>
+          </span>
+          <h2 style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontWeight: 300,
+            fontSize: '46px',
+            color: '#111827',
+            lineHeight: 1.15,
+            maxWidth: '520px',
+            margin: 0,
+          }}>
+            Built for the modern real estate professional.
           </h2>
-          <p className="font-inter text-lg text-gray-500 max-w-2xl mx-auto">
-            Built specifically for real estate professionals — no bloat, no fluff. Just the tools that move deals forward.
-          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
           {FEATURES.map((feat, i) => (
             <div
               key={i}
-              onMouseEnter={() => setActiveCard(i)}
-              onMouseLeave={() => setActiveCard(null)}
-              className={`p-6 rounded-xl border cursor-default transition-all duration-300 fade-in-up stagger-${Math.min(i + 1, 5)} ${visible ? 'visible' : ''}`}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
               style={{
-                borderColor: activeCard === i ? '#4FB3A9' : '#E5E7EB',
-                background: activeCard === i ? '#F0FAFA' : 'white',
-                boxShadow: activeCard === i ? '0 8px 30px rgba(79,179,169,0.15)' : '0 1px 4px rgba(0,0,0,0.05)',
-                transform: activeCard === i ? 'translateY(-4px)' : 'translateY(0)',
+                background: '#FFFFFF',
+                border: `1px solid ${hovered === i ? 'rgba(41,242,222,0.5)' : '#E5E7EB'}`,
+                borderRadius: '8px',
+                padding: '36px 32px',
+                cursor: 'default',
+                boxShadow: hovered === i ? '0 8px 32px rgba(41,242,222,0.12)' : 'none',
+                transform: hovered === i ? 'translateY(-2px)' : 'translateY(0)',
+                transition: 'border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease',
+                opacity: visible ? 1 : 0,
+                transitionDelay: visible ? `${i * 0.07}s` : '0s',
+              }}
+              style2={{
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'translateY(0)' : 'translateY(24px)',
               }}
             >
-              <div
-                className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-all duration-300"
-                style={{
-                  background: activeCard === i ? 'linear-gradient(135deg, #4FB3A9, #3A8A82)' : '#E8F7F6',
-                  color: activeCard === i ? 'white' : '#4FB3A9',
-                }}
-              >
-                {feat.icon}
-              </div>
-              <div
-                className="inline-block text-xs font-semibold font-inter px-2 py-0.5 rounded mb-3"
-                style={{ background: '#E8F7F6', color: '#3A8A82' }}
-              >
-                {feat.highlight}
-              </div>
-              <h3 className="font-inter font-semibold text-gray-900 text-lg mb-2">{feat.title}</h3>
-              <p className="font-inter text-sm text-gray-500 leading-relaxed">{feat.desc}</p>
+              <div style={{ marginBottom: '20px' }}>{feat.icon}</div>
+              <h3 style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontWeight: 500,
+                fontSize: '22px',
+                color: '#111827',
+                margin: '0 0 12px',
+              }}>
+                {feat.title}
+              </h3>
+              <p style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                color: '#6B7280',
+                lineHeight: 1.75,
+                margin: 0,
+              }}>
+                {feat.body}
+              </p>
             </div>
           ))}
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          #features > div > div:last-child { grid-template-columns: 1fr !important; }
+          #features { padding: 80px 24px !important; }
+        }
+      `}</style>
     </section>
   );
 }
