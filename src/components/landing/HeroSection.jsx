@@ -148,45 +148,74 @@ function ScoreRing({ score, animate }) {
   );
 }
 
-function MatchBreakdown({ match, propType, onClose }) {
-  const reasons = match.reasons.slice(0, 4);
-  const weights = [32, 28, 22, 18];
+function FactorBar({ label, score, note }) {
+  const color = score === 100 ? ACCENT : score >= 80 ? ACCENT : score >= 50 ? '#f5a623' : '#e05252';
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
+        <div>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>{label}</span>
+          {note && <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginLeft: '6px' }}>{note}</span>}
+        </div>
+        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 500, color, flexShrink: 0, marginLeft: '8px' }}>{score}%</span>
+      </div>
+      <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px' }}>
+        <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: '4px', transition: 'width 1s cubic-bezier(0.22,1,0.36,1)' }} />
+      </div>
+    </div>
+  );
+}
+
+function MatchBreakdown({ match, scenario, onClose }) {
+  const { factors } = match;
+  const budgetNum = parseBudget(scenario.budget);
+  const isOverBudget = match.priceNum > budgetNum;
+  const overBy = isOverBudget ? fmtPrice(match.priceNum - budgetNum) : null;
+
   return (
     <div style={{
       position: 'absolute', inset: 0, zIndex: 10,
       background: 'rgba(14,19,24,0.97)', borderRadius: '8px',
-      padding: '20px 22px', overflowY: 'auto',
+      padding: '18px 20px', overflowY: 'auto',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-        <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '13px', fontWeight: 500, color: 'white' }}>
           Match Breakdown
         </span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '18px', lineHeight: 1, padding: '2px 6px' }}>×</button>
       </div>
-      <div style={{ marginBottom: '14px', padding: '10px 14px', background: 'rgba(0,219,197,0.08)', border: `1px solid rgba(0,219,197,0.2)`, borderRadius: '6px' }}>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: '0 0 4px' }}>{match.address}</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '22px', fontWeight: 300, color: ACCENT }}>{match.match}%</span>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>compatibility score</span>
+
+      {/* Summary card */}
+      <div style={{ marginBottom: '14px', padding: '10px 13px', background: 'rgba(0,219,197,0.07)', border: `1px solid rgba(0,219,197,0.18)`, borderRadius: '6px' }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: '0 0 3px' }}>{match.address}</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+            <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 300, color: ACCENT }}>{match.match}%</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>overall match</span>
+          </div>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: isOverBudget ? '#e05252' : ACCENT }}>
+            {match.price}{isOverBudget ? ' ↑' : ' ✓'}
+          </span>
         </div>
+        {isOverBudget && (
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', color: '#e05252', margin: '4px 0 0' }}>
+            {overBy} over max budget of {scenario.budget}
+          </p>
+        )}
       </div>
-      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', margin: '0 0 10px' }}>
+
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', margin: '0 0 12px' }}>
         Scoring factors
       </p>
-      {reasons.map((r, i) => (
-        <div key={i} style={{ marginBottom: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.65)' }}>{r}</span>
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: ACCENT }}>{weights[i]}%</span>
-          </div>
-          <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px' }}>
-            <div style={{ height: '100%', width: `${weights[i] * 2.8}%`, background: ACCENT, borderRadius: '3px', transition: 'width 0.8s ease' }} />
-          </div>
-        </div>
-      ))}
-      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginTop: '14px' }}>
-        Score based on {propType} attribute compatibility across location, price, size, and usage requirements.
-      </p>
+
+      <FactorBar label="Location" score={factors.location} note={factors.location === 100 ? '— exact city match' : '— nearby market'} />
+      <FactorBar label="Square Footage" score={factors.sqft} note={factors.sqft === 100 ? '— within required range' : '— partial size match'} />
+      <FactorBar
+        label="Budget"
+        score={factors.budget}
+        note={isOverBudget ? `— ${overBy} over limit` : '— within budget'}
+      />
+      <FactorBar label={factors.featureLabel} score={factors.feature} note={factors.feature === 100 ? '— confirmed' : factors.feature >= 50 ? '— partial' : '— not matched'} />
     </div>
   );
 }
