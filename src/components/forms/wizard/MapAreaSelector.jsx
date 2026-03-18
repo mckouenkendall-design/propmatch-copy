@@ -525,8 +525,8 @@ export default function MapAreaSelector({ existingAreas = [], onSave, onClose })
         </div>
 
         {/* Map */}
-        <div className="flex-1 min-h-0" style={{ height: 380 }}>
-          <MapContainer center={[42.45, -83.1]} zoom={9} style={{ height: '100%', width: '100%' }}>
+        <div className="flex-1 min-h-0" style={{ height: 380, minHeight: 380 }}>
+          <MapContainer center={[42.45, -83.1]} zoom={9} style={{ height: '100%', width: '100%', minHeight: 380 }}>
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
