@@ -531,6 +531,7 @@ export default function MapAreaSelector({ existingAreas = [], onSave, onClose })
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             />
+            <InvalidateSize />
             <ClickHandler onMapClick={handleMapClick} active={isClickActive} />
             {flyTarget && <FlyTo target={flyTarget} />}
             {fitBounds && <FitBounds bounds={fitBounds} />}
