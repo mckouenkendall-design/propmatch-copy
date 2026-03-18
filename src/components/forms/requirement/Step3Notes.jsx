@@ -22,12 +22,6 @@ export default function ReqStep3({ data, update, onNext }) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1.5">
-        <Label>Requirement Title <span className="text-red-500">*</span></Label>
-        <Input value={data.title} onChange={e => update({ title: e.target.value })} placeholder="e.g. Client needs 5,000 SF office in Ferndale" />
-        <p className="text-xs text-gray-400">This is how your requirement will appear on the board.</p>
-      </div>
-
       <div className="space-y-2">
         <Label>Must-Have Amenities</Label>
         <div className="flex flex-wrap gap-2">
@@ -54,7 +48,7 @@ export default function ReqStep3({ data, update, onNext }) {
         <Button variant="outline" onClick={() => setShowSave(true)} className="gap-2 text-gray-600">
           <Bookmark className="w-4 h-4" /> Save as Template
         </Button>
-        <Button onClick={onNext} disabled={!data.title} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
+        <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
           Review <ArrowRight className="w-4 h-4" />
         </Button>
       </div>

@@ -46,8 +46,21 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       const submitData = {
         ...data,
         property_details: JSON.stringify(data.property_details || {}),
-        // Auto-generate title if not set
-        title: data.title || [data.property_type?.replace(/_/g, ' '), data.transaction_type, data.city].filter(Boolean).join(' · '),
+        // Auto-generate title
+        title: (() => {
+          const typeMap = {
+            office: 'Office Space', medical_office: 'Medical Office Space', retail: 'Retail Space',
+            industrial_flex: 'Industrial/Flex Space', land: 'Land', special_use: 'Special Use Property',
+            single_family: 'Single Family Home', condo: 'Condo', apartment: 'Apartment',
+            multi_family: 'Multi-Family Property', multi_family_5: 'Multi-Family (5+) Property',
+            townhouse: 'Townhouse', manufactured: 'Manufactured Home', land_residential: 'Residential Land',
+          };
+          const txMap = { lease: 'for Lease', sublease: 'for Sublease', sale: 'for Sale', rent: 'for Rent' };
+          const type = typeMap[data.property_type] || data.property_type?.replace(/_/g, ' ');
+          const tx = txMap[data.transaction_type] || data.transaction_type;
+          const loc = [data.city, data.state].filter(Boolean).join(', ');
+          return `${type} ${tx}${loc ? ` in ${loc}` : ''}`;
+        })(),
       };
       if (submitData.price) submitData.price = parseFloat(submitData.price);
       if (submitData.size_sqft) submitData.size_sqft = parseFloat(submitData.size_sqft);

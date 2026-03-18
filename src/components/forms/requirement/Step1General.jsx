@@ -28,15 +28,10 @@ const RESIDENTIAL_TYPES = [
 
 export default function ReqStep1({ data, update, onNext }) {
   const types = data.property_category === 'commercial' ? COMMERCIAL_TYPES : RESIDENTIAL_TYPES;
-  const canNext = data.property_type && data.transaction_type && data.client_name;
+  const canNext = data.property_type && data.transaction_type;
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1.5">
-        <Label>Client Name <span className="text-red-500">*</span></Label>
-        <Input value={data.client_name} onChange={e => update({ client_name: e.target.value })} placeholder="e.g. Jane Smith" />
-      </div>
-
       <div className="space-y-2">
         <Label>Property Type <span className="text-red-500">*</span></Label>
         <div className="grid grid-cols-3 gap-3">
@@ -72,20 +67,37 @@ export default function ReqStep1({ data, update, onNext }) {
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label>Price Range ($)</Label>
-        <div className="flex items-center gap-3">
-          <Input type="number" placeholder="Min" value={data.min_price} onChange={e => update({ min_price: e.target.value })} className="flex-1" />
-          <span className="text-gray-400 font-medium flex-shrink-0">–</span>
-          <Input type="number" placeholder="Max" value={data.max_price} onChange={e => update({ max_price: e.target.value })} className="flex-1" />
-        </div>
-      </div>
-
-      <ToggleGroup label="Transaction Type *" value={data.transaction_type} onChange={v => update({ transaction_type: v })}
+      <ToggleGroup label="Transaction Type *" value={data.transaction_type} onChange={v => {
+          const defaultPeriod = v === 'purchase' ? 'purchase' : v === 'rent' ? 'per_month' : 'per_sf_per_year';
+          update({ transaction_type: v, price_period: defaultPeriod });
+        }}
         options={[{ value: 'lease', label: 'Lease' }, { value: 'purchase', label: 'Purchase' }, { value: 'rent', label: 'Rent' }]} />
 
-      <ToggleGroup label="Price Period" value={data.price_period} onChange={v => update({ price_period: v })}
-        options={[{ value: 'total', label: 'Total' }, { value: 'per_month', label: 'Per Month' }, { value: 'annually', label: 'Annually' }]} />
+      <div className="space-y-1.5">
+        <Label>Price Range</Label>
+        <ToggleGroup
+          label=""
+          value={data.price_period}
+          onChange={v => update({ price_period: v })}
+          options={[
+            { value: 'purchase', label: 'Total Purchase Price' },
+            { value: 'per_month', label: 'Per Month' },
+            { value: 'per_sf_per_year', label: '$/SF/Year' },
+          ]}
+        />
+        <div className="flex items-center gap-3 mt-2">
+          <Input type="number" placeholder="Min $" value={data.min_price || ''} onChange={e => update({ min_price: e.target.value })} className="flex-1" />
+          <span className="text-gray-400 font-medium flex-shrink-0">–</span>
+          <Input type="number" placeholder="Max $" value={data.max_price || ''} onChange={e => update({ max_price: e.target.value })} className="flex-1" />
+        </div>
+        {data.price_period && (
+          <p className="text-xs text-gray-400">
+            {data.price_period === 'purchase' && 'Total one-time purchase price'}
+            {data.price_period === 'per_month' && 'Monthly rent or lease payment'}
+            {data.price_period === 'per_sf_per_year' && 'Annual rate per square foot (common for commercial leases)'}
+          </p>
+        )}
+      </div>
 
       <ToggleGroup label="Move-In Timeline" value={data.timeline} onChange={v => update({ timeline: v })}
         options={[

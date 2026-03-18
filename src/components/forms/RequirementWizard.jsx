@@ -17,7 +17,6 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   const [formData, setFormData] = useState(initialData || {
     property_category: category,
     title: '',
-    client_name: '',
     property_type: '',
     transaction_type: '',
     price_period: 'total',
@@ -34,10 +33,26 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     status: 'active'
   });
 
+  const generateTitle = (data) => {
+    const txMap = { lease: 'Lease', purchase: 'Purchase', rent: 'Rent' };
+    const typeMap = {
+      office: 'Office Space', medical_office: 'Medical Office Space', retail: 'Retail Space',
+      industrial_flex: 'Industrial/Flex Space', land: 'Land', special_use: 'Special Use Property',
+      single_family: 'Single Family Home', condo: 'Condo', apartment: 'Apartment',
+      multi_family: 'Multi-Family Property', multi_family_5: 'Multi-Family (5+) Property',
+      townhouse: 'Townhouse', manufactured: 'Manufactured Home', land_residential: 'Residential Land',
+    };
+    const tx = txMap[data.transaction_type] || data.transaction_type;
+    const type = typeMap[data.property_type] || data.property_type;
+    const cityStr = (data.cities || []).slice(0, 2).join(', ');
+    return `Client looking to ${tx} ${type}${cityStr ? ` in ${cityStr}` : ''}`;
+  };
+
   const mutation = useMutation({
     mutationFn: (data) => {
       const submitData = {
         ...data,
+        title: generateTitle(data),
         property_details: JSON.stringify(data.property_details || {}),
         area_map_data: JSON.stringify(data.mapAreas || []),
       };
