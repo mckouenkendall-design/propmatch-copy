@@ -75,28 +75,24 @@ export default function ReqStep1({ data, update, onNext }) {
 
       <div className="space-y-1.5">
         <Label>Price Range</Label>
-        <ToggleGroup
-          label=""
-          value={data.price_period}
-          onChange={v => update({ price_period: v })}
-          options={[
-            { value: 'purchase', label: 'Total Purchase Price' },
-            { value: 'per_month', label: 'Per Month' },
-            { value: 'per_sf_per_year', label: '$/SF/Year' },
-          ]}
-        />
+        {data.transaction_type === 'purchase' ? (
+          <p className="text-xs text-gray-500 italic">Total purchase price range</p>
+        ) : (data.transaction_type === 'lease' || data.transaction_type === 'rent') ? (
+          <ToggleGroup
+            label=""
+            value={data.price_period}
+            onChange={v => update({ price_period: v })}
+            options={[
+              { value: 'per_month', label: 'Per Month' },
+              { value: 'per_sf_per_year', label: 'Per Year' },
+            ]}
+          />
+        ) : null}
         <div className="flex items-center gap-3 mt-2">
           <Input type="number" placeholder="Min $" value={data.min_price || ''} onChange={e => update({ min_price: e.target.value })} className="flex-1" />
           <span className="text-gray-400 font-medium flex-shrink-0">–</span>
           <Input type="number" placeholder="Max $" value={data.max_price || ''} onChange={e => update({ max_price: e.target.value })} className="flex-1" />
         </div>
-        {data.price_period && (
-          <p className="text-xs text-gray-400">
-            {data.price_period === 'purchase' && 'Total one-time purchase price'}
-            {data.price_period === 'per_month' && 'Monthly rent or lease payment'}
-            {data.price_period === 'per_sf_per_year' && 'Annual rate per square foot (common for commercial leases)'}
-          </p>
-        )}
       </div>
 
       <ToggleGroup label="Move-In Timeline" value={data.timeline} onChange={v => update({ timeline: v })}
