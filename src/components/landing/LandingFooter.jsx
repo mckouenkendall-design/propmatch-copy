@@ -18,15 +18,12 @@ export default function LandingFooter() {
         gap: '16px',
       }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
-            <circle cx="9" cy="13" r="9" fill="none" stroke="#00DBC5" strokeWidth="1.8" />
-            <circle cx="17" cy="13" r="9" fill="none" stroke="#00DBC5" strokeWidth="1.8" opacity="0.6" />
-            <circle cx="13" cy="13" r="2.5" fill="#00DBC5" />
-          </svg>
-          <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: '17px', color: 'rgba(255,255,255,0.9)' }}>
-            Prop<span style={{ color: '#00DBC5' }}>Match</span>
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <img
+            src="https://media.base44.com/images/public/6980c9695693a9fd14759060/731eb765f_propmatchlogo.png"
+            alt="PropMatch"
+            style={{ height: '30px', width: 'auto', display: 'block', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+          />
         </div>
 
         {/* Center */}
