@@ -4,7 +4,8 @@ import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { X, Loader2, Calendar, MapPin, Video, HelpCircle, Users } from 'lucide-react';
+import { X, Loader2, Calendar, Users, Video } from 'lucide-react';
+import AddressAutocomplete from '@/components/forms/wizard/AddressAutocomplete';
 
 const EVENT_TYPES = [
   { value: 'networking', label: 'Networking Mixer' },
