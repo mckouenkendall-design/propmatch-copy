@@ -18,15 +18,16 @@ export default function LandingFooter() {
         gap: '16px',
       }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-          <svg width="32" height="21" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M6 12 C10 4, 26 4, 30 12 C26 20, 10 20, 6 12 Z" fill="none" stroke="#00DBC5" strokeWidth="1.7" strokeLinejoin="round"/>
-            <path d="M6 12 L1 5 M6 12 L1 19" fill="none" stroke="#00DBC5" strokeWidth="1.7" strokeLinecap="round"/>
-            <circle cx="25" cy="11" r="1.3" fill="#00DBC5"/>
+        <div style={{ opacity: 0.6 }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="160" height="32">
+            <g transform="translate(20,20)">
+              <path d="M -16,0 Q 0,-7 16,0 Q 19,-1.5 22,-5 Q 20,-1 16,0 Q 19,1.5 22,5 Q 20,1 16,0 Q 0,7 -16,0 Z"
+                fill="none" stroke="#00DBC5" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
+            </g>
+            <text fontFamily="'Segoe UI', Arial, sans-serif" fontSize="15" letterSpacing="0.3" x="44" y="25">
+              <tspan fill="#FFFFFF" fontWeight="300">Prop</tspan><tspan fill="#00DBC5" fontWeight="600">Match</tspan>
+            </text>
           </svg>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', lineHeight: 1 }}>
-            <span style={{ fontWeight: 300, color: 'rgba(255,255,255,0.75)', letterSpacing: '-0.01em' }}>Prop</span><span style={{ fontWeight: 600, color: '#00DBC5', letterSpacing: '-0.01em' }}>Match</span>
-          </span>
         </div>
 
         {/* Center */}
