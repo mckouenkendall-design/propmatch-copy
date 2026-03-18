@@ -29,16 +29,17 @@ const RESIDENTIAL_MATCH_DATA = {
   'Townhouse':       { addresses: ['2140 N Halsted St', '1845 W Webster Ave', '2728 N Magnolia Ave'], priceRange: [390000, 850000] },
 };
 
-const MATCH_REASONS = {
-  'Office Space':      ['Location in central business district', 'Open floor plan matches requirement', 'Parking ratio aligns with requirement', 'Size within specified range'],
-  'Retail':            ['High foot traffic corridor', 'Storefront visibility matches spec', 'Zoning complies with intended use', 'Lease terms align with requirement'],
-  'Industrial / Flex': ['Clear height meets requirement', 'Loading dock access confirmed', 'Zoned for light industrial', 'Proximity to major highway'],
-  'Medical Office':    ['ADA compliant layout', 'Plumbing capacity for exam rooms', 'Ground floor access available', 'Proximity to hospital network'],
-  'Land':              ['Zoning compatible with intended build', 'Utility access confirmed', 'Parcel size within requirement range', 'No environmental restrictions'],
-  'Single Family':     ['Bedroom count meets requirement', 'School district aligns with preference', 'Garage included', 'Lot size within spec'],
-  'Condo':             ['HOA fees within budget', 'Floor level preference matched', 'Amenities align with requirement', 'Unit size within range'],
-  'Multi-Family':      ['Unit count matches requirement', 'Cap rate within target range', 'All units currently occupied', 'Recent renovation completed'],
-  'Townhouse':         ['End unit as preferred', 'Private outdoor space included', 'Rooftop deck available', 'Walkability score 90+'],
+// Special feature label per property type (4th scoring factor)
+const SPECIAL_FEATURES = {
+  'Office Space':      'Open floor plan preferred',
+  'Retail':            'High foot traffic corridor',
+  'Industrial / Flex': 'Loading dock access',
+  'Medical Office':    'ADA compliant layout',
+  'Land':              'Utility access confirmed',
+  'Single Family':     'Garage included',
+  'Condo':             'End unit preferred',
+  'Multi-Family':      'All units occupied',
+  'Townhouse':         'Rooftop deck available',
 };
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
