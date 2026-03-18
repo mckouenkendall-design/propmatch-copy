@@ -114,7 +114,7 @@ function LineChart({ visible }) {
           />
         ))}
         {/* Commercial line (dashed) */}
-        <polyline points={polyline(COM_DATA)} fill="none" stroke="rgba(41,242,222,0.35)" strokeWidth="1.5"
+        <polyline points={polyline(COM_DATA)} fill="none" stroke="rgba(0,219,197,0.35)" strokeWidth="1.5"
           strokeDasharray="5 4" strokeLinecap="round" strokeLinejoin="round" />
         {/* X-axis labels */}
         {MONTHS.map((m, i) => (
@@ -131,7 +131,7 @@ function LineChart({ visible }) {
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Residential</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '20px', height: '1.5px', background: 'rgba(41,242,222,0.35)', borderRadius: '2px', backgroundImage: 'repeating-linear-gradient(90deg, rgba(41,242,222,0.35) 0px, rgba(41,242,222,0.35) 5px, transparent 5px, transparent 9px)' }} />
+          <div style={{ width: '20px', height: '1.5px', background: 'rgba(0,219,197,0.35)', borderRadius: '2px', backgroundImage: 'repeating-linear-gradient(90deg, rgba(0,219,197,0.35) 0px, rgba(0,219,197,0.35) 5px, transparent 5px, transparent 9px)' }} />
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Commercial</span>
         </div>
       </div>
@@ -149,10 +149,10 @@ export default function ProblemSolution() {
     textTransform: 'uppercase',
     letterSpacing: '0.1em',
     color: '#00DBC5',
-    border: '1px solid rgba(41,242,222,0.4)',
+    border: '1px solid rgba(0,219,197,0.4)',
     padding: '4px 12px',
     borderRadius: '4px',
-    background: 'rgba(41,242,222,0.06)',
+    background: 'rgba(0,219,197,0.06)',
     display: 'inline-block',
     marginBottom: '24px',
   };

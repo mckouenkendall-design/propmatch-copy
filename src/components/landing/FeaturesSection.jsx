@@ -77,10 +77,10 @@ export default function FeaturesSection() {
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
             color: '#00DBC5',
-            border: '1px solid rgba(41,242,222,0.4)',
+            border: '1px solid rgba(0,219,197,0.4)',
             padding: '4px 12px',
             borderRadius: '4px',
-            background: 'rgba(41,242,222,0.06)',
+            background: 'rgba(0,219,197,0.06)',
             display: 'inline-block',
             marginBottom: '20px',
           }}>
@@ -108,11 +108,11 @@ export default function FeaturesSection() {
               onMouseLeave={() => setHovered(null)}
               style={{
                 background: '#FFFFFF',
-                border: `1px solid ${hovered === i ? 'rgba(41,242,222,0.5)' : '#E5E7EB'}`,
+                border: `1px solid ${hovered === i ? 'rgba(0,219,197,0.5)' : '#E5E7EB'}`,
                 borderRadius: '8px',
                 padding: '36px 32px',
                 cursor: 'default',
-                boxShadow: hovered === i ? '0 8px 32px rgba(41,242,222,0.12)' : 'none',
+                boxShadow: hovered === i ? '0 8px 32px rgba(0,219,197,0.12)' : 'none',
                 transform: hovered === i ? 'translateY(-2px)' : 'translateY(0)',
                 transition: 'border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease',
                 opacity: visible ? 1 : 0,

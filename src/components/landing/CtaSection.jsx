@@ -28,7 +28,7 @@ export default function CtaSection() {
         top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
         width: '700px', height: '500px',
-        background: 'radial-gradient(ellipse at 50% 50%, rgba(41,242,222,0.07) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse at 50% 50%, rgba(0,219,197,0.07) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 
@@ -48,10 +48,10 @@ export default function CtaSection() {
           textTransform: 'uppercase',
           letterSpacing: '0.1em',
           color: '#00DBC5',
-          border: '1px solid rgba(41,242,222,0.4)',
+          border: '1px solid rgba(0,219,197,0.4)',
           padding: '4px 12px',
           borderRadius: '4px',
-          background: 'rgba(41,242,222,0.06)',
+          background: 'rgba(0,219,197,0.06)',
           display: 'inline-block',
           marginBottom: '28px',
         }}>
