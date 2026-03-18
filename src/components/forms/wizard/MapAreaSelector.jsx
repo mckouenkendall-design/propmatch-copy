@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Polygon, Circle, Marker, Polyline, useMapEvents, useMap } from 'react-leaflet';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
-import { X, Undo2, Save, Search, MapPin, Map, Navigation, Route, Clock } from 'lucide-react';
+import { X, Undo2, Save, Search, MapPin } from 'lucide-react';
 
 // Fix leaflet default icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -13,43 +13,9 @@ L.Icon.Default.mergeOptions({
 });
 
 const TEAL = '#4FB3A9';
-const TEAL_FILL = 'rgba(79,179,169,0.18)';
 
-// ── Map event hook ────────────────────────────────────────────────────────────
-function ClickHandler({ onMapClick, active }) {
-  useMapEvents({ click: (e) => { if (active) onMapClick([e.latlng.lat, e.latlng.lng]); } });
-  return null;
-}
-
-// ── Fly-to helper ─────────────────────────────────────────────────────────────
-function FlyTo({ target }) {
-  const map = useMap();
-  useEffect(() => {
-    if (target) map.flyTo(target.center, target.zoom || 12, { duration: 1.0 });
-  }, [target]);
-  return null;
-}
-
-// ── Fit bounds helper ─────────────────────────────────────────────────────────
-function FitBounds({ bounds }) {
-  const map = useMap();
-  useEffect(() => {
-    if (bounds) map.fitBounds(bounds, { padding: [40, 40] });
-  }, [bounds]);
-  return null;
-}
-
-// ── Force Leaflet to recalculate size after modal renders ─────────────────────
-function InvalidateSize() {
-  const map = useMap();
-  useEffect(() => {
-    setTimeout(() => map.invalidateSize(), 100);
-  }, [map]);
-  return null;
-}
-
-// ── Geocoder search bar (reused in multiple modes) ────────────────────────────
-function GeoSearch({ placeholder, onSelect, onBoundsFound, small }) {
+// ── Geocoder search bar ────────────────────────────────────────────────────────
+function GeoSearch({ placeholder, onSelect, onBoundsFound }) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
@@ -104,14 +70,14 @@ function GeoSearch({ placeholder, onSelect, onBoundsFound, small }) {
 
   return (
     <div ref={ref} className="relative w-full">
-      <div className={`flex items-center gap-2 bg-white rounded-lg border border-gray-200 shadow-sm ${small ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
-        <Search className={`text-gray-400 flex-shrink-0 ${small ? 'w-3 h-3' : 'w-4 h-4'}`} />
+      <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 shadow-sm px-3 py-2">
+        <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
         <input
           value={query}
           onChange={handleInput}
           onFocus={() => suggestions.length > 0 && setOpen(true)}
           placeholder={placeholder || 'Search address or city…'}
-          className={`flex-1 outline-none bg-transparent text-gray-800 ${small ? 'text-xs' : 'text-sm'}`}
+          className="flex-1 outline-none bg-transparent text-gray-800 text-sm"
           autoComplete="off"
         />
         {query && (
@@ -121,7 +87,7 @@ function GeoSearch({ placeholder, onSelect, onBoundsFound, small }) {
         )}
       </div>
       {open && (
-        <div className="absolute z-[600] top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+        <div className="absolute z-[9999] top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
           {suggestions.map((item, i) => {
             const addr = item.address;
             const line1 = [addr.house_number, addr.road].filter(Boolean).join(' ') || addr.city || addr.town || addr.village || item.display_name.split(',')[0];
@@ -143,14 +109,12 @@ function GeoSearch({ placeholder, onSelect, onBoundsFound, small }) {
   );
 }
 
-// ── Build a corridor polygon from a polyline + width in miles ─────────────────
+// ── Build corridor polygon ─────────────────────────────────────────────────────
 function buildCorridorPolygon(points, widthMiles) {
   if (points.length < 2) return [];
   const R = 6371000;
   const offsetMeters = widthMiles * 1609.34;
-  const left = [];
-  const right = [];
-
+  const left = [], right = [];
   for (let i = 0; i < points.length; i++) {
     const prev = i === 0 ? points[0] : points[i - 1];
     const next = i === points.length - 1 ? points[i] : points[i + 1];
@@ -158,77 +122,44 @@ function buildCorridorPolygon(points, widthMiles) {
     const lat2 = next[0] * Math.PI / 180, lon2 = next[1] * Math.PI / 180;
     const bearing = Math.atan2(Math.sin(lon2 - lon1) * Math.cos(lat2),
       Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1));
-    const perpLeft = bearing - Math.PI / 2;
-    const perpRight = bearing + Math.PI / 2;
-    const offsetLat = offsetMeters / R;
-
     const latC = points[i][0] * Math.PI / 180;
-    const lonC = points[i][1] * Math.PI / 180;
+    const offsetLat = offsetMeters / R;
     const offsetLon = offsetMeters / (R * Math.cos(latC));
-
-    left.push([points[i][0] + offsetLat * Math.sin(perpLeft) * (180 / Math.PI),
-               points[i][1] + offsetLon * Math.cos(perpLeft) * (180 / Math.PI)]);
-    right.push([points[i][0] + offsetLat * Math.sin(perpRight) * (180 / Math.PI),
-                points[i][1] + offsetLon * Math.cos(perpRight) * (180 / Math.PI)]);
+    left.push([points[i][0] + offsetLat * Math.sin(bearing - Math.PI / 2) * (180 / Math.PI),
+               points[i][1] + offsetLon * Math.cos(bearing - Math.PI / 2) * (180 / Math.PI)]);
+    right.push([points[i][0] + offsetLat * Math.sin(bearing + Math.PI / 2) * (180 / Math.PI),
+                points[i][1] + offsetLon * Math.cos(bearing + Math.PI / 2) * (180 / Math.PI)]);
   }
-
   return [...left, ...[...right].reverse()];
 }
 
-// ── Travel time isochrone via OSRM (free, no API key) ─────────────────────────
+// ── Travel isochrone ───────────────────────────────────────────────────────────
 async function fetchIsochrone(lat, lng, minutes, mode) {
-  // Use OSRM table service: find all points reachable within time
-  // Since OSRM doesn't directly provide isochrones, we approximate with
-  // a circle-of-points approach: sample points around the center and check travel time
   const profile = mode === 'drive' ? 'car' : mode === 'bike' ? 'bike' : 'foot';
   const speedKmh = { drive: 50, walk: 5, bike: 15, transit: 30 }[mode] || 50;
-  const radiusKm = (speedKmh * minutes) / 60;
-  const radiusM = radiusKm * 1000;
-
-  // Generate sample points in a grid and filter by actual OSRM travel time
+  const radiusM = (speedKmh * minutes / 60) * 1000;
   const samples = 48;
   const candidates = [];
   for (let i = 0; i < samples; i++) {
     const angle = (2 * Math.PI * i) / samples;
-    // Vary radius to get better shape
     for (const factor of [0.4, 0.7, 1.0]) {
       const r = radiusM * factor;
-      const dLat = (r / 111320) * Math.cos(angle);
-      const dLon = (r / (111320 * Math.cos(lat * Math.PI / 180))) * Math.sin(angle);
-      candidates.push([lat + dLat, lng + dLon]);
+      candidates.push([lat + (r / 111320) * Math.cos(angle), lng + (r / (111320 * Math.cos(lat * Math.PI / 180))) * Math.sin(angle)]);
     }
   }
-
-  // Build OSRM sources/destinations string
-  const origin = `${lng},${lat}`;
-  const dests = candidates.map(([clat, clng]) => `${clng},${clat}`).join(';');
-  const coordsStr = `${origin};${dests}`;
-  const srcIdx = 0;
-  const dstIdxs = candidates.map((_, i) => i + 1).join(';');
-
   try {
-    const url = `https://router.project-osrm.org/table/v1/${profile}/${coordsStr}?sources=${srcIdx}&destinations=${dstIdxs}&annotations=duration`;
-    const res = await fetch(url);
+    const origin = `${lng},${lat}`;
+    const dests = candidates.map(([clat, clng]) => `${clng},${clat}`).join(';');
+    const dstIdxs = candidates.map((_, i) => i + 1).join(';');
+    const res = await fetch(`https://router.project-osrm.org/table/v1/${profile}/${origin};${dests}?sources=0&destinations=${dstIdxs}&annotations=duration`);
     const data = await res.json();
     const durations = data.durations?.[0] || [];
-    const maxSec = minutes * 60;
-
-    // Keep points within time limit
-    const reachable = candidates.filter((_, i) => durations[i] != null && durations[i] <= maxSec);
-
-    if (reachable.length < 4) {
-      // Fallback to simple circle
-      return null;
-    }
-
-    // Compute convex hull for a clean polygon
+    const reachable = candidates.filter((_, i) => durations[i] != null && durations[i] <= minutes * 60);
+    if (reachable.length < 4) return null;
     return convexHull(reachable);
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-// Simple convex hull (Graham scan)
 function convexHull(points) {
   if (points.length < 3) return points;
   const sorted = [...points].sort((a, b) => a[1] - b[1] || a[0] - b[0]);
@@ -248,7 +179,6 @@ function convexHull(points) {
   return [...lower, ...upper];
 }
 
-// ── MODES config ──────────────────────────────────────────────────────────────
 const MODES = [
   { id: 'search',   label: 'Search Area', icon: '🔍' },
   { id: 'polygon',  label: 'Polygon',     icon: '✏️' },
@@ -256,31 +186,58 @@ const MODES = [
   { id: 'corridor', label: 'Corridor',    icon: '🛣️' },
   { id: 'travel',   label: 'Travel Time', icon: '🚗' },
 ];
-
 const TRAVEL_TIMES = [5, 10, 15, 20, 30, 40, 50, 60];
 const TRAVEL_MODES = ['drive', 'walk', 'bike', 'transit'];
 const TRAFFIC_OPTIONS = ['No Traffic', 'Rush Hour'];
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Pure Leaflet map hook ──────────────────────────────────────────────────────
+function useLeafletMap(containerRef, onMapClick, isClickActive) {
+  const mapRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+
+    const map = L.map(containerRef.current, {
+      center: [42.45, -83.1],
+      zoom: 9,
+      zoomControl: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  // Click handler
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const handler = (e) => {
+      if (isClickActive) onMapClick([e.latlng.lat, e.latlng.lng]);
+    };
+    map.on('click', handler);
+    return () => map.off('click', handler);
+  }, [isClickActive, onMapClick]);
+
+  return mapRef;
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
 export default function MapAreaSelector({ existingAreas = [], onSave, onClose }) {
   const [mode, setMode] = useState('search');
-
-  // Search mode
   const [searchResult, setSearchResult] = useState(null);
-  const [fitBounds, setFitBounds] = useState(null);
-
-  // Polygon mode
   const [polygonPoints, setPolygonPoints] = useState([]);
-
-  // Radius mode
   const [radiusCenter, setRadiusCenter] = useState(null);
   const [radiusMiles, setRadiusMiles] = useState(5);
-
-  // Corridor mode
   const [corridorPoints, setCorridorPoints] = useState([]);
   const [corridorWidth, setCorridorWidth] = useState(0.5);
-
-  // Travel mode
   const [travelMinutes, setTravelMinutes] = useState(10);
   const [travelMode, setTravelMode] = useState('drive');
   const [travelTraffic, setTravelTraffic] = useState('No Traffic');
@@ -288,10 +245,110 @@ export default function MapAreaSelector({ existingAreas = [], onSave, onClose })
   const [travelPoly, setTravelPoly] = useState(null);
   const [travelLoading, setTravelLoading] = useState(false);
   const [travelLabel, setTravelLabel] = useState('');
-
-  // Shared
   const [savedAreas, setSavedAreas] = useState(existingAreas);
-  const [flyTarget, setFlyTarget] = useState(null);
+
+  const mapContainerRef = useRef(null);
+  const isClickActive = mode === 'polygon' || mode === 'radius' || mode === 'corridor';
+
+  const handleMapClick = useCallback(([lat, lng]) => {
+    if (mode === 'polygon') setPolygonPoints(p => [...p, [lat, lng]]);
+    else if (mode === 'radius') setRadiusCenter([lat, lng]);
+    else if (mode === 'corridor') setCorridorPoints(p => [...p, [lat, lng]]);
+  }, [mode]);
+
+  const mapRef = useLeafletMap(mapContainerRef, handleMapClick, isClickActive);
+
+  // Track overlay layers so we can remove/re-add them
+  const overlayLayersRef = useRef([]);
+
+  const clearOverlays = () => {
+    overlayLayersRef.current.forEach(l => {
+      if (mapRef.current) mapRef.current.removeLayer(l);
+    });
+    overlayLayersRef.current = [];
+  };
+
+  const addOverlay = (layer) => {
+    if (mapRef.current) {
+      layer.addTo(mapRef.current);
+      overlayLayersRef.current.push(layer);
+    }
+  };
+
+  // Re-draw all overlays whenever relevant state changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    clearOverlays();
+
+    const opts = { color: TEAL, weight: 2, fillOpacity: 0.2 };
+
+    // Polygon in progress
+    polygonPoints.forEach(pt => addOverlay(L.marker(pt)));
+    if (polygonPoints.length >= 3) addOverlay(L.polygon(polygonPoints, opts));
+
+    // Radius in progress
+    if (radiusCenter) {
+      addOverlay(L.marker(radiusCenter));
+      addOverlay(L.circle(radiusCenter, { radius: radiusMiles * 1609.34, ...opts }));
+    }
+
+    // Search result bounds
+    if (searchResult) {
+      const b = searchResult.bounds;
+      addOverlay(L.polygon([
+        [b[0][0], b[0][1]], [b[0][0], b[1][1]],
+        [b[1][0], b[1][1]], [b[1][0], b[0][1]],
+      ], { ...opts, dashArray: '6 4' }));
+    }
+
+    // Corridor
+    if (corridorPoints.length >= 1) {
+      corridorPoints.forEach(pt => addOverlay(L.marker(pt)));
+      if (corridorPoints.length >= 2) {
+        addOverlay(L.polyline(corridorPoints, { color: TEAL, weight: 3, dashArray: '6 4' }));
+        const poly = buildCorridorPolygon(corridorPoints, corridorWidth);
+        if (poly.length >= 3) addOverlay(L.polygon(poly, opts));
+      }
+    }
+
+    // Travel isochrone
+    if (travelPoly && travelAddress) {
+      addOverlay(L.marker(travelAddress.center));
+      if (travelPoly.type === 'circle') {
+        addOverlay(L.circle(travelPoly.center, { radius: travelPoly.radius, ...opts }));
+      } else {
+        addOverlay(L.polygon(travelPoly, opts));
+      }
+    }
+
+    // Saved areas
+    savedAreas.forEach(area => {
+      const savedOpts = { color: TEAL, weight: 2, fillOpacity: 0.25 };
+      if (area.type === 'polygon') addOverlay(L.polygon(area.points, savedOpts));
+      else if (area.type === 'radius') addOverlay(L.circle(area.center, { radius: area.miles * 1609.34, ...savedOpts }));
+      else if (area.type === 'bounds') {
+        const b = area.bounds;
+        addOverlay(L.polygon([
+          [b[0][0], b[0][1]], [b[0][0], b[1][1]],
+          [b[1][0], b[1][1]], [b[1][0], b[0][1]],
+        ], savedOpts));
+      }
+    });
+  }, [polygonPoints, radiusCenter, radiusMiles, searchResult, corridorPoints, corridorWidth, travelPoly, travelAddress, savedAreas]);
+
+  // Fit bounds when search result arrives
+  useEffect(() => {
+    if (!mapRef.current || !searchResult) return;
+    const b = searchResult.bounds;
+    mapRef.current.fitBounds([[b[0][0], b[0][1]], [b[1][0], b[1][1]]], { padding: [40, 40] });
+  }, [searchResult]);
+
+  // Fit bounds when travel poly arrives
+  useEffect(() => {
+    if (!mapRef.current || !travelPoly || travelPoly.type === 'circle') return;
+    mapRef.current.fitBounds(travelPoly.map(p => [p[0], p[1]]), { padding: [40, 40] });
+  }, [travelPoly]);
 
   const switchMode = (m) => {
     setMode(m);
@@ -300,23 +357,10 @@ export default function MapAreaSelector({ existingAreas = [], onSave, onClose })
     setSearchResult(null);
     setCorridorPoints([]);
     setTravelPoly(null);
-    setFitBounds(null);
   };
 
-  const handleMapClick = ([lat, lng]) => {
-    if (mode === 'polygon') setPolygonPoints(p => [...p, [lat, lng]]);
-    else if (mode === 'radius') setRadiusCenter([lat, lng]);
-    else if (mode === 'corridor') setCorridorPoints(p => [...p, [lat, lng]]);
-  };
+  const corridorPoly = corridorPoints.length >= 2 ? buildCorridorPolygon(corridorPoints, corridorWidth) : [];
 
-  const isClickActive = mode === 'polygon' || mode === 'radius' || mode === 'corridor';
-
-  // Corridor polygon
-  const corridorPoly = corridorPoints.length >= 2
-    ? buildCorridorPolygon(corridorPoints, corridorWidth)
-    : [];
-
-  // Travel isochrone
   const applyTravel = async () => {
     if (!travelAddress) return;
     setTravelLoading(true);
@@ -326,10 +370,8 @@ export default function MapAreaSelector({ existingAreas = [], onSave, onClose })
     setTravelLoading(false);
     if (poly) {
       setTravelPoly(poly);
-      setFitBounds(poly.map(p => [p[0], p[1]]));
       setTravelLabel(`${travelMinutes} min ${travelMode} from ${travelAddress.label.split(',')[0]}`);
     } else {
-      // fallback circle
       const speedKmh = { drive: 50, walk: 5, bike: 15, transit: 30 }[travelMode] || 50;
       const r = (speedKmh * travelMinutes / 60) * 1000;
       setTravelPoly({ type: 'circle', center: travelAddress.center, radius: r });
@@ -394,19 +436,12 @@ export default function MapAreaSelector({ existingAreas = [], onSave, onClose })
 
         {/* Controls panel */}
         <div className="px-5 py-3 bg-gray-50 border-b flex-shrink-0">
-
-          {/* ── Search Area ── */}
           {mode === 'search' && (
             <GeoSearch
               placeholder="Search a city, neighborhood, or zip code…"
-              onBoundsFound={(r) => {
-                setSearchResult(r);
-                setFitBounds([[r.bounds[0][0], r.bounds[0][1]], [r.bounds[1][0], r.bounds[1][1]]]);
-              }}
+              onBoundsFound={(r) => setSearchResult(r)}
             />
           )}
-
-          {/* ── Polygon ── */}
           {mode === 'polygon' && (
             <div className="flex items-center gap-3">
               <p className="text-sm text-gray-600 flex-1">
@@ -418,8 +453,6 @@ export default function MapAreaSelector({ existingAreas = [], onSave, onClose })
               </Button>
             </div>
           )}
-
-          {/* ── Radius ── */}
           {mode === 'radius' && (
             <div className="flex items-center gap-4 flex-wrap">
               <p className="text-sm text-gray-600 flex-1">Click the map to set a center point.</p>
@@ -431,12 +464,10 @@ export default function MapAreaSelector({ existingAreas = [], onSave, onClose })
               </div>
             </div>
           )}
-
-          {/* ── Corridor ── */}
           {mode === 'corridor' && (
             <div className="flex items-center gap-4 flex-wrap">
               <p className="text-sm text-gray-600 flex-1">
-                Click points along a street or corridor. A buffer zone will be drawn on both sides.
+                Click points along a corridor. A buffer zone will be drawn on both sides.
                 {corridorPoints.length > 0 && <span style={{ color: TEAL }}> {corridorPoints.length} point{corridorPoints.length !== 1 ? 's' : ''}</span>}
               </p>
               <div className="flex items-center gap-3">
@@ -450,59 +481,31 @@ export default function MapAreaSelector({ existingAreas = [], onSave, onClose })
               </Button>
             </div>
           )}
-
-          {/* ── Travel Time ── */}
           {mode === 'travel' && (
             <div className="space-y-3">
-              {/* Sentence builder */}
               <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
                 <span className="font-medium">Find properties within a</span>
-
-                {/* Time */}
-                <select
-                  value={travelMinutes}
-                  onChange={e => setTravelMinutes(parseInt(e.target.value))}
-                  className="border border-gray-200 rounded-lg px-2 py-1 text-sm font-semibold focus:outline-none"
-                  style={{ color: TEAL }}>
+                <select value={travelMinutes} onChange={e => setTravelMinutes(parseInt(e.target.value))}
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-sm font-semibold focus:outline-none" style={{ color: TEAL }}>
                   {TRAVEL_TIMES.map(t => <option key={t} value={t}>{t === 60 ? '1 hour' : `${t} minute`}</option>)}
                 </select>
-
-                {/* Mode */}
-                <select
-                  value={travelMode}
-                  onChange={e => setTravelMode(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-2 py-1 text-sm font-semibold focus:outline-none"
-                  style={{ color: TEAL }}>
+                <select value={travelMode} onChange={e => setTravelMode(e.target.value)}
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-sm font-semibold focus:outline-none" style={{ color: TEAL }}>
                   {TRAVEL_MODES.map(m => <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
                 </select>
-
                 <span className="font-medium">in</span>
-
-                {/* Traffic */}
-                <select
-                  value={travelTraffic}
-                  onChange={e => setTravelTraffic(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-2 py-1 text-sm font-semibold focus:outline-none"
-                  style={{ color: TEAL }}>
+                <select value={travelTraffic} onChange={e => setTravelTraffic(e.target.value)}
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-sm font-semibold focus:outline-none" style={{ color: TEAL }}>
                   {TRAFFIC_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
-
                 <span className="font-medium">from</span>
               </div>
-
-              {/* Address search */}
               <div className="flex gap-2 items-center">
                 <div className="flex-1">
-                  <GeoSearch
-                    placeholder="Enter an address or location…"
-                    onSelect={(r) => setTravelAddress(r)}
-                  />
+                  <GeoSearch placeholder="Enter an address or location…" onSelect={(r) => setTravelAddress(r)} />
                 </div>
-                <Button
-                  onClick={applyTravel}
-                  disabled={!travelAddress || travelLoading}
-                  className="text-white flex-shrink-0"
-                  style={{ backgroundColor: TEAL }}>
+                <Button onClick={applyTravel} disabled={!travelAddress || travelLoading}
+                  className="text-white flex-shrink-0" style={{ backgroundColor: TEAL }}>
                   {travelLoading ? (
                     <span className="flex items-center gap-2">
                       <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
@@ -514,102 +517,13 @@ export default function MapAreaSelector({ existingAreas = [], onSave, onClose })
                   ) : 'Apply'}
                 </Button>
               </div>
-
-              {travelPoly && (
-                <p className="text-xs font-medium" style={{ color: TEAL }}>
-                  ✓ {travelLabel} — click "Add Area" below to save.
-                </p>
-              )}
+              {travelPoly && <p className="text-xs font-medium" style={{ color: TEAL }}>✓ {travelLabel} — click "Add Area" below to save.</p>}
             </div>
           )}
         </div>
 
-        {/* Map */}
-        <div className="flex-1 min-h-0" style={{ height: 380, minHeight: 380 }}>
-          <MapContainer center={[42.45, -83.1]} zoom={9} style={{ height: '100%', width: '100%', minHeight: 380 }}>
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            />
-            <InvalidateSize />
-            <ClickHandler onMapClick={handleMapClick} active={isClickActive} />
-            {flyTarget && <FlyTo target={flyTarget} />}
-            {fitBounds && <FitBounds bounds={fitBounds} />}
-
-            {/* ── Polygon in progress ── */}
-            {polygonPoints.map((pt, i) => <Marker key={`pp${i}`} position={pt} />)}
-            {polygonPoints.length >= 3 && (
-              <Polygon positions={polygonPoints} pathOptions={{ color: TEAL, weight: 2, fillOpacity: 0.2 }} />
-            )}
-
-            {/* ── Radius in progress ── */}
-            {radiusCenter && (
-              <>
-                <Marker position={radiusCenter} />
-                <Circle center={radiusCenter} radius={radiusMiles * 1609.34} pathOptions={{ color: TEAL, fillOpacity: 0.2 }} />
-              </>
-            )}
-
-            {/* ── Search result bounds ── */}
-            {searchResult && (
-              <Polygon
-                positions={[
-                  [searchResult.bounds[0][0], searchResult.bounds[0][1]],
-                  [searchResult.bounds[0][0], searchResult.bounds[1][1]],
-                  [searchResult.bounds[1][0], searchResult.bounds[1][1]],
-                  [searchResult.bounds[1][0], searchResult.bounds[0][1]],
-                ]}
-                pathOptions={{ color: TEAL, weight: 2, fillOpacity: 0.18, dashArray: '6 4' }}
-              />
-            )}
-
-            {/* ── Corridor in progress ── */}
-            {corridorPoints.length >= 1 && (
-              <>
-                {corridorPoints.map((pt, i) => (
-                  <Marker key={`cp${i}`} position={pt} />
-                ))}
-                <Polyline positions={corridorPoints} pathOptions={{ color: TEAL, weight: 3, dashArray: '6 4' }} />
-                {corridorPoly.length >= 3 && (
-                  <Polygon positions={corridorPoly} pathOptions={{ color: TEAL, weight: 2, fillOpacity: 0.2 }} />
-                )}
-              </>
-            )}
-
-            {/* ── Travel isochrone ── */}
-            {travelPoly && travelAddress && (
-              <>
-                <Marker position={travelAddress.center} />
-                {travelPoly.type === 'circle' ? (
-                  <Circle center={travelPoly.center} radius={travelPoly.radius} pathOptions={{ color: TEAL, weight: 2, fillOpacity: 0.2 }} />
-                ) : (
-                  <Polygon positions={travelPoly} pathOptions={{ color: TEAL, weight: 2, fillOpacity: 0.2 }} />
-                )}
-              </>
-            )}
-
-            {/* ── Saved areas ── */}
-            {savedAreas.map((area, i) => {
-              if (area.type === 'polygon')
-                return <Polygon key={`sa${i}`} positions={area.points} pathOptions={{ color: TEAL, weight: 2, fillOpacity: 0.25 }} />;
-              if (area.type === 'radius')
-                return <Circle key={`sa${i}`} center={area.center} radius={area.miles * 1609.34} pathOptions={{ color: TEAL, fillOpacity: 0.25 }} />;
-              if (area.type === 'bounds')
-                return (
-                  <Polygon key={`sa${i}`}
-                    positions={[
-                      [area.bounds[0][0], area.bounds[0][1]],
-                      [area.bounds[0][0], area.bounds[1][1]],
-                      [area.bounds[1][0], area.bounds[1][1]],
-                      [area.bounds[1][0], area.bounds[0][1]],
-                    ]}
-                    pathOptions={{ color: TEAL, weight: 2, fillOpacity: 0.25 }}
-                  />
-                );
-              return null;
-            })}
-          </MapContainer>
-        </div>
+        {/* Map — pure Leaflet via ref */}
+        <div ref={mapContainerRef} style={{ height: 380, width: '100%', flexShrink: 0 }} />
 
         {/* Footer */}
         <div className="px-5 py-4 border-t bg-gray-50 flex-shrink-0 space-y-3">
@@ -626,11 +540,9 @@ export default function MapAreaSelector({ existingAreas = [], onSave, onClose })
               ))}
             </div>
           )}
-
           <div className="flex items-center justify-between">
             <Button size="sm" onClick={saveArea} disabled={!canSave}
-              className="gap-1 text-white"
-              style={{ backgroundColor: canSave ? TEAL : undefined }}>
+              className="gap-1 text-white" style={{ backgroundColor: canSave ? TEAL : undefined }}>
               <Save className="w-3 h-3" /> Add Area
             </Button>
             <div className="flex gap-2">
