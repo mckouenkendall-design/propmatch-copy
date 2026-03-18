@@ -39,12 +39,20 @@ export default function LandingNav() {
       <nav style={navStyle}>
         <div style={{ display: 'flex', alignItems: 'center', flex: 1, maxWidth: '1240px', margin: '0 auto', width: '100%' }}>
           {/* Logo */}
-          <Link to="/Landing" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <img
-              src="https://media.base44.com/images/public/6980c9695693a9fd14759060/731eb765f_propmatchlogo.png"
-              alt="PropMatch"
-              style={{ height: '36px', width: 'auto', display: 'block', objectFit: 'contain' }}
-            />
+          <Link to="/Landing" style={{ display: 'flex', alignItems: 'center', gap: '9px', textDecoration: 'none' }}>
+            {/* Fish icon */}
+            <svg width="36" height="24" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Body arc */}
+              <path d="M6 12 C10 4, 26 4, 30 12 C26 20, 10 20, 6 12 Z" fill="none" stroke={ACCENT} strokeWidth="1.7" strokeLinejoin="round"/>
+              {/* Tail */}
+              <path d="M6 12 L1 5 M6 12 L1 19" fill="none" stroke={ACCENT} strokeWidth="1.7" strokeLinecap="round"/>
+              {/* Eye */}
+              <circle cx="25" cy="11" r="1.3" fill={ACCENT}/>
+            </svg>
+            {/* Wordmark */}
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', lineHeight: 1 }}>
+              <span style={{ fontWeight: 300, color: '#111827', letterSpacing: '-0.01em' }}>Prop</span><span style={{ fontWeight: 600, color: ACCENT, letterSpacing: '-0.01em' }}>Match</span>
+            </span>
           </Link>
 
           {/* Desktop Nav Links */}
