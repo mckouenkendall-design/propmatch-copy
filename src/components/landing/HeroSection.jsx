@@ -579,12 +579,6 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* Bottom fade to light */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: '120px', pointerEvents: 'none',
-        background: 'linear-gradient(to bottom, transparent, #F9FAFB)',
-      }} />
-
       <style>{`
         @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         @keyframes bounce-dot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
