@@ -13,19 +13,8 @@ import SwimmingFish from '../components/landing/SwimmingFish';
 
 export default function Landing() {
   return (
-    <div id="landing-root" style={{ fontFamily: "'Inter', sans-serif", overflowX: 'hidden', background: '#FFFFFF', position: 'relative', zIndex: 0 }}>
-      {/* Fish always behind all content — z-index:0, absolute within this container */}
+    <div style={{ fontFamily: "'Inter', sans-serif", overflowX: 'hidden' }}>
       <SwimmingFish />
-      <style>{`
-        /* All sections, nav, and footer sit above the fish (z-index:0) */
-        #landing-root > nav,
-        #landing-root > section,
-        #landing-root > footer,
-        #landing-root > div:not(.fish-layer) {
-          position: relative;
-          z-index: 1;
-        }
-      `}</style>
       <LandingNav />
       <HeroSection />
       <ProblemSolution />
