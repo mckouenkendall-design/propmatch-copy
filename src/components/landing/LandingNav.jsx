@@ -40,7 +40,7 @@ export default function LandingNav() {
         <div style={{ display: 'flex', alignItems: 'center', flex: 1, maxWidth: '1240px', margin: '0 auto', width: '100%' }}>
           {/* Logo */}
           <Link to="/Landing" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="180" height="36">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="200" height="40">
               <g transform="translate(20,20)">
                 <path d="M -16,0 Q 0,-7 16,0 Q 19,-1.5 22,-5 Q 20,-1 16,0 Q 19,1.5 22,5 Q 20,1 16,0 Q 0,7 -16,0 Z"
                   fill="none" stroke="#00DBC5" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
