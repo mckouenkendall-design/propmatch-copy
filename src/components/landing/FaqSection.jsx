@@ -142,6 +142,12 @@ export default function FaqSection() {
         </div>
       </div>
 
+      {/* Bottom fade to dark CTA */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: '100px', pointerEvents: 'none',
+        background: 'linear-gradient(to bottom, transparent, #080C10)',
+      }} />
+
       <style>{`
         @media (max-width: 768px) {
           section > div { padding: 0 !important; }
