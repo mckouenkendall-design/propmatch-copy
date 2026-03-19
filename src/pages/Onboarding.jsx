@@ -581,8 +581,7 @@ export default function Onboarding() {
           </div>
 
           {/* Navigation buttons */}
-          {(
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               {step > 0 ? (
                 <button
                   onClick={() => setStep(step - 1)}
