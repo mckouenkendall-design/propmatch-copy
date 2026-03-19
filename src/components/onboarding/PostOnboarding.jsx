@@ -22,7 +22,6 @@ function ConfettiCanvas({ active }) {
     const count = 120;
     particles.current = [];
 
-    // Spawn from both sides at 45-degree angles
     for (let i = 0; i < count; i++) {
       const fromLeft = i < count / 2;
       particles.current.push({
@@ -52,7 +51,6 @@ function ConfettiCanvas({ active }) {
         p.y += p.vy;
         p.rotation += p.rotationSpeed;
         p.opacity -= p.fade;
-
         ctx.save();
         ctx.globalAlpha = Math.max(0, p.opacity);
         ctx.translate(p.x, p.y);
@@ -117,11 +115,7 @@ function PrimaryButton({ onClick, children, disabled }) {
 
 function ScreenShell({ children, onSkip, skipLabel }) {
   return (
-    <div style={{
-      minHeight: '100vh', background: '#080C10',
-      display: 'flex', flexDirection: 'column',
-    }}>
-      {/* Top bar */}
+    <div style={{ minHeight: '100vh', background: '#080C10', display: 'flex', flexDirection: 'column' }}>
       <div style={{
         padding: '20px 48px', display: 'flex', alignItems: 'center',
         justifyContent: 'space-between',
@@ -138,7 +132,6 @@ function ScreenShell({ children, onSkip, skipLabel }) {
         </svg>
         {onSkip && <SkipButton onSkip={onSkip} label={skipLabel || 'Skip'} />}
       </div>
-
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px 64px' }}>
         {children}
       </div>
@@ -147,7 +140,7 @@ function ScreenShell({ children, onSkip, skipLabel }) {
 }
 
 // ─── Screen 0: Confetti celebration ────────────────────────────────────────────
-function ConfettiScreen({ onNext, isBroker }) {
+function ConfettiScreen({ onNext }) {
   const [confettiActive, setConfettiActive] = useState(true);
   useEffect(() => {
     const t = setTimeout(() => setConfettiActive(false), 4000);
@@ -196,9 +189,7 @@ function HowDidYouHearScreen({ onNext }) {
 
   const handleNext = async () => {
     if (!selected) return;
-    try {
-      await base44.auth.updateMe({ referral_source: selected });
-    } catch (e) { /* non-blocking */ }
+    try { await base44.auth.updateMe({ referral_source: selected }); } catch (e) {}
     onNext();
   };
 
@@ -245,25 +236,13 @@ function ThemeScreen({ onNext }) {
   const [selectedTheme, setSelectedTheme] = useState('dark');
 
   const handleNext = async () => {
-    try {
-      await base44.auth.updateMe({ theme_preference: selectedTheme });
-    } catch (e) { /* non-blocking */ }
+    try { await base44.auth.updateMe({ theme_preference: selectedTheme }); } catch (e) {}
     onNext();
   };
 
   const themes = [
-    {
-      id: 'dark',
-      label: 'Dark Mode',
-      desc: 'Easy on the eyes. Great for long sessions.',
-      preview: { bg: '#080C10', card: '#111827', text: '#FFFFFF', accent: ACCENT },
-    },
-    {
-      id: 'light',
-      label: 'Light Mode',
-      desc: 'Clean and bright. Perfect for daytime use.',
-      preview: { bg: '#F9FAFB', card: '#FFFFFF', text: '#111827', accent: ACCENT },
-    },
+    { id: 'dark', label: 'Dark Mode', desc: 'Easy on the eyes. Great for long sessions.', preview: { bg: '#080C10', card: '#111827', accent: ACCENT } },
+    { id: 'light', label: 'Light Mode', desc: 'Clean and bright. Perfect for daytime use.', preview: { bg: '#F9FAFB', card: '#FFFFFF', accent: ACCENT } },
   ];
 
   return (
@@ -283,12 +262,10 @@ function ThemeScreen({ onNext }) {
               style={{
                 border: `2px solid ${selectedTheme === theme.id ? ACCENT : 'rgba(255,255,255,0.1)'}`,
                 borderRadius: '10px', overflow: 'hidden', cursor: 'pointer',
-                background: 'transparent', padding: 0,
-                transition: 'border-color 0.2s ease',
+                background: 'transparent', padding: 0, transition: 'border-color 0.2s ease',
                 boxShadow: selectedTheme === theme.id ? `0 0 0 1px ${ACCENT}` : 'none',
               }}
             >
-              {/* Mini preview */}
               <div style={{ background: theme.preview.bg, padding: '16px', height: '100px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ background: theme.preview.card, borderRadius: '4px', height: '12px', width: '60%' }} />
                 <div style={{ background: theme.preview.card, borderRadius: '4px', height: '8px', width: '80%', opacity: 0.6 }} />
@@ -327,30 +304,18 @@ function DemoVideoScreen({ onNext }) {
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.35)', margin: '0 0 32px' }}>
           A quick walkthrough of the core features.
         </p>
-
-        {/* Video placeholder */}
+        {/* Video placeholder — swap src for YouTube embed when ready */}
         <div style={{
           width: '100%', aspectRatio: '16/9',
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: '10px', marginBottom: '32px',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: '16px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px',
         }}>
-          <div style={{
-            width: '64px', height: '64px', borderRadius: '50%',
-            background: 'rgba(0,219,197,0.1)', border: `1px solid ${ACCENT}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill={ACCENT} stroke="none">
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(0,219,197,0.1)', border: `1px solid ${ACCENT}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill={ACCENT} stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg>
           </div>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>
-            Demo video coming soon
-          </p>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>Demo video coming soon</p>
         </div>
-
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <SkipButton onSkip={onNext} label="Skip video" />
           <PrimaryButton onClick={onNext}>Continue →</PrimaryButton>
@@ -360,23 +325,40 @@ function DemoVideoScreen({ onNext }) {
   );
 }
 
-// ─── Feature Demo Screens ───────────────────────────────────────────────────────
+// ─── Feature Demo Screen (with multi-screenshot sub-carousel) ───────────────────
 function FeatureDemoScreen({ feature, onNext, onSkipAll, totalScreens, currentIndex }) {
+  const [shotIndex, setShotIndex] = useState(0);
+  const shots = feature.screenshots || [null]; // array of { url, caption } or null placeholders
+
+  const prevShot = () => setShotIndex(i => Math.max(0, i - 1));
+  const nextShot = () => setShotIndex(i => Math.min(shots.length - 1, i + 1));
+
+  // Reset sub-index when feature changes
+  useEffect(() => { setShotIndex(0); }, [currentIndex]);
+
+  const isLastFeature = currentIndex === totalScreens - 1;
+  const isLastShot = shotIndex === shots.length - 1;
+
+  const handleNext = () => {
+    if (!isLastShot) {
+      nextShot();
+    } else {
+      onNext();
+    }
+  };
+
   return (
     <ScreenShell onSkip={onSkipAll} skipLabel="Skip all">
-      <div style={{ textAlign: 'center', maxWidth: '680px', width: '100%' }}>
-        {/* Progress dots */}
+      <div style={{ textAlign: 'center', maxWidth: '720px', width: '100%' }}>
+        {/* Feature progress dots */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '32px' }}>
           {Array.from({ length: totalScreens }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width: i === currentIndex ? '20px' : '6px',
-                height: '6px', borderRadius: '3px',
-                background: i === currentIndex ? ACCENT : 'rgba(255,255,255,0.15)',
-                transition: 'all 0.3s ease',
-              }}
-            />
+            <div key={i} style={{
+              width: i === currentIndex ? '20px' : '6px',
+              height: '6px', borderRadius: '3px',
+              background: i === currentIndex ? ACCENT : i < currentIndex ? 'rgba(0,219,197,0.35)' : 'rgba(255,255,255,0.15)',
+              transition: 'all 0.3s ease',
+            }} />
           ))}
         </div>
 
@@ -390,43 +372,107 @@ function FeatureDemoScreen({ feature, onNext, onSkipAll, totalScreens, currentIn
         <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: 'clamp(22px, 3vw, 34px)', color: '#FFFFFF', margin: '0 0 12px' }}>
           {feature.title}
         </h2>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.75, margin: '0 0 36px', maxWidth: '520px', marginLeft: 'auto', marginRight: 'auto' }}>
-          {feature.description}
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.75, margin: '0 0 28px', maxWidth: '560px', marginLeft: 'auto', marginRight: 'auto' }}>
+          {shots[shotIndex]?.caption || feature.description}
         </p>
 
-        {/* Screenshot placeholder */}
-        <div style={{
-          width: '100%', aspectRatio: '16/9',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '10px', marginBottom: '36px',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: '12px',
-          position: 'relative', overflow: 'hidden',
-        }}>
-          {/* Decorative inner glow */}
+        {/* Screenshot area with prev/next arrows */}
+        <div style={{ position: 'relative', width: '100%', marginBottom: '28px' }}>
           <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '200px', height: '200px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(0,219,197,0.06) 0%, transparent 70%)',
-          }} />
-          <div style={{
-            width: '48px', height: '48px', borderRadius: '10px',
-            background: 'rgba(0,219,197,0.08)', border: '1px solid rgba(0,219,197,0.2)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '100%', aspectRatio: '16/9',
+            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '10px', overflow: 'hidden',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px',
+            position: 'relative',
           }}>
-            {feature.icon}
+            {shots[shotIndex]?.url ? (
+              <img
+                src={shots[shotIndex].url}
+                alt={shots[shotIndex].caption || feature.title}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <>
+                <div style={{
+                  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                  width: '200px', height: '200px', borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(0,219,197,0.06) 0%, transparent 70%)',
+                }} />
+                <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: 'rgba(0,219,197,0.08)', border: '1px solid rgba(0,219,197,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {feature.icon}
+                </div>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.2)', margin: 0, zIndex: 1 }}>
+                  {shots[shotIndex]?.label || 'Screenshot coming soon'}
+                </p>
+              </>
+            )}
           </div>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.2)', margin: 0 }}>
-            Screenshot placeholder
-          </p>
+
+          {/* Prev / Next arrows — only shown when multiple screenshots */}
+          {shots.length > 1 && (
+            <>
+              <button
+                onClick={prevShot}
+                disabled={shotIndex === 0}
+                style={{
+                  position: 'absolute', left: '-18px', top: '50%', transform: 'translateY(-50%)',
+                  width: '36px', height: '36px', borderRadius: '50%',
+                  background: shotIndex === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: shotIndex === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)',
+                  cursor: shotIndex === 0 ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => { if (shotIndex > 0) e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = shotIndex === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)'; }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button
+                onClick={nextShot}
+                disabled={isLastShot}
+                style={{
+                  position: 'absolute', right: '-18px', top: '50%', transform: 'translateY(-50%)',
+                  width: '36px', height: '36px', borderRadius: '50%',
+                  background: isLastShot ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: isLastShot ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)',
+                  cursor: isLastShot ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => { if (!isLastShot) e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = isLastShot ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)'; }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </>
+          )}
         </div>
+
+        {/* Sub-screenshot dots */}
+        {shots.length > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', marginBottom: '28px' }}>
+            {shots.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setShotIndex(i)}
+                style={{
+                  width: i === shotIndex ? '16px' : '5px', height: '5px', borderRadius: '3px',
+                  background: i === shotIndex ? ACCENT : 'rgba(255,255,255,0.2)',
+                  border: 'none', cursor: 'pointer', padding: 0,
+                  transition: 'all 0.25s ease',
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <SkipButton onSkip={onSkipAll} label="Skip all" />
-          <PrimaryButton onClick={onNext}>
-            {currentIndex === totalScreens - 1 ? "Go to Dashboard →" : "Next →"}
+          <PrimaryButton onClick={handleNext}>
+            {isLastFeature && isLastShot ? 'Go to Dashboard →' : isLastShot ? 'Next →' : 'Next screenshot →'}
           </PrimaryButton>
         </div>
       </div>
@@ -434,45 +480,10 @@ function FeatureDemoScreen({ feature, onNext, onSkipAll, totalScreens, currentIn
   );
 }
 
-// ─── Feature definitions ────────────────────────────────────────────────────────
-const BASE_FEATURES = [
-  {
-    tag: 'Posting Listings',
-    title: 'Post a listing in under two minutes',
-    description: 'Add your property details, set your visibility, and PropMatch instantly begins scoring it against active client requirements from agents across the platform.',
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>,
-  },
-  {
-    tag: 'Client Requirements',
-    title: "Post what your client is looking for",
-    description: "Enter your client's criteria once — budget, location, property type, size — and the platform continuously surfaces matching listings as they come in, ranked by compatibility.",
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>,
-  },
-  {
-    tag: 'Match Engine',
-    title: 'Your matches, scored and ranked',
-    description: 'Every listing is scored against every requirement using our proprietary match engine. You see a ranked list of opportunities, not a pile of irrelevant leads.',
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-  },
-  {
-    tag: 'Groups and Networking',
-    title: 'Connect with agents in your market',
-    description: 'Join or create groups by market, property type, or specialty. Share posts, co-op opportunities, and host or attend networking events — all inside the platform.',
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  },
-  {
-    tag: 'Your Portfolio',
-    title: 'All your listings and requirements, in one place',
-    description: 'Your dashboard keeps every active listing and client requirement organized. See status, match counts, and activity at a glance without digging through email threads.',
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
-  },
-  {
-    tag: 'Match Notifications',
-    title: 'Get notified when a new match lands',
-    description: 'PropMatch watches the platform for you. When a new listing or requirement hits that matches yours, you get notified immediately so you can act before anyone else.',
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
-  },
-];
+// ─── Feature definitions ─────────────────────────────────────────────────────────
+// screenshots: array of { label, caption, url }
+// url can be null (shows placeholder) or a real image URL
+// caption overrides the main description when that screenshot is active
 
 const BROKER_FEATURES = [
   {
@@ -480,23 +491,92 @@ const BROKER_FEATURES = [
     title: 'Your brokerage, at a glance',
     description: "As a broker, you get a dedicated admin view of your entire office's activity. See who is posting, which listings are matched, and where deals are moving across your team.",
     icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
+    screenshots: [
+      { label: 'Brokerage overview dashboard', caption: "Your admin view shows every agent's active listings, requirements, and match activity across the office — all in one place.", url: null },
+      { label: 'Agent performance metrics', caption: 'See which agents have the most active deals, recent matches, and pipeline movement at a glance without asking anyone.', url: null },
+    ],
   },
   {
     tag: 'Team Collaboration',
     title: 'Tools built for your whole office',
     description: "Share listings internally before going public, assign requirements to agents, and keep your team coordinated on active opportunities. Built for how brokerages actually work.",
     icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
+    screenshots: [
+      { label: 'Internal listing visibility', caption: 'Before going public, share a listing internally so your team can match it against their active buyer requirements first.', url: null },
+      { label: 'Requirement assignment', caption: 'Assign a client requirement to any agent on your team and track who is working what deal.', url: null },
+    ],
+  },
+];
+
+const BASE_FEATURES = [
+  {
+    tag: 'Posting Listings',
+    title: 'Post a listing in under two minutes',
+    description: 'Add your property details, set your visibility, and PropMatch instantly begins scoring it against active client requirements from agents across the platform.',
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>,
+    screenshots: [
+      { label: 'Listing creation form', caption: 'The two-step listing wizard keeps it fast — property details, pricing, and visibility controls all in one clean flow.', url: null },
+      { label: 'Visibility controls', caption: 'Choose who sees your listing: public to all agents, brokerage-only, a specific group, or a private direct share.', url: null },
+    ],
+  },
+  {
+    tag: 'Client Requirements',
+    title: "Post what your client is looking for",
+    description: "Enter your client's criteria once — budget, location, property type, size — and the platform continuously surfaces matching listings as they come in, ranked by compatibility.",
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>,
+    screenshots: [
+      { label: 'Requirement form', caption: "Set your client's budget, preferred cities, property type, and size range — then let the engine do the hunting.", url: null },
+      { label: 'Matched listings view', caption: "Every requirement shows a live list of matching listings, ranked by compatibility score so the best fits are always at the top.", url: null },
+    ],
+  },
+  {
+    tag: 'Match Engine',
+    title: 'Your matches, scored and ranked',
+    description: 'Every listing is scored against every requirement using our proprietary match engine. You see a ranked list of opportunities, not a pile of irrelevant leads.',
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+    screenshots: [
+      { label: 'Match score breakdown', caption: 'Each match shows a score and a breakdown of why it matched — price fit, location overlap, size range, and property type.', url: null },
+    ],
+  },
+  {
+    tag: 'Groups and Networking',
+    title: 'Connect with agents in your market',
+    description: 'Join or create groups by market, property type, or specialty. Share posts, co-op opportunities, and host or attend networking events — all inside the platform.',
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    screenshots: [
+      { label: 'Group discussion board', caption: 'Post deal intel, co-op opportunities, or market updates to your group. Tag listings or requirements directly in the discussion.', url: null },
+      { label: 'Group listings & requirements', caption: 'Every group has a shared feed of the listings and client requirements posted by its members — filtered to just your market.', url: null },
+      { label: 'Events — join or host', caption: 'Host a networking happy hour or a site tour, or RSVP to events your group is running. Everything is managed inside PropMatch.', url: null },
+    ],
+  },
+  {
+    tag: 'Your Portfolio',
+    title: 'All your listings and requirements, in one place',
+    description: 'Your dashboard keeps every active listing and client requirement organized. See status, match counts, and activity at a glance without digging through email threads.',
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+    screenshots: [
+      { label: 'Dashboard overview', caption: 'Your dashboard shows all active listings and requirements with match counts, status badges, and quick-action buttons.', url: null },
+    ],
+  },
+  {
+    tag: 'Match Notifications',
+    title: 'Get notified when a new match lands',
+    description: 'PropMatch watches the platform for you. When a new listing or requirement hits that matches yours, you get notified immediately so you can act before anyone else.',
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+    screenshots: [
+      { label: 'Notification center', caption: 'Your notification center collects every new match, group activity, and platform update — no inbox noise required.', url: null },
+    ],
   },
 ];
 
 // ─── Main exported component ────────────────────────────────────────────────────
-export default function PostOnboarding({ isBroker = false, onComplete }) {
+export default function PostOnboarding({ isBroker = false }) {
   const navigate = useNavigate();
-  // Screens: 0=confetti, 1=how heard, 2=theme, 3=video, 4..N=feature demos
-  const featureList = isBroker ? [...BASE_FEATURES, ...BROKER_FEATURES] : BASE_FEATURES;
+
+  // Broker features come FIRST (after the video), then base features
+  const featureList = isBroker ? [...BROKER_FEATURES, ...BASE_FEATURES] : BASE_FEATURES;
   const totalFeatureScreens = featureList.length;
 
-  // Total screen count: confetti + howHeard + theme + video + features
   const SCREEN_CONFETTI = 0;
   const SCREEN_HOW_HEARD = 1;
   const SCREEN_THEME = 2;
@@ -507,24 +587,20 @@ export default function PostOnboarding({ isBroker = false, onComplete }) {
   const [screen, setScreen] = useState(SCREEN_CONFETTI);
 
   const goNext = () => {
-    if (screen >= LAST_SCREEN) {
-      navigate('/Dashboard');
-      return;
-    }
+    if (screen >= LAST_SCREEN) { navigate('/Dashboard'); return; }
     setScreen(s => s + 1);
   };
 
   const skipAll = () => navigate('/Dashboard');
 
-  const isFeatureScreen = screen >= FIRST_FEATURE;
   const featureIndex = screen - FIRST_FEATURE;
 
-  if (screen === SCREEN_CONFETTI) return <ConfettiScreen onNext={goNext} isBroker={isBroker} />;
+  if (screen === SCREEN_CONFETTI) return <ConfettiScreen onNext={goNext} />;
   if (screen === SCREEN_HOW_HEARD) return <HowDidYouHearScreen onNext={goNext} />;
   if (screen === SCREEN_THEME) return <ThemeScreen onNext={goNext} />;
   if (screen === SCREEN_VIDEO) return <DemoVideoScreen onNext={goNext} />;
 
-  if (isFeatureScreen) {
+  if (screen >= FIRST_FEATURE) {
     return (
       <FeatureDemoScreen
         feature={featureList[featureIndex]}
