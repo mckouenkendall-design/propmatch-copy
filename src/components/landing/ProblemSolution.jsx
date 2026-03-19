@@ -211,7 +211,7 @@ export default function ProblemSolution() {
   };
 
   return (
-    <section ref={ref} style={{ background: '#0E1318', padding: '120px 64px' }}>
+    <section ref={ref} style={{ background: '#0E1318', padding: '120px 64px', position: 'relative' }}>
       <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'start' }}>
 
         {/* Left — Problem */}
