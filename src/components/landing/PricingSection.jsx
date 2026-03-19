@@ -362,7 +362,7 @@ export default function PricingSection() {
             </div>
 
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 20px' }}>
-              Your entire team on one platform. Centralized billing, dedicated onboarding, and admin controls.
+              Give your agents a competitive edge that closes more deals — and a reason to choose your brokerage over the next one. PropMatch becomes part of your value proposition when recruiting top talent.
             </p>
 
             <Link
