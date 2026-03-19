@@ -287,15 +287,71 @@ export default function PricingSection() {
               display: 'inline-block', marginBottom: '20px',
             }}>Brokerage</span>
 
-            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '52px', color: '#111827', lineHeight: 1 }}>Custom</span>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#9CA3AF' }}>pricing</span>
+            {/* Agent count input */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#374151', display: 'block', marginBottom: '6px' }}>
+                How many agents will use PropMatch?
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={agentCount}
+                onChange={e => setAgentCount(Math.max(1, parseInt(e.target.value) || 1))}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  border: '1px solid #D1D5DB', borderRadius: '6px',
+                  padding: '9px 12px', fontFamily: "'Inter', sans-serif", fontSize: '15px',
+                  color: '#111827', outline: 'none',
+                }}
+                onFocus={e => e.currentTarget.style.borderColor = '#00DBC5'}
+                onBlur={e => e.currentTarget.style.borderColor = '#D1D5DB'}
+              />
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Include yourself in this number.</p>
             </div>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 24px' }}>
+
+            {/* Dynamic price display */}
+            <div style={{ marginBottom: '6px' }}>
+              {isAnnual ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                    <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '40px', color: '#111827', lineHeight: 1 }}>
+                      ${(agentCount * 708).toLocaleString()}
+                    </span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#9CA3AF' }}>/ yr</span>
+                  </div>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>$59 / agent / mo · billed as ${(agentCount * 708).toLocaleString()} / yr</p>
+                  <span style={{
+                    display: 'inline-block', marginTop: '6px',
+                    fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 500,
+                    color: '#00DBC5', background: 'rgba(0,219,197,0.08)',
+                    border: '1px solid rgba(0,219,197,0.3)', borderRadius: '4px', padding: '2px 8px',
+                  }}>Save 25%</span>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                    <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '40px', color: '#111827', lineHeight: 1 }}>
+                      ${(agentCount * 64).toLocaleString()}
+                    </span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#9CA3AF' }}>/ mo</span>
+                  </div>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>$64 / agent / month</p>
+                  <span style={{
+                    display: 'inline-block', marginTop: '6px',
+                    fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 500,
+                    color: '#00DBC5', background: 'rgba(0,219,197,0.08)',
+                    border: '1px solid rgba(0,219,197,0.3)', borderRadius: '4px', padding: '2px 8px',
+                  }}>Save 19%</span>
+                </>
+              )}
+            </div>
+
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 20px' }}>
               Your entire team on one platform. Centralized billing, dedicated onboarding, and admin controls.
             </p>
 
-            <Link to="/Onboarding"
+            <Link
+              to={`/Onboarding?plan=brokerage&billing=${isAnnual ? 'annual' : 'monthly'}&agents=${agentCount}`}
               style={{
                 display: 'block', width: '100%', textAlign: 'center',
                 fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500,
@@ -308,7 +364,7 @@ export default function PricingSection() {
               onMouseEnter={e => e.currentTarget.style.background = '#3A8C84'}
               onMouseLeave={e => e.currentTarget.style.background = '#00DBC5'}
             >
-              Request a Demo
+              Get Started
             </Link>
 
             <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '24px' }}>
