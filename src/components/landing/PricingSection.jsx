@@ -213,11 +213,15 @@ export default function PricingSection() {
             <div style={{ marginBottom: '10px' }}>
               {isAnnual ? (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', color: '#9CA3AF', textDecoration: 'line-through' }}>$948/yr</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 500, color: '#00DBC5', background: 'rgba(0,219,197,0.08)', border: '1px solid rgba(0,219,197,0.3)', borderRadius: '4px', padding: '2px 8px' }}>Save $99</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '4px' }}>
                     <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '52px', color: '#111827', lineHeight: 1 }}>$849</span>
                     <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#9CA3AF' }}>/ yr</span>
                   </div>
-                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Billed annually · Save $99</p>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Billed annually · $70.75/mo</p>
                 </>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
