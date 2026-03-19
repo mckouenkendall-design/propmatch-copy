@@ -266,6 +266,12 @@ export default function ProblemSolution() {
         </div>
       </div>
 
+      {/* Subtle dark→light fade at bottom edge */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', pointerEvents: 'none',
+        background: 'linear-gradient(to bottom, transparent, #F9FAFB)',
+      }} />
+
       <style>{`
         @media (max-width: 768px) {
           section[data-ps] > div { grid-template-columns: 1fr !important; gap: 60px !important; }

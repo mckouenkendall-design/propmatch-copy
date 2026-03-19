@@ -47,7 +47,7 @@ export default function FaqSection() {
   const [open, setOpen] = useState(null);
 
   return (
-    <section ref={ref} style={{ background: '#F9FAFB', padding: '64px 64px 80px', position: 'relative' }}>
+    <section ref={ref} style={{ background: '#F9FAFB', padding: '64px 64px 80px' }}>
       <div style={{ maxWidth: '820px', margin: '0 auto' }}>
 
         {/* Header */}
