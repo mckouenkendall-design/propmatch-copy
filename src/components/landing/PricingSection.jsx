@@ -325,9 +325,11 @@ export default function PricingSection() {
       </div>
 
       <style>{`
+        @media (max-width: 900px) {
+          #pricing > div > div:first-of-type { grid-template-columns: 1fr !important; }
+        }
         @media (max-width: 768px) {
           #pricing { padding: 80px 24px !important; }
-          #pricing > div > div { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </section>

@@ -44,14 +44,14 @@ export default function AboutUs() {
               K
             </div>
             <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '18px', fontWeight: 500, color: '#111827', margin: '0 0 4px' }}>
-              Kendall Mckouen
+              Kendall McKouen
             </h3>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#9CA3AF', margin: '0 0 16px' }}>
               Founder & CEO, PropMatch
             </p>
             <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <a href="mailto:propmatch.founder@gmail.com" style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, textDecoration: 'none' }}>
-                propmatch.founder@gmail.com
+              <a href="mailto:founder.propmatch@gmail.com" style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, textDecoration: 'none' }}>
+                founder.propmatch@gmail.com
               </a>
             </div>
           </div>
