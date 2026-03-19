@@ -39,10 +39,10 @@ const usedYBands = [];
 const BAND_HEIGHT = 60;
 
 function pickY() {
-  const pageH = Math.max(document.body.scrollHeight, 1200);
+  const pageH = window.innerHeight;
   const maxAttempts = 20;
   for (let i = 0; i < maxAttempts; i++) {
-    const y = 150 + Math.random() * (pageH - 400);
+    const y = 80 + Math.random() * (pageH - 180);
     const band = Math.floor(y / BAND_HEIGHT);
     if (!usedYBands.includes(band)) {
       usedYBands.push(band);
