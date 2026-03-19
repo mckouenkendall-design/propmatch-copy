@@ -60,28 +60,55 @@ function StatBar({ label, pct, visible, delay }) {
 }
 
 function LineChart({ visible }) {
-  const totalLen = 600;
+  const totalLen = 700;
   const [dashOffset, setDashOffset] = useState(totalLen);
-  const [dashOffset2, setDashOffset2] = useState(totalLen);
+  const [dotsVisible, setDotsVisible] = useState(false);
 
   useEffect(() => {
     if (visible) {
       const t1 = setTimeout(() => setDashOffset(0), 100);
-      const t2 = setTimeout(() => setDashOffset2(0), 300);
+      const t2 = setTimeout(() => setDotsVisible(true), 1100);
       return () => { clearTimeout(t1); clearTimeout(t2); };
     } else {
       setDashOffset(totalLen);
-      setDashOffset2(totalLen);
+      setDotsVisible(false);
     }
   }, [visible]);
 
   const minV = 0, maxV = 100;
   const chartW = W - PAD.l - PAD.r;
   const chartH = H - PAD.t - PAD.b;
-  const xs = RES_DATA.map((_, i) => PAD.l + (i / (RES_DATA.length - 1)) * chartW);
-  const ys = (arr) => arr.map(v => PAD.t + chartH - ((v - minV) / (maxV - minV)) * chartH);
+  const xs = MATCH_RATE_DATA.map((_, i) => PAD.l + (i / (MATCH_RATE_DATA.length - 1)) * chartW);
+  const yOf = v => PAD.t + chartH - ((v - minV) / (maxV - minV)) * chartH;
+  const ys = MATCH_RATE_DATA.map(yOf);
 
-  const polyline = (arr) => xs.map((x, i) => `${x},${ys(arr)[i]}`).join(' ');
+  // Smooth area path
+  const areaPath = (() => {
+    const pts = xs.map((x, i) => [x, ys[i]]);
+    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) {
+      const [px, py] = pts[i - 1];
+      const [cx, cy] = pts[i];
+      const cpx = (px + cx) / 2;
+      d += ` C ${cpx} ${py} ${cpx} ${cy} ${cx} ${cy}`;
+    }
+    d += ` L ${pts[pts.length-1][0]} ${PAD.t + chartH} L ${pts[0][0]} ${PAD.t + chartH} Z`;
+    return d;
+  })();
+
+  const linePath = (() => {
+    const pts = xs.map((x, i) => [x, ys[i]]);
+    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) {
+      const [px, py] = pts[i - 1];
+      const [cx, cy] = pts[i];
+      const cpx = (px + cx) / 2;
+      d += ` C ${cpx} ${py} ${cpx} ${cy} ${cx} ${cy}`;
+    }
+    return d;
+  })();
+
+  const gradId = 'match-area-grad';
 
   return (
     <div style={{
@@ -94,50 +121,57 @@ function LineChart({ visible }) {
     }}>
       <div style={{ marginBottom: '12px' }}>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', margin: '0 0 4px' }}>
-          Matches Surfaced Per Month — Sample Data
+          Match Rate Growth — Sample Data
         </p>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.2)', margin: 0 }}>
-          Number of listing ↔ requirement matches automatically found by PropMatch
+          % of active listings with at least one qualified match surfaced by PropMatch
         </p>
       </div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
-        {/* Y-axis gridlines + labels */}
-        {[0, 25, 50, 75, 100].map((v, i) => {
-          const y = PAD.t + chartH - ((v - minV) / (maxV - minV)) * chartH;
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#00DBC5" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#00DBC5" stopOpacity="0" />
+          </linearGradient>
+          <clipPath id="chart-clip">
+            <rect x={PAD.l} y={PAD.t} width={chartW} height={chartH} />
+          </clipPath>
+        </defs>
+
+        {/* Y-axis gridlines + % labels */}
+        {[0, 25, 50, 75, 100].map((v) => {
+          const y = yOf(v);
           return (
-            <g key={i}>
+            <g key={v}>
               <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-              <text x={PAD.l - 6} y={y + 3.5} textAnchor="end"
+              <text x={PAD.l - 8} y={y + 3.5} textAnchor="end"
                 style={{ fontFamily: "'Inter', sans-serif", fontSize: '9px', fill: 'rgba(255,255,255,0.22)' }}>
-                {v}
+                {v}%
               </text>
             </g>
           );
         })}
-        {/* Residential line */}
-        <polyline points={polyline(RES_DATA)} fill="none" stroke="#00DBC5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+
+        {/* Area fill */}
+        <path d={areaPath} fill={`url(#${gradId})`} clipPath="url(#chart-clip)" />
+
+        {/* Main line with draw-on animation */}
+        <path d={linePath} fill="none" stroke="#00DBC5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
           strokeDasharray={totalLen} strokeDashoffset={dashOffset}
-          style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1)' }}
+          style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(0.22,1,0.36,1)' }}
         />
-        {/* Dots + value labels on residential */}
+
+        {/* Dots + % labels */}
         {xs.map((x, i) => (
-          <g key={i} style={{ opacity: dashOffset === 0 ? 1 : 0, transition: `opacity 0.3s ease ${0.8 + i * 0.08}s` }}>
-            <circle cx={x} cy={ys(RES_DATA)[i]} r="3.5" fill="#00DBC5" />
-            <text x={x} y={ys(RES_DATA)[i] - 8} textAnchor="middle"
-              style={{ fontFamily: "'Inter', sans-serif", fontSize: '9px', fill: 'rgba(0,219,197,0.7)' }}>
-              {RES_DATA[i]}
+          <g key={i} style={{ opacity: dotsVisible ? 1 : 0, transition: `opacity 0.35s ease ${i * 0.06}s` }}>
+            <circle cx={x} cy={ys[i]} r="4" fill="#0E1318" stroke="#00DBC5" strokeWidth="2" />
+            <text x={x} y={ys[i] - 10} textAnchor="middle"
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: '9px', fontWeight: 500, fill: 'rgba(0,219,197,0.85)' }}>
+              {MATCH_RATE_DATA[i]}%
             </text>
           </g>
         ))}
-        {/* Commercial line (dashed) */}
-        <polyline points={polyline(COM_DATA)} fill="none" stroke="rgba(0,219,197,0.35)" strokeWidth="1.5"
-          strokeDasharray="5 4" strokeLinecap="round" strokeLinejoin="round" />
-        {/* Dots on commercial */}
-        {xs.map((x, i) => (
-          <circle key={i} cx={x} cy={ys(COM_DATA)[i]} r="2.5" fill="rgba(0,219,197,0.4)"
-            style={{ opacity: dashOffset2 === 0 ? 1 : 0, transition: `opacity 0.3s ease ${1 + i * 0.08}s` }}
-          />
-        ))}
+
         {/* X-axis labels */}
         {MONTHS.map((m, i) => (
           <text key={m} x={xs[i]} y={H - 2} textAnchor="middle"
@@ -146,16 +180,13 @@ function LineChart({ visible }) {
           </text>
         ))}
       </svg>
-      {/* Legend */}
-      <div style={{ display: 'flex', gap: '20px', marginTop: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '20px', height: '2px', background: '#00DBC5', borderRadius: '2px' }} />
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Residential</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '20px', height: '1.5px', background: 'rgba(0,219,197,0.35)', borderRadius: '2px', backgroundImage: 'repeating-linear-gradient(90deg, rgba(0,219,197,0.35) 0px, rgba(0,219,197,0.35) 5px, transparent 5px, transparent 9px)' }} />
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Commercial</span>
-        </div>
+
+      {/* Single stat callout */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '14px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '22px', fontWeight: 300, color: '#00DBC5' }}>+155%</span>
+        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.3)', lineHeight: 1.5 }}>
+          increase in match rate over 6 months<br />across all property categories
+        </span>
       </div>
     </div>
   );
