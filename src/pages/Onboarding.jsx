@@ -562,7 +562,7 @@ export default function Onboarding() {
               padding: '4px 12px', borderRadius: '4px', background: 'rgba(0,219,197,0.06)',
               display: 'inline-block', marginBottom: '20px',
             }}>
-              {step === 2 ? 'Almost There' : 'Join PropMatch'}
+              Join PropMatch
             </span>
             <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: 'clamp(26px, 3.5vw, 38px)', color: '#FFFFFF', lineHeight: 1.15, margin: '0 0 10px' }}>
               {headings[step]}
