@@ -305,7 +305,7 @@ export default function PricingSection() {
                   const raw = e.target.value.replace(/[^0-9]/g, '');
                   setAgentInput(raw);
                   const n = parseInt(raw);
-                  if (!isNaN(n) && n >= 3) setAgentCount(n);
+                  if (!isNaN(n) && n >= 2) setAgentCount(n);
                 }}
                 onBlur={() => {
                   const n = parseInt(agentInput);
