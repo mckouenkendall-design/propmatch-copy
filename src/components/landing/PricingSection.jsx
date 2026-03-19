@@ -102,6 +102,27 @@ export default function PricingSection() {
           </p>
         </div>
 
+        {/* Annual / Monthly Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '44px' }}>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: isAnnual ? '#9CA3AF' : '#111827' }}>Monthly</span>
+          <button
+            onClick={() => setIsAnnual(!isAnnual)}
+            style={{
+              width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+              background: isAnnual ? '#00DBC5' : '#D1D5DB', position: 'relative', transition: 'background 0.2s ease', padding: 0,
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: '3px', left: isAnnual ? '23px' : '3px',
+              width: '18px', height: '18px', borderRadius: '50%', background: 'white',
+              transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            }} />
+          </button>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: isAnnual ? '#111827' : '#9CA3AF' }}>
+            Annual
+          </span>
+        </div>
+
         {/* Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', maxWidth: '1100px', margin: '0 auto 28px' }}>
 
