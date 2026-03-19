@@ -172,7 +172,7 @@ export default function PricingSection() {
             style={{
               border: `1px solid ${hovered1 ? 'rgba(0,219,197,0.5)' : '#E5E7EB'}`,
               borderRadius: '10px',
-              padding: '40px 36px',
+              padding: '36px 28px',
               boxShadow: hovered1 ? '0 8px 32px rgba(0,219,197,0.12)' : 'none',
               transform: hovered1 ? 'translateY(-2px)' : 'translateY(0)',
               transition: 'border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease',
@@ -227,7 +227,7 @@ export default function PricingSection() {
           <div style={{
             border: '2px solid #00DBC5',
             borderRadius: '10px',
-            padding: '40px 36px',
+            padding: '36px 28px',
             position: 'relative',
             boxShadow: '0 0 0 1px #00DBC5, 0 12px 40px rgba(0,219,197,0.12)',
             opacity: visible ? 1 : 0,
@@ -291,7 +291,7 @@ export default function PricingSection() {
 
         {/* Solo agent info bar */}
         <div style={{
-          maxWidth: '860px', margin: '0 auto',
+          maxWidth: '1100px', margin: '0 auto',
           background: '#F9FAFB', border: '1px solid #E5E7EB',
           borderRadius: '8px', padding: '20px 28px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px',
