@@ -504,7 +504,7 @@ export default function Onboarding() {
       // Non-blocking
     }
 
-    setStep(2);
+    setShowPostOnboarding(true);
   };
 
   const handleContinue = () => {
