@@ -52,7 +52,7 @@ export default function Affiliate() {
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.45)', margin: '0 0 28px' }}>
             The affiliate program is currently invite-based while we finalize the portal. Email us to get early access.
           </p>
-          <a href="mailto:propmatch.founder@gmail.com?subject=Affiliate Program Interest" style={{
+          <a href="mailto:founder.propmatch@gmail.com?subject=Affiliate Program Interest" style={{
             display: 'inline-block', background: ACCENT, color: '#111827', padding: '13px 32px',
             borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
             textDecoration: 'none', transition: 'background 0.2s ease',

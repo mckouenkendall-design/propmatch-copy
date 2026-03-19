@@ -111,7 +111,7 @@ export default function Careers() {
                 <textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
                   rows={4} style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '14px', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
               </div>
-              <a href={`mailto:propmatch.founder@gmail.com?subject=Application: ${applied}&body=Name: ${form.name}%0AEmail: ${form.email}%0A%0A${form.message}`}
+              <a href={`mailto:founder.propmatch@gmail.com?subject=Application: ${applied}&body=Name: ${form.name}%0AEmail: ${form.email}%0A%0A${form.message}`}
                 style={{
                   display: 'inline-block', background: ACCENT, color: '#111827', padding: '12px 28px',
                   borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
@@ -131,8 +131,8 @@ export default function Careers() {
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', margin: '0 0 8px' }}>
             Don't see your role? We're always open to hearing from driven people.
           </p>
-          <a href="mailto:propmatch.founder@gmail.com" style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: ACCENT, fontWeight: 500, textDecoration: 'none' }}>
-            propmatch.founder@gmail.com
+          <a href="mailto:founder.propmatch@gmail.com" style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: ACCENT, fontWeight: 500, textDecoration: 'none' }}>
+            founder.propmatch@gmail.com
           </a>
         </div>
       </div>

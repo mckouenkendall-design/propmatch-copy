@@ -87,12 +87,12 @@ export default function LandingFooter() {
 
           {/* Contact */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '28px' }}>
-            <a href="mailto:propmatch.founder@gmail.com" style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', transition: 'color 0.2s ease', display: 'flex', alignItems: 'center', gap: '8px' }}
+            <a href="mailto:founder.propmatch@gmail.com" style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', transition: 'color 0.2s ease', display: 'flex', alignItems: 'center', gap: '8px' }}
               onMouseEnter={e => e.currentTarget.style.color = ACCENT}
               onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg>
-              propmatch.founder@gmail.com
+              founder.propmatch@gmail.com
             </a>
             <a href="tel:2483102114" style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', transition: 'color 0.2s ease', display: 'flex', alignItems: 'center', gap: '8px' }}
               onMouseEnter={e => e.currentTarget.style.color = ACCENT}
