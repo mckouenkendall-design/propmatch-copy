@@ -7,6 +7,12 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import Blog from './pages/Blog';
+import Careers from './pages/Careers';
+import Affiliate from './pages/Affiliate';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import AboutUs from './pages/AboutUs';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
