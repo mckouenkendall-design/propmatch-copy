@@ -547,8 +547,8 @@ export default function HeroSection() {
                         style={{
                           padding: '10px 13px',
                           borderRadius: '6px',
-                          border: i === 0 ? `1px solid rgba(0,219,197,0.25)` : '1px solid rgba(255,255,255,0.07)',
-                          background: i === 0 ? 'rgba(0,219,197,0.07)' : 'rgba(255,255,255,0.03)',
+                          border: '1px solid rgba(255,255,255,0.07)',
+                          background: 'rgba(255,255,255,0.03)',
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           cursor: 'pointer',
                           opacity: visibleMatches.includes(i) ? 1 : 0,
@@ -556,7 +556,7 @@ export default function HeroSection() {
                           transition: 'opacity 0.4s ease, transform 0.4s ease, border-color 0.2s ease, background 0.2s ease',
                         }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = `rgba(0,219,197,0.4)`; e.currentTarget.style.background = 'rgba(0,219,197,0.1)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = i === 0 ? `rgba(0,219,197,0.25)` : 'rgba(255,255,255,0.07)'; e.currentTarget.style.background = i === 0 ? 'rgba(0,219,197,0.07)' : 'rgba(255,255,255,0.03)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                       >
                         <div>
                           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.8)', margin: '0 0 2px' }}>{r.address}</p>

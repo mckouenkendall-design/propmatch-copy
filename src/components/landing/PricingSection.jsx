@@ -187,9 +187,8 @@ export default function PricingSection() {
               display: 'inline-block', marginBottom: '20px',
             }}>Individual Agent</span>
 
-            <div style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ marginBottom: '4px' }}>
               <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#9CA3AF', textDecoration: 'line-through' }}>$129</span>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#fff', background: '#e05252', padding: '1px 7px', borderRadius: '4px', fontWeight: 500 }}>LAUNCH PRICE</span>
             </div>
             <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
               <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '52px', color: '#111827', lineHeight: 1 }}>$99</span>
