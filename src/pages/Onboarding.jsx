@@ -4,8 +4,6 @@ import { base44 } from '@/api/base44Client';
 import PostOnboarding from '@/components/onboarding/PostOnboarding';
 
 const ACCENT = '#00DBC5';
-const STEPS = ['Professional Credentials', 'Your Practice', 'Get Started'];
-
 // ─── State license format rules ───────────────────────────────────────────────
 const STATE_RULES = {
   Michigan:       { pattern: /^\d{10}$/, hint: '10 digits' },
