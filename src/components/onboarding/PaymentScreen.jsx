@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
 
 const ACCENT = '#00DBC5';
 
@@ -49,9 +50,36 @@ export default function PaymentScreen({ isBroker, onComplete }) {
   const [agentInput, setAgentInput] = useState('2');
   const [selected, setSelected] = useState(isBroker ? 'brokerage' : null);
 
-  const handleContinue = () => {
+  const [loading, setLoading] = useState(false);
+
+  const handleContinue = async () => {
     if (!selected) return;
-    onComplete(selected);
+    
+    // Free plan — skip Stripe
+    if (selected === 'free') {
+      onComplete(selected);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await base44.functions.invoke('createCheckoutSession', {
+        plan: selected,
+        billing: isAnnual ? 'annual' : 'monthly',
+        agentCount: selected === 'brokerage' ? agentCount : 1,
+      });
+
+      if (response.data.checkoutUrl) {
+        // Redirect to Stripe Checkout
+        window.location.href = response.data.checkoutUrl;
+      } else {
+        // Free plan handled
+        onComplete(selected);
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      setLoading(false);
+    }
   };
 
   const cardBase = {
@@ -314,18 +342,18 @@ export default function PaymentScreen({ isBroker, onComplete }) {
           <div style={{ textAlign: 'center' }}>
             <button
               onClick={handleContinue}
-              disabled={!selected}
+              disabled={!selected || loading}
               style={{
                 fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500,
                 textTransform: 'uppercase', letterSpacing: '0.05em',
-                color: selected ? '#111827' : 'rgba(255,255,255,0.2)',
-                background: selected ? ACCENT : 'rgba(255,255,255,0.06)',
+                color: (selected && !loading) ? '#111827' : 'rgba(255,255,255,0.2)',
+                background: (selected && !loading) ? ACCENT : 'rgba(255,255,255,0.06)',
                 border: 'none', borderRadius: '6px',
-                padding: '14px 40px', cursor: selected ? 'pointer' : 'not-allowed',
+                padding: '14px 40px', cursor: (selected && !loading) ? 'pointer' : 'not-allowed',
                 transition: 'all 0.2s ease',
               }}
             >
-              {selected
+              {loading ? 'Processing...' : selected
                 ? `Continue with ${selected === 'free' ? 'Free' : selected === 'individual' ? 'Individual' : 'Brokerage'} →`
                 : 'Select a plan to continue'}
             </button>
