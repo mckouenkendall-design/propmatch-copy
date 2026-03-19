@@ -12,7 +12,7 @@ const STAT_BARS = [
 const RES_DATA = [38, 52, 47, 68, 74, 89];
 const COM_DATA = [22, 31, 28, 41, 38, 55];
 const MONTHS = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
-const W = 340, H = 150, PAD = { l: 36, r: 20, t: 16, b: 28 };
+const W = 340, H = 150, PAD = { l: 46, r: 20, t: 16, b: 28 };
 
 function useScrollReveal(threshold = 0.12) {
   const ref = useRef(null);
