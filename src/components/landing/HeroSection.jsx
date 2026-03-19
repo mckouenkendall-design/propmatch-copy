@@ -29,18 +29,95 @@ const RESIDENTIAL_MATCH_DATA = {
   'Townhouse':       { addresses: ['2140 N Halsted St', '1845 W Webster Ave', '2728 N Magnolia Ave'], priceRange: [390000, 850000] },
 };
 
-// Special feature label per property type (4th scoring factor)
-const SPECIAL_FEATURES = {
-  'Office Space':      'Open floor plan preferred',
-  'Retail':            'High foot traffic corridor',
-  'Industrial / Flex': 'Loading dock access',
-  'Medical Office':    'ADA compliant layout',
-  'Land':              'Utility access confirmed',
-  'Single Family':     'Garage included',
-  'Condo':             'End unit preferred',
-  'Multi-Family':      'All units occupied',
-  'Townhouse':         'Rooftop deck available',
+// Pool of possible scoring factors per property type
+// Each entry: { label, weight: 'high' | 'low' }
+const FACTOR_POOLS = {
+  'Office Space':      [
+    { label: 'Open floor plan', weight: 'high' },
+    { label: 'Elevator access', weight: 'high' },
+    { label: 'Parking ratio', weight: 'high' },
+    { label: 'Fiber / tech infrastructure', weight: 'low' },
+    { label: 'Proximity to transit', weight: 'low' },
+    { label: 'HVAC condition', weight: 'low' },
+  ],
+  'Retail':            [
+    { label: 'High foot traffic corridor', weight: 'high' },
+    { label: 'Frontage / visibility', weight: 'high' },
+    { label: 'Parking availability', weight: 'high' },
+    { label: 'Corner unit', weight: 'low' },
+    { label: 'Signage rights', weight: 'low' },
+    { label: 'Anchor tenant nearby', weight: 'low' },
+  ],
+  'Industrial / Flex': [
+    { label: 'Loading dock access', weight: 'high' },
+    { label: 'Clear height (ceiling)', weight: 'high' },
+    { label: 'Drive-in door', weight: 'high' },
+    { label: 'Sprinkler system', weight: 'low' },
+    { label: 'Three-phase power', weight: 'low' },
+    { label: 'Office build-out', weight: 'low' },
+  ],
+  'Medical Office':    [
+    { label: 'ADA compliant layout', weight: 'high' },
+    { label: 'Plumbing / exam rooms', weight: 'high' },
+    { label: 'Ground floor access', weight: 'high' },
+    { label: 'Proximity to hospital', weight: 'low' },
+    { label: 'HVAC / air filtration', weight: 'low' },
+    { label: 'Separate waiting area', weight: 'low' },
+  ],
+  'Land':              [
+    { label: 'Utility access confirmed', weight: 'high' },
+    { label: 'Zoning compatibility', weight: 'high' },
+    { label: 'Road frontage', weight: 'high' },
+    { label: 'Flood zone status', weight: 'low' },
+    { label: 'Soil / perc test done', weight: 'low' },
+    { label: 'Environmental clearance', weight: 'low' },
+  ],
+  'Single Family':     [
+    { label: 'Garage included', weight: 'high' },
+    { label: 'School district match', weight: 'high' },
+    { label: 'Basement / storage', weight: 'high' },
+    { label: 'Fenced yard', weight: 'low' },
+    { label: 'Updated kitchen', weight: 'low' },
+    { label: 'HOA restrictions', weight: 'low' },
+  ],
+  'Condo':             [
+    { label: 'End unit preferred', weight: 'high' },
+    { label: 'In-unit laundry', weight: 'high' },
+    { label: 'Parking included', weight: 'high' },
+    { label: 'Pet policy', weight: 'low' },
+    { label: 'Rooftop access', weight: 'low' },
+    { label: 'Doorman / security', weight: 'low' },
+  ],
+  'Multi-Family':      [
+    { label: 'All units occupied', weight: 'high' },
+    { label: 'Separate unit metering', weight: 'high' },
+    { label: 'Laundry on-site', weight: 'high' },
+    { label: 'Parking per unit', weight: 'low' },
+    { label: 'Recent roof/HVAC', weight: 'low' },
+    { label: 'Below-market rents', weight: 'low' },
+  ],
+  'Townhouse':         [
+    { label: 'Attached garage', weight: 'high' },
+    { label: 'End unit', weight: 'high' },
+    { label: 'Private outdoor space', weight: 'high' },
+    { label: 'Rooftop deck', weight: 'low' },
+    { label: 'HOA fees', weight: 'low' },
+    { label: 'Finished basement', weight: 'low' },
+  ],
 };
+
+// Pick 2–3 high-weighted and 1–2 low-weighted factors randomly for a given property type
+function pickFactors(propType) {
+  const pool = FACTOR_POOLS[propType] || FACTOR_POOLS['Office Space'];
+  const highs = pool.filter(f => f.weight === 'high').sort(() => Math.random() - 0.5);
+  const lows = pool.filter(f => f.weight === 'low').sort(() => Math.random() - 0.5);
+  const numHigh = randInt(2, 3);
+  const numLow = randInt(1, 2);
+  return [
+    ...highs.slice(0, numHigh),
+    ...lows.slice(0, numLow),
+  ];
+}
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }

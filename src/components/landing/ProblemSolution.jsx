@@ -8,11 +8,10 @@ const STAT_BARS = [
   { label: 'Deals lost to competing agents', pct: 34 },
 ];
 
-// Residential mock data (6 months)
-const RES_DATA = [38, 52, 47, 68, 74, 89];
-const COM_DATA = [22, 31, 28, 41, 38, 55];
+// Match rate growth data — % of listings with at least one qualified match (both categories combined)
+const MATCH_RATE_DATA = [31, 44, 49, 58, 68, 79];
 const MONTHS = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
-const W = 340, H = 150, PAD = { l: 46, r: 20, t: 16, b: 28 };
+const W = 340, H = 160, PAD = { l: 52, r: 24, t: 20, b: 32 };
 
 function useScrollReveal(threshold = 0.12) {
   const ref = useRef(null);
