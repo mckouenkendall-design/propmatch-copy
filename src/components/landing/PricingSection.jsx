@@ -232,7 +232,7 @@ export default function PricingSection() {
               )}
             </div>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 24px' }}>
-              Everything you need to match listings and requirements — built for the solo agent.
+              Everything you need to match listings and client requirements, for the cost of taking a client to lunch. Don't want to pay yourself? Talk to your broker.
             </p>
 
             <Link to="/Onboarding"
