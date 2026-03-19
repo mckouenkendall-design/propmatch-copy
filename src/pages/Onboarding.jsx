@@ -448,6 +448,19 @@ export default function Onboarding() {
     "This helps us personalize your experience and understand who's joining the platform.",
   ];
 
+  if (showPayment) {
+    return (
+      <PaymentScreen
+        isBroker={isBroker}
+        onComplete={(plan) => {
+          try { base44.auth.updateMe({ selected_plan: plan }); } catch (e) {}
+          setShowPayment(false);
+          setShowPostOnboarding(true);
+        }}
+      />
+    );
+  }
+
   if (showPostOnboarding) {
     return <PostOnboarding isBroker={isBroker} />;
   }
