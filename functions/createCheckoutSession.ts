@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     const origin = req.headers.get('origin');
     const baseUrl = origin && origin.startsWith('http') ? origin : 'https://propmatch.com';
     
-    const checkoutSession = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    const stripeResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
@@ -77,11 +77,15 @@ Deno.serve(async (req) => {
         'metadata[user_id]': user.id,
         'metadata[agent_count]': String(agentCount),
       }).toString(),
-    }).then(r => r.json());
+    });
 
-    if (checkoutSession.error) {
-      return Response.json({ error: checkoutSession.error.message }, { status: 400 });
+    if (!stripeResponse.ok) {
+      const errorData = await stripeResponse.json();
+      console.error('Stripe error:', errorData);
+      return Response.json({ error: errorData.error?.message || 'Stripe request failed' }, { status: stripeResponse.status });
     }
+
+    const checkoutSession = await stripeResponse.json();
 
     return Response.json({
       checkoutUrl: checkoutSession.url,
