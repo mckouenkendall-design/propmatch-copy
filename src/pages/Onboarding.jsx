@@ -512,15 +512,15 @@ export default function Onboarding() {
     else if (step === 1) handleStep2Continue();
   };
 
+  const isBroker = step1.role === 'Broker';
+
   const headings = [
     'Professional Credentials',
     'Your Practice',
-    'Where do you want to start?',
   ];
   const subheadings = [
     'Your license and brokerage details are required to verify your credentials.',
     "This helps us personalize your experience and understand who's joining the platform.",
-    'You can always do all of these — just pick where to begin.',
   ];
 
   return (
