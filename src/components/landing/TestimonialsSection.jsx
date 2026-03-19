@@ -25,12 +25,12 @@ const TESTIMONIALS = [
   {
     quote: "My buyer had pretty specific criteria, a certain neighborhood, tight price range, and I honestly wasn't finding much on the traditional platforms. PropMatch surfaced a listing I hadn't seen anywhere else and the match score was high across the board. We closed in under 30 days. Genuinely wish I had found this sooner.",
     name: 'Spencer W.',
-    role: 'Residential Agent, Metro Detroit',
+    role: 'Residential Agent, Tampa FL',
   },
   {
     quote: "As a managing broker, what sold me was the recruiting angle. Offering PropMatch as part of our agent toolkit has become one of our strongest talking points when bringing on new agents. It pays for itself.",
     name: 'Diana R.',
-    role: 'Managing Broker, Southeast Michigan',
+    role: 'Managing Broker, Chicago IL',
   },
 ];
 
