@@ -40,7 +40,7 @@ const US_STATES = [
 ];
 
 // ─── Shared UI ─────────────────────────────────────────────────────────────────
-const STEPS_LABELS = ['Your Info', 'Your Practice', 'Get Started'];
+const STEPS_LABELS = ['Your Info', 'Your Practice'];
 
 function StepIndicator({ current }) {
   return (
