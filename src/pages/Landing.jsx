@@ -20,6 +20,7 @@ export default function Landing() {
       <HowItWorks />
       <TestimonialsSection />
       <PricingSection />
+      <FaqSection />
       <CtaSection />
       <LandingFooter />
     </div>
