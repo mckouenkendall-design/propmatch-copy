@@ -18,19 +18,19 @@ function useScrollReveal(threshold = 0.12) {
 
 const TESTIMONIALS = [
   {
-    quote: "PropMatch completely changed how I manage my pipeline. I had a commercial listing sit for three weeks with no qualified inquiries — within 48 hours on PropMatch I had two ranked buyer matches I never would have found manually.",
+    quote: "I listed a commercial property and it sat quiet for almost a month. Posted it on PropMatch and within two days I had a ranked buyer requirement come through that matched almost perfectly. Ended up being exactly the kind of lead I needed. That one match more than paid for the subscription.",
     name: 'Kendall M.',
-    role: 'Commercial Agent · Metro Detroit',
+    role: 'Commercial Agent, Metro Detroit',
   },
   {
-    quote: "I was skeptical at first, but the match scoring is genuinely accurate. I had a buyer requirement sitting in my portfolio for weeks — specific neighborhood, specific price range. PropMatch surfaced a listing that hit every single criteria. Closed in under 30 days. Should have been using this from day one.",
+    quote: "My buyer had pretty specific criteria, a certain neighborhood, tight price range, and I honestly wasn't finding much on the traditional platforms. PropMatch surfaced a listing I hadn't seen anywhere else and the match score was high across the board. We closed in under 30 days. Genuinely wish I had found this sooner.",
     name: 'Spencer W.',
-    role: 'Residential Agent · Metro Detroit',
+    role: 'Residential Agent, Metro Detroit',
   },
   {
     quote: "As a managing broker, what sold me was the recruiting angle. Offering PropMatch as part of our agent toolkit has become one of our strongest talking points when bringing on new agents. It pays for itself.",
     name: 'Diana R.',
-    role: 'Managing Broker · Southeast Michigan',
+    role: 'Managing Broker, Southeast Michigan',
   },
 ];
 
