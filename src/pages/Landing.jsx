@@ -13,7 +13,7 @@ import SwimmingFish from '../components/landing/SwimmingFish';
 
 export default function Landing() {
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", overflowX: 'hidden', background: '#FFFFFF', position: 'relative', zIndex: 0 }}>
+    <div id="landing-root" style={{ fontFamily: "'Inter', sans-serif", overflowX: 'hidden', background: '#FFFFFF', position: 'relative', zIndex: 0 }}>
       {/* Fish always behind all content — z-index:0, absolute within this container */}
       <SwimmingFish />
       <style>{`
