@@ -2,13 +2,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
 
-// Stripe price IDs — replace these with your actual Stripe product IDs
-// You'll create these in your Stripe dashboard under Products → Prices
+// Stripe price IDs from environment variables
 const STRIPE_PRICE_IDS = {
-  individual_monthly: 'price_individual_monthly', // $79/month
-  individual_annual: 'price_individual_annual',   // $849/year
-  brokerage_monthly: 'price_brokerage_monthly',   // $64/agent/month
-  brokerage_annual: 'price_brokerage_annual',     // $708/agent/year
+  individual_monthly: Deno.env.get('STRIPE_PRICE_INDIVIDUAL_MONTHLY'),
+  individual_annual: Deno.env.get('STRIPE_PRICE_INDIVIDUAL_ANNUAL'),
+  brokerage_monthly: Deno.env.get('STRIPE_PRICE_BROKERAGE_MONTHLY'),
+  brokerage_annual: Deno.env.get('STRIPE_PRICE_BROKERAGE_ANNUAL'),
 };
 
 Deno.serve(async (req) => {
