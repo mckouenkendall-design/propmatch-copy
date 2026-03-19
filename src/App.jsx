@@ -13,6 +13,7 @@ import Affiliate from './pages/Affiliate';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import AboutUs from './pages/AboutUs';
+import Onboarding from './pages/Onboarding';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];

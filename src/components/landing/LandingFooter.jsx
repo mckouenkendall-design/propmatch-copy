@@ -129,12 +129,12 @@ export default function LandingFooter() {
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', margin: '0 0 20px' }}>Platform</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {[
-              { label: 'Dashboard', to: '/Dashboard' },
-              { label: 'My Listings', to: '/Listings' },
-              { label: 'Requirements', to: '/Requirements' },
-              { label: 'Matches', to: '/Matches' },
-              { label: 'Deal Board', to: '/Dealboard' },
-              { label: 'Groups', to: '/Groups' },
+              { label: 'Dashboard', to: '/Onboarding' },
+              { label: 'My Listings', to: '/Onboarding' },
+              { label: 'Requirements', to: '/Onboarding' },
+              { label: 'Matches', to: '/Onboarding' },
+              { label: 'Deal Board', to: '/Onboarding' },
+              { label: 'Groups', to: '/Onboarding' },
             ].map(link => (
               <Link key={link.label} to={link.to} style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: 'color 0.2s ease' }}
                 onMouseEnter={e => e.currentTarget.style.color = ACCENT}
