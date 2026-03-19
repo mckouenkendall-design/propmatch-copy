@@ -321,7 +321,7 @@ export default function PricingSection() {
                 }}
                 onFocus={e => e.currentTarget.style.borderColor = '#00DBC5'}
               />
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Include yourself · minimum 3 agents.</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Include yourself · minimum 2 agents.</p>
             </div>
 
             {/* Dynamic price display */}
