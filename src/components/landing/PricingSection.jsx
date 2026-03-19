@@ -309,7 +309,7 @@ export default function PricingSection() {
                 }}
                 onBlur={() => {
                   const n = parseInt(agentInput);
-                  const clamped = isNaN(n) || n < 3 ? 3 : n;
+                  const clamped = isNaN(n) || n < 2 ? 2 : n;
                   setAgentCount(clamped);
                   setAgentInput(String(clamped));
                 }}
