@@ -609,7 +609,6 @@ export default function Onboarding() {
                 Continue →
               </button>
             </div>
-          )}
         </div>
       </div>
 
