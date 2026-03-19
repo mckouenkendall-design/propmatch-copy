@@ -173,12 +173,12 @@ export default function SwimmingFish() {
 
   return (
     <div
+      className="fish-layer"
       aria-hidden="true"
       style={{
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        // z-index 0 keeps fish behind all page content (which defaults to z-index auto / stacking context above)
         zIndex: 0,
         overflow: 'hidden',
       }}
