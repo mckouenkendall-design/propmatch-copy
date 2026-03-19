@@ -523,6 +523,10 @@ export default function Onboarding() {
     "This helps us personalize your experience and understand who's joining the platform.",
   ];
 
+  if (showPostOnboarding) {
+    return <PostOnboarding isBroker={isBroker} />;
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#080C10', display: 'flex', flexDirection: 'column' }}>
       {/* Nav */}
