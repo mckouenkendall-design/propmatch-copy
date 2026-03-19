@@ -64,6 +64,12 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
+      <Route path="/Blog" element={<Blog />} />
+      <Route path="/Careers" element={<Careers />} />
+      <Route path="/Affiliate" element={<Affiliate />} />
+      <Route path="/Privacy" element={<Privacy />} />
+      <Route path="/Terms" element={<Terms />} />
+      <Route path="/AboutUs" element={<AboutUs />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
