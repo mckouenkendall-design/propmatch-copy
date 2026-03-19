@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import Landing from './pages/Landing';
 import Blog from './pages/Blog';
 import Careers from './pages/Careers';
 import Affiliate from './pages/Affiliate';
