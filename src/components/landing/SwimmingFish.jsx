@@ -173,11 +173,13 @@ export default function SwimmingFish() {
 
   return (
     <div
-      className="fish-layer"
       aria-hidden="true"
       style={{
-        position: 'absolute',
-        inset: 0,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
         pointerEvents: 'none',
         zIndex: 0,
         overflow: 'hidden',
