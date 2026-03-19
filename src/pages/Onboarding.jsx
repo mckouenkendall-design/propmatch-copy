@@ -439,6 +439,7 @@ export default function Onboarding() {
   const [step1, setStep1] = useState(STEP1_INIT);
   const [step2, setStep2] = useState(STEP2_INIT);
   const [errors, setErrors] = useState({});
+  const [showPostOnboarding, setShowPostOnboarding] = useState(false);
   const navigate = useNavigate();
 
   // Step 1 all-fields check
