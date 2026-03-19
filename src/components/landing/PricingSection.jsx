@@ -298,10 +298,21 @@ export default function PricingSection() {
                 How many agents will use PropMatch?
               </label>
               <input
-                type="number"
-                min="1"
-                value={agentCount}
-                onChange={e => setAgentCount(Math.max(1, parseInt(e.target.value) || 1))}
+                type="text"
+                inputMode="numeric"
+                value={agentInput}
+                onChange={e => {
+                  const raw = e.target.value.replace(/[^0-9]/g, '');
+                  setAgentInput(raw);
+                  const n = parseInt(raw);
+                  if (!isNaN(n) && n >= 3) setAgentCount(n);
+                }}
+                onBlur={() => {
+                  const n = parseInt(agentInput);
+                  const clamped = isNaN(n) || n < 3 ? 3 : n;
+                  setAgentCount(clamped);
+                  setAgentInput(String(clamped));
+                }}
                 style={{
                   width: '100%', boxSizing: 'border-box',
                   border: '1px solid #D1D5DB', borderRadius: '6px',
@@ -309,9 +320,8 @@ export default function PricingSection() {
                   color: '#111827', outline: 'none',
                 }}
                 onFocus={e => e.currentTarget.style.borderColor = '#00DBC5'}
-                onBlur={e => e.currentTarget.style.borderColor = '#D1D5DB'}
               />
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Include yourself in this number.</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Include yourself · minimum 3 agents.</p>
             </div>
 
             {/* Dynamic price display */}
