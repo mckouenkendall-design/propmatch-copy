@@ -56,6 +56,9 @@ Deno.serve(async (req) => {
     }
 
     // Create Stripe Checkout Session
+    const origin = req.headers.get('origin');
+    const baseUrl = origin && origin.startsWith('http') ? origin : 'https://propmatch.com';
+    
     const checkoutSession = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
@@ -67,8 +70,8 @@ Deno.serve(async (req) => {
         'line_items[0][price]': lineItems[0].price,
         'line_items[0][quantity]': String(lineItems[0].quantity),
         'mode': 'subscription',
-        'success_url': `${req.headers.get('origin')}/Dashboard?session_id={CHECKOUT_SESSION_ID}`,
-        'cancel_url': `${req.headers.get('origin')}/Onboarding`,
+        'success_url': `${baseUrl}/Dashboard?session_id={CHECKOUT_SESSION_ID}`,
+        'cancel_url': `${baseUrl}/Onboarding`,
         'customer_email': user.email,
         'metadata[plan]': plan,
         'metadata[user_id]': user.id,
