@@ -7,14 +7,12 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import Landing from './pages/Landing';
 import Blog from './pages/Blog';
 import Careers from './pages/Careers';
 import Affiliate from './pages/Affiliate';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import AboutUs from './pages/AboutUs';
-import Onboarding from './pages/Onboarding';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -50,8 +48,11 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-    <Route path="/" element={<Landing />} />
-    <Route path="/Landing" element={<Landing />} />
+      <Route path="/" element={
+        <LayoutWrapper currentPageName={mainPageKey}>
+          <MainPage />
+        </LayoutWrapper>
+      } />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}
@@ -69,7 +70,6 @@ const AuthenticatedApp = () => {
       <Route path="/Privacy" element={<Privacy />} />
       <Route path="/Terms" element={<Terms />} />
       <Route path="/AboutUs" element={<AboutUs />} />
-      <Route path="/Onboarding" element={<Onboarding />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

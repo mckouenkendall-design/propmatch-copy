@@ -69,7 +69,7 @@ export default function LandingNav() {
               </button>
             ))}
             <Link
-              to="/Onboarding"
+              to="/Dashboard"
               style={{
                 fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
                 textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -115,7 +115,7 @@ export default function LandingNav() {
               {link.label}
             </button>
           ))}
-          <Link to="/Onboarding"
+          <Link to="/Dashboard"
             style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: '#111827', background: ACCENT, padding: '12px 22px', borderRadius: '6px', textDecoration: 'none', textAlign: 'center' }}
             onClick={() => setMenuOpen(false)}>
             Join PropMatch

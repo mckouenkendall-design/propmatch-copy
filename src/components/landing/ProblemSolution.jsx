@@ -211,7 +211,7 @@ export default function ProblemSolution() {
   };
 
   return (
-    <section ref={ref} style={{ background: '#0E1318', padding: '120px 64px' }}>
+    <section ref={ref} style={{ background: '#0E1318', padding: '120px 64px', position: 'relative' }}>
       <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'start' }}>
 
         {/* Left — Problem */}
@@ -265,6 +265,12 @@ export default function ProblemSolution() {
           <LineChart visible={visible} />
         </div>
       </div>
+
+      {/* Subtle dark→light fade at bottom edge */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', pointerEvents: 'none',
+        background: 'linear-gradient(to bottom, transparent, #F9FAFB)',
+      }} />
 
       <style>{`
         @media (max-width: 768px) {

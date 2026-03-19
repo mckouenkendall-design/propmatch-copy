@@ -9,12 +9,10 @@ import PricingSection from '../components/landing/PricingSection';
 import FaqSection from '../components/landing/FaqSection';
 import CtaSection from '../components/landing/CtaSection';
 import LandingFooter from '../components/landing/LandingFooter';
-import SwimmingFish from '../components/landing/SwimmingFish';
 
 export default function Landing() {
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", overflowX: 'hidden' }}>
-      <SwimmingFish />
+    <div style={{ fontFamily: "'Inter', sans-serif", overflowX: 'hidden', background: '#FFFFFF' }}>
       <LandingNav />
       <HeroSection />
       <ProblemSolution />
