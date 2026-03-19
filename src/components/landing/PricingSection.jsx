@@ -127,7 +127,7 @@ export default function PricingSection() {
               Try the platform with limited access. No credit card required.
             </p>
 
-            <Link to="/Dashboard"
+            <Link to="/Onboarding"
               style={{
                 display: 'block', width: '100%', textAlign: 'center',
                 fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 400,
@@ -198,7 +198,7 @@ export default function PricingSection() {
               Everything you need to match listings and requirements — built for the solo agent.
             </p>
 
-            <Link to="/Dashboard"
+            <Link to="/Onboarding"
               style={{
                 display: 'block', width: '100%', textAlign: 'center',
                 fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 400,
@@ -263,7 +263,7 @@ export default function PricingSection() {
               Your entire team on one platform. Centralized billing, dedicated onboarding, and admin controls.
             </p>
 
-            <Link to="/Dashboard"
+            <Link to="/Onboarding"
               style={{
                 display: 'block', width: '100%', textAlign: 'center',
                 fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500,
