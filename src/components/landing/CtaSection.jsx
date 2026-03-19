@@ -81,7 +81,7 @@ export default function CtaSection() {
         </p>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '20px' }}>
-          <Link to="/Dashboard"
+          <Link to="/Onboarding"
             style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '13px',
@@ -100,7 +100,7 @@ export default function CtaSection() {
           >
             Join PropMatch
           </Link>
-          <Link to="/Dashboard"
+          <Link to="/Onboarding"
             style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '13px',
