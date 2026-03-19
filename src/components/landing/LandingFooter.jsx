@@ -51,11 +51,7 @@ const SOCIAL = [
   },
 ];
 
-const BLOG_PREVIEWS = [
-  { title: 'Why Agents Lose Deals Without a Matching System', date: 'Mar 12, 2026' },
-  { title: 'Off-Market Deals: Finding Them Before Everyone Else', date: 'Feb 19, 2026' },
-  { title: 'The Broker Playbook: Scaling Your Office in 2026', date: 'Jan 22, 2026' },
-];
+
 
 export default function LandingFooter() {
   const [email, setEmail] = useState('');
