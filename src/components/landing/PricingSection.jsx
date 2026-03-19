@@ -210,12 +210,21 @@ export default function PricingSection() {
               display: 'inline-block', marginBottom: '20px',
             }}>Individual Agent</span>
 
-            <div style={{ marginBottom: '4px' }}>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#9CA3AF', textDecoration: 'line-through' }}>$129</span>
-            </div>
-            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '52px', color: '#111827', lineHeight: 1 }}>$99</span>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#9CA3AF' }}>/ month</span>
+            <div style={{ marginBottom: '10px' }}>
+              {isAnnual ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                    <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '52px', color: '#111827', lineHeight: 1 }}>$849</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#9CA3AF' }}>/ yr</span>
+                  </div>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Billed annually · Save $99</p>
+                </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                  <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '52px', color: '#111827', lineHeight: 1 }}>$79</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#9CA3AF' }}>/ month</span>
+                </div>
+              )}
             </div>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 24px' }}>
               Everything you need to match listings and requirements — built for the solo agent.
