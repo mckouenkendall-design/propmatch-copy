@@ -160,14 +160,14 @@ export default function LandingFooter() {
           </div>
         </div>
 
-        {/* Col 4 — Newsletter + Blog previews */}
+        {/* Col 4 — Newsletter */}
         <div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', margin: '0 0 20px' }}>Stay in the loop</p>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.3)', margin: '0 0 12px', lineHeight: 1.6 }}>
             Get market insights and PropMatch updates delivered to your inbox.
           </p>
           {!subscribed ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '28px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <input
                 type="email"
                 placeholder="your@email.com"
@@ -194,22 +194,8 @@ export default function LandingFooter() {
               </button>
             </div>
           ) : (
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: ACCENT, margin: '0 0 28px' }}>✓ You're subscribed!</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: ACCENT, margin: 0 }}>✓ You're subscribed!</p>
           )}
-
-          {/* Recent blog */}
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', margin: '0 0 14px' }}>Recent Articles</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {BLOG_PREVIEWS.map((post, i) => (
-              <Link key={i} to="/Blog" style={{ textDecoration: 'none' }}
-                onMouseEnter={e => e.currentTarget.querySelector('.bpt').style.color = ACCENT}
-                onMouseLeave={e => e.currentTarget.querySelector('.bpt').style.color = 'rgba(255,255,255,0.5)'}
-              >
-                <p className="bpt" style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '0 0 2px', lineHeight: 1.5, transition: 'color 0.2s ease' }}>{post.title}</p>
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', color: 'rgba(255,255,255,0.2)' }}>{post.date}</span>
-              </Link>
-            ))}
-          </div>
         </div>
       </div>
 
