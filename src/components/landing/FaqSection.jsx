@@ -4,34 +4,28 @@ const ACCENT = '#00DBC5';
 
 const FAQS = [
   {
-    tag: 'Agent',
     q: 'How does PropMatch find matches for my listings?',
     a: 'PropMatch automatically compares every listing you post against all active client requirements on the platform — scoring them on location, property type, price range, size, and custom criteria. The result is a ranked list of compatible matches delivered to you in real time, no manual searching required.',
   },
   {
-    tag: 'Agent',
     q: 'Can I control who sees my listings and requirements?',
     a: 'Yes. Every post has four visibility settings: Public (visible to all PropMatch members), Brokerage (your firm only), Team (a specific networking group), or Private (invite a specific agent by email). You stay in full control of your deal flow.',
   },
   {
-    tag: 'Agent',
     q: 'Does PropMatch work for both commercial and residential deals?',
     a: 'Absolutely. PropMatch supports the full spectrum — office, retail, industrial/flex, medical, land, single-family, condo, multi-family, townhouse, and more. The matching engine is calibrated separately for each property category so scores are always relevant.',
   },
   {
-    tag: 'Agent',
     q: 'What happens after a match is found — does PropMatch close the deal for me?',
     a: 'PropMatch surfaces the opportunity and connects you with the right agent on the other side. The relationship, negotiation, and closing are yours. We get you in the room — you take it from there.',
   },
   {
-    tag: 'Broker',
     q: 'How do I manage my agents and their activity as a broker?',
     a: 'Brokers get brokerage-level visibility across all agent listings and requirements posted under their firm. You can create private networking groups for your team, monitor deal flow, and ensure listings stay within your brokerage when needed — all from a single dashboard.',
   },
   {
-    tag: 'Broker',
     q: 'Is there a brokerage pricing plan, and can I onboard my whole team?',
-    a: 'Yes — our Brokerage Plan is built for firms that want to give every agent on their roster access to PropMatch under one umbrella. Reach out at propmatch.founder@gmail.com to discuss team pricing, onboarding, and custom configurations for your office.',
+    a: 'Yes — our Brokerage Plan is built for firms that want to give every agent on their roster access to PropMatch under one umbrella. Reach out at founder.propmatch@gmail.com to discuss team pricing, onboarding, and custom configurations for your office.',
   },
 ];
 
@@ -53,7 +47,7 @@ export default function FaqSection() {
   const [open, setOpen] = useState(null);
 
   return (
-    <section ref={ref} style={{ background: '#F9FAFB', padding: '100px 64px' }}>
+    <section ref={ref} style={{ background: '#F9FAFB', padding: '64px 64px 80px' }}>
       <div style={{ maxWidth: '820px', margin: '0 auto' }}>
 
         {/* Header */}
@@ -82,19 +76,17 @@ export default function FaqSection() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {FAQS.map((faq, i) => {
             const isOpen = open === i;
-            const isBroker = faq.tag === 'Broker';
             return (
               <div
                 key={i}
                 style={{
                   opacity: visible ? 1 : 0,
                   transform: visible ? 'translateY(0)' : 'translateY(20px)',
-                  transition: `opacity 0.5s ease ${i * 0.07}s, transform 0.5s ease ${i * 0.07}s`,
+                  transition: `opacity 0.5s ease ${i * 0.07}s, transform 0.5s ease ${i * 0.07}s, border-color 0.2s ease`,
                   background: '#FFFFFF',
                   border: `1px solid ${isOpen ? 'rgba(0,219,197,0.4)' : '#E5E7EB'}`,
                   borderRadius: '10px',
                   overflow: 'hidden',
-                  transition: `opacity 0.5s ease ${i * 0.07}s, transform 0.5s ease ${i * 0.07}s, border-color 0.2s ease`,
                   boxShadow: isOpen ? '0 4px 20px rgba(0,219,197,0.08)' : 'none',
                 }}
               >
@@ -106,17 +98,7 @@ export default function FaqSection() {
                     textAlign: 'left',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                    <span style={{
-                      fontFamily: "'Inter', sans-serif", fontSize: '10px', fontWeight: 500,
-                      textTransform: 'uppercase', letterSpacing: '0.08em',
-                      color: isBroker ? '#7C3AED' : ACCENT,
-                      background: isBroker ? 'rgba(124,58,237,0.07)' : 'rgba(0,219,197,0.07)',
-                      border: `1px solid ${isBroker ? 'rgba(124,58,237,0.25)' : 'rgba(0,219,197,0.25)'}`,
-                      padding: '2px 8px', borderRadius: '4px', flexShrink: 0,
-                    }}>
-                      {faq.tag}
-                    </span>
+                  <div style={{ flex: 1 }}>
                     <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '15px', fontWeight: 500, color: '#111827', lineHeight: 1.4 }}>
                       {faq.q}
                     </span>
@@ -146,7 +128,7 @@ export default function FaqSection() {
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#9CA3AF', margin: '0 0 16px' }}>
             Still have questions?
           </p>
-          <a href="mailto:propmatch.founder@gmail.com" style={{
+          <a href="mailto:founder.propmatch@gmail.com" style={{
             fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
             color: ACCENT, border: `1.5px solid rgba(0,219,197,0.5)`,
             padding: '10px 24px', borderRadius: '6px', textDecoration: 'none',

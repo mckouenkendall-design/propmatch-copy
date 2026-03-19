@@ -23,7 +23,7 @@ const TESTIMONIALS = [
     role: 'Commercial Agent · Metro Detroit',
   },
   {
-    quote: "I was skeptical at first but the match scoring is genuinely accurate. Found a buyer for a residential listing that had been sitting for a month — perfect fit for a requirement I'd had in my portfolio for weeks. Should have been using this from day one.",
+    quote: "I was skeptical at first, but the match scoring is genuinely accurate. I had a buyer requirement sitting in my portfolio for weeks — specific neighborhood, specific price range. PropMatch surfaced a listing that hit every single criteria. Closed in under 30 days. Should have been using this from day one.",
     name: 'Spencer W.',
     role: 'Residential Agent · Metro Detroit',
   },
