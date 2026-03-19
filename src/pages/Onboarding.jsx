@@ -429,7 +429,7 @@ export default function Onboarding() {
       // Non-blocking
     }
 
-    setShowPostOnboarding(true);
+    setShowPayment(true);
   };
 
   const handleContinue = () => {
