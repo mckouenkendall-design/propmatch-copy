@@ -339,7 +339,7 @@ export default function Onboarding() {
             </h1>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.35)', margin: 0, lineHeight: 1.6 }}>
               {step === 0 && 'Your license and brokerage details are required to verify your credentials.'}
-              {step === 1 && 'This helps us personalize your matches and understand who's joining the platform.'}
+              {step === 1 && "This helps us personalize your matches and understand who's joining the platform."}
               {step === 2 && 'You can always do all of these — just pick where to begin.'}
             </p>
           </div>
