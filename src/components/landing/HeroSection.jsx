@@ -145,38 +145,38 @@ function generateMatches(scenario) {
 
   const budgetNum = parseBudget(scenario.budget);
   const overallScores = [randInt(94, 98), randInt(81, 93), randInt(62, 80)];
+  // Pick the same factor set for all 3 matches in this run
+  const factorDefs = pickFactors(scenario.propType);
 
   return data.addresses.map((addr, i) => {
     const overallScore = overallScores[i];
 
-    // Generate a listing price: for top match it's within budget,
-    // for lower matches it creeps over progressively
     let listingPrice;
     if (i === 0) {
-      // Best match: price is within budget (85–100% of budget)
       listingPrice = Math.round(budgetNum * (0.85 + Math.random() * 0.15));
     } else if (i === 1) {
-      // Mid match: slightly over budget (100–115%)
       listingPrice = Math.round(budgetNum * (1.0 + Math.random() * 0.15));
     } else {
-      // Lowest match: meaningfully over budget (115–135%)
       listingPrice = Math.round(budgetNum * (1.15 + Math.random() * 0.20));
     }
 
-    // Budget score: 100% if at/under budget, drops proportionally if over
     const budgetRatio = listingPrice / budgetNum;
     const budgetScore = budgetRatio <= 1
       ? 100
       : Math.max(0, Math.round(100 - (budgetRatio - 1) * 300));
 
-    // Location: always high for top match, slightly lower for others
     const locationScore = i === 0 ? 100 : i === 1 ? randInt(85, 95) : randInt(70, 84);
-
-    // Sq footage: high for top, moderate variance for others
     const sqftScore = i === 0 ? 100 : i === 1 ? randInt(80, 96) : randInt(60, 82);
 
-    // Special feature: binary-ish — top match has it, others may not
-    const featureScore = i === 0 ? 100 : i === 1 ? randInt(50, 85) : randInt(20, 60);
+    // Build dynamic extra factors from pool
+    const extraFactors = factorDefs.map(f => {
+      const isHigh = f.weight === 'high';
+      let score;
+      if (i === 0) score = isHigh ? randInt(88, 100) : randInt(55, 80);
+      else if (i === 1) score = isHigh ? randInt(65, 88) : randInt(35, 65);
+      else score = isHigh ? randInt(30, 65) : randInt(10, 45);
+      return { label: f.label, score };
+    });
 
     return {
       address: addr + ', ' + scenario.city.split(',')[0],
@@ -187,8 +187,7 @@ function generateMatches(scenario) {
         location: locationScore,
         sqft: sqftScore,
         budget: budgetScore,
-        feature: featureScore,
-        featureLabel: SPECIAL_FEATURES[scenario.propType] || 'Special feature match',
+        extra: extraFactors,
       },
     };
   });
