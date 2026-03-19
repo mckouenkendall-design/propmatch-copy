@@ -455,7 +455,7 @@ export default function Onboarding() {
     step2.transactionTypes.length > 0 &&
     (!txOtherSelected || step2.txOther.trim());
 
-  const canContinue = step === 0 ? !!step1Filled : step === 1 ? step2Valid : true;
+  const canContinue = step === 0 ? !!step1Filled : step2Valid;
 
   const handleStep1Continue = async () => {
     if (!step1Filled) return;
