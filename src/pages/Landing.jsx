@@ -17,8 +17,14 @@ export default function Landing() {
       {/* Fish always behind all content — z-index:0, absolute within this container */}
       <SwimmingFish />
       <style>{`
-        /* Every direct content section sits above the fish layer */
-        .landing-section { position: relative; z-index: 1; }
+        /* All sections, nav, and footer sit above the fish (z-index:0) */
+        #landing-root > nav,
+        #landing-root > section,
+        #landing-root > footer,
+        #landing-root > div:not(.fish-layer) {
+          position: relative;
+          z-index: 1;
+        }
       `}</style>
       <LandingNav />
       <HeroSection />
