@@ -578,11 +578,10 @@ export default function Onboarding() {
           <div style={{ marginBottom: '32px' }}>
             {step === 0 && <Step1 data={step1} setData={setStep1} errors={errors} setErrors={setErrors} />}
             {step === 1 && <Step2 data={step2} setData={setStep2} />}
-            {step === 2 && <Step3 />}
           </div>
 
           {/* Navigation buttons */}
-          {step < 2 && (
+          {(
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               {step > 0 ? (
                 <button
