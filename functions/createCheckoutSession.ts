@@ -59,6 +59,13 @@ Deno.serve(async (req) => {
     const origin = req.headers.get('origin');
     const baseUrl = origin && origin.startsWith('http') ? origin : 'https://propmatch.com';
     
+    // Debug logging
+    console.log("Stripe Secret Key (last 4 chars):", STRIPE_SECRET_KEY ? STRIPE_SECRET_KEY.slice(-4) : "not set");
+    console.log("Stripe Price IDs:", STRIPE_PRICE_IDS);
+    console.log("Line Items:", lineItems);
+    console.log("Base URL:", baseUrl);
+    console.log("User Email:", user.email);
+    
     const stripeResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
