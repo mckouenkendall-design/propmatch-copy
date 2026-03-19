@@ -65,6 +65,8 @@ function XIcon() {
 export default function PricingSection() {
   const [ref, visible] = useScrollReveal(0.12);
   const [hovered1, setHovered1] = useState(false);
+  const [isAnnual, setIsAnnual] = useState(false);
+  const [agentCount, setAgentCount] = useState(1);
 
   return (
     <section id="pricing" ref={ref} style={{ background: '#FFFFFF', padding: '120px 64px', borderTop: '1px solid #E5E7EB' }}>
