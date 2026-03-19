@@ -46,10 +46,18 @@ const BROKERAGE_FEATURES = [
   'A powerful recruiting advantage — agents join brokerages that invest in their tools',
 ];
 
-function CheckIcon() {
+function CheckIcon({ muted }) {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#00DBC5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={muted ? '#00DBC5' : '#00DBC5'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
       <polyline points="2 7 5.5 10.5 12 3.5" />
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#D1D5DB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <line x1="3" y1="3" x2="11" y2="11" /><line x1="11" y1="3" x2="3" y2="11" />
     </svg>
   );
 }
