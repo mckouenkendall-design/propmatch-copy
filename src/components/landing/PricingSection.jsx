@@ -101,7 +101,69 @@ export default function PricingSection() {
         </div>
 
         {/* Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', maxWidth: '860px', margin: '0 auto 28px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', maxWidth: '1100px', margin: '0 auto 28px' }}>
+
+          {/* Free Card */}
+          <div style={{
+            border: '1px solid #E5E7EB',
+            borderRadius: '10px',
+            padding: '36px 28px',
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(24px)',
+            transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+          }}>
+            <span style={{
+              fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase',
+              letterSpacing: '0.1em', color: '#6B7280', border: '1px solid #E5E7EB',
+              padding: '4px 12px', borderRadius: '4px', background: '#F9FAFB',
+              display: 'inline-block', marginBottom: '20px',
+            }}>Free</span>
+
+            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '52px', color: '#111827', lineHeight: 1 }}>$0</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#9CA3AF' }}>/ month</span>
+            </div>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 24px' }}>
+              Try the platform with limited access. No credit card required.
+            </p>
+
+            <Link to="/Dashboard"
+              style={{
+                display: 'block', width: '100%', textAlign: 'center',
+                fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 400,
+                color: '#374151', background: 'transparent',
+                border: '1.5px solid #E5E7EB', borderRadius: '6px',
+                padding: '12px', textDecoration: 'none',
+                transition: 'border-color 0.2s ease', boxSizing: 'border-box',
+                marginBottom: '24px',
+              }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = '#9CA3AF'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = '#E5E7EB'}
+            >
+              Get Started Free
+            </Link>
+
+            <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '20px' }}>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.07em', color: '#9CA3AF', margin: '0 0 10px' }}>Included</p>
+              <ul style={{ listStyle: 'none', margin: '0 0 16px', padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {FREE_FEATURES.map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#374151' }}>
+                    <CheckIcon />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.07em', color: '#9CA3AF', margin: '0 0 10px' }}>Not included</p>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {FREE_LIMITS.map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#9CA3AF' }}>
+                    <XIcon />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
 
           {/* Individual Card */}
           <div
