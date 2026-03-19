@@ -17,11 +17,24 @@ function useScrollReveal(threshold = 0.12) {
   return [ref, visible];
 }
 
+const FREE_FEATURES = [
+  'Post up to 2 listings & 2 requirements',
+  'See your match results',
+  'View other agents\' public posts',
+];
+
+const FREE_LIMITS = [
+  'Cannot contact matched agents',
+  'Cannot join or create groups',
+  'No templates or saved searches',
+];
+
 const INDIVIDUAL_FEATURES = [
   'Unlimited listings & requirements',
   'Intelligent match scoring',
+  'Contact matched agents directly',
+  'Full group & networking access',
   'Saved search templates',
-  'Professional network access',
   'Email support',
 ];
 
