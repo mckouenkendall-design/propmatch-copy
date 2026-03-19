@@ -286,12 +286,10 @@ function MatchBreakdown({ match, scenario, onClose }) {
 
       <FactorBar label="Location" score={factors.location} note={factors.location === 100 ? '— exact city match' : '— nearby market'} />
       <FactorBar label="Square Footage" score={factors.sqft} note={factors.sqft === 100 ? '— within required range' : '— partial size match'} />
-      <FactorBar
-        label="Budget"
-        score={factors.budget}
-        note={isOverBudget ? `— ${overBy} over limit` : '— within budget'}
-      />
-      <FactorBar label={factors.featureLabel} score={factors.feature} note={factors.feature === 100 ? '— confirmed' : factors.feature >= 50 ? '— partial' : '— not matched'} />
+      <FactorBar label="Budget" score={factors.budget} note={isOverBudget ? `— ${overBy} over limit` : '— within budget'} />
+      {factors.extra && factors.extra.map(f => (
+        <FactorBar key={f.label} label={f.label} score={f.score} note={f.score >= 85 ? '— confirmed' : f.score >= 50 ? '— partial match' : '— not matched'} />
+      ))}
     </div>
   );
 }
