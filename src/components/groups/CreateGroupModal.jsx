@@ -64,7 +64,7 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">Create a Group</h2>
+          <h2 className="text-xl font-bold text-gray-900">Create a Fish Tank</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
             <X className="w-5 h-5 text-gray-500" />
           </button>
@@ -102,8 +102,8 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Group Name <span className="text-red-500">*</span></Label>
-            <Input value={form.name} onChange={e => update({ name: e.target.value })} placeholder="e.g. Detroit Commercial RE Group" />
+            <Label>Fish Tank Name <span className="text-red-500">*</span></Label>
+            <Input value={form.name} onChange={e => update({ name: e.target.value })} placeholder="e.g. Detroit Commercial RE Fish Tank" />
           </div>
 
           <div className="space-y-1.5">
@@ -111,7 +111,7 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
             <textarea
               value={form.description}
               onChange={e => update({ description: e.target.value })}
-              placeholder="What is this group about? Who is it for?"
+              placeholder="What is this Fish Tank about? Who is it for?"
               rows={3}
               className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
             />
@@ -144,7 +144,7 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Group Type</Label>
+            <Label>Type</Label>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { value: 'public', label: 'Public', desc: 'Anyone can join' },
@@ -168,11 +168,11 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Group Rules <span className="text-gray-400 text-xs">(optional)</span></Label>
+            <Label>Fish Tank Rules <span className="text-gray-400 text-xs">(optional)</span></Label>
             <textarea
               value={form.rules}
               onChange={e => update({ rules: e.target.value })}
-              placeholder="Any guidelines or rules for the group..."
+              placeholder="Any guidelines or rules for the Fish Tank..."
               rows={2}
               className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
             />
@@ -188,7 +188,7 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
             style={{ backgroundColor: 'var(--tiffany-blue)' }}
           >
             {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            Create Group
+            Create Fish Tank
           </Button>
         </div>
       </div>
