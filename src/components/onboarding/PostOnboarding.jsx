@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import AddTeamModal from '@/components/broker/AddTeamModal';
 
 const ACCENT = '#00DBC5';
 
@@ -572,6 +575,36 @@ const BASE_FEATURES = [
 // ─── Main exported component ────────────────────────────────────────────────────
 export default function PostOnboarding({ isBroker = false }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [showAddTeam, setShowAddTeam] = useState(false);
+  const [brokerInfo, setBrokerInfo] = useState(null);
+
+  // Check if broker needs to add team (purchased brokerage plan)
+  useEffect(() => {
+    async function checkBrokerStatus() {
+      if (!isBroker || !user) return;
+      
+      // Check if they have a brokerage subscription
+      try {
+        const userProfile = await base44.auth.me();
+        if (userProfile.selected_plan === 'brokerage' && userProfile.brokerage_seats) {
+          setBrokerInfo({
+            totalSeats: userProfile.brokerage_seats,
+            brokerEmail: userProfile.email,
+            brokerName: userProfile.full_name,
+            brokerageName: userProfile.brokerage_name,
+            employingBrokerNumber: userProfile.employing_broker_id,
+            stripeSubscriptionId: userProfile.stripe_subscription_id,
+          });
+          setShowAddTeam(true);
+        }
+      } catch (e) {
+        console.error('Broker status check error:', e);
+      }
+    }
+    
+    checkBrokerStatus();
+  }, [isBroker, user]);
 
   // Broker features come FIRST (after the video), then base features
   const featureList = isBroker ? [...BROKER_FEATURES, ...BASE_FEATURES] : BASE_FEATURES;
@@ -594,6 +627,22 @@ export default function PostOnboarding({ isBroker = false }) {
   const skipAll = () => navigate('/Dashboard');
 
   const featureIndex = screen - FIRST_FEATURE;
+
+  // Show Add Team Modal for brokers first
+  if (showAddTeam && brokerInfo) {
+    return (
+      <AddTeamModal
+        totalSeats={brokerInfo.totalSeats}
+        brokerEmail={brokerInfo.brokerEmail}
+        brokerName={brokerInfo.brokerName}
+        brokerageName={brokerInfo.brokerageName}
+        employingBrokerNumber={brokerInfo.employingBrokerNumber}
+        stripeSubscriptionId={brokerInfo.stripeSubscriptionId}
+        onClose={() => setShowAddTeam(false)}
+        onComplete={() => setShowAddTeam(false)}
+      />
+    );
+  }
 
   if (screen === SCREEN_CONFETTI) return <ConfettiScreen onNext={goNext} />;
   if (screen === SCREEN_HOW_HEARD) return <HowDidYouHearScreen onNext={goNext} />;
