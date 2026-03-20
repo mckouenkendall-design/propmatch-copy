@@ -158,11 +158,6 @@ export default function ShareResourceModal({ onClose }) {
                 </SelectTrigger>
                 <SelectContent style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }}>
                   <SelectItem value="document" style={{ color: 'rgba(255,255,255,0.85)' }}>Document</SelectItem>
-                  <SelectItem value="template" style={{ color: 'rgba(255,255,255,0.85)' }}>Template</SelectItem>
-                  <SelectItem value="guide" style={{ color: 'rgba(255,255,255,0.85)' }}>Guide</SelectItem>
-                  <SelectItem value="form" style={{ color: 'rgba(255,255,255,0.85)' }}>Form</SelectItem>
-                  <SelectItem value="presentation" style={{ color: 'rgba(255,255,255,0.85)' }}>Presentation</SelectItem>
-                  <SelectItem value="other" style={{ color: 'rgba(255,255,255,0.85)' }}>Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -196,10 +191,7 @@ export default function ShareResourceModal({ onClose }) {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
-            <Button type="button" onClick={onClose} variant="outline" style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)' }}>
-              Cancel
-            </Button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
             <Button type="submit" disabled={createMutation.isPending || uploading || !file} style={{ background: ACCENT, color: '#111827' }}>
               {uploading ? 'Uploading...' : createMutation.isPending ? 'Sharing...' : 'Share Resource'}
             </Button>

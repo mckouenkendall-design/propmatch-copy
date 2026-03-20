@@ -19,7 +19,6 @@ import {
   User, 
   Bell, 
   Lock, 
-  Eye, 
   Shield,
   Mail,
   Moon,
@@ -38,11 +37,7 @@ export default function Settings() {
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [email, setEmail] = useState(user?.email || '');
 
-  // Privacy Settings
-  const [profileVisibility, setProfileVisibility] = useState(user?.profile_visibility || 'public');
-  const [showEmail, setShowEmail] = useState(user?.show_email !== false);
-  const [showPhone, setShowPhone] = useState(user?.show_phone !== false);
-  const [allowMessages, setAllowMessages] = useState(user?.allow_messages !== false);
+
 
   // Notification Settings
   const [emailNotifications, setEmailNotifications] = useState(user?.email_notifications !== false);
@@ -59,10 +54,6 @@ export default function Settings() {
     if (user) {
       setFullName(user.full_name || '');
       setEmail(user.email || '');
-      setProfileVisibility(user.profile_visibility || 'public');
-      setShowEmail(user.show_email !== false);
-      setShowPhone(user.show_phone !== false);
-      setAllowMessages(user.allow_messages !== false);
       setEmailNotifications(user.email_notifications !== false);
       setMatchAlerts(user.match_alerts !== false);
       setGroupNotifications(user.group_notifications !== false);
@@ -73,9 +64,14 @@ export default function Settings() {
   }, [user]);
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.auth.updateMe(data),
+    mutationFn: async (data) => {
+      const result = await base44.auth.updateMe(data);
+      // Wait for the query to be invalidated and refetched
+      await queryClient.invalidateQueries(['user']);
+      await queryClient.refetchQueries(['user']);
+      return result;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['user']);
       toast({ 
         title: 'Settings updated successfully',
         duration: 4000,
@@ -83,21 +79,12 @@ export default function Settings() {
     },
   });
 
-  const saveAccountSettings = () => {
-    updateMutation.mutate({ full_name: fullName, email });
+  const saveAccountSettings = async () => {
+    await updateMutation.mutateAsync({ full_name: fullName, email });
   };
 
-  const savePrivacySettings = () => {
-    updateMutation.mutate({
-      profile_visibility: profileVisibility,
-      show_email: showEmail,
-      show_phone: showPhone,
-      allow_messages: allowMessages,
-    });
-  };
-
-  const saveNotificationSettings = () => {
-    updateMutation.mutate({
+  const saveNotificationSettings = async () => {
+    await updateMutation.mutateAsync({
       email_notifications: emailNotifications,
       match_alerts: matchAlerts,
       group_notifications: groupNotifications,
@@ -105,8 +92,8 @@ export default function Settings() {
     });
   };
 
-  const savePreferences = () => {
-    updateMutation.mutate({ theme, language });
+  const savePreferences = async () => {
+    await updateMutation.mutateAsync({ theme, language });
   };
 
   return (
@@ -133,17 +120,6 @@ export default function Settings() {
             >
               <User style={{ width: '16px', height: '16px', marginRight: '8px' }} />
               Account
-            </TabsTrigger>
-            <TabsTrigger 
-              value="privacy" 
-              style={{ 
-                color: 'rgba(255,255,255,0.6)',
-                fontFamily: "'Inter', sans-serif"
-              }}
-              className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]"
-            >
-              <Eye style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-              Privacy
             </TabsTrigger>
             <TabsTrigger 
               value="notifications" 
@@ -224,65 +200,6 @@ export default function Settings() {
                 </div>
                 <Button
                   onClick={saveAccountSettings}
-                  disabled={updateMutation.isPending}
-                  style={{ background: ACCENT, color: '#111827', alignSelf: 'flex-start' }}
-                >
-                  {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Privacy Settings */}
-          <TabsContent value="privacy">
-            <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <CardHeader>
-                <CardTitle style={{ color: 'white' }}>Privacy Settings</CardTitle>
-                <CardDescription style={{ color: 'rgba(255,255,255,0.5)' }}>
-                  Control who can see your information
-                </CardDescription>
-              </CardHeader>
-              <CardContent style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div>
-                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>Profile Visibility</Label>
-                  <Select value={profileVisibility} onValueChange={setProfileVisibility}>
-                    <SelectTrigger style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <SelectItem value="public" style={{ color: 'rgba(255,255,255,0.85)' }}>Public - Everyone can see</SelectItem>
-                      <SelectItem value="network" style={{ color: 'rgba(255,255,255,0.85)' }}>Network Only - Only matched agents</SelectItem>
-                      <SelectItem value="private" style={{ color: 'rgba(255,255,255,0.85)' }}>Private - Hidden from search</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
-                  <div>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>Show Email Address</p>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Display your email on your profile</p>
-                  </div>
-                  <Switch checked={showEmail} onCheckedChange={setShowEmail} />
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
-                  <div>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>Show Phone Number</p>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Display your phone on your profile</p>
-                  </div>
-                  <Switch checked={showPhone} onCheckedChange={setShowPhone} />
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
-                  <div>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>Allow Direct Messages</p>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Let other agents message you directly</p>
-                  </div>
-                  <Switch checked={allowMessages} onCheckedChange={setAllowMessages} />
-                </div>
-
-                <Button
-                  onClick={savePrivacySettings}
                   disabled={updateMutation.isPending}
                   style={{ background: ACCENT, color: '#111827', alignSelf: 'flex-start' }}
                 >

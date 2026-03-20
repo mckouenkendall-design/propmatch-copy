@@ -118,10 +118,7 @@ export default function CreateAnnouncementModal({ onClose }) {
             </Label>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
-            <Button type="button" onClick={onClose} variant="outline" style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)' }}>
-              Cancel
-            </Button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
             <Button type="submit" disabled={createMutation.isPending} style={{ background: ACCENT, color: '#111827' }}>
               {createMutation.isPending ? 'Posting...' : 'Post Announcement'}
             </Button>
