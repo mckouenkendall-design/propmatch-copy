@@ -103,23 +103,58 @@ export default function Settings() {
 
         <Tabs defaultValue="account" style={{ width: '100%' }}>
           <TabsList style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
-            <TabsTrigger value="account" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <TabsTrigger 
+              value="account" 
+              style={{ 
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: "'Inter', sans-serif"
+              }}
+              className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]"
+            >
               <User style={{ width: '16px', height: '16px', marginRight: '8px' }} />
               Account
             </TabsTrigger>
-            <TabsTrigger value="privacy" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <TabsTrigger 
+              value="privacy" 
+              style={{ 
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: "'Inter', sans-serif"
+              }}
+              className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]"
+            >
               <Eye style={{ width: '16px', height: '16px', marginRight: '8px' }} />
               Privacy
             </TabsTrigger>
-            <TabsTrigger value="notifications" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <TabsTrigger 
+              value="notifications" 
+              style={{ 
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: "'Inter', sans-serif"
+              }}
+              className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]"
+            >
               <Bell style={{ width: '16px', height: '16px', marginRight: '8px' }} />
               Notifications
             </TabsTrigger>
-            <TabsTrigger value="preferences" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <TabsTrigger 
+              value="preferences" 
+              style={{ 
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: "'Inter', sans-serif"
+              }}
+              className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]"
+            >
               <Globe style={{ width: '16px', height: '16px', marginRight: '8px' }} />
               Preferences
             </TabsTrigger>
-            <TabsTrigger value="security" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <TabsTrigger 
+              value="security" 
+              style={{ 
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: "'Inter', sans-serif"
+              }}
+              className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]"
+            >
               <Lock style={{ width: '16px', height: '16px', marginRight: '8px' }} />
               Security
             </TabsTrigger>

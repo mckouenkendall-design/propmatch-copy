@@ -78,17 +78,17 @@ export default function Dashboard() {
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '48px 32px' }}>
       {/* Header */}
-      <div style={{ marginBottom: '40px' }}>
+      <div style={{ marginBottom: '32px' }}>
         <h1 style={{ 
           fontFamily: "'Plus Jakarta Sans', sans-serif", 
-          fontSize: '42px', 
-          fontWeight: 300, 
+          fontSize: '28px', 
+          fontWeight: 400, 
           color: 'white', 
-          margin: '0 0 8px' 
+          margin: '0 0 6px' 
         }}>
-          Welcome back, {user?.full_name?.split(' ')[0] || 'there'}
+          Welcome back, {user?.full_name?.split(' ')?.[0] || user?.full_name || 'there'}
         </h1>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
           Your command center for active deals and opportunities
         </p>
       </div>
@@ -161,18 +161,18 @@ export default function Dashboard() {
         <Card 
           onClick={() => setShowCreateModal(true)}
           style={{ 
-            background: 'rgba(255,255,255,0.04)', 
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: `linear-gradient(135deg, ${ACCENT}15 0%, ${ACCENT}05 100%)`, 
+            border: `1px solid ${ACCENT}40`,
             cursor: 'pointer',
             transition: 'all 0.3s ease',
           }}
           onMouseEnter={e => {
             e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+            e.currentTarget.style.boxShadow = `0 12px 40px ${ACCENT}20`;
           }}
           onMouseLeave={e => {
             e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+            e.currentTarget.style.boxShadow = 'none';
           }}
         >
           <CardContent style={{ padding: '32px' }}>
@@ -180,14 +180,13 @@ export default function Dashboard() {
               width: '56px', 
               height: '56px', 
               borderRadius: '14px', 
-              background: 'rgba(255,255,255,0.08)', 
-              border: '1px solid rgba(255,255,255,0.15)',
+              background: ACCENT, 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
               marginBottom: '16px'
             }}>
-              <Search style={{ width: '28px', height: '28px', color: ACCENT }} />
+              <Search style={{ width: '28px', height: '28px', color: '#111827' }} />
             </div>
             <h3 style={{ 
               fontFamily: "'Plus Jakarta Sans', sans-serif", 

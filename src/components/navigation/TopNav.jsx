@@ -71,8 +71,8 @@ export default function TopNav() {
           </svg>
         </Link>
 
-        {/* Center Nav */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        {/* Center Nav - Always Visible */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, justifyContent: 'center' }}>
           {mainNavItems.map(item => (
             <Link
               key={item.path}
@@ -259,9 +259,7 @@ export default function TopNav() {
       </div>
 
       <style>{`
-        @media (max-width: 1024px) {
-          nav > div > div:nth-child(2) { display: none !important; }
-        }
+        /* Navigation always visible */
       `}</style>
     </nav>
   );

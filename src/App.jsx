@@ -17,6 +17,7 @@ import Onboarding from './pages/Onboarding';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import BrokerDashboard from './pages/BrokerDashboard';
+import GroupDetail from './pages/GroupDetail';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -99,6 +100,7 @@ const AuthenticatedApp = () => {
           </LayoutWrapper>
         } 
       />
+      <Route path="/GroupDetail" element={<GroupDetail />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
