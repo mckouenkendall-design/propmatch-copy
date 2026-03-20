@@ -29,10 +29,9 @@ export default function TopNav() {
   const isManagingBroker = user?.role === 'admin' && user?.selected_plan === 'brokerage';
 
   const mainNavItems = [
-    { label: 'Dashboard', path: '/Dashboard' },
-    { label: 'Dealboard', path: '/Dealboard' },
-    { label: 'Listings', path: '/Listings' },
-    { label: 'Requirements', path: '/Requirements' },
+    { label: 'Control Center', path: '/Dashboard' },
+    { label: 'My Matches', path: '/Dealboard' },
+    { label: 'Inventory', path: '/Inventory' },
     { label: 'Groups', path: '/Groups' },
     { label: 'Messages', path: '/Messages' },
   ];

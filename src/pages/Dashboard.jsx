@@ -36,34 +36,47 @@ export default function Dashboard() {
   const newMatchesToday = 3;
   const pendingMessages = 2;
 
-  const StatCard = ({ icon: Icon, label, value, color = ACCENT }) => (
-    <Card style={{ 
-      background: 'rgba(255,255,255,0.04)', 
-      border: '1px solid rgba(255,255,255,0.1)',
-      transition: 'all 0.2s ease',
-    }}
-    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+  const StatCard = ({ icon: Icon, label, value, color = ACCENT, onClick }) => (
+    <Card 
+      onClick={onClick}
+      style={{ 
+        background: 'rgba(255,255,255,0.04)', 
+        border: '1px solid rgba(255,255,255,0.1)',
+        transition: 'all 0.3s ease',
+        cursor: onClick ? 'pointer' : 'default',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+        if (onClick) {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = `0 8px 24px ${color}20`;
+        }
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = 'none';
+      }}
     >
-      <CardContent style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+      <CardContent style={{ padding: '18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
           <div style={{ 
-            width: '48px', 
-            height: '48px', 
-            borderRadius: '12px', 
+            width: '40px', 
+            height: '40px', 
+            borderRadius: '10px', 
             background: `${color}15`, 
             border: `1px solid ${color}30`,
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center' 
           }}>
-            <Icon style={{ width: '24px', height: '24px', color }} />
+            <Icon style={{ width: '20px', height: '20px', color }} />
           </div>
         </div>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '32px', fontWeight: 600, color: 'white', margin: '0 0 4px' }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '28px', fontWeight: 600, color: 'white', margin: '0 0 4px' }}>
           {value}
         </p>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
           {label}
         </p>
       </CardContent>
@@ -86,7 +99,10 @@ export default function Dashboard() {
           color: 'white', 
           margin: '0 0 6px' 
         }}>
-          Welcome back, {user?.full_name?.split(' ')?.[0] || user?.full_name || 'there'}
+          Welcome back, {(() => {
+            const firstName = user?.full_name?.trim().split(/\s+/)[0];
+            return firstName || 'there';
+          })()}
         </h1>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
           Your command center for active deals and opportunities
@@ -100,10 +116,10 @@ export default function Dashboard() {
         gap: '20px', 
         marginBottom: '48px' 
       }}>
-        <StatCard icon={Building2} label="Active Listings" value={listings.length} />
-        <StatCard icon={Search} label="Active Requirements" value={requirements.length} />
-        <StatCard icon={TrendingUp} label="New Matches Today" value={newMatchesToday} />
-        <StatCard icon={MessageSquare} label="Messages Pending" value={pendingMessages} />
+        <StatCard icon={Building2} label="Active Listings" value={listings.length} onClick={() => window.location.href = '/Inventory'} />
+        <StatCard icon={Search} label="Active Requirements" value={requirements.length} onClick={() => window.location.href = '/Inventory'} />
+        <StatCard icon={TrendingUp} label="New Matches Today" value={newMatchesToday} onClick={() => window.location.href = '/Matches'} />
+        <StatCard icon={MessageSquare} label="Messages Pending" value={pendingMessages} onClick={() => window.location.href = '/Messages'} />
       </div>
 
       {/* Quick Actions */}
