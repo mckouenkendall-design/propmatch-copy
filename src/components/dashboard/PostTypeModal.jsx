@@ -6,12 +6,12 @@ import { X, Home, Building2, BookOpen } from 'lucide-react';
 export default function PostTypeModal({ onClose, onSelectType, onLoadTemplate }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <Card className="bg-white border-0 shadow-2xl w-full max-w-xl">
-        <CardHeader className="border-b" style={{ background: 'linear-gradient(135deg, #f0fdfc 0%, #ffffff 100%)' }}>
+      <Card style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }} className="shadow-2xl w-full max-w-xl">
+        <CardHeader style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl">What would you like to post?</CardTitle>
+            <CardTitle className="text-2xl" style={{ color: 'white' }}>What would you like to post?</CardTitle>
             <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
             </Button>
           </div>
         </CardHeader>
@@ -19,31 +19,32 @@ export default function PostTypeModal({ onClose, onSelectType, onLoadTemplate })
           <div className="grid grid-cols-2 gap-6 mb-6">
             <button
               onClick={() => onSelectType('listing')}
-              className="flex flex-col items-center justify-center p-8 border-2 border-gray-200 rounded-xl hover:border-[var(--tiffany-blue)] hover:shadow-lg transition-all group"
-              style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0fdfc 100%)' }}
+              className="flex flex-col items-center justify-center p-8 border-2 rounded-xl hover:border-[var(--tiffany-blue)] hover:shadow-lg transition-all group"
+              style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
             >
               <Home className="w-14 h-14 text-gray-400 group-hover:text-[var(--tiffany-blue)] transition-colors mb-4" />
-              <span className="text-xl font-semibold text-gray-700 group-hover:text-[var(--tiffany-blue)] mb-2">Listing</span>
-              <p className="text-xs text-gray-500 text-center">Space I have for lease or sale</p>
+              <span className="text-xl font-semibold group-hover:text-[var(--tiffany-blue)] mb-2" style={{ color: 'rgba(255,255,255,0.9)' }}>Listing</span>
+              <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>Space I have for lease or sale</p>
             </button>
             <button
               onClick={() => onSelectType('requirement')}
-              className="flex flex-col items-center justify-center p-8 border-2 border-gray-200 rounded-xl hover:border-[var(--tiffany-blue)] hover:shadow-lg transition-all group"
-              style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0fdfc 100%)' }}
+              className="flex flex-col items-center justify-center p-8 border-2 rounded-xl hover:border-[var(--tiffany-blue)] hover:shadow-lg transition-all group"
+              style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
             >
               <Building2 className="w-14 h-14 text-gray-400 group-hover:text-[var(--tiffany-blue)] transition-colors mb-4" />
-              <span className="text-xl font-semibold text-gray-700 group-hover:text-[var(--tiffany-blue)] mb-2">Requirement</span>
-              <p className="text-xs text-gray-500 text-center">Space needed for a client of mine</p>
+              <span className="text-xl font-semibold group-hover:text-[var(--tiffany-blue)] mb-2" style={{ color: 'rgba(255,255,255,0.9)' }}>Requirement</span>
+              <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>Space needed for a client of mine</p>
             </button>
           </div>
 
-          <div className="border-t pt-5">
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
             <button
               onClick={onLoadTemplate}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-[var(--tiffany-blue)] hover:bg-[#f0fdfc] transition-all group"
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border-2 border-dashed hover:border-[var(--tiffany-blue)] transition-all group"
+              style={{ borderColor: 'rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.02)' }}
             >
               <BookOpen className="w-5 h-5 text-gray-400 group-hover:text-[var(--tiffany-blue)] transition-colors" />
-              <span className="text-sm font-medium text-gray-500 group-hover:text-[var(--tiffany-blue)]">Load a Saved Template</span>
+              <span className="text-sm font-medium group-hover:text-[var(--tiffany-blue)]" style={{ color: 'rgba(255,255,255,0.6)' }}>Load a Saved Template</span>
             </button>
           </div>
         </CardContent>

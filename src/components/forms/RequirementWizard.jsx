@@ -76,17 +76,17 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center p-4 overflow-y-auto">
       <div className="w-full max-w-2xl my-8">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b" style={{ background: 'linear-gradient(135deg, #f0fdfc 0%, #ffffff 100%)' }}>
+        <div style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }} className="rounded-2xl shadow-2xl overflow-hidden">
+          <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" onClick={back}><ArrowLeft className="w-5 h-5" /></Button>
+                <Button variant="ghost" size="icon" onClick={back}><ArrowLeft className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} /></Button>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800 capitalize">{category} Requirement</h2>
-                  <p className="text-sm text-gray-500">Step {step} of {STEPS.length}</p>
+                  <h2 className="text-xl font-bold capitalize" style={{ color: 'white' }}>{category} Requirement</h2>
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Step {step} of {STEPS.length}</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => onClose('close')}><X className="w-5 h-5" /></Button>
+              <Button variant="ghost" size="icon" onClick={() => onClose('close')}><X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} /></Button>
             </div>
             <FormProgress currentStep={step} steps={STEPS} />
           </div>
@@ -99,7 +99,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
           </div>
           {step === 2 && (
             <div className="px-6 pb-4 text-left">
-              <p className="text-xs text-gray-400">Fields left blank will be treated as "No Preference" and will not impact the Match Score.</p>
+              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Fields left blank will be treated as "No Preference" and will not impact the Match Score.</p>
             </div>
           )}
         </div>

@@ -6,17 +6,17 @@ import { X, Building, Home, ArrowLeft } from 'lucide-react';
 export default function PropertyCategoryModal({ onClose, onSelectCategory, onBack, postType }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <Card className="bg-white border-0 shadow-2xl w-full max-w-xl">
-        <CardHeader className="border-b" style={{ background: 'linear-gradient(135deg, #f0fdfc 0%, #ffffff 100%)' }}>
+      <Card style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }} className="shadow-2xl w-full max-w-xl">
+        <CardHeader style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={onBack}>
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
               </Button>
-              <CardTitle className="text-2xl">Select Property Type</CardTitle>
+              <CardTitle className="text-2xl" style={{ color: 'white' }}>Select Property Type</CardTitle>
             </div>
             <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
             </Button>
           </div>
         </CardHeader>
@@ -24,21 +24,21 @@ export default function PropertyCategoryModal({ onClose, onSelectCategory, onBac
           <div className="grid grid-cols-2 gap-6">
             <button
               onClick={() => onSelectCategory('commercial')}
-              className="flex flex-col items-center justify-center p-8 border-2 border-gray-200 rounded-xl hover:border-[var(--tiffany-blue)] hover:shadow-lg transition-all group"
-              style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0fdfc 100%)' }}
+              className="flex flex-col items-center justify-center p-8 border-2 rounded-xl hover:border-[var(--tiffany-blue)] hover:shadow-lg transition-all group"
+              style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
             >
               <Building className="w-14 h-14 text-gray-400 group-hover:text-[var(--tiffany-blue)] transition-colors mb-4" />
-              <span className="text-xl font-semibold text-gray-700 group-hover:text-[var(--tiffany-blue)] mb-2">Commercial</span>
-              <p className="text-xs text-gray-500 text-center">Office, retail, industrial...</p>
+              <span className="text-xl font-semibold group-hover:text-[var(--tiffany-blue)] mb-2" style={{ color: 'rgba(255,255,255,0.9)' }}>Commercial</span>
+              <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>Office, retail, industrial...</p>
             </button>
             <button
               onClick={() => onSelectCategory('residential')}
-              className="flex flex-col items-center justify-center p-8 border-2 border-gray-200 rounded-xl hover:border-[var(--tiffany-blue)] hover:shadow-lg transition-all group"
-              style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0fdfc 100%)' }}
+              className="flex flex-col items-center justify-center p-8 border-2 rounded-xl hover:border-[var(--tiffany-blue)] hover:shadow-lg transition-all group"
+              style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
             >
               <Home className="w-14 h-14 text-gray-400 group-hover:text-[var(--tiffany-blue)] transition-colors mb-4" />
-              <span className="text-xl font-semibold text-gray-700 group-hover:text-[var(--tiffany-blue)] mb-2">Residential</span>
-              <p className="text-xs text-gray-500 text-center">Home, apartment, condo...</p>
+              <span className="text-xl font-semibold group-hover:text-[var(--tiffany-blue)] mb-2" style={{ color: 'rgba(255,255,255,0.9)' }}>Residential</span>
+              <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>Home, apartment, condo...</p>
             </button>
           </div>
         </CardContent>
