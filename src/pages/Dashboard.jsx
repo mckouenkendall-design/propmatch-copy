@@ -1,128 +1,329 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, Search, Plus } from 'lucide-react';
-import DealPost from '../components/dashboard/DealPost';
-import CreatePostModal from '../components/dashboard/CreatePostModal';
+import { useAuth } from '@/lib/AuthContext';
+import { Building2, Search, TrendingUp, MessageSquare, Plus, ArrowRight, Clock } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import CreatePostModal from '@/components/dashboard/CreatePostModal';
+
+const ACCENT = '#00DBC5';
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [filter, setFilter] = useState('all');
-  const queryClient = useQueryClient();
 
   const { data: listings = [] } = useQuery({
-    queryKey: ['listings'],
-    queryFn: () => base44.entities.Listing.list('-created_date')
+    queryKey: ['my-listings'],
+    queryFn: () => base44.entities.Listing.filter({ created_by: user?.email }),
   });
 
   const { data: requirements = [] } = useQuery({
-    queryKey: ['requirements'],
-    queryFn: () => base44.entities.Requirement.list('-created_date')
+    queryKey: ['my-requirements'],
+    queryFn: () => base44.entities.Requirement.filter({ created_by: user?.email }),
   });
 
-  // Combine and sort by creation date
-  const allPosts = [...listings.map(l => ({ ...l, postType: 'listing' })), 
-                     ...requirements.map(r => ({ ...r, postType: 'requirement' }))]
-    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+  const { data: allListings = [] } = useQuery({
+    queryKey: ['all-listings'],
+    queryFn: () => base44.entities.Listing.list('-created_date', 20),
+  });
 
-  const filteredPosts = filter === 'all' ? allPosts : 
-                        filter === 'listings' ? allPosts.filter(p => p.postType === 'listing') :
-                        allPosts.filter(p => p.postType === 'requirement');
+  const { data: allRequirements = [] } = useQuery({
+    queryKey: ['all-requirements'],
+    queryFn: () => base44.entities.Requirement.list('-created_date', 20),
+  });
+
+  // Mock match data (will be replaced with real matching engine)
+  const newMatchesToday = 3;
+  const pendingMessages = 2;
+
+  const StatCard = ({ icon: Icon, label, value, color = ACCENT }) => (
+    <Card style={{ 
+      background: 'rgba(255,255,255,0.04)', 
+      border: '1px solid rgba(255,255,255,0.1)',
+      transition: 'all 0.2s ease',
+    }}
+    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+    >
+      <CardContent style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ 
+            width: '48px', 
+            height: '48px', 
+            borderRadius: '12px', 
+            background: `${color}15`, 
+            border: `1px solid ${color}30`,
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center' 
+          }}>
+            <Icon style={{ width: '24px', height: '24px', color }} />
+          </div>
+        </div>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '32px', fontWeight: 600, color: 'white', margin: '0 0 4px' }}>
+          {value}
+        </p>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+          {label}
+        </p>
+      </CardContent>
+    </Card>
+  );
+
+  const recentActivity = [
+    ...allListings.slice(0, 3).map(l => ({ type: 'listing', data: l, time: l.created_date })),
+    ...allRequirements.slice(0, 3).map(r => ({ type: 'requirement', data: r, time: r.created_date })),
+  ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px 24px' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '48px 32px' }}>
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '36px', fontWeight: 300, color: 'white', margin: '0 0 8px' }}>
-          Dashboard
+      <div style={{ marginBottom: '40px' }}>
+        <h1 style={{ 
+          fontFamily: "'Plus Jakarta Sans', sans-serif", 
+          fontSize: '42px', 
+          fontWeight: 300, 
+          color: 'white', 
+          margin: '0 0 8px' 
+        }}>
+          Welcome back, {user?.full_name?.split(' ')[0] || 'there'}
         </h1>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-          Your command center for all active deals
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+          Your command center for active deals and opportunities
         </p>
       </div>
 
-      {/* Create Post Card */}
-      <Card 
-        style={{ 
-          background: 'rgba(255,255,255,0.04)', 
-          border: '1px solid rgba(255,255,255,0.1)', 
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-        }}
-        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-        onClick={() => setShowCreateModal(true)}
-      >
-        <CardContent style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ 
-              width: '48px', 
-              height: '48px', 
-              borderRadius: '50%', 
-              background: 'rgba(0,219,197,0.1)', 
-              border: '1px solid rgba(0,219,197,0.3)',
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center' 
-            }}>
-              <Plus style={{ width: '24px', height: '24px', color: '#00DBC5' }} />
-            </div>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', color: 'rgba(255,255,255,0.5)' }}>
-              Post a listing or requirement...
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Filter Tabs */}
-      <Tabs value={filter} onValueChange={setFilter} style={{ width: '100%' }}>
-        <TabsList style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <TabsTrigger value="all" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            All Posts
-          </TabsTrigger>
-          <TabsTrigger value="listings" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            <Building2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-            Listings
-          </TabsTrigger>
-          <TabsTrigger value="requirements" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            <Search style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-            Requirements
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {/* Feed */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {filteredPosts.map((post) => (
-          <DealPost key={`${post.postType}-${post.id}`} post={post} />
-        ))}
-
-        {filteredPosts.length === 0 && (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '64px 24px', 
-            background: 'rgba(255,255,255,0.02)', 
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '12px' 
-          }}>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.4)' }}>
-              No posts yet. Create your first one!
-            </p>
-          </div>
-        )}
+      {/* Hero Stats Row */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+        gap: '20px', 
+        marginBottom: '48px' 
+      }}>
+        <StatCard icon={Building2} label="Active Listings" value={listings.length} />
+        <StatCard icon={Search} label="Active Requirements" value={requirements.length} />
+        <StatCard icon={TrendingUp} label="New Matches Today" value={newMatchesToday} />
+        <StatCard icon={MessageSquare} label="Messages Pending" value={pendingMessages} />
       </div>
 
-      {/* Create Post Modal */}
+      {/* Quick Actions */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+        gap: '20px', 
+        marginBottom: '48px' 
+      }}>
+        <Card 
+          onClick={() => setShowCreateModal(true)}
+          style={{ 
+            background: `linear-gradient(135deg, ${ACCENT}15 0%, ${ACCENT}05 100%)`, 
+            border: `1px solid ${ACCENT}40`,
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = 'translateY(-4px)';
+            e.currentTarget.style.boxShadow = `0 12px 40px ${ACCENT}20`;
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          <CardContent style={{ padding: '32px' }}>
+            <div style={{ 
+              width: '56px', 
+              height: '56px', 
+              borderRadius: '14px', 
+              background: ACCENT, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              marginBottom: '16px'
+            }}>
+              <Plus style={{ width: '28px', height: '28px', color: '#111827' }} />
+            </div>
+            <h3 style={{ 
+              fontFamily: "'Plus Jakarta Sans', sans-serif", 
+              fontSize: '20px', 
+              fontWeight: 500, 
+              color: 'white', 
+              margin: '0 0 8px' 
+            }}>
+              Post Listing
+            </h3>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
+              List a property and start matching
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card 
+          onClick={() => setShowCreateModal(true)}
+          style={{ 
+            background: 'rgba(255,255,255,0.04)', 
+            border: '1px solid rgba(255,255,255,0.1)',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = 'translateY(-4px)';
+            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+          }}
+        >
+          <CardContent style={{ padding: '32px' }}>
+            <div style={{ 
+              width: '56px', 
+              height: '56px', 
+              borderRadius: '14px', 
+              background: 'rgba(255,255,255,0.08)', 
+              border: '1px solid rgba(255,255,255,0.15)',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              marginBottom: '16px'
+            }}>
+              <Search style={{ width: '28px', height: '28px', color: ACCENT }} />
+            </div>
+            <h3 style={{ 
+              fontFamily: "'Plus Jakarta Sans', sans-serif", 
+              fontSize: '20px', 
+              fontWeight: 500, 
+              color: 'white', 
+              margin: '0 0 8px' 
+            }}>
+              Post Requirement
+            </h3>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
+              Share what your client needs
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Activity Timeline */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <h2 style={{ 
+            fontFamily: "'Plus Jakarta Sans', sans-serif", 
+            fontSize: '24px', 
+            fontWeight: 500, 
+            color: 'white', 
+            margin: 0 
+          }}>
+            Recent Activity
+          </h2>
+          <button 
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              color: ACCENT,
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.08)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            View All <ArrowRight style={{ width: '16px', height: '16px' }} />
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {recentActivity.map((activity, idx) => (
+            <Card 
+              key={idx}
+              style={{ 
+                background: 'rgba(255,255,255,0.03)', 
+                border: '1px solid rgba(255,255,255,0.08)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+            >
+              <CardContent style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ 
+                  width: '40px', 
+                  height: '40px', 
+                  borderRadius: '10px', 
+                  background: activity.type === 'listing' ? `${ACCENT}15` : 'rgba(255,255,255,0.06)',
+                  border: activity.type === 'listing' ? `1px solid ${ACCENT}30` : '1px solid rgba(255,255,255,0.1)',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  {activity.type === 'listing' ? 
+                    <Building2 style={{ width: '20px', height: '20px', color: ACCENT }} /> :
+                    <Search style={{ width: '20px', height: '20px', color: 'rgba(255,255,255,0.7)' }} />
+                  }
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ 
+                    fontFamily: "'Inter', sans-serif", 
+                    fontSize: '15px', 
+                    fontWeight: 500, 
+                    color: 'white', 
+                    margin: '0 0 4px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {activity.data.title}
+                  </p>
+                  <p style={{ 
+                    fontFamily: "'Inter', sans-serif", 
+                    fontSize: '13px', 
+                    color: 'rgba(255,255,255,0.5)', 
+                    margin: 0 
+                  }}>
+                    {activity.type === 'listing' ? 'New Listing' : 'New Requirement'} • {activity.data.city || 'Location TBD'}
+                  </p>
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px', 
+                  color: 'rgba(255,255,255,0.4)',
+                  flexShrink: 0
+                }}>
+                  <Clock style={{ width: '14px', height: '14px' }} />
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px' }}>
+                    {new Date(activity.time).toLocaleDateString()}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {recentActivity.length === 0 && (
+            <Card style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <CardContent style={{ padding: '48px', textAlign: 'center' }}>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.4)' }}>
+                  No recent activity. Start by posting a listing or requirement!
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
       {showCreateModal && (
         <CreatePostModal
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
             setShowCreateModal(false);
-            queryClient.invalidateQueries({ queryKey: ['listings'] });
-            queryClient.invalidateQueries({ queryKey: ['requirements'] });
+            // Refresh data
           }}
         />
       )}

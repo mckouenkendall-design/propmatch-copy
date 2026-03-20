@@ -1,119 +1,268 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import FilterBar from '@/components/dealboard/FilterBar';
-import DealPost from '@/components/dashboard/DealPost';
+import { useAuth } from '@/lib/AuthContext';
+import { Building2, Search, Filter, Plus, MoreVertical } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import CreatePostModal from '@/components/dashboard/CreatePostModal';
 
+const ACCENT = '#00DBC5';
+
+const STAGES = [
+  { id: 'prospects', label: 'Prospects', color: '#6B7280' },
+  { id: 'qualified', label: 'Qualified', color: '#3B82F6' },
+  { id: 'negotiation', label: 'Negotiation', color: '#F59E0B' },
+  { id: 'under_contract', label: 'Under Contract', color: ACCENT },
+  { id: 'closed', label: 'Closed', color: '#10B981' },
+];
+
 export default function Dealboard() {
+  const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({
-    type: 'all',
-    category: 'all',
-    city: '',
-    state: '',
-    sort: 'newest'
+  const [filter, setFilter] = useState('all');
+
+  const { data: listings = [] } = useQuery({
+    queryKey: ['dealboard-listings'],
+    queryFn: () => base44.entities.Listing.list('-created_date'),
   });
 
-  const queryClient = useQueryClient();
-
-  const { data: listings = [], isLoading: loadingListings } = useQuery({
-    queryKey: ['listings'],
-    queryFn: () => base44.entities.Listing.list('-created_date', 100),
+  const { data: requirements = [] } = useQuery({
+    queryKey: ['dealboard-requirements'],
+    queryFn: () => base44.entities.Requirement.list('-created_date'),
   });
 
-  const { data: requirements = [], isLoading: loadingRequirements } = useQuery({
-    queryKey: ['requirements'],
-    queryFn: () => base44.entities.Requirement.list('-created_date', 100),
-  });
-
-  const handlePostCreated = () => {
-    setShowCreateModal(false);
-    queryClient.invalidateQueries({ queryKey: ['listings'] });
-    queryClient.invalidateQueries({ queryKey: ['requirements'] });
-  };
-
-  // Combine and filter posts
-  const allPosts = [
-    ...listings.map(l => ({ ...l, type: 'listing' })),
-    ...requirements.map(r => ({ ...r, type: 'requirement' }))
+  // Combine all deals
+  const allDeals = [
+    ...listings.map(l => ({ ...l, dealType: 'listing', stage: l.stage || 'prospects' })),
+    ...requirements.map(r => ({ ...r, dealType: 'requirement', stage: r.stage || 'prospects' })),
   ];
 
-  let filteredPosts = allPosts;
+  const DealCard = ({ deal }) => {
+    const isListing = deal.dealType === 'listing';
+    const matchScore = Math.floor(Math.random() * 30) + 70; // Mock score
+    
+    return (
+      <Card 
+        style={{ 
+          background: 'rgba(255,255,255,0.04)', 
+          border: matchScore >= 85 ? `1px solid ${ACCENT}60` : '1px solid rgba(255,255,255,0.08)',
+          cursor: 'grab',
+          marginBottom: '12px',
+          boxShadow: matchScore >= 85 ? `0 0 20px ${ACCENT}20` : 'none',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+      >
+        <CardContent style={{ padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '8px', 
+                background: isListing ? `${ACCENT}15` : 'rgba(255,255,255,0.06)',
+                border: isListing ? `1px solid ${ACCENT}30` : '1px solid rgba(255,255,255,0.1)',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center'
+              }}>
+                {isListing ? 
+                  <Building2 style={{ width: '16px', height: '16px', color: ACCENT }} /> :
+                  <Search style={{ width: '16px', height: '16px', color: 'rgba(255,255,255,0.6)' }} />
+                }
+              </div>
+              <div>
+                <p style={{ 
+                  fontFamily: "'Inter', sans-serif", 
+                  fontSize: '14px', 
+                  fontWeight: 500, 
+                  color: 'white', 
+                  margin: 0 
+                }}>
+                  {deal.title?.substring(0, 30)}...
+                </p>
+                <p style={{ 
+                  fontFamily: "'Inter', sans-serif", 
+                  fontSize: '12px', 
+                  color: 'rgba(255,255,255,0.5)', 
+                  margin: 0 
+                }}>
+                  {deal.city || 'TBD'}
+                </p>
+              </div>
+            </div>
+            <button style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              cursor: 'pointer', 
+              color: 'rgba(255,255,255,0.4)',
+              padding: '4px'
+            }}>
+              <MoreVertical style={{ width: '16px', height: '16px' }} />
+            </button>
+          </div>
 
-  // Apply filters
-  if (filters.type !== 'all') {
-    filteredPosts = filteredPosts.filter(post => post.type === filters.type);
-  }
+          <div style={{ 
+            display: 'inline-block', 
+            padding: '4px 10px', 
+            borderRadius: '6px', 
+            background: matchScore >= 85 ? `${ACCENT}20` : 'rgba(255,255,255,0.05)',
+            border: matchScore >= 85 ? `1px solid ${ACCENT}40` : '1px solid rgba(255,255,255,0.08)',
+            marginBottom: '12px'
+          }}>
+            <span style={{ 
+              fontFamily: "'Inter', sans-serif", 
+              fontSize: '12px', 
+              fontWeight: 500, 
+              color: matchScore >= 85 ? ACCENT : 'rgba(255,255,255,0.6)' 
+            }}>
+              Match: {matchScore}%
+            </span>
+          </div>
 
-  if (filters.category !== 'all') {
-    filteredPosts = filteredPosts.filter(post => post.property_type === filters.category);
-  }
+          <p style={{ 
+            fontFamily: "'Inter', sans-serif", 
+            fontSize: '16px', 
+            fontWeight: 600, 
+            color: ACCENT, 
+            margin: '0 0 8px' 
+          }}>
+            ${(deal.price || deal.max_price || 0).toLocaleString()}
+          </p>
 
-  if (filters.city) {
-    filteredPosts = filteredPosts.filter(post => {
-      const city = post.city || (post.cities && post.cities[0]) || '';
-      return city.toLowerCase().includes(filters.city.toLowerCase());
-    });
-  }
-
-  if (filters.state) {
-    filteredPosts = filteredPosts.filter(post => {
-      const state = post.state || '';
-      return state.toLowerCase().includes(filters.state.toLowerCase());
-    });
-  }
-
-  if (searchQuery) {
-    filteredPosts = filteredPosts.filter(post => {
-      const searchText = `${post.title} ${post.description || ''} ${post.notes || ''}`.toLowerCase();
-      return searchText.includes(searchQuery.toLowerCase());
-    });
-  }
-
-  // Sort posts
-  filteredPosts.sort((a, b) => {
-    if (filters.sort === 'newest') {
-      return new Date(b.created_date) - new Date(a.created_date);
-    } else if (filters.sort === 'oldest') {
-      return new Date(a.created_date) - new Date(b.created_date);
-    } else if (filters.sort === 'price-high') {
-      return (b.price || b.max_price || 0) - (a.price || a.max_price || 0);
-    } else if (filters.sort === 'price-low') {
-      return (a.price || a.max_price || 0) - (b.price || b.max_price || 0);
-    }
-    return 0;
-  });
+          <p style={{ 
+            fontFamily: "'Inter', sans-serif", 
+            fontSize: '11px', 
+            color: 'rgba(255,255,255,0.4)', 
+            margin: 0 
+          }}>
+            2 days in stage
+          </p>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
-    <div>
-        <FilterBar
-          onCreatePost={() => setShowCreateModal(true)}
-          onSearch={setSearchQuery}
-          onFilterChange={setFilters}
-        />
+    <div style={{ maxWidth: '1600px', margin: '0 auto', padding: '48px 32px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+        <div>
+          <h1 style={{ 
+            fontFamily: "'Plus Jakarta Sans', sans-serif", 
+            fontSize: '42px', 
+            fontWeight: 300, 
+            color: 'white', 
+            margin: '0 0 8px' 
+          }}>
+            Deal Pipeline
+          </h1>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+            Manage your opportunities from prospect to close
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button 
+            style={{
+              padding: '10px 16px',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              color: 'rgba(255,255,255,0.7)',
+              cursor: 'pointer',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <Filter style={{ width: '16px', height: '16px' }} />
+            Filter
+          </button>
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            style={{
+              padding: '10px 20px',
+              background: ACCENT,
+              border: 'none',
+              borderRadius: '8px',
+              color: '#111827',
+              cursor: 'pointer',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <Plus style={{ width: '16px', height: '16px' }} />
+            Add Deal
+          </button>
+        </div>
+      </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        {loadingListings || loadingRequirements ? (
-          <div className="text-center py-12 text-gray-500">Loading...</div>
-        ) : filteredPosts.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            No posts found. Click the Post button to create one!
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredPosts.map((post) => (
-              <DealPost key={`${post.type}-${post.id}`} post={post} />
-            ))}
-          </div>
-        )}
+      {/* Kanban Board */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(5, 1fr)', 
+        gap: '16px',
+        overflowX: 'auto'
+      }}>
+        {STAGES.map(stage => {
+          const stageDeals = allDeals.filter(d => d.stage === stage.id);
+          
+          return (
+            <div key={stage.id} style={{ minWidth: '280px' }}>
+              <div style={{ 
+                padding: '12px 16px', 
+                background: 'rgba(255,255,255,0.03)', 
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '8px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ 
+                    width: '8px', 
+                    height: '8px', 
+                    borderRadius: '50%', 
+                    background: stage.color 
+                  }} />
+                  <h3 style={{ 
+                    fontFamily: "'Inter', sans-serif", 
+                    fontSize: '14px', 
+                    fontWeight: 600, 
+                    color: 'white', 
+                    margin: 0,
+                    flex: 1
+                  }}>
+                    {stage.label}
+                  </h3>
+                  <span style={{ 
+                    fontFamily: "'Inter', sans-serif", 
+                    fontSize: '12px', 
+                    color: 'rgba(255,255,255,0.4)' 
+                  }}>
+                    {stageDeals.length}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ minHeight: '400px' }}>
+                {stageDeals.map(deal => (
+                  <DealCard key={deal.id} deal={deal} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {showCreateModal && (
         <CreatePostModal
           onClose={() => setShowCreateModal(false)}
-          onSuccess={handlePostCreated}
+          onSuccess={() => setShowCreateModal(false)}
         />
       )}
     </div>
