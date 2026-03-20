@@ -40,6 +40,8 @@ export default function TopNav() {
     { label: 'Messages', path: '/Messages' },
   ];
 
+  const teamNavItem = isBrokerageMember ? { label: 'Teams', path: '/Teams' } : null;
+
   const handleLogout = async () => {
     await base44.auth.logout();
   };
@@ -103,97 +105,31 @@ export default function TopNav() {
             </Link>
           ))}
           
-          {/* Team Tools Dropdown (for all brokerage members) */}
-          {isBrokerageMember && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  fontWeight: 400,
-                  color: 'rgba(255,255,255,0.7)',
-                  background: 'transparent',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.color = ACCENT;
-                  e.currentTarget.style.background = 'rgba(0,219,197,0.08)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                  e.currentTarget.style.background = 'transparent';
-                }}>
-                  Team Tools <ChevronDown style={{ width: '14px', height: '14px' }} />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }}>
-                {isManagingBroker && (
-                  <DropdownMenuItem 
-                    onClick={() => navigate('/BrokerDashboard')} 
-                    style={{ 
-                      color: 'rgba(255,255,255,0.85)',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <Building2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-                    Admin Dashboard
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem 
-                  style={{ 
-                    color: 'rgba(255,255,255,0.85)',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <Users style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-                  Team Pipeline
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  style={{ 
-                    color: 'rgba(255,255,255,0.85)',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <Megaphone style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-                  Team Announcements
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  style={{ 
-                    color: 'rgba(255,255,255,0.85)',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <Video style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-                  Team Calls
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  style={{ 
-                    color: 'rgba(255,255,255,0.85)',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <FolderOpen style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-                  Resource Library
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {/* Teams Tab (for all brokerage members) */}
+          {teamNavItem && (
+            <Link
+              to={teamNavItem.path}
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                fontWeight: 400,
+                color: 'rgba(255,255,255,0.7)',
+                textDecoration: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = ACCENT;
+                e.currentTarget.style.background = 'rgba(0,219,197,0.08)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              {teamNavItem.label}
+            </Link>
           )}
         </div>
 

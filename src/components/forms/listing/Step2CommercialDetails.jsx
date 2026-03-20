@@ -255,6 +255,13 @@ function OfficeDetails({ details, setDetail }) {
       {/* Layout & Capacity */}
       <SectionTitle>Layout & Capacity</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
+        <Field label="Suite Number" hint="Optional">
+          <Input
+            value={details.suite_number || ''}
+            onChange={e => setDetail('suite_number', e.target.value)}
+            placeholder="e.g. Suite 200"
+          />
+        </Field>
         <Field label="Number of Offices">
           <Num field="offices" placeholder="e.g. 10" details={details} setDetail={setDetail} />
         </Field>
@@ -427,6 +434,13 @@ function MedicalOfficeDetails({ details, setDetail }) {
       {/* Capacity */}
       <SectionTitle>Exam & Procedure Capacity</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
+        <Field label="Suite Number" hint="Optional">
+          <Input
+            value={details.suite_number || ''}
+            onChange={e => setDetail('suite_number', e.target.value)}
+            placeholder="e.g. Suite 300"
+          />
+        </Field>
         <Field label="Exam Rooms"><Num field="exam_rooms" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
         <Field label="Procedure Rooms"><Num field="procedure_rooms" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
         <Field label="Lab Space (SF)"><Num field="lab_sf" placeholder="e.g. 400" details={details} setDetail={setDetail} /></Field>
@@ -525,6 +539,13 @@ function RetailDetails({ details, setDetail }) {
       {/* Primary Specs */}
       <SectionTitle>Primary Retail Specs</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
+        <Field label="Suite Number" hint="Optional">
+          <Input
+            value={details.suite_number || ''}
+            onChange={e => setDetail('suite_number', e.target.value)}
+            placeholder="e.g. Suite 150"
+          />
+        </Field>
         <Field label="Total SF"><Num field="total_sf" placeholder="e.g. 2500" details={details} setDetail={setDetail} /></Field>
         <Field label="Sales Floor SF"><Num field="sales_floor_sf" placeholder="e.g. 1800" details={details} setDetail={setDetail} /></Field>
         <Field label="Street Frontage (ft)"><Num field="frontage" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>

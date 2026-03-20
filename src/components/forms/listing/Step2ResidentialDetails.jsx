@@ -223,6 +223,13 @@ function CondoDetails({ details, setDetail }) {
       <SectionTitle>Unit Details</SectionTitle>
       <BedsAndBaths details={details} setDetail={setDetail} />
       <div className="grid grid-cols-2 gap-4">
+        <Field label="Unit Number" hint="Optional">
+          <Input
+            value={details.unit_number || ''}
+            onChange={e => setDetail('unit_number', e.target.value)}
+            placeholder="e.g. Unit 804"
+          />
+        </Field>
         <Field label="Floor #"><Num field="floor_num" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
         <Field label="Total Floors in Building"><Num field="total_floors" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
         <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2015" details={details} setDetail={setDetail} /></Field>
@@ -297,6 +304,13 @@ function ApartmentDetails({ details, setDetail }) {
       <SectionTitle>Unit Details</SectionTitle>
       <BedsAndBaths details={details} setDetail={setDetail} />
       <div className="grid grid-cols-2 gap-4">
+        <Field label="Unit Number" hint="Optional">
+          <Input
+            value={details.unit_number || ''}
+            onChange={e => setDetail('unit_number', e.target.value)}
+            placeholder="e.g. Apt 3B"
+          />
+        </Field>
         <Field label="Floor #"><Num field="floor_num" placeholder="e.g. 3" details={details} setDetail={setDetail} /></Field>
         <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2018" details={details} setDetail={setDetail} /></Field>
         <Field label="Lease Term (months)"><Num field="lease_term" placeholder="e.g. 12" details={details} setDetail={setDetail} /></Field>
@@ -477,6 +491,13 @@ function ManufacturedDetails({ details, setDetail }) {
       <SectionTitle>Basic Specs</SectionTitle>
       <BedsAndBaths details={details} setDetail={setDetail} />
       <div className="grid grid-cols-2 gap-4">
+        <Field label="Space Number / Lot Number" hint="If applicable">
+          <Input
+            value={details.space_number || ''}
+            onChange={e => setDetail('space_number', e.target.value)}
+            placeholder="e.g. Space 42"
+          />
+        </Field>
         <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2005" details={details} setDetail={setDetail} /></Field>
         <Field label="Size (sqft)"><Num field="size_sqft" placeholder="e.g. 1200" details={details} setDetail={setDetail} /></Field>
       </div>

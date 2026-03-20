@@ -134,6 +134,11 @@ function toast({ ...props }) {
     },
   });
 
+  // Auto-dismiss after duration (default 4s)
+  setTimeout(() => {
+    dismiss();
+  }, props.duration || 4000);
+
   return {
     id,
     dismiss,
