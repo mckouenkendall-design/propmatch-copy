@@ -284,11 +284,11 @@ function MatchBreakdown({ match, scenario, onClose }) {
         Scoring factors
       </p>
 
-      <FactorBar label="Location" score={factors.location} note={factors.location === 100 ? '— exact city match' : '— nearby market'} />
-      <FactorBar label="Square Footage" score={factors.sqft} note={factors.sqft === 100 ? '— within required range' : '— partial size match'} />
-      <FactorBar label="Budget" score={factors.budget} note={isOverBudget ? `— ${overBy} over limit` : '— within budget'} />
+      <FactorBar label="Location" score={factors.location} note={factors.location === 100 ? 'exact city match' : 'nearby market'} />
+      <FactorBar label="Square Footage" score={factors.sqft} note={factors.sqft === 100 ? 'within required range' : 'partial size match'} />
+      <FactorBar label="Budget" score={factors.budget} note={isOverBudget ? `${overBy} over limit` : 'within budget'} />
       {factors.extra && factors.extra.map(f => (
-        <FactorBar key={f.label} label={f.label} score={f.score} note={f.score >= 85 ? '— confirmed' : f.score >= 50 ? '— partial match' : '— not matched'} />
+        <FactorBar key={f.label} label={f.label} score={f.score} note={f.score >= 85 ? 'confirmed' : f.score >= 50 ? 'partial match' : 'not matched'} />
       ))}
     </div>
   );
@@ -415,7 +415,7 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Right Column — Demo Widget */}
+        {/* Right Column - Demo Widget */}
         <div style={{ opacity: phase >= 5 ? 1 : 0, transform: phase >= 5 ? 'translateY(0)' : 'translateY(24px)', transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)' }}>
           <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', overflow: 'hidden', position: 'relative' }}>
 
@@ -436,10 +436,10 @@ export default function HeroSection() {
               </button>
             </div>
 
-            {/* Scenario display — read only fields */}
+            {/* Scenario display - read only fields */}
             <div style={{ padding: '20px 22px 16px' }}>
               <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', margin: '0 0 12px' }}>
-                Randomly generated scenario — hit Find Matches to run it
+                Randomly generated scenario. Hit Find Matches to run it
               </p>
 
               {/* Row 1: Post type + Category */}
@@ -535,7 +535,7 @@ export default function HeroSection() {
                         {matches.length} matches found
                       </p>
                       <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>
-                        {scenario.propType} · {scenario.city} · up to {scenario.budget}
+                        {scenario.propType}, {scenario.city}, up to {scenario.budget}
                       </p>
                     </div>
                   </div>
@@ -560,7 +560,7 @@ export default function HeroSection() {
                       >
                         <div>
                           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.8)', margin: '0 0 2px' }}>{r.address}</p>
-                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>{r.price} · <span style={{ color: ACCENT, fontSize: '10px' }}>View breakdown →</span></p>
+                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>{r.price} • <span style={{ color: ACCENT, fontSize: '10px' }}>View breakdown →</span></p>
                         </div>
                         <span style={{
                           fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 500, color: ACCENT,
