@@ -36,11 +36,11 @@ export default function TopNav() {
     { label: 'Control Center', path: '/Dashboard' },
     { label: 'My Matches', path: '/Matches' },
     { label: 'Listings / Requirements', path: '/Inventory' },
-    { label: 'Groups', path: '/Groups' },
+    { label: 'Fish Tanks', path: '/Groups' },
     { label: 'Messages', path: '/Messages' },
   ];
 
-  const teamNavItem = isBrokerageMember ? { label: 'Teams', path: '/Teams' } : null;
+  const teamNavItem = isBrokerageMember ? { label: 'Brokerage', path: '/Teams' } : null;
 
   const handleLogout = async () => {
     await base44.auth.logout();
