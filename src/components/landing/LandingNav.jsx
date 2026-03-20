@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { base44 } from '@/api/base44Client';
 
 const NAV_LINKS = [
   { label: 'Features', href: 'features' },
@@ -68,6 +69,24 @@ export default function LandingNav() {
                 {link.label}
               </button>
             ))}
+            <button
+              onClick={() => base44.auth.redirectToLogin()}
+              style={{
+                fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
+                textTransform: 'uppercase', letterSpacing: '0.05em',
+                color: '#111827', background: 'transparent',
+                padding: '9px 22px', borderRadius: '6px', border: `1px solid ${ACCENT}`,
+                cursor: 'pointer', transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = ACCENT;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              Sign In
+            </button>
             <Link
               to="/Onboarding"
               style={{
@@ -115,6 +134,11 @@ export default function LandingNav() {
               {link.label}
             </button>
           ))}
+          <button
+            onClick={() => { setMenuOpen(false); base44.auth.redirectToLogin(); }}
+            style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: '#111827', background: 'transparent', border: `1px solid ${ACCENT}`, padding: '12px 22px', borderRadius: '6px', cursor: 'pointer', textAlign: 'center' }}>
+            Sign In
+          </button>
           <Link to="/Onboarding"
             style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: '#111827', background: ACCENT, padding: '12px 22px', borderRadius: '6px', textDecoration: 'none', textAlign: 'center' }}
             onClick={() => setMenuOpen(false)}>

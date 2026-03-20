@@ -211,6 +211,15 @@ function Step1({ data, setData, errors, setErrors }) {
       </div>
 
       <div>
+        <FieldLabel>Username</FieldLabel>
+        <StyledInput
+          value={data.username}
+          error={errors.username}
+          onChange={e => { setData({ ...data, username: e.target.value }); clearError('username'); }}
+        />
+      </div>
+
+      <div>
         <FieldLabel>State</FieldLabel>
         <StyledSelect
           value={data.state}
@@ -355,7 +364,7 @@ function Step2({ data, setData }) {
 }
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
-const STEP1_INIT = { fullName: '', email: '', phone: '', state: '', role: '', brokerageName: '', employingBrokerId: '', licenseNumber: '' };
+const STEP1_INIT = { fullName: '', email: '', phone: '', username: '', state: '', role: '', brokerageName: '', employingBrokerId: '', licenseNumber: '' };
 const STEP2_INIT = { propertyCategories: [], catOther: '', transactionTypes: [], txOther: '' };
 
 export default function Onboarding() {
@@ -368,7 +377,7 @@ export default function Onboarding() {
   const navigate = useNavigate();
 
   // Step 1 all-fields check
-  const step1Filled = step1.fullName && step1.email && step1.phone && step1.state &&
+  const step1Filled = step1.fullName && step1.email && step1.phone && step1.username && step1.state &&
     step1.role && step1.brokerageName && step1.employingBrokerId && step1.licenseNumber;
 
   // Step 2 validity
@@ -394,12 +403,24 @@ export default function Onboarding() {
       return;
     }
 
+    // Check username uniqueness
+    try {
+      const existingUsers = await base44.entities.User.filter({ username: step1.username.trim() });
+      if (existingUsers.length > 0) {
+        setErrors({ username: 'This username is already taken. Please choose another.' });
+        return;
+      }
+    } catch (e) {
+      // If check fails, proceed anyway
+    }
+
     // Save to user profile
     try {
       await base44.auth.updateMe({
         full_name: step1.fullName,
         email: step1.email,
         phone: step1.phone,
+        username: step1.username.trim(),
         state: step1.state,
         role_type: step1.role.toLowerCase(),
         brokerage_name: step1.brokerageName,

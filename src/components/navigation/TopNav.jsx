@@ -43,7 +43,7 @@ export default function TopNav() {
   const teamNavItem = isBrokerageMember ? { label: 'Brokerage', path: '/Teams' } : null;
 
   const handleLogout = async () => {
-    await base44.auth.logout();
+    await base44.auth.logout('/Landing');
   };
 
   return (
