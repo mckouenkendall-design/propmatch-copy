@@ -30,7 +30,7 @@ export default function TopNav() {
 
   const mainNavItems = [
     { label: 'Control Center', path: '/Dashboard' },
-    { label: 'My Matches', path: '/Dealboard' },
+    { label: 'My Matches', path: '/Matches' },
     { label: 'Listings / Requirements', path: '/Inventory' },
     { label: 'Groups', path: '/Groups' },
     { label: 'Messages', path: '/Messages' },

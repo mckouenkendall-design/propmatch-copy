@@ -220,6 +220,50 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Newsletter Placeholder */}
+      <Card style={{
+        background: `linear-gradient(135deg, ${ACCENT}08 0%, rgba(255,255,255,0.02) 100%)`,
+        border: `1px solid ${ACCENT}20`,
+        marginBottom: '48px'
+      }}>
+        <CardContent style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '10px',
+              background: ACCENT,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <TrendingUp style={{ width: '24px', height: '24px', color: '#111827' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: '18px',
+                fontWeight: 500,
+                color: 'white',
+                margin: '0 0 8px'
+              }}>
+                Market Insights & Updates
+              </h3>
+              <p style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                color: 'rgba(255,255,255,0.6)',
+                margin: 0,
+                lineHeight: 1.6
+              }}>
+                Stay tuned for AI-powered market analysis, trending properties, and platform announcements delivered directly to your dashboard.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Recent Activity Timeline */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>

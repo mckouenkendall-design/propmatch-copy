@@ -19,6 +19,7 @@ import Settings from './pages/Settings';
 import BrokerDashboard from './pages/BrokerDashboard';
 import GroupDetail from './pages/GroupDetail';
 import Inventory from './pages/Inventory';
+import Matches from './pages/Matches';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -106,6 +107,14 @@ const AuthenticatedApp = () => {
         element={
           <LayoutWrapper currentPageName="Inventory">
             <Inventory />
+          </LayoutWrapper>
+        } 
+      />
+      <Route 
+        path="/Matches" 
+        element={
+          <LayoutWrapper currentPageName="Matches">
+            <Matches />
           </LayoutWrapper>
         } 
       />

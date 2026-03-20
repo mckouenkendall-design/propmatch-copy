@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Search, Send, Paperclip, Phone, Video, MoreVertical, Building2, MapPin } from 'lucide-react';
+import { Search, Send, Paperclip, Phone, Video, MoreVertical, Plus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import StartConversationModal from '@/components/messages/StartConversationModal';
 
 const ACCENT = '#00DBC5';
 
 export default function Messages() {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messageText, setMessageText] = useState('');
+  const [showStartConversation, setShowStartConversation] = useState(false);
 
   // Mock conversations
   const mockConversations = [
@@ -91,15 +93,33 @@ export default function Messages() {
       }}>
         {/* Search Header */}
         <div style={{ padding: '24px 20px 16px' }}>
-          <h2 style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: '24px',
-            fontWeight: 500,
-            color: 'white',
-            margin: '0 0 16px'
-          }}>
-            Messages
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h2 style={{
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontSize: '24px',
+              fontWeight: 500,
+              color: 'white',
+              margin: 0
+            }}>
+              Messages
+            </h2>
+            <button
+              onClick={() => setShowStartConversation(true)}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                background: ACCENT,
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Plus style={{ width: '18px', height: '18px', color: '#111827' }} />
+            </button>
+          </div>
           
           <div style={{
             position: 'relative',
@@ -432,6 +452,16 @@ export default function Messages() {
           </div>
         )}
       </div>
+
+      {showStartConversation && (
+        <StartConversationModal
+          onClose={() => setShowStartConversation(false)}
+          onSelectUser={(user) => {
+            // TODO: Create or select conversation with this user
+            console.log('Starting conversation with:', user);
+          }}
+        />
+      )}
     </div>
   );
 }

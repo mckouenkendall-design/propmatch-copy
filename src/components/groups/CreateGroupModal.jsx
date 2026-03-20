@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Upload } from 'lucide-react';
 
 const FOCUS_OPTIONS = [
   { value: 'commercial', label: 'Commercial' },
@@ -21,9 +21,25 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
     focus_category: 'general',
     group_type: 'public',
     rules: '',
+    cover_image_url: '',
   });
+  const [uploading, setUploading] = useState(false);
 
   const update = patch => setForm(prev => ({ ...prev, ...patch }));
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      update({ cover_image_url: file_url });
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const mutation = useMutation({
     mutationFn: async (data) => {
@@ -42,7 +58,7 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
     onSuccess,
   });
 
-  const canSubmit = form.name.trim().length > 0;
+  const canSubmit = form.name.trim().length > 0 && form.cover_image_url.trim().length > 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -55,6 +71,36 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
         </div>
 
         <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+          <div className="space-y-1.5">
+            <Label>Cover Photo <span className="text-red-500">*</span></Label>
+            <div className="relative">
+              {form.cover_image_url ? (
+                <div className="relative">
+                  <img src={form.cover_image_url} alt="Cover" className="w-full h-32 object-cover rounded-lg" />
+                  <button
+                    type="button"
+                    onClick={() => update({ cover_image_url: '' })}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-500">{uploading ? 'Uploading...' : 'Click to upload cover photo'}</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label>Group Name <span className="text-red-500">*</span></Label>
             <Input value={form.name} onChange={e => update({ name: e.target.value })} placeholder="e.g. Detroit Commercial RE Group" />

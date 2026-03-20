@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus, Search as SearchIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import GroupsFeed from '@/components/groups/GroupsFeed';
+import GroupsDiscover from '@/components/groups/GroupsDiscover';
+import YourGroupsGrid from '@/components/groups/YourGroupsGrid';
 import CreateGroupModal from '@/components/groups/CreateGroupModal';
 
 const ACCENT = '#00DBC5';
@@ -12,6 +14,7 @@ export default function Groups() {
   const [currentUser, setCurrentUser] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeView, setActiveView] = useState('feed');
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -33,11 +36,6 @@ export default function Groups() {
 
   const myGroupIds = myMemberships.map(m => m.group_id);
   const myGroups = allGroups.filter(g => myGroupIds.includes(g.id));
-  const otherGroups = allGroups.filter(g => !myGroupIds.includes(g.id));
-
-  const filteredOtherGroups = searchQuery
-    ? otherGroups.filter(g => g.name?.toLowerCase().includes(searchQuery.toLowerCase()) || g.description?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : otherGroups;
 
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 64px)', background: '#0E1318' }}>
@@ -87,59 +85,56 @@ export default function Groups() {
             />
           </div>
 
-          {/* Quick Links */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '28px' }}>
+          {/* Navigation Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '20px' }}>
             <button
+              onClick={() => setActiveView('feed')}
               style={{
                 padding: '10px 14px',
-                background: 'transparent',
-                border: 'none',
+                background: activeView === 'feed' ? `${ACCENT}15` : 'transparent',
+                border: activeView === 'feed' ? `1px solid ${ACCENT}30` : 'none',
                 borderRadius: '6px',
                 textAlign: 'left',
-                color: 'rgba(255,255,255,0.7)',
+                color: activeView === 'feed' ? ACCENT : 'rgba(255,255,255,0.7)',
                 cursor: 'pointer',
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '14px',
                 transition: 'all 0.2s ease'
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               Your Feed
             </button>
             <button
+              onClick={() => setActiveView('discover')}
               style={{
                 padding: '10px 14px',
-                background: 'transparent',
-                border: 'none',
+                background: activeView === 'discover' ? `${ACCENT}15` : 'transparent',
+                border: activeView === 'discover' ? `1px solid ${ACCENT}30` : 'none',
                 borderRadius: '6px',
                 textAlign: 'left',
-                color: 'rgba(255,255,255,0.7)',
+                color: activeView === 'discover' ? ACCENT : 'rgba(255,255,255,0.7)',
                 cursor: 'pointer',
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '14px',
                 transition: 'all 0.2s ease'
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               Discover
             </button>
             <button
+              onClick={() => setActiveView('your-groups')}
               style={{
                 padding: '10px 14px',
-                background: 'transparent',
-                border: 'none',
+                background: activeView === 'your-groups' ? `${ACCENT}15` : 'transparent',
+                border: activeView === 'your-groups' ? `1px solid ${ACCENT}30` : 'none',
                 borderRadius: '6px',
                 textAlign: 'left',
-                color: 'rgba(255,255,255,0.7)',
+                color: activeView === 'your-groups' ? ACCENT : 'rgba(255,255,255,0.7)',
                 cursor: 'pointer',
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '14px',
                 transition: 'all 0.2s ease'
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               Your Groups
             </button>
@@ -253,8 +248,10 @@ export default function Groups() {
 
       {/* Main Content Area */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 32px' }}>
-          <GroupsFeed myGroupIds={myGroupIds} />
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 32px' }}>
+          {activeView === 'feed' && <GroupsFeed myGroupIds={myGroupIds} />}
+          {activeView === 'discover' && <GroupsDiscover myGroupIds={myGroupIds} />}
+          {activeView === 'your-groups' && <YourGroupsGrid groups={myGroups} />}
         </div>
       </div>
 
