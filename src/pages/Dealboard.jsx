@@ -150,15 +150,15 @@ export default function Dealboard() {
         <div>
           <h1 style={{ 
             fontFamily: "'Plus Jakarta Sans', sans-serif", 
-            fontSize: '42px', 
-            fontWeight: 300, 
+            fontSize: '28px', 
+            fontWeight: 400, 
             color: 'white', 
-            margin: '0 0 8px' 
+            margin: '0 0 6px' 
           }}>
-            Deal Pipeline
+            My Matches
           </h1>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-            Manage your opportunities from prospect to close
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+            View matched listings and requirements
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
