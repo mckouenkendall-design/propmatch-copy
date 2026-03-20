@@ -222,7 +222,7 @@ export default function PricingSection() {
                     <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '52px', color: '#111827', lineHeight: 1 }}>$849</span>
                     <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#9CA3AF' }}>/ yr</span>
                   </div>
-                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Billed annually · $70.75/mo</p>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Billed annually, $70.75/mo</p>
                 </>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
@@ -295,7 +295,7 @@ export default function PricingSection() {
             {/* Agent count input */}
             <div style={{ marginBottom: '16px' }}>
               <label style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#374151', display: 'block', marginBottom: '6px' }}>
-                How many agents will use PropMatch?
+               How many agents will use PropMatch?
               </label>
               <input
                 type="text"
@@ -321,7 +321,7 @@ export default function PricingSection() {
                 }}
                 onFocus={e => e.currentTarget.style.borderColor = '#00DBC5'}
               />
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Minimum 2 agents · yourself included.</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>Minimum 2 agents, yourself included.</p>
             </div>
 
             {/* Dynamic price display */}
@@ -334,7 +334,7 @@ export default function PricingSection() {
                     </span>
                     <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#9CA3AF' }}>/ yr</span>
                   </div>
-                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>$59 / agent / mo · billed as ${(agentCount * 708).toLocaleString()} / yr</p>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>$59 / agent / mo, billed as ${(agentCount * 708).toLocaleString()} / yr</p>
                   <span style={{
                     display: 'inline-block', marginTop: '6px',
                     fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 500,
@@ -362,7 +362,7 @@ export default function PricingSection() {
             </div>
 
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 20px' }}>
-              Give your agents a competitive edge that closes more deals — and a reason to choose your brokerage over the next one. PropMatch becomes part of your value proposition when recruiting top talent.
+              Give your agents a competitive edge that closes more deals and a reason to choose your brokerage over the next one. PropMatch becomes part of your value proposition when recruiting top talent.
             </p>
 
             <Link

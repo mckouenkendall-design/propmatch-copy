@@ -396,12 +396,12 @@ export default function HeroSection() {
 
           <div style={{ opacity: phase >= 3 ? 1 : 0, transform: phase >= 3 ? 'translateY(0)' : 'translateY(24px)', transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)', marginBottom: '36px' }}>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '17px', fontWeight: 300, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, maxWidth: '440px', margin: 0 }}>
-              PropMatch intelligently pairs property listings with client requirements — so you spend less time searching and more time closing.
+              PropMatch intelligently pairs property listings with client requirements so you spend less time searching and more time closing.
             </p>
           </div>
 
           <div style={{ opacity: phase >= 4 ? 1 : 0, transform: phase >= 4 ? 'translateY(0)' : 'translateY(24px)', transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-            <Link to="/Dashboard" style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#111827', background: ACCENT, padding: '13px 28px', borderRadius: '6px', textDecoration: 'none', transition: 'background 0.2s ease' }}
+            <Link to="/Onboarding" style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#111827', background: ACCENT, padding: '13px 28px', borderRadius: '6px', textDecoration: 'none', transition: 'background 0.2s ease' }}
               onMouseEnter={e => e.currentTarget.style.background = '#00b8a7'}
               onMouseLeave={e => e.currentTarget.style.background = ACCENT}>
               Join PropMatch

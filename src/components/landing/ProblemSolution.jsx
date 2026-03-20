@@ -124,7 +124,7 @@ function LineChart({ visible }) {
           Match Rate Growth — Sample Data
         </p>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.2)', margin: 0 }}>
-          % of active listings with at least one qualified match surfaced by PropMatch
+          % of active listings with at least one qualified match
         </p>
       </div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
@@ -225,7 +225,7 @@ export default function ProblemSolution() {
             Agents are drowning in disconnected sources.
           </h2>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 300, color: 'rgba(255,255,255,0.5)', lineHeight: 1.75, margin: '0 0 28px' }}>
-            When a client hands you a requirement, finding the right match means manually searching across every platform you have — and hoping nothing falls through the cracks.
+            When a client hands you a requirement, finding the right match means manually searching across every platform you have and hoping nothing falls through the cracks.
           </p>
           {/* Source tags */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '36px' }}>
@@ -260,7 +260,7 @@ export default function ProblemSolution() {
             One intelligent platform. Every match, ranked.
           </h2>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 300, color: 'rgba(255,255,255,0.5)', lineHeight: 1.75, margin: 0 }}>
-            PropMatch is a professional-grade platform that automatically calculates compatibility between every listing and every client requirement in your portfolio — surfacing ranked, actionable matches in real time.
+            PropMatch is a professional-grade platform that automatically calculates compatibility between every listing and every client requirement in your portfolio, surfacing ranked, actionable matches in real time.
           </p>
           <LineChart visible={visible} />
         </div>
