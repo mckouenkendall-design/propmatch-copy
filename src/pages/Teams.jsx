@@ -90,10 +90,10 @@ export default function Teams() {
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '48px 24px' }}>
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '28px', fontWeight: 400, color: 'white', margin: '0 0 6px' }}>
-          Teams
+          Brokerage
         </h1>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-          Collaborate with your brokerage team
+          Collaborate with your brokerage
         </p>
       </div>
 
@@ -101,15 +101,15 @@ export default function Teams() {
         <TabsList style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
           <TabsTrigger value="pipeline" style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif" }} className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]">
             <Users style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-            Team Pipeline
+            Brokerage Pipeline
           </TabsTrigger>
           <TabsTrigger value="announcements" style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif" }} className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]">
             <Megaphone style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-            Team Announcements
+            Brokerage Announcements
           </TabsTrigger>
           <TabsTrigger value="calls" style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif" }} className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]">
             <Video style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-            Team Calls
+            Brokerage Calls
           </TabsTrigger>
           <TabsTrigger value="resources" style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif" }} className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]">
             <FolderOpen style={{ width: '16px', height: '16px', marginRight: '8px' }} />
@@ -129,10 +129,10 @@ export default function Teams() {
             <Tabs value={pipelineView} onValueChange={setPipelineView}>
               <TabsList style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <TabsTrigger value="listings" style={{ color: 'rgba(255,255,255,0.6)' }} className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]">
-                  Team Listings ({teamListings.length})
+                  Brokerage Listings ({teamListings.length})
                 </TabsTrigger>
                 <TabsTrigger value="requirements" style={{ color: 'rgba(255,255,255,0.6)' }} className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]">
-                  Team Requirements ({teamRequirements.length})
+                  Brokerage Requirements ({teamRequirements.length})
                 </TabsTrigger>
               </TabsList>
 
@@ -141,7 +141,7 @@ export default function Teams() {
                   {teamListings.length === 0 ? (
                     <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', gridColumn: '1 / -1' }}>
                       <CardContent style={{ padding: '48px', textAlign: 'center' }}>
-                        <p style={{ color: 'rgba(255,255,255,0.5)' }}>No team listings yet</p>
+                        <p style={{ color: 'rgba(255,255,255,0.5)' }}>No brokerage listings yet</p>
                       </CardContent>
                     </Card>
                   ) : (
@@ -170,7 +170,7 @@ export default function Teams() {
                   {teamRequirements.length === 0 ? (
                     <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', gridColumn: '1 / -1' }}>
                       <CardContent style={{ padding: '48px', textAlign: 'center' }}>
-                        <p style={{ color: 'rgba(255,255,255,0.5)' }}>No team requirements yet</p>
+                        <p style={{ color: 'rgba(255,255,255,0.5)' }}>No brokerage requirements yet</p>
                       </CardContent>
                     </Card>
                   ) : (

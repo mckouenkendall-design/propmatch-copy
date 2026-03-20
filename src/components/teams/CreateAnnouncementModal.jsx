@@ -17,7 +17,6 @@ export default function CreateAnnouncementModal({ onClose }) {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [pinned, setPinned] = useState(false);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.TeamAnnouncement.create(data),
@@ -38,7 +37,7 @@ export default function CreateAnnouncementModal({ onClose }) {
       content: content.trim(),
       author_name: user?.full_name,
       author_email: user?.email,
-      pinned,
+      pinned: false,
     });
   };
 
@@ -74,7 +73,7 @@ export default function CreateAnnouncementModal({ onClose }) {
           borderBottom: '1px solid rgba(255,255,255,0.1)',
         }}>
           <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: 0 }}>
-            Post Team Announcement
+            Post Brokerage Announcement
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
             <X style={{ width: '20px', height: '20px' }} />
@@ -103,19 +102,6 @@ export default function CreateAnnouncementModal({ onClose }) {
               rows={6}
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
             />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input
-              type="checkbox"
-              id="pinned"
-              checked={pinned}
-              onChange={e => setPinned(e.target.checked)}
-              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-            />
-            <Label htmlFor="pinned" style={{ color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>
-              Pin this announcement to the top
-            </Label>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>

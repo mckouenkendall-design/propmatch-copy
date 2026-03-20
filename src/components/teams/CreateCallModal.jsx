@@ -80,7 +80,7 @@ export default function CreateCallModal({ onClose }) {
           borderBottom: '1px solid rgba(255,255,255,0.1)',
         }}>
           <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: 0 }}>
-            Schedule Team Call
+            Schedule Brokerage Call
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
             <X style={{ width: '20px', height: '20px' }} />
