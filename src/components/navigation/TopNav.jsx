@@ -1,98 +1,249 @@
 import React, { useState } from 'react';
-import { Menu, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/api/base44Client';
+import { 
+  Bell, 
+  Search, 
+  User, 
+  Settings, 
+  LogOut, 
+  Building2,
+  Users,
+  ChevronDown
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+const ACCENT = '#00DBC5';
 
 export default function TopNav() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const isBroker = user?.role === 'admin';
 
-  const menuItems = [
-    { name: 'Home', path: 'Dashboard' },
-    { name: 'Groups', path: 'Groups' },
-    { name: 'Dealboard', path: 'Dealboard' },
-    { name: 'My Posts', path: 'MyPosts' },
-    { name: 'My Templates', path: 'MyTemplates' },
-    { name: 'Messages', path: 'Messages' }
+  const mainNavItems = [
+    { label: 'Dashboard', path: '/Dashboard' },
+    { label: 'Dealboard', path: '/Dealboard' },
+    { label: 'Listings', path: '/Listings' },
+    { label: 'Requirements', path: '/Requirements' },
+    { label: 'Groups', path: '/Groups' },
+    { label: 'Messages', path: '/Messages' },
   ];
 
+  const handleLogout = async () => {
+    await base44.auth.logout();
+  };
+
   return (
-    <>
-      {/* Top Navigation Bar */}
-      <div className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
-        <div className="flex items-center justify-between px-4 py-3">
-          {/* Hamburger Menu - Left */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Menu className="w-6 h-6 text-gray-700" />
-          </button>
+    <nav style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '64px',
+      background: 'rgba(14, 19, 24, 0.95)',
+      backdropFilter: 'blur(12px)',
+      borderBottom: '1px solid rgba(255,255,255,0.08)',
+      zIndex: 1000,
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0 32px',
+    }}>
+      <div style={{ maxWidth: '1400px', width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        
+        {/* Logo */}
+        <Link to="/Dashboard" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="140" height="28">
+            <g transform="translate(20,20)">
+              <path d="M -16,0 Q 0,-7 16,0 Q 19,-1.5 22,-5 Q 20,-1 16,0 Q 19,1.5 22,5 Q 20,1 16,0 Q 0,7 -16,0 Z"
+                fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
+            </g>
+            <text fontFamily="'Segoe UI', Arial, sans-serif" fontSize="13" letterSpacing="0.3" x="44" y="24">
+              <tspan fill="#FFFFFF" fontWeight="300">Prop</tspan><tspan fill={ACCENT} fontWeight="600">Match</tspan>
+            </text>
+          </svg>
+        </Link>
 
-          {/* Logo/Title - Center */}
-          <Link to={createPageUrl('Dashboard')} className="absolute left-1/2 transform -translate-x-1/2">
-            <h1 className="text-xl font-bold" style={{ color: 'var(--tiffany-blue)' }}>
-              PropMatch
-            </h1>
-          </Link>
-
-          {/* Empty space for balance */}
-          <div className="w-10"></div>
-        </div>
-      </div>
-
-      {/* Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold" style={{ color: 'var(--tiffany-blue)' }}>
-              PropMatch
-            </h2>
-            <p className="text-xs text-gray-500 mt-1">Real Estate Matchmaker</p>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-700" />
-          </button>
-        </div>
-
-        <nav className="p-4 space-y-1">
-          {menuItems.map((item) => (
+        {/* Center Nav */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {mainNavItems.map(item => (
             <Link
               key={item.path}
-              to={createPageUrl(item.path)}
-              onClick={() => setSidebarOpen(false)}
-              className="block px-4 py-3 rounded-lg text-gray-700 hover:text-white transition-all duration-200"
+              to={item.path}
               style={{
-                '--hover-glow': 'var(--tiffany-blue-light)'
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                fontWeight: 400,
+                color: 'rgba(255,255,255,0.7)',
+                textDecoration: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                transition: 'all 0.2s ease',
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--tiffany-blue)';
-                e.currentTarget.style.boxShadow = '0 0 15px var(--tiffany-blue-light)';
+              onMouseEnter={e => {
+                e.currentTarget.style.color = ACCENT;
+                e.currentTarget.style.background = 'rgba(0,219,197,0.08)';
               }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.boxShadow = 'none';
+              onMouseLeave={e => {
+                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                e.currentTarget.style.background = 'transparent';
               }}
             >
-              {item.name}
+              {item.label}
             </Link>
           ))}
-        </nav>
+          
+          {/* Brokerage Dropdown (if broker) */}
+          {isBroker && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  color: 'rgba(255,255,255,0.7)',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = ACCENT;
+                  e.currentTarget.style.background = 'rgba(0,219,197,0.08)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                  e.currentTarget.style.background = 'transparent';
+                }}>
+                  Brokerage <ChevronDown style={{ width: '14px', height: '14px' }} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <DropdownMenuItem onClick={() => navigate('/BrokerDashboard')} style={{ color: 'rgba(255,255,255,0.85)' }}>
+                  <Building2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                  Admin Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/TeamCollaboration')} style={{ color: 'rgba(255,255,255,0.85)' }}>
+                  <Users style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                  Team Collaboration
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+
+        {/* Right Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {/* Search */}
+          <button
+            onClick={() => setSearchOpen(!searchOpen)}
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '6px',
+              padding: '8px 12px',
+              cursor: 'pointer',
+              color: 'rgba(255,255,255,0.5)',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = ACCENT;
+              e.currentTarget.style.color = ACCENT;
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+            }}
+          >
+            <Search style={{ width: '18px', height: '18px' }} />
+          </button>
+
+          {/* Notifications */}
+          <button style={{
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            position: 'relative',
+            padding: '8px',
+          }}>
+            <Bell style={{ width: '20px', height: '20px', color: 'rgba(255,255,255,0.7)' }} />
+            <span style={{
+              position: 'absolute',
+              top: '6px',
+              right: '6px',
+              width: '8px',
+              height: '8px',
+              background: ACCENT,
+              borderRadius: '50%',
+              border: '2px solid #0E1318',
+            }} />
+          </button>
+
+          {/* Profile Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: ACCENT,
+                border: '2px solid rgba(0,219,197,0.3)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#111827',
+              }}>
+                {user?.full_name?.[0]?.toUpperCase() || 'U'}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)', minWidth: '200px' }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: 0 }}>
+                  {user?.full_name || 'User'}
+                </p>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>
+                  {user?.email}
+                </p>
+              </div>
+              <DropdownMenuItem onClick={() => navigate('/Profile')} style={{ color: 'rgba(255,255,255,0.85)', cursor: 'pointer' }}>
+                <User style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                My Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/Settings')} style={{ color: 'rgba(255,255,255,0.85)', cursor: 'pointer' }}>
+                <Settings style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator style={{ background: 'rgba(255,255,255,0.08)' }} />
+              <DropdownMenuItem onClick={handleLogout} style={{ color: '#ef4444', cursor: 'pointer' }}>
+                <LogOut style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
-    </>
+
+      <style>{`
+        @media (max-width: 1024px) {
+          nav > div > div:nth-child(2) { display: none !important; }
+        }
+      `}</style>
+    </nav>
   );
 }
