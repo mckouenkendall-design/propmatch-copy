@@ -89,17 +89,16 @@ export default function Settings() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0E1318', paddingTop: '64px' }}>
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px' }}>
-        
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '36px', fontWeight: 300, color: 'white', margin: '0 0 8px' }}>
-            Settings
-          </h1>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-            Manage your account settings and preferences
-          </p>
-        </div>
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px' }}>
+      
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '28px', fontWeight: 400, color: 'white', margin: '0 0 6px' }}>
+          Settings
+        </h1>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+          Manage your account settings and preferences
+        </p>
+      </div>
 
         <Tabs defaultValue="account" style={{ width: '100%' }}>
           <TabsList style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
@@ -417,6 +416,5 @@ export default function Settings() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
   );
 }
