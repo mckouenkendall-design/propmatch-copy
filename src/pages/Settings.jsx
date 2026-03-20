@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -54,11 +54,32 @@ export default function Settings() {
   const [theme, setTheme] = useState(user?.theme || 'dark');
   const [language, setLanguage] = useState(user?.language || 'en');
 
+  // Sync state with updated user data
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name || '');
+      setEmail(user.email || '');
+      setProfileVisibility(user.profile_visibility || 'public');
+      setShowEmail(user.show_email !== false);
+      setShowPhone(user.show_phone !== false);
+      setAllowMessages(user.allow_messages !== false);
+      setEmailNotifications(user.email_notifications !== false);
+      setMatchAlerts(user.match_alerts !== false);
+      setGroupNotifications(user.group_notifications !== false);
+      setMessageNotifications(user.message_notifications !== false);
+      setTheme(user.theme || 'dark');
+      setLanguage(user.language || 'en');
+    }
+  }, [user]);
+
   const updateMutation = useMutation({
     mutationFn: (data) => base44.auth.updateMe(data),
     onSuccess: () => {
       queryClient.invalidateQueries(['user']);
-      toast({ title: 'Settings updated successfully' });
+      toast({ 
+        title: 'Settings updated successfully',
+        duration: 4000,
+      });
     },
   });
 
