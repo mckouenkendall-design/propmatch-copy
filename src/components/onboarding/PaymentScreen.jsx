@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 
 const ACCENT = '#00DBC5';
 
@@ -44,17 +45,53 @@ function XIcon() {
   );
 }
 
-export default function PaymentScreen({ isBroker, onComplete }) {
+export default function PaymentScreen({ isBroker, employingBrokerNumber, onComplete }) {
+  const { user } = useAuth();
   const [isAnnual, setIsAnnual] = useState(false);
   const [agentCount, setAgentCount] = useState(isBroker ? 2 : 2);
   const [agentInput, setAgentInput] = useState('2');
   const [selected, setSelected] = useState(isBroker ? 'brokerage' : null);
-
   const [loading, setLoading] = useState(false);
+  const [rosterCheck, setRosterCheck] = useState(null);
+  const [checkingRoster, setCheckingRoster] = useState(true);
+
+  // Check if user is on a broker's roster
+  useEffect(() => {
+    async function checkRoster() {
+      if (!user?.email || !employingBrokerNumber) {
+        setCheckingRoster(false);
+        return;
+      }
+
+      try {
+        const roster = await base44.entities.BrokerageRoster.filter({
+          employing_broker_number: employingBrokerNumber,
+          agent_email: user.email.toLowerCase(),
+          status: 'active',
+        });
+
+        if (roster.length > 0) {
+          setRosterCheck(roster[0]);
+        }
+      } catch (error) {
+        console.error('Roster check error:', error);
+      } finally {
+        setCheckingRoster(false);
+      }
+    }
+
+    checkRoster();
+  }, [user?.email, employingBrokerNumber]);
 
   const handleContinue = async () => {
     if (!selected) return;
     
+    // If on broker's roster, bypass payment
+    if (rosterCheck && selected === 'broker_sponsored') {
+      onComplete('broker_sponsored', rosterCheck);
+      return;
+    }
+
     // Free plan — skip Stripe
     if (selected === 'free') {
       onComplete(selected);
@@ -108,6 +145,20 @@ export default function PaymentScreen({ isBroker, onComplete }) {
     };
   };
 
+  if (checkingRoster) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#080C10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '48px', height: '48px', border: `3px solid ${ACCENT}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>
+            Checking your broker's plan...
+          </p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#080C10', display: 'flex', flexDirection: 'column' }}>
       {/* Nav */}
@@ -126,6 +177,54 @@ export default function PaymentScreen({ isBroker, onComplete }) {
       {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '48px 24px 80px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          {/* Broker-Sponsored Banner */}
+          {rosterCheck && (
+            <div style={{
+              background: `linear-gradient(135deg, rgba(0,219,197,0.15) 0%, rgba(0,219,197,0.05) 100%)`,
+              border: `2px solid ${ACCENT}`,
+              borderRadius: '12px',
+              padding: '24px',
+              marginBottom: '32px',
+              textAlign: 'center',
+            }}>
+              <h3 style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: '24px',
+                fontWeight: 300,
+                color: 'white',
+                margin: '0 0 8px',
+              }}>
+                ✨ Great News!
+              </h3>
+              <p style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '15px',
+                color: 'rgba(255,255,255,0.7)',
+                margin: '0 0 16px',
+              }}>
+                Your broker at <strong style={{ color: ACCENT }}>{rosterCheck.brokerage_name}</strong> has already covered your subscription.
+              </p>
+              <button
+                onClick={() => setSelected('broker_sponsored')}
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: '#111827',
+                  background: ACCENT,
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '12px 32px',
+                  cursor: 'pointer',
+                }}
+              >
+                Activate Your Access →
+              </button>
+            </div>
+          )}
+
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <span style={{
@@ -133,7 +232,7 @@ export default function PaymentScreen({ isBroker, onComplete }) {
               letterSpacing: '0.1em', color: ACCENT, border: '1px solid rgba(0,219,197,0.4)',
               padding: '4px 12px', borderRadius: '4px', background: 'rgba(0,219,197,0.06)',
               display: 'inline-block', marginBottom: '20px',
-            }}>Choose Your Plan</span>
+            }}>{rosterCheck ? 'Or Choose Your Own Plan' : 'Choose Your Plan'}</span>
             <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: 'clamp(26px, 3.5vw, 42px)', color: '#FFFFFF', lineHeight: 1.15, margin: '0 0 12px' }}>
               Simple, transparent plans.
             </h2>
@@ -244,8 +343,16 @@ export default function PaymentScreen({ isBroker, onComplete }) {
               </div>
             </div>
 
-            {/* Brokerage — Featured */}
-            <div onClick={() => setSelected('brokerage')} style={cardStyle('brokerage', true)}>
+            {/* Brokerage — Featured (or disabled if not broker) */}
+            <div 
+              onClick={() => !rosterCheck && setSelected('brokerage')} 
+              style={{
+                ...cardStyle('brokerage', true),
+                opacity: rosterCheck ? 0.5 : 1,
+                cursor: rosterCheck ? 'not-allowed' : 'pointer',
+                pointerEvents: rosterCheck ? 'none' : 'auto',
+              }}
+            >
               {/* Most Popular badge */}
               <div style={{
                 position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
