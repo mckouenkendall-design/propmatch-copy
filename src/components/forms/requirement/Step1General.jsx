@@ -33,24 +33,24 @@ export default function ReqStep1({ data, update, onNext }) {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label>Property Type <span className="text-red-500">*</span></Label>
+        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Property Type <span className="text-red-500">*</span></Label>
         <div className="grid grid-cols-3 gap-3">
           {types.map(({ value, label, icon: Icon }) => (
             <button key={value} type="button" onClick={() => update({ property_type: value })}
               className="flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-2"
               style={{
-                borderColor: data.property_type === value ? 'var(--tiffany-blue)' : '#e5e7eb',
-                backgroundColor: data.property_type === value ? '#e6f7f5' : 'white',
+                borderColor: data.property_type === value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
+                backgroundColor: data.property_type === value ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
               }}>
-              <Icon className="w-6 h-6" style={{ color: data.property_type === value ? 'var(--tiffany-blue)' : '#9ca3af' }} />
-              <span className="text-xs font-medium text-center" style={{ color: data.property_type === value ? '#3A8A82' : '#6b7280' }}>{label}</span>
+              <Icon className="w-6 h-6" style={{ color: data.property_type === value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.5)' }} />
+              <span className="text-xs font-medium text-center" style={{ color: data.property_type === value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)' }}>{label}</span>
             </button>
           ))}
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label>Preferred Areas</Label>
+        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Preferred Areas</Label>
         <LocationAreaInput
           areas={data.cities || []}
           mapAreas={data.mapAreas || []}
@@ -59,11 +59,11 @@ export default function ReqStep1({ data, update, onNext }) {
       </div>
 
       <div className="space-y-1.5">
-        <Label>Size Range (SF)</Label>
+        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Size Range (SF)</Label>
         <div className="flex items-center gap-3">
-          <Input type="number" placeholder="Min" value={data.min_size_sqft} onChange={e => update({ min_size_sqft: e.target.value })} className="flex-1" />
-          <span className="text-gray-400 font-medium flex-shrink-0">–</span>
-          <Input type="number" placeholder="Max" value={data.max_size_sqft} onChange={e => update({ max_size_sqft: e.target.value })} className="flex-1" />
+          <Input type="number" placeholder="Min" value={data.min_size_sqft} onChange={e => update({ min_size_sqft: e.target.value })} className="flex-1" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+          <span className="font-medium flex-shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }}>–</span>
+          <Input type="number" placeholder="Max" value={data.max_size_sqft} onChange={e => update({ max_size_sqft: e.target.value })} className="flex-1" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
         </div>
       </div>
 
@@ -74,9 +74,9 @@ export default function ReqStep1({ data, update, onNext }) {
         options={[{ value: 'lease', label: 'Lease' }, { value: 'purchase', label: 'Purchase' }, { value: 'rent', label: 'Rent' }]} />
 
       <div className="space-y-1.5">
-        <Label>Price Range</Label>
+        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Price Range</Label>
         {data.transaction_type === 'purchase' ? (
-          <p className="text-xs text-gray-500 italic">Total purchase price range</p>
+          <p className="text-xs italic" style={{ color: 'rgba(255,255,255,0.5)' }}>Total purchase price range</p>
         ) : (data.transaction_type === 'lease' || data.transaction_type === 'rent') ? (
           <ToggleGroup
             label=""
@@ -89,9 +89,9 @@ export default function ReqStep1({ data, update, onNext }) {
           />
         ) : null}
         <div className="flex items-center gap-3 mt-2">
-          <Input type="number" placeholder="Min $" value={data.min_price || ''} onChange={e => update({ min_price: e.target.value })} className="flex-1" />
-          <span className="text-gray-400 font-medium flex-shrink-0">–</span>
-          <Input type="number" placeholder="Max $" value={data.max_price || ''} onChange={e => update({ max_price: e.target.value })} className="flex-1" />
+          <Input type="number" placeholder="Min $" value={data.min_price || ''} onChange={e => update({ min_price: e.target.value })} className="flex-1" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+          <span className="font-medium flex-shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }}>–</span>
+          <Input type="number" placeholder="Max $" value={data.max_price || ''} onChange={e => update({ max_price: e.target.value })} className="flex-1" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
         </div>
       </div>
 

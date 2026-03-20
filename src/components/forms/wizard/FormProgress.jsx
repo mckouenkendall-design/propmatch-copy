@@ -20,7 +20,7 @@ export default function FormProgress({ currentStep, steps }) {
               >
                 {done ? <Check className="w-4 h-4" /> : num}
               </div>
-              <span className={`text-xs mt-1 whitespace-nowrap ${active ? 'text-gray-800 font-medium' : 'text-gray-400'}`}>
+              <span className="text-xs mt-1 whitespace-nowrap" style={{ color: active ? 'white' : 'rgba(255,255,255,0.5)', fontWeight: active ? 500 : 400 }}>
                 {label}
               </span>
             </div>

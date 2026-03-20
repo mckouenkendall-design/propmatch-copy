@@ -87,9 +87,9 @@ function Chip({ label, selected, onClick }) {
       onClick={onClick}
       className="px-3 py-2 rounded-lg border-2 text-sm font-medium text-left transition-all"
       style={{
-        borderColor: selected ? 'var(--tiffany-blue)' : '#e5e7eb',
-        backgroundColor: selected ? '#e6f7f5' : 'white',
-        color: selected ? '#3A8A82' : '#6b7280',
+        borderColor: selected ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
+        backgroundColor: selected ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
+        color: selected ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)',
       }}
     >
       {label}
@@ -137,17 +137,17 @@ export default function ListStep1({ data, update, onNext }) {
     <div className="space-y-6">
       {/* ── Property Type ── */}
       <div className="space-y-2">
-        <Label>Property Type <span className="text-red-500">*</span></Label>
+        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Property Type <span className="text-red-500">*</span></Label>
         <div className="grid grid-cols-3 gap-3">
           {types.map(({ value, label, icon: Icon }) => (
             <button key={value} type="button" onClick={() => update({ property_type: value })}
               className="flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-2"
               style={{
-                borderColor: data.property_type === value ? 'var(--tiffany-blue)' : '#e5e7eb',
-                backgroundColor: data.property_type === value ? '#e6f7f5' : 'white',
+                borderColor: data.property_type === value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
+                backgroundColor: data.property_type === value ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
               }}>
-              <Icon className="w-6 h-6" style={{ color: data.property_type === value ? 'var(--tiffany-blue)' : '#9ca3af' }} />
-              <span className="text-xs font-medium text-center" style={{ color: data.property_type === value ? '#3A8A82' : '#6b7280' }}>{label}</span>
+              <Icon className="w-6 h-6" style={{ color: data.property_type === value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.5)' }} />
+              <span className="text-xs font-medium text-center" style={{ color: data.property_type === value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)' }}>{label}</span>
             </button>
           ))}
         </div>
@@ -155,8 +155,8 @@ export default function ListStep1({ data, update, onNext }) {
 
       {/* ── Size (SF) ── */}
       <div className="space-y-1.5">
-        <Label>Size (SF)</Label>
-        <Input type="number" value={data.size_sqft || ''} onChange={e => update({ size_sqft: e.target.value })} placeholder="5,000" />
+        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Size (SF)</Label>
+        <Input type="number" value={data.size_sqft || ''} onChange={e => update({ size_sqft: e.target.value })} placeholder="5,000" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
       </div>
 
       {/* ── Transaction Type ── */}
@@ -172,14 +172,15 @@ export default function ListStep1({ data, update, onNext }) {
         <>
           {/* Rate input */}
           <div className="space-y-1.5">
-            <Label>Asking Rate ($ / SF / yr) <span className="text-red-500">*</span></Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Asking Rate ($ / SF / yr) <span className="text-red-500">*</span></Label>
             <Input
               type="number"
               value={data.price || ''}
               onChange={e => update({ price: e.target.value })}
               placeholder="e.g. 24.00"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
             />
-            <p className="text-xs text-gray-400">Price per square foot per year</p>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Price per square foot per year</p>
             {data.price && data.size_sqft && (
               <div className="mt-2 p-3 rounded-lg text-sm space-y-1" style={{ backgroundColor: '#e6f7f5' }}>
                 <p className="font-medium" style={{ color: '#3A8A82' }}>Estimated totals:</p>
@@ -191,7 +192,7 @@ export default function ListStep1({ data, update, onNext }) {
 
           {/* Lease Type */}
           <div className="space-y-2">
-            <Label>Lease Type</Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Lease Type</Label>
             <div className="grid grid-cols-2 gap-2">
               {LEASE_TYPES.map(lt => (
                 <Chip
@@ -205,8 +206,8 @@ export default function ListStep1({ data, update, onNext }) {
 
             {/* Sub-options for Modified Gross (multi) */}
             {data.lease_type === 'modified_gross' && (
-              <div className="mt-3 p-3 rounded-xl border border-gray-200 space-y-2 bg-gray-50">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tenant Pays (select all that apply)</p>
+              <div className="mt-3 p-3 rounded-xl space-y-2" style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }}>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.6)' }}>Tenant Pays (select all that apply)</p>
                 <div className="flex flex-wrap gap-2">
                   {LEASE_TYPES.find(l => l.value === 'modified_gross').subOptions.map(opt => (
                     <Chip
@@ -222,8 +223,8 @@ export default function ListStep1({ data, update, onNext }) {
 
             {/* Sub-options for Net Lease (single select) */}
             {data.lease_type === 'net_lease' && (
-              <div className="mt-3 p-3 rounded-xl border border-gray-200 space-y-2 bg-gray-50">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Net Lease Type</p>
+              <div className="mt-3 p-3 rounded-xl space-y-2" style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }}>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.6)' }}>Net Lease Type</p>
                 <div className="flex flex-wrap gap-2">
                   {LEASE_TYPES.find(l => l.value === 'net_lease').subOptions.map(opt => (
                     <Chip
@@ -243,12 +244,13 @@ export default function ListStep1({ data, update, onNext }) {
       {/* ── COMMERCIAL SALE: Total Price ── */}
       {isCommercial && showSalePrice && (
         <div className="space-y-1.5">
-          <Label>Total Purchase Price ($) <span className="text-red-500">*</span></Label>
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($) <span className="text-red-500">*</span></Label>
           <Input
             type="number"
             value={data.price || ''}
             onChange={e => update({ price: e.target.value })}
             placeholder="e.g. 1,250,000"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
           />
         </div>
       )}
@@ -257,17 +259,18 @@ export default function ListStep1({ data, update, onNext }) {
       {showRent && (
         <>
           <div className="space-y-1.5">
-            <Label>Monthly Rent ($/mo) <span className="text-red-500">*</span></Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Monthly Rent ($/mo) <span className="text-red-500">*</span></Label>
             <Input
               type="number"
               value={data.price || ''}
               onChange={e => update({ price: e.target.value })}
               placeholder="e.g. 2,500"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Utilities Included in Rent</Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Utilities Included in Rent</Label>
             <div className="flex flex-wrap gap-2">
               {UTILITIES.map(u => (
                 <Chip
@@ -285,12 +288,13 @@ export default function ListStep1({ data, update, onNext }) {
       {/* ── RESIDENTIAL SALE: Total Price ── */}
       {!isCommercial && showSalePrice && (
         <div className="space-y-1.5">
-          <Label>Total Purchase Price ($) <span className="text-red-500">*</span></Label>
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($) <span className="text-red-500">*</span></Label>
           <Input
             type="number"
             value={data.price || ''}
             onChange={e => update({ price: e.target.value })}
             placeholder="e.g. 450,000"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
           />
         </div>
       )}
@@ -298,7 +302,7 @@ export default function ListStep1({ data, update, onNext }) {
       {/* ── Address / Location ── */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5 col-span-2">
-          <Label>Address</Label>
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Address</Label>
           <AddressAutocomplete
             value={data.address || ''}
             onChange={(patch) => update(patch)}
@@ -306,16 +310,16 @@ export default function ListStep1({ data, update, onNext }) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label>City <span className="text-red-500">*</span></Label>
-          <Input value={data.city || ''} onChange={e => update({ city: e.target.value })} placeholder="Ferndale" />
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>City <span className="text-red-500">*</span></Label>
+          <Input value={data.city || ''} onChange={e => update({ city: e.target.value })} placeholder="Ferndale" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
         </div>
         <div className="space-y-1.5">
-          <Label>State</Label>
-          <Input value={data.state || ''} onChange={e => update({ state: e.target.value })} placeholder="MI" maxLength={2} />
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>State</Label>
+          <Input value={data.state || ''} onChange={e => update({ state: e.target.value })} placeholder="MI" maxLength={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
         </div>
         <div className="space-y-1.5">
-          <Label>Zip Code</Label>
-          <Input value={data.zip_code || ''} onChange={e => update({ zip_code: e.target.value })} placeholder="48220" />
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Zip Code</Label>
+          <Input value={data.zip_code || ''} onChange={e => update({ zip_code: e.target.value })} placeholder="48220" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
         </div>
       </div>
 
