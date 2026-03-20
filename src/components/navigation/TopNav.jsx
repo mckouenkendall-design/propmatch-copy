@@ -10,7 +10,10 @@ import {
   LogOut, 
   Building2,
   Users,
-  ChevronDown
+  ChevronDown,
+  Megaphone,
+  Video,
+  FolderOpen
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -27,6 +30,7 @@ export default function TopNav() {
   const { user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const isManagingBroker = user?.role === 'admin' && user?.selected_plan === 'brokerage';
+  const isBrokerageMember = user?.selected_plan === 'brokerage' || user?.brokerage_name;
 
   const mainNavItems = [
     { label: 'Control Center', path: '/Dashboard' },
@@ -99,8 +103,8 @@ export default function TopNav() {
             </Link>
           ))}
           
-          {/* Team Tools Dropdown (for brokerage users) */}
-          {isManagingBroker && (
+          {/* Team Tools Dropdown (for all brokerage members) */}
+          {isBrokerageMember && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button style={{
@@ -130,18 +134,20 @@ export default function TopNav() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <DropdownMenuItem 
-                  onClick={() => navigate('/BrokerDashboard')} 
-                  style={{ 
-                    color: 'rgba(255,255,255,0.85)',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <Building2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-                  Admin Dashboard
-                </DropdownMenuItem>
+                {isManagingBroker && (
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/BrokerDashboard')} 
+                    style={{ 
+                      color: 'rgba(255,255,255,0.85)',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <Building2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                    Admin Dashboard
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem 
                   style={{ 
                     color: 'rgba(255,255,255,0.85)',
@@ -151,7 +157,40 @@ export default function TopNav() {
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <Users style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-                  Team Dealboard
+                  Team Pipeline
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  style={{ 
+                    color: 'rgba(255,255,255,0.85)',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <Megaphone style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                  Team Announcements
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  style={{ 
+                    color: 'rgba(255,255,255,0.85)',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <Video style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                  Team Calls
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  style={{ 
+                    color: 'rgba(255,255,255,0.85)',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <FolderOpen style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                  Resource Library
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
