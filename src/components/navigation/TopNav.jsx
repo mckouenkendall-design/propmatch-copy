@@ -50,7 +50,7 @@ export default function TopNav() {
       background: 'rgba(14, 19, 24, 0.95)',
       backdropFilter: 'blur(12px)',
       borderBottom: '1px solid rgba(255,255,255,0.08)',
-      zIndex: 1000,
+      zIndex: 50,
       display: 'flex',
       alignItems: 'center',
       padding: '0 32px',

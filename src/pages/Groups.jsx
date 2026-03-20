@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Search as SearchIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import GroupsFeed from '@/components/groups/GroupsFeed';
 import CreateGroupModal from '@/components/groups/CreateGroupModal';
 
@@ -11,6 +11,7 @@ const ACCENT = '#00DBC5';
 export default function Groups() {
   const [currentUser, setCurrentUser] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -34,6 +35,10 @@ export default function Groups() {
   const myGroups = allGroups.filter(g => myGroupIds.includes(g.id));
   const otherGroups = allGroups.filter(g => !myGroupIds.includes(g.id));
 
+  const filteredOtherGroups = searchQuery
+    ? otherGroups.filter(g => g.name?.toLowerCase().includes(searchQuery.toLowerCase()) || g.description?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : otherGroups;
+
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 64px)', background: '#0E1318' }}>
       {/* Left Sidebar */}
@@ -46,36 +51,127 @@ export default function Groups() {
         overflowY: 'auto'
       }}>
         <div style={{ padding: '24px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-            <h2 style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: '22px',
-              fontWeight: 500,
-              color: 'white',
-              margin: 0
-            }}>
-              Groups
-            </h2>
-            <button
-              onClick={() => setShowCreateModal(true)}
+          <h2 style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: '22px',
+            fontWeight: 500,
+            color: 'white',
+            margin: '0 0 20px'
+          }}>
+            Groups
+          </h2>
+
+          {/* Search Groups */}
+          <div style={{ marginBottom: '24px', position: 'relative' }}>
+            <SearchIcon style={{ 
+              position: 'absolute', 
+              left: '12px', 
+              top: '50%', 
+              transform: 'translateY(-50%)', 
+              width: '16px', 
+              height: '16px', 
+              color: 'rgba(255,255,255,0.4)' 
+            }} />
+            <Input 
+              placeholder="Search groups..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
-                background: ACCENT,
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                paddingLeft: '38px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'white',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px'
               }}
+            />
+          </div>
+
+          {/* Quick Links */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '28px' }}>
+            <button
+              style={{
+                padding: '10px 14px',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: '6px',
+                textAlign: 'left',
+                color: 'rgba(255,255,255,0.7)',
+                cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <Plus style={{ width: '18px', height: '18px', color: '#111827' }} />
+              Your Feed
+            </button>
+            <button
+              style={{
+                padding: '10px 14px',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: '6px',
+                textAlign: 'left',
+                color: 'rgba(255,255,255,0.7)',
+                cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              Discover
+            </button>
+            <button
+              style={{
+                padding: '10px 14px',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: '6px',
+                textAlign: 'left',
+                color: 'rgba(255,255,255,0.7)',
+                cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              Your Groups
             </button>
           </div>
 
-          {/* My Groups Section */}
-          <div style={{ marginBottom: '32px' }}>
+          {/* Create Group Button */}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: ACCENT,
+              border: 'none',
+              borderRadius: '8px',
+              color: '#111827',
+              cursor: 'pointer',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              marginBottom: '28px'
+            }}
+          >
+            <Plus style={{ width: '16px', height: '16px' }} />
+            Create Group
+          </button>
+
+          {/* Groups You've Joined */}
+          <div>
             <h3 style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '12px',
@@ -85,7 +181,7 @@ export default function Groups() {
               margin: '0 0 12px',
               fontWeight: 600
             }}>
-              My Groups
+              Groups You've Joined
             </h3>
             {myGroups.length === 0 ? (
               <p style={{
@@ -151,80 +247,6 @@ export default function Groups() {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Discover Groups Section */}
-          <div>
-            <h3 style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '12px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              color: 'rgba(255,255,255,0.4)',
-              margin: '0 0 12px',
-              fontWeight: 600
-            }}>
-              Discover
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {otherGroups.slice(0, 8).map(group => (
-                <a
-                  key={group.id}
-                  href={`/GroupDetail?id=${group.id}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    background: 'transparent',
-                    border: '1px solid transparent',
-                    textDecoration: 'none',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.borderColor = 'transparent';
-                  }}
-                >
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    background: group.cover_image_url ? `url(${group.cover_image_url})` : 'rgba(255,255,255,0.05)',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    flexShrink: 0
-                  }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      color: 'white',
-                      margin: 0,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {group.name}
-                    </p>
-                    <p style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '12px',
-                      color: 'rgba(255,255,255,0.4)',
-                      margin: 0
-                    }}>
-                      {group.member_count || 0} members
-                    </p>
-                  </div>
-                </a>
-              ))}
-            </div>
           </div>
         </div>
       </div>
