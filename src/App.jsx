@@ -16,6 +16,7 @@ import AboutUs from './pages/AboutUs';
 import Onboarding from './pages/Onboarding';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import BrokerDashboard from './pages/BrokerDashboard';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -87,6 +88,14 @@ const AuthenticatedApp = () => {
         element={
           <LayoutWrapper currentPageName="Settings">
             <Settings />
+          </LayoutWrapper>
+        } 
+      />
+      <Route 
+        path="/BrokerDashboard" 
+        element={
+          <LayoutWrapper currentPageName="BrokerDashboard">
+            <BrokerDashboard />
           </LayoutWrapper>
         } 
       />
