@@ -452,8 +452,15 @@ export default function Onboarding() {
     return (
       <PaymentScreen
         isBroker={isBroker}
-        onComplete={(plan) => {
-          try { base44.auth.updateMe({ selected_plan: plan }); } catch (e) {}
+        employingBrokerNumber={step1.employingBrokerId}
+        onComplete={(plan, rosterData) => {
+          try { 
+            base44.auth.updateMe({ 
+              selected_plan: plan,
+              broker_sponsored: plan === 'broker_sponsored',
+              roster_broker_email: rosterData?.broker_email || null,
+            }); 
+          } catch (e) {}
           setShowPayment(false);
           setShowPostOnboarding(true);
         }}
