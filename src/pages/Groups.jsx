@@ -56,7 +56,7 @@ export default function Groups() {
             color: 'white',
             margin: '0 0 20px'
           }}>
-            Groups
+            Fish Tanks
           </h2>
 
           {/* Search Groups */}
@@ -71,7 +71,7 @@ export default function Groups() {
               color: 'rgba(255,255,255,0.4)' 
             }} />
             <Input 
-              placeholder="Search groups..."
+              placeholder="Search fish tanks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -136,7 +136,7 @@ export default function Groups() {
                 transition: 'all 0.2s ease'
               }}
             >
-              Your Groups
+              Your Fish Tanks
             </button>
           </div>
 
@@ -162,7 +162,7 @@ export default function Groups() {
             }}
           >
             <Plus style={{ width: '16px', height: '16px' }} />
-            Create Group
+            Create Fish Tank
           </button>
 
           {/* Groups You've Joined */}
@@ -176,7 +176,7 @@ export default function Groups() {
               margin: '0 0 12px',
               fontWeight: 600
             }}>
-              Groups You've Joined
+              Fish Tanks You've Joined
             </h3>
             {myGroups.length === 0 ? (
               <p style={{
@@ -185,7 +185,7 @@ export default function Groups() {
                 color: 'rgba(255,255,255,0.3)',
                 fontStyle: 'italic'
               }}>
-                No groups joined yet
+                No fish tanks joined yet
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -251,7 +251,7 @@ export default function Groups() {
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 32px' }}>
           {activeView === 'feed' && <GroupsFeed myGroupIds={myGroupIds} />}
           {activeView === 'discover' && <GroupsDiscover myGroupIds={myGroupIds} />}
-          {activeView === 'your-groups' && <YourGroupsGrid groups={myGroups} />}
+          {activeView === 'your-groups' && <YourGroupsGrid groups={myGroups} isFishTanks={true} />}
         </div>
       </div>
 
