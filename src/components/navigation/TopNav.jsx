@@ -31,7 +31,7 @@ export default function TopNav() {
   const mainNavItems = [
     { label: 'Control Center', path: '/Dashboard' },
     { label: 'My Matches', path: '/Dealboard' },
-    { label: 'Inventory', path: '/Inventory' },
+    { label: 'Listings / Requirements', path: '/Inventory' },
     { label: 'Groups', path: '/Groups' },
     { label: 'Messages', path: '/Messages' },
   ];
@@ -99,7 +99,7 @@ export default function TopNav() {
             </Link>
           ))}
           
-          {/* Brokerage Dropdown (only for managing broker) */}
+          {/* Team Tools Dropdown (for brokerage users) */}
           {isManagingBroker && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -126,7 +126,7 @@ export default function TopNav() {
                   e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
                   e.currentTarget.style.background = 'transparent';
                 }}>
-                  Brokerage <ChevronDown style={{ width: '14px', height: '14px' }} />
+                  Team Tools <ChevronDown style={{ width: '14px', height: '14px' }} />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -141,6 +141,17 @@ export default function TopNav() {
                 >
                   <Building2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
                   Admin Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  style={{ 
+                    color: 'rgba(255,255,255,0.85)',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <Users style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                  Team Dealboard
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
