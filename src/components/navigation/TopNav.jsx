@@ -26,7 +26,7 @@ export default function TopNav() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
-  const isBroker = user?.role === 'admin';
+  const isManagingBroker = user?.role === 'admin' && user?.selected_plan === 'brokerage';
 
   const mainNavItems = [
     { label: 'Dashboard', path: '/Dashboard' },
@@ -60,12 +60,12 @@ export default function TopNav() {
         
         {/* Logo */}
         <Link to="/Dashboard" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="140" height="28">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="180" height="36">
             <g transform="translate(20,20)">
               <path d="M -16,0 Q 0,-7 16,0 Q 19,-1.5 22,-5 Q 20,-1 16,0 Q 19,1.5 22,5 Q 20,1 16,0 Q 0,7 -16,0 Z"
                 fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
             </g>
-            <text fontFamily="'Segoe UI', Arial, sans-serif" fontSize="13" letterSpacing="0.3" x="44" y="24">
+            <text fontFamily="'Segoe UI', Arial, sans-serif" fontSize="15" letterSpacing="0.3" x="44" y="25">
               <tspan fill="#FFFFFF" fontWeight="300">Prop</tspan><tspan fill={ACCENT} fontWeight="600">Match</tspan>
             </text>
           </svg>
@@ -100,8 +100,8 @@ export default function TopNav() {
             </Link>
           ))}
           
-          {/* Brokerage Dropdown (if broker) */}
-          {isBroker && (
+          {/* Brokerage Dropdown (only for managing broker) */}
+          {isManagingBroker && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button style={{
@@ -131,13 +131,17 @@ export default function TopNav() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <DropdownMenuItem onClick={() => navigate('/BrokerDashboard')} style={{ color: 'rgba(255,255,255,0.85)' }}>
+                <DropdownMenuItem 
+                  onClick={() => navigate('/BrokerDashboard')} 
+                  style={{ 
+                    color: 'rgba(255,255,255,0.85)',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
                   <Building2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
                   Admin Dashboard
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/TeamCollaboration')} style={{ color: 'rgba(255,255,255,0.85)' }}>
-                  <Users style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-                  Team Collaboration
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -221,16 +225,31 @@ export default function TopNav() {
                   {user?.email}
                 </p>
               </div>
-              <DropdownMenuItem onClick={() => navigate('/Profile')} style={{ color: 'rgba(255,255,255,0.85)', cursor: 'pointer' }}>
+              <DropdownMenuItem 
+                onClick={() => navigate('/Profile')} 
+                style={{ color: 'rgba(255,255,255,0.85)', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
                 <User style={{ width: '16px', height: '16px', marginRight: '8px' }} />
                 My Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/Settings')} style={{ color: 'rgba(255,255,255,0.85)', cursor: 'pointer' }}>
+              <DropdownMenuItem 
+                onClick={() => navigate('/Settings')} 
+                style={{ color: 'rgba(255,255,255,0.85)', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
                 <Settings style={{ width: '16px', height: '16px', marginRight: '8px' }} />
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator style={{ background: 'rgba(255,255,255,0.08)' }} />
-              <DropdownMenuItem onClick={handleLogout} style={{ color: '#ef4444', cursor: 'pointer' }}>
+              <DropdownMenuItem 
+                onClick={handleLogout} 
+                style={{ color: '#ef4444', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
                 <LogOut style={{ width: '16px', height: '16px', marginRight: '8px' }} />
                 Sign Out
               </DropdownMenuItem>

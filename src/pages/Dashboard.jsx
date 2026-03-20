@@ -33,59 +33,84 @@ export default function Dashboard() {
                         allPosts.filter(p => p.postType === 'requirement');
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px 24px' }}>
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900">Dealboard</h1>
-          <p className="text-gray-600 mt-2">Your real estate marketplace feed</p>
-        </div>
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '36px', fontWeight: 300, color: 'white', margin: '0 0 8px' }}>
+          Dashboard
+        </h1>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+          Your command center for all active deals
+        </p>
       </div>
 
       {/* Create Post Card */}
       <Card 
-        className="bg-white border-0 shadow-md hover:shadow-lg transition-all cursor-pointer"
+        style={{ 
+          background: 'rgba(255,255,255,0.04)', 
+          border: '1px solid rgba(255,255,255,0.1)', 
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
         onClick={() => setShowCreateModal(true)}
       >
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <div 
-              className="w-12 h-12 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'var(--tiffany-blue)', opacity: 0.15 }}
-            >
-              <Plus className="w-6 h-6" style={{ color: 'var(--tiffany-blue)' }} />
+        <CardContent style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ 
+              width: '48px', 
+              height: '48px', 
+              borderRadius: '50%', 
+              background: 'rgba(0,219,197,0.1)', 
+              border: '1px solid rgba(0,219,197,0.3)',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <Plus style={{ width: '24px', height: '24px', color: '#00DBC5' }} />
             </div>
-            <p className="text-gray-500 text-lg">Post a listing or requirement...</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', color: 'rgba(255,255,255,0.5)' }}>
+              Post a listing or requirement...
+            </p>
           </div>
         </CardContent>
       </Card>
 
       {/* Filter Tabs */}
-      <Tabs value={filter} onValueChange={setFilter} className="w-full">
-        <TabsList className="w-full grid grid-cols-3 bg-gray-100">
-          <TabsTrigger value="all" className="data-[state=active]:bg-white">
+      <Tabs value={filter} onValueChange={setFilter} style={{ width: '100%' }}>
+        <TabsList style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <TabsTrigger value="all" style={{ color: 'rgba(255,255,255,0.6)' }}>
             All Posts
           </TabsTrigger>
-          <TabsTrigger value="listings" className="data-[state=active]:bg-white">
-            <Building2 className="w-4 h-4 mr-2" />
+          <TabsTrigger value="listings" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <Building2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
             Listings
           </TabsTrigger>
-          <TabsTrigger value="requirements" className="data-[state=active]:bg-white">
-            <Search className="w-4 h-4 mr-2" />
+          <TabsTrigger value="requirements" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <Search style={{ width: '16px', height: '16px', marginRight: '8px' }} />
             Requirements
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
       {/* Feed */}
-      <div className="space-y-4">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {filteredPosts.map((post) => (
           <DealPost key={`${post.postType}-${post.id}`} post={post} />
         ))}
 
         {filteredPosts.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-xl shadow-md">
-            <p className="text-gray-500">No posts yet. Create your first one!</p>
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '64px 24px', 
+            background: 'rgba(255,255,255,0.02)', 
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '12px' 
+          }}>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.4)' }}>
+              No posts yet. Create your first one!
+            </p>
           </div>
         )}
       </div>
