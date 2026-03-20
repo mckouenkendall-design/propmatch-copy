@@ -19,6 +19,8 @@ export default function Profile() {
   
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
+    full_name: user?.full_name || '',
+    username: user?.username || '',
     bio: user?.bio || '',
     phone: user?.phone || '',
     brokerage_name: user?.brokerage_name || '',
@@ -92,9 +94,39 @@ export default function Profile() {
 
               {/* Info */}
               <div style={{ flex: 1 }}>
-                <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '32px', fontWeight: 300, color: 'white', margin: '0 0 8px' }}>
-                  {user?.full_name}
-                </h1>
+                {editing ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                    <div>
+                      <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Full Name</Label>
+                      <Input
+                        value={formData.full_name}
+                        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                        placeholder="First Last"
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                      />
+                    </div>
+                    <div>
+                      <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Username</Label>
+                      <Input
+                        value={formData.username}
+                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        placeholder="@username"
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '32px', fontWeight: 300, color: 'white', margin: '0 0 4px' }}>
+                      {user?.full_name}
+                    </h1>
+                    {user?.username && (
+                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: ACCENT, margin: '0 0 8px' }}>
+                        @{user.username}
+                      </p>
+                    )}
+                  </>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Mail style={{ width: '16px', height: '16px', color: ACCENT }} />
@@ -111,7 +143,7 @@ export default function Profile() {
                     </div>
                   )}
                 </div>
-                {user?.bio && (
+                {!editing && user?.bio && (
                   <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>
                     {user.bio}
                   </p>
