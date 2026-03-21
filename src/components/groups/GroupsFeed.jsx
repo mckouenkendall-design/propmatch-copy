@@ -50,7 +50,7 @@ export default function GroupsFeed({ myGroupIds = [] }) {
       <div className="text-center py-20">
         <Rss className="w-14 h-14 text-gray-200 mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-gray-600 mb-1">Nothing posted yet</h3>
-        <p className="text-sm text-gray-400">Be the first to post in one of your groups!</p>
+        <p className="text-sm text-gray-400">Be the first to post in one of your fish tanks!</p>
       </div>
     );
   }

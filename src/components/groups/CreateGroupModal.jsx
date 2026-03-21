@@ -62,17 +62,19 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">Create a Fish Tank</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
+      <div className="rounded-2xl shadow-2xl w-full max-w-lg" style={{ background: '#0E1318' }}>
+        <div className="flex items-center justify-between p-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <h2 className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>Create a Fish Tank</h2>
+          <button onClick={onClose} className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+            <X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
           </button>
         </div>
 
         <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
           <div className="space-y-1.5">
-            <Label>Cover Photo <span className="text-red-500">*</span></Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Cover Photo <span style={{ color: '#ef4444' }}>*</span></Label>
             <div className="relative">
               {form.cover_image_url ? (
                 <div className="relative">
@@ -86,9 +88,15 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-500">{uploading ? 'Uploading...' : 'Click to upload cover photo'}</span>
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors"
+                  style={{ 
+                    borderColor: 'rgba(255,255,255,0.2)',
+                    background: 'rgba(255,255,255,0.05)'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+                  <Upload className="w-8 h-8 mb-2" style={{ color: 'rgba(255,255,255,0.5)' }} />
+                  <span className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>{uploading ? 'Uploading...' : 'Click to upload cover photo'}</span>
                   <input
                     type="file"
                     className="hidden"
@@ -102,28 +110,33 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Fish Tank Name <span className="text-red-500">*</span></Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Fish Tank Name <span style={{ color: '#ef4444' }}>*</span></Label>
             <Input value={form.name} onChange={e => update({ name: e.target.value })} placeholder="e.g. Detroit Commercial RE Fish Tank" />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Description</Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Description</Label>
             <textarea
               value={form.description}
               onChange={e => update({ description: e.target.value })}
               placeholder="What is this Fish Tank about? Who is it for?"
               rows={3}
-              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+              className="w-full rounded-md px-3 py-2 text-sm shadow-sm resize-none focus-visible:outline-none focus-visible:ring-1"
+              style={{ 
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'white'
+              }}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Location Focus</Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Location Focus</Label>
             <Input value={form.location} onChange={e => update({ location: e.target.value })} placeholder="e.g. Metro Detroit, Southeast Michigan" />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Property Focus</Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Property Focus</Label>
             <div className="grid grid-cols-4 gap-2">
               {FOCUS_OPTIONS.map(opt => (
                 <button
@@ -132,9 +145,9 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
                   onClick={() => update({ focus_category: opt.value })}
                   className="py-2 px-3 rounded-lg border-2 text-sm font-medium transition-all"
                   style={{
-                    borderColor: form.focus_category === opt.value ? 'var(--tiffany-blue)' : '#e5e7eb',
-                    backgroundColor: form.focus_category === opt.value ? '#e6f7f5' : 'white',
-                    color: form.focus_category === opt.value ? '#3A8A82' : '#6b7280',
+                    borderColor: form.focus_category === opt.value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
+                    backgroundColor: form.focus_category === opt.value ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
+                    color: form.focus_category === opt.value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)',
                   }}
                 >
                   {opt.label}
@@ -144,7 +157,7 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Type</Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Type</Label>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { value: 'public', label: 'Public', desc: 'Anyone can join' },
@@ -156,31 +169,36 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
                   onClick={() => update({ group_type: opt.value })}
                   className="p-3 rounded-xl border-2 text-left transition-all"
                   style={{
-                    borderColor: form.group_type === opt.value ? 'var(--tiffany-blue)' : '#e5e7eb',
-                    backgroundColor: form.group_type === opt.value ? '#e6f7f5' : 'white',
+                    borderColor: form.group_type === opt.value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
+                    backgroundColor: form.group_type === opt.value ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
                   }}
                 >
-                  <p className="text-sm font-semibold" style={{ color: form.group_type === opt.value ? '#3A8A82' : '#374151' }}>{opt.label}</p>
-                  <p className="text-xs text-gray-500">{opt.desc}</p>
+                  <p className="text-sm font-semibold" style={{ color: form.group_type === opt.value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.9)' }}>{opt.label}</p>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{opt.desc}</p>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Fish Tank Rules <span className="text-gray-400 text-xs">(optional)</span></Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Fish Tank Rules <span className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>(optional)</span></Label>
             <textarea
               value={form.rules}
               onChange={e => update({ rules: e.target.value })}
               placeholder="Any guidelines or rules for the Fish Tank..."
               rows={2}
-              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+              className="w-full rounded-md px-3 py-2 text-sm shadow-sm resize-none focus-visible:outline-none focus-visible:ring-1"
+              style={{ 
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'white'
+              }}
             />
           </div>
         </div>
 
-        <div className="p-6 border-t flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <div className="p-6 flex justify-end gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <Button variant="outline" onClick={onClose} style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.9)' }}>Cancel</Button>
           <Button
             onClick={() => mutation.mutate(form)}
             disabled={!canSubmit || mutation.isPending}

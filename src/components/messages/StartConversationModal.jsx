@@ -23,11 +23,13 @@ export default function StartConversationModal({ onClose, onSelectUser }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">Start Conversation</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
+      <div className="rounded-2xl shadow-2xl w-full max-w-md" style={{ background: '#0E1318' }}>
+        <div className="flex items-center justify-between p-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <h2 className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>Start Conversation</h2>
+          <button onClick={onClose} className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+            <X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
           </button>
         </div>
 
@@ -53,7 +55,7 @@ export default function StartConversationModal({ onClose, onSelectUser }) {
           {searchQuery && (
             <div className="max-h-[300px] overflow-y-auto space-y-2">
               {filteredUsers.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4">No users found with that username</p>
+                <p className="text-sm text-center py-4" style={{ color: 'rgba(255,255,255,0.5)' }}>No users found with that username</p>
               ) : (
                 filteredUsers.map(user => (
                   <button
@@ -62,7 +64,13 @@ export default function StartConversationModal({ onClose, onSelectUser }) {
                       onSelectUser(user);
                       onClose();
                     }}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left"
+                    style={{ 
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      background: 'rgba(255,255,255,0.03)'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                   >
                     <div style={{
                       width: '40px',
@@ -81,8 +89,8 @@ export default function StartConversationModal({ onClose, onSelectUser }) {
                       {user.full_name?.[0]?.toUpperCase() || 'U'}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{user.full_name}</p>
-                      <p className="text-xs text-gray-500">@{user.username}</p>
+                      <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.9)' }}>{user.full_name}</p>
+                      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>@{user.username}</p>
                     </div>
                   </button>
                 ))
