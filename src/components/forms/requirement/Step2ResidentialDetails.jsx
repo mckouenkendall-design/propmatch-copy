@@ -77,7 +77,7 @@ function TagsInput({ value = [], onChange, placeholder }) {
           </span>
         ))}
       </div>
-      <Input value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} placeholder={placeholder || 'Press Enter to add'} />
+      <Input value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} placeholder={placeholder || 'Press Enter to add'} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
     </div>
   );
 }
@@ -165,7 +165,7 @@ function SingleFamilyReq({ details, setDetail }) {
 
       <SectionTitle>Additional Preferences</SectionTitle>
       <Field label="School District Preference">
-        <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" />
+        <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
       </Field>
       <Field label="Other Requirements">
         <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} placeholder="e.g. corner lot, quiet street (press Enter)" />
@@ -525,7 +525,7 @@ function ResidentialLandReq({ details, setDetail }) {
       {/* Additional Preferences */}
       <SectionTitle>Additional Preferences</SectionTitle>
       <Field label="School District Preference">
-        <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" />
+        <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
       </Field>
       <Field label="Other Requirements">
         <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} placeholder="e.g. HOA allowed, subdivision lot (press Enter)" />
