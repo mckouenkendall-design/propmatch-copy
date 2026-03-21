@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, ChevronDown } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 
 function Field({ label, children, hint }) {
   return (
@@ -51,12 +52,16 @@ const VISIBILITY_OPTIONS = [
 
 export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoading }) {
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [groupsDropdownOpen, setGroupsDropdownOpen] = useState(false);
+  const [groupSearchInput, setGroupSearchInput] = useState('');
+  const [currentUserEmail, setCurrentUserEmail] = useState(null);
 
   // Autofill contact info from logged-in user on mount
   useEffect(() => {
     async function prefill() {
       const user = await base44.auth.me();
       if (!user) return;
+      setCurrentUserEmail(user.email);
       const patch = {};
       if (!data.contact_agent_name && user.full_name) patch.contact_agent_name = user.full_name;
       if (!data.contact_agent_email && user.email) patch.contact_agent_email = user.email;
@@ -67,10 +72,47 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
     prefill();
   }, []);
 
+  // Fetch user's groups
+  const { data: userGroups = [] } = useQuery({
+    queryKey: ['userGroups', currentUserEmail],
+    queryFn: async () => {
+      if (!currentUserEmail) return [];
+      const memberships = await base44.entities.GroupMember.filter({ 
+        user_email: currentUserEmail, 
+        status: 'active' 
+      });
+      const groupIds = memberships.map(m => m.group_id);
+      if (groupIds.length === 0) return [];
+      const groups = await base44.entities.Group.list();
+      return groups.filter(g => groupIds.includes(g.id));
+    },
+    enabled: !!currentUserEmail,
+  });
+
   const visibility = data.visibility || 'public';
+  
+  // Filter groups based on search input
+  const filteredGroups = userGroups.filter(g => 
+    g.name.toLowerCase().includes(groupSearchInput.toLowerCase())
+  );
+
+  const handleGroupSelect = (groupName) => {
+    update({ visibility_groups: groupName });
+    setGroupSearchInput(groupName);
+    setGroupsDropdownOpen(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setGroupsDropdownOpen(false);
+    if (groupsDropdownOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [groupsDropdownOpen]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onClick={e => e.stopPropagation()}>
       {/* Contact Info */}
       <SectionTitle>Contact Information</SectionTitle>
       <div className="grid grid-cols-1 gap-4">
@@ -151,11 +193,50 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
       {/* Conditional sub-fields */}
       {visibility === 'team' && (
         <Field label="Select Networking Group(s)" hint="Search and select groups you belong to">
-          <Input
-            value={data.visibility_groups || ''}
-            onChange={e => update({ visibility_groups: e.target.value })}
-            placeholder="e.g. Detroit Commercial RE Group"
-          />
+          <div className="relative">
+            <Input
+              value={groupSearchInput || data.visibility_groups || ''}
+              onChange={e => {
+                setGroupSearchInput(e.target.value);
+                update({ visibility_groups: e.target.value });
+                setGroupsDropdownOpen(true);
+              }}
+              onFocus={() => setGroupsDropdownOpen(true)}
+              placeholder="e.g. Detroit Commercial RE Group"
+            />
+            <ChevronDown 
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" 
+              style={{ color: 'rgba(255,255,255,0.5)' }}
+            />
+            {groupsDropdownOpen && filteredGroups.length > 0 && (
+              <div 
+                className="absolute z-50 w-full mt-1 rounded-lg shadow-lg overflow-hidden"
+                style={{ 
+                  background: '#0E1318', 
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}
+              >
+                {filteredGroups.map(group => (
+                  <button
+                    key={group.id}
+                    type="button"
+                    onClick={() => handleGroupSelect(group.name)}
+                    className="w-full px-4 py-2.5 text-left text-sm transition-colors"
+                    style={{ 
+                      color: 'rgba(255,255,255,0.9)',
+                      borderBottom: '1px solid rgba(255,255,255,0.05)'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.1)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {group.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </Field>
       )}
       {visibility === 'private' && (
@@ -201,8 +282,11 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
           <Button
             onClick={onSubmit}
             disabled={isLoading || !termsAccepted}
-            className="text-white gap-2 px-6"
-            style={{ backgroundColor: termsAccepted ? 'var(--tiffany-blue)' : undefined }}
+            className="gap-2 px-6"
+            style={{ 
+              backgroundColor: termsAccepted ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.3)',
+              color: 'white'
+            }}
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             Post Listing
