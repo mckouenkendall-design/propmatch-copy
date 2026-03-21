@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
+import { useTheme } from '@/lib/ThemeProvider';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ const ACCENT = '#00DBC5';
 
 export default function Settings() {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -46,7 +48,6 @@ export default function Settings() {
   const [messageNotifications, setMessageNotifications] = useState(user?.message_notifications !== false);
 
   // Preferences
-  const [theme, setTheme] = useState(user?.theme || 'dark');
   const [language, setLanguage] = useState(user?.language || 'en');
 
   // Sync state with updated user data
@@ -58,7 +59,6 @@ export default function Settings() {
       setMatchAlerts(user.match_alerts !== false);
       setGroupNotifications(user.group_notifications !== false);
       setMessageNotifications(user.message_notifications !== false);
-      setTheme(user.theme || 'dark');
       setLanguage(user.language || 'en');
     }
   }, [user]);
@@ -93,7 +93,8 @@ export default function Settings() {
   };
 
   const savePreferences = async () => {
-    await updateMutation.mutateAsync({ theme, language });
+    // Theme is now handled by ThemeProvider and saves automatically
+    await updateMutation.mutateAsync({ language });
   };
 
   return (
