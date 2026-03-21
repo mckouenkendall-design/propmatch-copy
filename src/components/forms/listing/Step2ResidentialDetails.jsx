@@ -32,7 +32,7 @@ function Num({ field, placeholder, details, setDetail, step }) {
 function SectionTitle({ children }) {
   return (
     <div className="pt-2">
-      <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-2">{children}</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-wide pb-2" style={{ color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{children}</h3>
     </div>
   );
 }
@@ -40,17 +40,20 @@ function SectionTitle({ children }) {
 function CollapsiblePanel({ title, summary, children }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-xl border border-gray-200 overflow-hidden">
+    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
+        style={{ background: 'rgba(255,255,255,0.05)' }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
       >
         <div>
-          <p className="text-sm font-semibold text-gray-700">{title}</p>
-          {!open && <p className="text-xs text-gray-400 mt-0.5">{summary}</p>}
+          <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>{title}</p>
+          {!open && <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{summary}</p>}
         </div>
-        <span className="text-lg leading-none text-gray-400 ml-2">{open ? '−' : '+'}</span>
+        <span className="text-lg leading-none ml-2" style={{ color: 'rgba(255,255,255,0.5)' }}>{open ? '−' : '+'}</span>
       </button>
       {open && <div className="px-4 py-3">{children}</div>}
     </div>
@@ -60,12 +63,12 @@ function CollapsiblePanel({ title, summary, children }) {
 function Toggle({ label, value, onChange }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</span>
       <button
         type="button"
         onClick={() => onChange(!value)}
         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-        style={{ backgroundColor: value ? 'var(--tiffany-blue)' : '#d1d5db' }}
+        style={{ backgroundColor: value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)' }}
       >
         <span
           className="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
@@ -156,9 +159,9 @@ function SingleFamilyDetails({ details, setDetail }) {
             <button key={s} type="button" onClick={() => setDetail('arch_style', s)}
               className="px-3 py-1.5 rounded-lg border-2 text-xs font-medium transition-all"
               style={{
-                borderColor: details.arch_style === s ? 'var(--tiffany-blue)' : '#e5e7eb',
-                backgroundColor: details.arch_style === s ? '#e6f7f5' : 'white',
-                color: details.arch_style === s ? '#3A8A82' : '#6b7280',
+                borderColor: details.arch_style === s ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
+                backgroundColor: details.arch_style === s ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
+                color: details.arch_style === s ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)',
               }}>{s}</button>
           ))}
         </div>
@@ -173,16 +176,22 @@ function SingleFamilyDetails({ details, setDetail }) {
         options={[{ value: 'hardwood', label: 'Hardwood' }, { value: 'carpet', label: 'Carpet' }, { value: 'tile', label: 'Tile' }, { value: 'mixed', label: 'Mixed' }]} />
 
       <SectionTitle>Features & Amenities</SectionTitle>
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <button type="button" onClick={() => setFeaturesOpen(o => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors"
+          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.9)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
           <span>Property Features {features.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>{features.length} selected</span>}</span>
-          <span className="text-lg leading-none">{featuresOpen ? '−' : '+'}</span>
+          <span className="text-lg leading-none" style={{ color: 'rgba(255,255,255,0.5)' }}>{featuresOpen ? '−' : '+'}</span>
         </button>
         {featuresOpen && (
-          <div className="px-4 py-3 divide-y divide-gray-50">
-            {SF_FEATURES.map(f => (
-              <Toggle key={f.key} label={f.label} value={features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
+          <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            {SF_FEATURES.map((f, idx) => (
+              <React.Fragment key={f.key}>
+                <Toggle label={f.label} value={features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
+                {idx < SF_FEATURES.length - 1 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+              </React.Fragment>
             ))}
           </div>
         )}
@@ -239,9 +248,11 @@ function CondoDetails({ details, setDetail }) {
       <SectionTitle>Parking & Storage</SectionTitle>
       <ToggleGroup label="Parking" value={details.parking || ''} onChange={v => setDetail('parking', v)}
         options={[{ value: 'assigned', label: 'Assigned' }, { value: 'covered', label: 'Covered' }, { value: 'garage', label: 'Garage' }, { value: 'none', label: 'None' }]} />
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Storage Unit Included" value={!!details.storage_unit} onChange={() => setDetail('storage_unit', !details.storage_unit)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Balcony / Terrace" value={!!details.balcony} onChange={() => setDetail('balcony', !details.balcony)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="In-Unit Laundry" value={!!details.in_unit_laundry} onChange={() => setDetail('in_unit_laundry', !details.in_unit_laundry)} />
       </div>
 
@@ -254,16 +265,22 @@ function CondoDetails({ details, setDetail }) {
         options={[{ value: 'furnished', label: 'Furnished' }, { value: 'unfurnished', label: 'Unfurnished' }, { value: 'negotiable', label: 'Negotiable' }]} />
 
       <SectionTitle>Building Amenities</SectionTitle>
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <button type="button" onClick={() => setAmenitiesOpen(o => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors"
+          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.9)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
           <span>Amenities {amenities.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>{amenities.length} selected</span>}</span>
-          <span className="text-lg leading-none">{amenitiesOpen ? '−' : '+'}</span>
+          <span className="text-lg leading-none" style={{ color: 'rgba(255,255,255,0.5)' }}>{amenitiesOpen ? '−' : '+'}</span>
         </button>
         {amenitiesOpen && (
-          <div className="px-4 py-3 divide-y divide-gray-50">
-            {CONDO_AMENITIES.map(a => (
-              <Toggle key={a.key} label={a.label} value={amenities.includes(a.key)} onChange={() => toggleAmenity(a.key)} />
+          <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            {CONDO_AMENITIES.map((a, idx) => (
+              <React.Fragment key={a.key}>
+                <Toggle label={a.label} value={amenities.includes(a.key)} onChange={() => toggleAmenity(a.key)} />
+                {idx < CONDO_AMENITIES.length - 1 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+              </React.Fragment>
             ))}
           </div>
         )}
@@ -323,9 +340,9 @@ function ApartmentDetails({ details, setDetail }) {
             <button key={u} type="button" onClick={() => toggleUtility(u)}
               className="px-3 py-1.5 rounded-lg border-2 text-xs font-medium transition-all"
               style={{
-                borderColor: utilities.includes(u) ? 'var(--tiffany-blue)' : '#e5e7eb',
-                backgroundColor: utilities.includes(u) ? '#e6f7f5' : 'white',
-                color: utilities.includes(u) ? '#3A8A82' : '#6b7280',
+                borderColor: utilities.includes(u) ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
+                backgroundColor: utilities.includes(u) ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
+                color: utilities.includes(u) ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)',
               }}>{u}</button>
           ))}
         </div>
@@ -346,16 +363,22 @@ function ApartmentDetails({ details, setDetail }) {
         options={[{ value: 'furnished', label: 'Furnished' }, { value: 'unfurnished', label: 'Unfurnished' }]} />
 
       <SectionTitle>Building Amenities</SectionTitle>
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <button type="button" onClick={() => setAmenitiesOpen(o => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors"
+          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.9)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
           <span>Amenities {amenities.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>{amenities.length} selected</span>}</span>
-          <span className="text-lg leading-none">{amenitiesOpen ? '−' : '+'}</span>
+          <span className="text-lg leading-none" style={{ color: 'rgba(255,255,255,0.5)' }}>{amenitiesOpen ? '−' : '+'}</span>
         </button>
         {amenitiesOpen && (
-          <div className="px-4 py-3 divide-y divide-gray-50">
-            {APT_AMENITIES.map(a => (
-              <Toggle key={a.key} label={a.label} value={amenities.includes(a.key)} onChange={() => toggleAmenity(a.key)} />
+          <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            {APT_AMENITIES.map((a, idx) => (
+              <React.Fragment key={a.key}>
+                <Toggle label={a.label} value={amenities.includes(a.key)} onChange={() => toggleAmenity(a.key)} />
+                {idx < APT_AMENITIES.length - 1 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+              </React.Fragment>
             ))}
           </div>
         )}
@@ -396,7 +419,7 @@ function MultiFamily24Details({ details, setDetail }) {
         options={[{ value: 'in_unit_all', label: 'In-Unit (All)' }, { value: 'in_unit_some', label: 'In-Unit (Some)' }, { value: 'shared', label: 'Shared' }, { value: 'none', label: 'None' }]} />
       <ToggleGroup label="Utility Metering" value={details.utility_metering || ''} onChange={v => setDetail('utility_metering', v)}
         options={[{ value: 'individual', label: 'Individual' }, { value: 'master', label: 'Master Metered' }]} />
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Owner Occupant (lives in one unit)" value={!!details.owner_occupied} onChange={() => toggleBool('owner_occupied')} />
       </div>
     </>
@@ -435,9 +458,11 @@ function MultiFamily5PlusDetails({ details, setDetail }) {
         options={[{ value: 'individual', label: 'Individual' }, { value: 'master', label: 'Master Metered' }, { value: 'mixed', label: 'Mixed' }]} />
       <ToggleGroup label="Laundry" value={details.laundry || ''} onChange={v => setDetail('laundry', v)}
         options={[{ value: 'in_unit_all', label: 'In-Unit (All)' }, { value: 'in_unit_some', label: 'In-Unit (Some)' }, { value: 'shared', label: 'Shared' }, { value: 'none', label: 'None' }]} />
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Professional Management in Place" value={!!details.managed} onChange={() => toggleBool('managed')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Assumable Financing Available" value={!!details.assumable_financing} onChange={() => toggleBool('assumable_financing')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Value-Add Opportunity" value={!!details.value_add} onChange={() => toggleBool('value_add')} />
       </div>
       <Field label="Parking Spaces"><Num field="parking_spaces" placeholder="e.g. 30" details={details} setDetail={setDetail} /></Field>
@@ -468,10 +493,13 @@ function TownhouseDetails({ details, setDetail }) {
         options={[{ value: 'end', label: 'End Unit' }, { value: 'middle', label: 'Middle Unit' }, { value: 'corner', label: 'Corner' }]} />
       <ToggleGroup label="Basement" value={details.basement || ''} onChange={v => setDetail('basement', v)}
         options={[{ value: 'finished', label: 'Finished' }, { value: 'unfinished', label: 'Unfinished' }, { value: 'none', label: 'None' }]} />
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Rooftop Deck" value={!!details.rooftop} onChange={() => toggleBool('rooftop')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Private Patio / Yard" value={!!details.patio} onChange={() => toggleBool('patio')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Fireplace" value={!!details.fireplace} onChange={() => toggleBool('fireplace')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="In-Unit Laundry" value={!!details.in_unit_laundry} onChange={() => toggleBool('in_unit_laundry')} />
       </div>
 
@@ -517,12 +545,17 @@ function ManufacturedDetails({ details, setDetail }) {
       <SectionTitle>Structure & Utilities</SectionTitle>
       <ToggleGroup label="Foundation Type" value={details.foundation || ''} onChange={v => setDetail('foundation', v)}
         options={[{ value: 'permanent', label: 'Permanent' }, { value: 'pier', label: 'Pier & Beam' }, { value: 'slab', label: 'Slab' }]} />
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="HUD Tag / Title Present" value={!!details.hud_tag} onChange={() => toggleBool('hud_tag')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Additions / Expansions Present" value={!!details.has_additions} onChange={() => toggleBool('has_additions')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Shed / Storage" value={!!details.shed} onChange={() => toggleBool('shed')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Covered Porch / Deck" value={!!details.porch} onChange={() => toggleBool('porch')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Central A/C" value={!!details.ac} onChange={() => toggleBool('ac')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Carport / Garage" value={!!details.carport} onChange={() => toggleBool('carport')} />
       </div>
       <ToggleGroup label="Utilities Setup" value={details.utilities_setup || ''} onChange={v => setDetail('utilities_setup', v)}
@@ -539,7 +572,9 @@ function ResidentialLandDetails({ details, setDetail }) {
   const topography = details.topography_tags || [];
   const toggleTopo = (key) => setDetail('topography_tags', topography.includes(key) ? topography.filter(t => t !== key) : [...topography, key]);
 
-  const selectCls = "w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2";
+  const selectCls = "w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2";
+  const selectStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
+  const optionStyle = { background: '#0E1318', color: 'rgba(255,255,255,0.85)' };
 
   return (
     <>
@@ -550,15 +585,15 @@ function ResidentialLandDetails({ details, setDetail }) {
       >
         <div className="grid grid-cols-2 gap-4 mb-3">
           <Field label="Road Surface">
-            <select className={selectCls} value={details.road_surface || ''} onChange={e => setDetail('road_surface', e.target.value)}>
-              <option value="">Select surface</option>
-              {['Paved/Asphalt', 'Concrete', 'Gravel', 'Dirt/Unimproved'].map(o => <option key={o} value={o}>{o}</option>)}
+            <select className={selectCls} style={selectStyle} value={details.road_surface || ''} onChange={e => setDetail('road_surface', e.target.value)}>
+              <option value="" style={optionStyle}>Select surface</option>
+              {['Paved/Asphalt', 'Concrete', 'Gravel', 'Dirt/Unimproved'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
             </select>
           </Field>
           <Field label="Access Type">
-            <select className={selectCls} value={details.access_type || ''} onChange={e => setDetail('access_type', e.target.value)}>
-              <option value="">Select access type</option>
-              {['Direct Frontage', 'Easement/Deeded', 'Shared Drive', 'Private Road'].map(o => <option key={o} value={o}>{o}</option>)}
+            <select className={selectCls} style={selectStyle} value={details.access_type || ''} onChange={e => setDetail('access_type', e.target.value)}>
+              <option value="" style={optionStyle}>Select access type</option>
+              {['Direct Frontage', 'Easement/Deeded', 'Shared Drive', 'Private Road'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
             </select>
           </Field>
         </div>
@@ -578,15 +613,15 @@ function ResidentialLandDetails({ details, setDetail }) {
       >
         <div className="grid grid-cols-2 gap-4">
           <Field label="Location Setting">
-            <select className={selectCls} value={details.location_setting || ''} onChange={e => setDetail('location_setting', e.target.value)}>
-              <option value="">Select setting</option>
-              {['Platted Subdivision', 'Cul-de-Sac', 'Corner Lot', 'Lakefront / Waterfront', 'Rural / Country', 'Wooded / Private'].map(o => <option key={o} value={o}>{o}</option>)}
+            <select className={selectCls} style={selectStyle} value={details.location_setting || ''} onChange={e => setDetail('location_setting', e.target.value)}>
+              <option value="" style={optionStyle}>Select setting</option>
+              {['Platted Subdivision', 'Cul-de-Sac', 'Corner Lot', 'Lakefront / Waterfront', 'Rural / Country', 'Wooded / Private'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
             </select>
           </Field>
           <Field label="Neighborhood Type">
-            <select className={selectCls} value={details.neighborhood_type || ''} onChange={e => setDetail('neighborhood_type', e.target.value)}>
-              <option value="">Select type</option>
-              {['Established Neighborhood', 'New Development', 'Rural/Acreage', 'Waterfront Community', 'Gated Community'].map(o => <option key={o} value={o}>{o}</option>)}
+            <select className={selectCls} style={selectStyle} value={details.neighborhood_type || ''} onChange={e => setDetail('neighborhood_type', e.target.value)}>
+              <option value="" style={optionStyle}>Select type</option>
+              {['Established Neighborhood', 'New Development', 'Rural/Acreage', 'Waterfront Community', 'Gated Community'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
             </select>
           </Field>
         </div>
@@ -602,7 +637,7 @@ function ResidentialLandDetails({ details, setDetail }) {
         <Field label="Gross Square Feet"><Num field="gross_sqft" placeholder="e.g. 9600" details={details} setDetail={setDetail} /></Field>
         <Field label="Road Frontage (ft)"><Num field="road_frontage" placeholder="e.g. 80" details={details} setDetail={setDetail} /></Field>
       </div>
-      <div className="rounded-xl border border-gray-100 px-4 py-1">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Subdividable" value={!!details.subdividable} onChange={v => setDetail('subdividable', v)} />
       </div>
 
@@ -613,9 +648,9 @@ function ResidentialLandDetails({ details, setDetail }) {
           <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. R-1, R-2" />
         </Field>
         <Field label="Entitlements">
-          <select className={selectCls} value={details.entitlements || ''} onChange={e => setDetail('entitlements', e.target.value)}>
-            <option value="">Select status</option>
-            {['Raw Land', 'Perc Tested', 'Site Plan Approved', 'Shovel Ready'].map(o => <option key={o} value={o}>{o}</option>)}
+          <select className={selectCls} style={selectStyle} value={details.entitlements || ''} onChange={e => setDetail('entitlements', e.target.value)}>
+            <option value="" style={optionStyle}>Select status</option>
+            {['Raw Land', 'Perc Tested', 'Site Plan Approved', 'Shovel Ready'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
           </select>
         </Field>
         <Field label="Buildable Area (sqft)"><Num field="buildable_area" placeholder="e.g. 7500" details={details} setDetail={setDetail} /></Field>
@@ -627,29 +662,32 @@ function ResidentialLandDetails({ details, setDetail }) {
       {/* Utilities & Infrastructure */}
       <SectionTitle>Utilities & Infrastructure</SectionTitle>
       <Field label="Utilities at Lot Line">
-        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
           {[
             { key: 'municipal_water', label: 'Municipal Water' },
             { key: 'sanitary_sewer',  label: 'Sanitary Sewer' },
             { key: 'electric',        label: 'Electric' },
             { key: 'natural_gas',     label: 'Natural Gas' },
             { key: 'fiber_internet',  label: 'Fiber / Internet' },
-          ].map(u => (
-            <Toggle key={u.key} label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
+          ].map((u, idx) => (
+            <React.Fragment key={u.key}>
+              <Toggle label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
+              {idx < 4 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+            </React.Fragment>
           ))}
         </div>
       </Field>
       <Field label="Perc Test Status">
-        <select className={selectCls} value={details.perc_test || ''} onChange={e => setDetail('perc_test', e.target.value)}>
-          <option value="">Select status</option>
-          {['Completed', 'Needs Testing', 'Not Required (Municipal Sewer)'].map(o => <option key={o} value={o}>{o}</option>)}
+        <select className={selectCls} style={selectStyle} value={details.perc_test || ''} onChange={e => setDetail('perc_test', e.target.value)}>
+          <option value="" style={optionStyle}>Select status</option>
+          {['Completed', 'Needs Testing', 'Not Required (Municipal Sewer)'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
         </select>
       </Field>
 
       {/* Physical Site Characteristics */}
       <SectionTitle>Physical Site Characteristics</SectionTitle>
       <Field label="Topography (select all that apply)">
-        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
           {[
             { key: 'level',    label: 'Level / Flat' },
             { key: 'wooded',   label: 'Wooded' },
@@ -657,14 +695,19 @@ function ResidentialLandDetails({ details, setDetail }) {
             { key: 'wetlands', label: 'Wetlands / Marsh' },
             { key: 'sloped',   label: 'Sloped' },
             { key: 'rolling',  label: 'Rolling' },
-          ].map(t => (
-            <Toggle key={t.key} label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />
+          ].map((t, idx) => (
+            <React.Fragment key={t.key}>
+              <Toggle label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />
+              {idx < 5 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+            </React.Fragment>
           ))}
         </div>
       </Field>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Survey Available" value={!!details.survey_available} onChange={v => setDetail('survey_available', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Wetlands Delineation Completed" value={!!details.wetlands_delineated} onChange={v => setDetail('wetlands_delineated', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Subdivision Potential" value={!!details.subdivision_potential} onChange={v => setDetail('subdivision_potential', v)} />
       </div>
 

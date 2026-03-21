@@ -584,23 +584,27 @@ function RetailDetails({ details, setDetail }) {
       />
 
       {/* Collapsible Special Features */}
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <button
           type="button"
           onClick={() => setFeaturesOpen(o => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors"
+          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.9)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
         >
           <span>Special Features {features.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>{features.length} selected</span>}</span>
-          <span className="text-lg leading-none">{featuresOpen ? '−' : '+'}</span>
+          <span className="text-lg leading-none" style={{ color: 'rgba(255,255,255,0.5)' }}>{featuresOpen ? '−' : '+'}</span>
         </button>
         {featuresOpen && (
-          <div className="px-4 py-3">
+          <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             {RETAIL_SPECIAL_FEATURES.map((f, idx) => (
               <React.Fragment key={f.key}>
                 <Toggle label={f.label} value={features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
-                {idx < RETAIL_SPECIAL_FEATURES.length && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+                {idx < RETAIL_SPECIAL_FEATURES.length - 1 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
               </React.Fragment>
             ))}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
             <Toggle label="Other" value={!!details.feature_other} onChange={v => setDetail('feature_other', v ? '' : undefined)} />
             {details.feature_other !== undefined && (
               <div className="pb-2 pt-1">
@@ -608,7 +612,6 @@ function RetailDetails({ details, setDetail }) {
                   value={details.feature_other || ''}
                   onChange={e => setDetail('feature_other', e.target.value)}
                   placeholder="Describe the feature…"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                 />
               </div>
             )}
