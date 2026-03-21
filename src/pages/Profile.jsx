@@ -101,6 +101,7 @@ export default function Profile() {
       const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       await base44.auth.updateMe({ profile_photo_url: file_url });
+      queryClient.setQueryData(['user'], (oldUser) => ({ ...oldUser, profile_photo_url: file_url }));
       setFormData({ ...formData, profile_photo_url: file_url });
       queryClient.invalidateQueries(['user']);
       toast({ title: 'Profile photo updated' });
@@ -114,13 +115,8 @@ export default function Profile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { employing_broker_number, license_number, profile_photo_url, ...editableData } = formData;
-    
-    // Update user entity with all editable fields
-    await base44.entities.User.update(user.id, editableData);
-    
-    // Also update auth context
-    updateMutation.mutate(editableData);
+    const { employing_broker_number, license_number, ...dataToUpdate } = formData;
+    updateMutation.mutate(dataToUpdate);
   };
 
   return (
