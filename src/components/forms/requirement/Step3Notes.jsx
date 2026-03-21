@@ -41,7 +41,7 @@ export default function ReqStep3({ data, update, onNext }) {
       <div className="space-y-1.5">
         <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Additional Notes</Label>
         <Textarea value={data.notes} onChange={e => update({ notes: e.target.value })}
-          placeholder="Any deal-breakers, special requirements, or context about the client..." rows={4} />
+          placeholder="Any deal-breakers, special requirements, or context about the client..." rows={4} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
       </div>
 
       <div className="flex items-center justify-between pt-2">

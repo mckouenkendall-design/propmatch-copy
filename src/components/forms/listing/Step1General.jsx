@@ -156,7 +156,7 @@ export default function ListStep1({ data, update, onNext }) {
       {/* ── Size (SF) ── */}
       <div className="space-y-1.5">
         <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Size (SF)</Label>
-        <Input type="number" value={data.size_sqft || ''} onChange={e => update({ size_sqft: e.target.value })} placeholder="5,000" />
+        <Input type="number" value={data.size_sqft || ''} onChange={e => update({ size_sqft: e.target.value })} placeholder="5,000" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
       </div>
 
       {/* ── Transaction Type ── */}
@@ -178,6 +178,7 @@ export default function ListStep1({ data, update, onNext }) {
               value={data.price || ''}
               onChange={e => update({ price: e.target.value })}
               placeholder="e.g. 24.00"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
             />
             <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Price per square foot per year</p>
             {data.price && data.size_sqft && (
@@ -249,6 +250,7 @@ export default function ListStep1({ data, update, onNext }) {
             value={data.price || ''}
             onChange={e => update({ price: e.target.value })}
             placeholder="e.g. 1,250,000"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </div>
       )}
@@ -263,6 +265,7 @@ export default function ListStep1({ data, update, onNext }) {
               value={data.price || ''}
               onChange={e => update({ price: e.target.value })}
               placeholder="e.g. 2,500"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
             />
           </div>
 
@@ -291,6 +294,7 @@ export default function ListStep1({ data, update, onNext }) {
             value={data.price || ''}
             onChange={e => update({ price: e.target.value })}
             placeholder="e.g. 450,000"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </div>
       )}
@@ -307,15 +311,15 @@ export default function ListStep1({ data, update, onNext }) {
         </div>
         <div className="space-y-1.5">
           <Label style={{ color: 'rgba(255,255,255,0.9)' }}>City <span className="text-red-500">*</span></Label>
-          <Input value={data.city || ''} onChange={e => update({ city: e.target.value })} placeholder="Ferndale" />
+          <Input value={data.city || ''} onChange={e => update({ city: e.target.value })} placeholder="Ferndale" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
         </div>
         <div className="space-y-1.5">
           <Label style={{ color: 'rgba(255,255,255,0.9)' }}>State</Label>
-          <Input value={data.state || ''} onChange={e => update({ state: e.target.value })} placeholder="MI" maxLength={2} />
+          <Input value={data.state || ''} onChange={e => update({ state: e.target.value })} placeholder="MI" maxLength={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
         </div>
         <div className="space-y-1.5">
           <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Zip Code</Label>
-          <Input value={data.zip_code || ''} onChange={e => update({ zip_code: e.target.value })} placeholder="48220" />
+          <Input value={data.zip_code || ''} onChange={e => update({ zip_code: e.target.value })} placeholder="48220" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
         </div>
       </div>
 
