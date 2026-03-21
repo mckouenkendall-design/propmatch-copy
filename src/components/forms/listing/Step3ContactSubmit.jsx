@@ -65,8 +65,8 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
       const patch = {};
       if (!data.contact_agent_name && user.full_name) patch.contact_agent_name = user.full_name;
       if (!data.contact_agent_email && user.email) patch.contact_agent_email = user.email;
-      if (!data.brokerage_id && user.brokerage_id) patch.brokerage_id = user.brokerage_id;
-      if (!data.company_name && user.company_name) patch.company_name = user.company_name;
+      if (!data.contact_agent_phone && user.phone) patch.contact_agent_phone = user.phone;
+      if (!data.company_name && user.brokerage_name) patch.company_name = user.brokerage_name;
       if (Object.keys(patch).length > 0) update(patch);
     }
     prefill();
