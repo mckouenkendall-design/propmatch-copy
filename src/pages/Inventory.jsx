@@ -161,58 +161,7 @@ export default function Inventory() {
 
       {/* Tab Toggle & Actions */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <div style={{ 
-          display: 'inline-flex', 
-          background: 'rgba(255,255,255,0.04)', 
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '8px',
-          padding: '4px'
-        }}>
-          <button
-            onClick={() => setActiveTab('listings')}
-            style={{
-              padding: '8px 20px',
-              background: activeTab === 'listings' ? `${ACCENT}20` : 'transparent',
-              border: activeTab === 'listings' ? `1px solid ${ACCENT}40` : 'none',
-              borderRadius: '6px',
-              color: activeTab === 'listings' ? ACCENT : 'rgba(255,255,255,0.6)',
-              cursor: 'pointer',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '14px',
-              fontWeight: 500,
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <Building2 style={{ width: '16px', height: '16px' }} />
-            Listings ({listings.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('requirements')}
-            style={{
-              padding: '8px 20px',
-              background: activeTab === 'requirements' ? `${ACCENT}20` : 'transparent',
-              border: activeTab === 'requirements' ? `1px solid ${ACCENT}40` : 'none',
-              borderRadius: '6px',
-              color: activeTab === 'requirements' ? ACCENT : 'rgba(255,255,255,0.6)',
-              cursor: 'pointer',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '14px',
-              fontWeight: 500,
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <Search style={{ width: '16px', height: '16px' }} />
-            Requirements ({requirements.length})
-          </button>
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ 
             display: 'inline-flex', 
             background: 'rgba(255,255,255,0.04)', 
@@ -221,30 +170,46 @@ export default function Inventory() {
             padding: '4px'
           }}>
             <button
-              onClick={() => setViewMode('grid')}
+              onClick={() => setActiveTab('listings')}
               style={{
-                padding: '6px 12px',
-                background: viewMode === 'grid' ? 'rgba(255,255,255,0.08)' : 'transparent',
-                border: 'none',
-                borderRadius: '4px',
-                color: viewMode === 'grid' ? 'white' : 'rgba(255,255,255,0.5)',
-                cursor: 'pointer'
+                padding: '8px 20px',
+                background: activeTab === 'listings' ? `${ACCENT}20` : 'transparent',
+                border: activeTab === 'listings' ? `1px solid ${ACCENT}40` : 'none',
+                borderRadius: '6px',
+                color: activeTab === 'listings' ? ACCENT : 'rgba(255,255,255,0.6)',
+                cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
               }}
             >
-              <Grid style={{ width: '16px', height: '16px' }} />
+              <Building2 style={{ width: '16px', height: '16px' }} />
+              Listings ({listings.length})
             </button>
             <button
-              onClick={() => setViewMode('list')}
+              onClick={() => setActiveTab('requirements')}
               style={{
-                padding: '6px 12px',
-                background: viewMode === 'list' ? 'rgba(255,255,255,0.08)' : 'transparent',
-                border: 'none',
-                borderRadius: '4px',
-                color: viewMode === 'list' ? 'white' : 'rgba(255,255,255,0.5)',
-                cursor: 'pointer'
+                padding: '8px 20px',
+                background: activeTab === 'requirements' ? `${ACCENT}20` : 'transparent',
+                border: activeTab === 'requirements' ? `1px solid ${ACCENT}40` : 'none',
+                borderRadius: '6px',
+                color: activeTab === 'requirements' ? ACCENT : 'rgba(255,255,255,0.6)',
+                cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
               }}
             >
-              <ListIcon style={{ width: '16px', height: '16px' }} />
+              <Search style={{ width: '16px', height: '16px' }} />
+              Requirements ({requirements.length})
             </button>
           </div>
 
@@ -266,7 +231,42 @@ export default function Inventory() {
             }}
           >
             <Plus style={{ width: '16px', height: '16px' }} />
-            Add {activeTab === 'listings' ? 'Listing' : 'Requirement'}
+            Post
+          </button>
+        </div>
+
+        <div style={{ 
+          display: 'inline-flex', 
+          background: 'rgba(255,255,255,0.04)', 
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '8px',
+          padding: '4px'
+        }}>
+          <button
+            onClick={() => setViewMode('grid')}
+            style={{
+              padding: '6px 12px',
+              background: viewMode === 'grid' ? 'rgba(255,255,255,0.08)' : 'transparent',
+              border: 'none',
+              borderRadius: '4px',
+              color: viewMode === 'grid' ? 'white' : 'rgba(255,255,255,0.5)',
+              cursor: 'pointer'
+            }}
+          >
+            <Grid style={{ width: '16px', height: '16px' }} />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            style={{
+              padding: '6px 12px',
+              background: viewMode === 'list' ? 'rgba(255,255,255,0.08)' : 'transparent',
+              border: 'none',
+              borderRadius: '4px',
+              color: viewMode === 'list' ? 'white' : 'rgba(255,255,255,0.5)',
+              cursor: 'pointer'
+            }}
+          >
+            <ListIcon style={{ width: '16px', height: '16px' }} />
           </button>
         </div>
       </div>
@@ -294,7 +294,7 @@ export default function Inventory() {
               color: 'rgba(255,255,255,0.5)',
               margin: 0
             }}>
-              Click "Add {activeTab === 'listings' ? 'Listing' : 'Requirement'}" to get started
+              Click "Post" to get started
             </p>
           </CardContent>
         </Card>

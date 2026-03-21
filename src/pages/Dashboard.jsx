@@ -166,55 +166,10 @@ export default function Dashboard() {
               color: 'white', 
               margin: '0 0 8px' 
             }}>
-              Post Listing
+              Post
             </h3>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
-              List a property and start matching
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card 
-          onClick={() => setShowCreateModal(true)}
-          style={{ 
-            background: `linear-gradient(135deg, ${ACCENT}15 0%, ${ACCENT}05 100%)`, 
-            border: `1px solid ${ACCENT}40`,
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = `0 12px 40px ${ACCENT}20`;
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = 'none';
-          }}
-        >
-          <CardContent style={{ padding: '32px' }}>
-            <div style={{ 
-              width: '56px', 
-              height: '56px', 
-              borderRadius: '14px', 
-              background: ACCENT, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              marginBottom: '16px'
-            }}>
-              <Search style={{ width: '28px', height: '28px', color: '#111827' }} />
-            </div>
-            <h3 style={{ 
-              fontFamily: "'Plus Jakarta Sans', sans-serif", 
-              fontSize: '20px', 
-              fontWeight: 500, 
-              color: 'white', 
-              margin: '0 0 8px' 
-            }}>
-              Post Requirement
-            </h3>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
-              Share what your client needs
+              List a property or share client needs
             </p>
           </CardContent>
         </Card>
