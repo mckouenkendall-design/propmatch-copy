@@ -142,160 +142,161 @@ export default function Profile() {
     <div style={{ minHeight: '100vh', background: '#0E1318', paddingTop: '64px' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '48px 24px' }}>
         
-        {/* Header Card */}
-        <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
-          <CardContent style={{ padding: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'start', gap: '24px', flexWrap: 'wrap' }}>
-              {/* Avatar */}
-              <div style={{ position: 'relative' }}>
-                {formData.profile_photo_url ? (
-                  <img 
-                    src={formData.profile_photo_url} 
-                    alt="Profile" 
-                    style={{
+        {/* Profile Form */}
+        <form onSubmit={handleSubmit}>
+          {/* Header Card */}
+          <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
+            <CardContent style={{ padding: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'start', gap: '24px', flexWrap: 'wrap' }}>
+                {/* Avatar */}
+                <div style={{ position: 'relative' }}>
+                  {formData.profile_photo_url ? (
+                    <img 
+                      src={formData.profile_photo_url} 
+                      alt="Profile" 
+                      style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '50%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
                       width: '120px',
                       height: '120px',
                       borderRadius: '50%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                ) : (
-                  <div style={{
-                    width: '120px',
-                    height: '120px',
-                    borderRadius: '50%',
-                    background: ACCENT,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    fontSize: '48px',
-                    fontWeight: 300,
-                    color: '#111827',
-                  }}>
-                    {user?.full_name?.[0]?.toUpperCase() || 'U'}
-                  </div>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoUpload}
-                  style={{ display: 'none' }}
-                />
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingPhoto}
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.1)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    cursor: uploadingPhoto ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {uploadingPhoto ? (
-                    <Loader2 style={{ width: '18px', height: '18px', color: 'white', animation: 'spin 1s linear infinite' }} />
-                  ) : (
-                    <Camera style={{ width: '18px', height: '18px', color: 'white' }} />
+                      background: ACCENT,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      fontSize: '48px',
+                      fontWeight: 300,
+                      color: '#111827',
+                    }}>
+                      {user?.full_name?.[0]?.toUpperCase() || 'U'}
+                    </div>
                   )}
-                </button>
-              </div>
-
-              {/* Info */}
-              <div style={{ flex: 1 }}>
-                {editing ? (
-                  <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                      <div>
-                        <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Full Name</Label>
-                        <Input
-                          value={formData.full_name}
-                          onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                          placeholder="First Last"
-                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                        />
-                      </div>
-                      <div>
-                        <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Username</Label>
-                        <Input
-                          value={formData.username}
-                          onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                          placeholder="@username"
-                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                        />
-                      </div>
-                    </div>
-                    <div style={{ marginBottom: '12px' }}>
-                      <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Email</Label>
-                      <Input
-                        type="email"
-                        value={formData.email || user?.email || ''}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="email@example.com"
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '32px', fontWeight: 300, color: 'white', margin: '0 0 4px' }}>
-                      {user?.full_name}
-                    </h1>
-                    {user?.username && (
-                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: ACCENT, margin: '0 0 8px' }}>
-                        @{user.username}
-                      </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingPhoto}
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: 0,
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      cursor: uploadingPhoto ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {uploadingPhoto ? (
+                      <Loader2 style={{ width: '18px', height: '18px', color: 'white', animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                      <Camera style={{ width: '18px', height: '18px', color: 'white' }} />
                     )}
-                  </>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Mail style={{ width: '16px', height: '16px', color: ACCENT }} />
-                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>
-                      {user?.email}
-                    </span>
-                  </div>
-                  {user?.phone && (
+                  </button>
+                </div>
+
+                {/* Info */}
+                <div style={{ flex: 1 }}>
+                  {editing ? (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                        <div>
+                          <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Full Name</Label>
+                          <Input
+                            value={formData.full_name}
+                            onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                            placeholder="First Last"
+                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                          />
+                        </div>
+                        <div>
+                          <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Username</Label>
+                          <Input
+                            value={formData.username}
+                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                            placeholder="@username"
+                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ marginBottom: '12px' }}>
+                        <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Email</Label>
+                        <Input
+                          type="email"
+                          value={formData.email || user?.email || ''}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="email@example.com"
+                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '32px', fontWeight: 300, color: 'white', margin: '0 0 4px' }}>
+                        {user?.full_name}
+                      </h1>
+                      {user?.username && (
+                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: ACCENT, margin: '0 0 8px' }}>
+                          @{user.username}
+                        </p>
+                      )}
+                    </>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Phone style={{ width: '16px', height: '16px', color: ACCENT }} />
+                      <Mail style={{ width: '16px', height: '16px', color: ACCENT }} />
                       <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>
-                        {user.phone}
+                        {user?.email}
                       </span>
                     </div>
+                    {user?.phone && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Phone style={{ width: '16px', height: '16px', color: ACCENT }} />
+                        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>
+                          {user.phone}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {!editing && user?.bio && (
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>
+                      {user.bio}
+                    </p>
                   )}
                 </div>
-                {!editing && user?.bio && (
-                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>
-                    {user.bio}
-                  </p>
-                )}
+
+                {/* Edit Button */}
+                <Button
+                  type="button"
+                  onClick={() => editing ? setEditing(false) : setEditing(true)}
+                  style={{
+                    background: editing ? 'transparent' : ACCENT,
+                    color: editing ? ACCENT : '#111827',
+                    border: editing ? `1px solid ${ACCENT}` : 'none',
+                  }}
+                >
+                  {editing ? 'Cancel' : 'Edit Profile'}
+                </Button>
               </div>
-
-              {/* Edit Button */}
-              <Button
-                onClick={() => editing ? setEditing(false) : setEditing(true)}
-                style={{
-                  background: editing ? 'transparent' : ACCENT,
-                  color: editing ? ACCENT : '#111827',
-                  border: editing ? `1px solid ${ACCENT}` : 'none',
-                }}
-              >
-                {editing ? 'Cancel' : 'Edit Profile'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Profile Form */}
-        <form onSubmit={handleSubmit}>
+            </CardContent>
+          </Card>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
             
             {/* Professional Information */}
