@@ -32,6 +32,7 @@ export default function GlobalSearch() {
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const searchRef = useRef(null);
   const navigate = useNavigate();
 
@@ -105,7 +106,7 @@ export default function GlobalSearch() {
   };
 
   return (
-    <div ref={searchRef} style={{ position: 'relative', width: '100%', maxWidth: '500px' }}>
+    <div ref={searchRef} style={{ position: 'relative', width: isFocused ? '100%' : '220px', maxWidth: '500px', transition: 'width 0.3s ease' }}>
       <div style={{ position: 'relative' }}>
         <Search style={{
           position: 'absolute',
@@ -122,8 +123,14 @@ export default function GlobalSearch() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => query.trim() && setIsOpen(true)}
-          placeholder="Search anything... Try: 'Find my $500k Detroit listing'"
+          onFocus={() => {
+            setIsFocused(true);
+            query.trim() && setIsOpen(true);
+          }}
+          onBlur={() => {
+            setTimeout(() => setIsFocused(false), 200);
+          }}
+          placeholder="Search anything..."
           style={{
             width: '100%',
             padding: '10px 40px 10px 40px',
