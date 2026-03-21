@@ -141,27 +141,6 @@ export default function TopNav() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {/* Notifications */}
-          <button style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            position: 'relative',
-            padding: '8px',
-          }}>
-            <Bell style={{ width: '20px', height: '20px', color: 'rgba(255,255,255,0.7)' }} />
-            <span style={{
-              position: 'absolute',
-              top: '6px',
-              right: '6px',
-              width: '8px',
-              height: '8px',
-              background: ACCENT,
-              borderRadius: '50%',
-              border: '2px solid #0E1318',
-            }} />
-          </button>
-
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
