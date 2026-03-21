@@ -273,7 +273,7 @@ function OfficeDetails({ details, setDetail }) {
         </Field>
       </div>
 
-      <div className="rounded-xl border border-gray-100 px-4 py-2 space-y-1">
+      <div className="rounded-xl px-4 py-2 space-y-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle
           label="In-Suite Restrooms"
           value={hasRestrooms}
@@ -290,7 +290,7 @@ function OfficeDetails({ details, setDetail }) {
           </div>
         )}
         {!hasRestrooms && (
-          <p className="text-xs text-gray-400 pb-2">Shared floor restrooms (standard)</p>
+          <p className="text-xs pb-2" style={{ color: 'rgba(255,255,255,0.5)' }}>Shared floor restrooms (standard)</p>
         )}
       </div>
 
@@ -379,7 +379,7 @@ function OfficeDetails({ details, setDetail }) {
         </Field>
       </div>
 
-      <div className="rounded-xl border border-gray-100 px-4 py-2">
+      <div className="rounded-xl px-4 py-2" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Dedicated Parking Available" value={!!details.dedicated_parking} onChange={v => setDetail('dedicated_parking', v)} />
       </div>
 
@@ -492,8 +492,9 @@ function MedicalOfficeDetails({ details, setDetail }) {
         </Field>
       </div>
 
-      <div className="rounded-xl border border-gray-100 px-4 py-2 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-2" style={{ border: '1px solid rgba(255,255,255,0.1)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
         <Toggle label="Dedicated Parking Available" value={!!details.dedicated_parking} onChange={v => setDetail('dedicated_parking', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Valet Parking Available" value={!!details.valet_parking} onChange={v => setDetail('valet_parking', v)} />
       </div>
 
@@ -558,13 +559,14 @@ function RetailDetails({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Signage Rights">
           <select
-            className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2"
+            className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
             value={details.signage_rights || ''}
             onChange={e => setDetail('signage_rights', e.target.value)}
           >
-            <option value="">Select signage type</option>
+            <option value="" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>Select signage type</option>
             {['Building', 'Pylon / Monument', 'Electronic', 'Window', 'None'].map(s => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s} style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>{s}</option>
             ))}
           </select>
         </Field>
@@ -592,9 +594,12 @@ function RetailDetails({ details, setDetail }) {
           <span className="text-lg leading-none">{featuresOpen ? '−' : '+'}</span>
         </button>
         {featuresOpen && (
-          <div className="px-4 py-3 divide-y divide-gray-50">
-            {RETAIL_SPECIAL_FEATURES.map(f => (
-              <Toggle key={f.key} label={f.label} value={features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
+          <div className="px-4 py-3">
+            {RETAIL_SPECIAL_FEATURES.map((f, idx) => (
+              <React.Fragment key={f.key}>
+                <Toggle label={f.label} value={features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
+                {idx < RETAIL_SPECIAL_FEATURES.length && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+              </React.Fragment>
             ))}
             <Toggle label="Other" value={!!details.feature_other} onChange={v => setDetail('feature_other', v ? '' : undefined)} />
             {details.feature_other !== undefined && (
@@ -603,6 +608,7 @@ function RetailDetails({ details, setDetail }) {
                   value={details.feature_other || ''}
                   onChange={e => setDetail('feature_other', e.target.value)}
                   placeholder="Describe the feature…"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                 />
               </div>
             )}
@@ -611,8 +617,9 @@ function RetailDetails({ details, setDetail }) {
       </div>
 
       {/* ADA & Restrooms */}
-      <div className="rounded-xl border border-gray-100 px-4 py-2 space-y-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-2 space-y-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="ADA Compliant" value={!!details.ada_compliant} onChange={v => setDetail('ada_compliant', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }} />
         <Toggle
           label="In-Suite Restrooms"
           value={hasRestrooms}
@@ -636,7 +643,7 @@ function RetailDetails({ details, setDetail }) {
         </Field>
       </div>
 
-      <div className="rounded-xl border border-gray-100 px-4 py-2 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-2" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Shared Parking Access" value={!!details.shared_parking_access} onChange={v => setDetail('shared_parking_access', v)} />
       </div>
 
@@ -720,7 +727,7 @@ function IndustrialFlexDetails({ details, setDetail }) {
         </Field>
       </div>
 
-      <div className="rounded-xl border border-gray-100 px-4 py-1">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Cross-Dock Capable" value={!!details.cross_dock} onChange={() => toggleBool('cross_dock')} />
       </div>
 
@@ -729,12 +736,13 @@ function IndustrialFlexDetails({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Amperage">
           <select
-            className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2"
+            className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
             value={details.power_amps || ''}
             onChange={e => setDetail('power_amps', e.target.value)}
           >
-            <option value="">Select amperage</option>
-            {AMPERAGE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+            <option value="" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>Select amperage</option>
+            {AMPERAGE_OPTIONS.map(a => <option key={a} value={a} style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>{a}</option>)}
           </select>
         </Field>
         <Field label="Additional Power Specs">
@@ -749,8 +757,9 @@ function IndustrialFlexDetails({ details, setDetail }) {
         options={[{ value: '240v', label: '240V' }, { value: '480v', label: '480V' }, { value: 'other', label: 'Other' }]}
       />
 
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="3-Phase Power" value={!!details.three_phase} onChange={() => toggleBool('three_phase')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Substation On-Site" value={!!details.substation_on_site} onChange={() => toggleBool('substation_on_site')} />
       </div>
 
@@ -771,20 +780,27 @@ function IndustrialFlexDetails({ details, setDetail }) {
         <Field label="Showroom SF"><Num field="showroom_sf" placeholder="e.g. 1000" details={details} setDetail={setDetail} /></Field>
       </div>
       <Field label="Systems Checklist">
-        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-          {SYSTEMS_CHECKLIST.map(s => (
-            <Toggle key={s.key} label={s.label} value={systems.includes(s.key)} onChange={() => toggleSystem(s.key)} />
+        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+          {SYSTEMS_CHECKLIST.map((s, idx) => (
+            <React.Fragment key={s.key}>
+              <Toggle label={s.label} value={systems.includes(s.key)} onChange={() => toggleSystem(s.key)} />
+              {idx < SYSTEMS_CHECKLIST.length - 1 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+            </React.Fragment>
           ))}
         </div>
       </Field>
 
       {/* Exterior & Site */}
       <SectionTitle>Exterior & Site Details</SectionTitle>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Rail Access" value={!!details.rail_access} onChange={() => toggleBool('rail_access')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Fenced / Secured Yard" value={!!details.fenced_yard} onChange={() => toggleBool('fenced_yard')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Outside Storage Allowed" value={!!details.outside_storage} onChange={() => toggleBool('outside_storage')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Gated Access" value={!!details.gated_access} onChange={() => toggleBool('gated_access')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Security Cameras" value={!!details.security_cameras} onChange={() => toggleBool('security_cameras')} />
       </div>
       <Field label="Dock Equipment">
@@ -832,7 +848,9 @@ function LandDetails({ details, setDetail }) {
   const topography = details.topography || [];
   const toggleTopo = (key) => setDetail('topography', topography.includes(key) ? topography.filter(t => t !== key) : [...topography, key]);
 
-  const selectCls = "w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2";
+  const selectCls = "w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2";
+  const selectStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
+  const optionStyle = { background: '#0E1318', color: 'rgba(255,255,255,0.85)' };
 
   return (
     <>
@@ -843,15 +861,15 @@ function LandDetails({ details, setDetail }) {
       >
         <div className="grid grid-cols-2 gap-4 mb-3">
           <Field label="Road Surface">
-            <select className={selectCls} value={details.road_surface || ''} onChange={e => setDetail('road_surface', e.target.value)}>
-              <option value="">Select surface</option>
-              {['Paved/Asphalt', 'Concrete', 'Gravel', 'Dirt/Unimproved'].map(o => <option key={o} value={o}>{o}</option>)}
+            <select className={selectCls} style={selectStyle} value={details.road_surface || ''} onChange={e => setDetail('road_surface', e.target.value)}>
+              <option value="" style={optionStyle}>Select surface</option>
+              {['Paved/Asphalt', 'Concrete', 'Gravel', 'Dirt/Unimproved'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
             </select>
           </Field>
           <Field label="Access Type">
-            <select className={selectCls} value={details.access_type || ''} onChange={e => setDetail('access_type', e.target.value)}>
-              <option value="">Select access type</option>
-              {['Direct Frontage', 'Easement/Deeded', 'Shared Drive', 'Private Road'].map(o => <option key={o} value={o}>{o}</option>)}
+            <select className={selectCls} style={selectStyle} value={details.access_type || ''} onChange={e => setDetail('access_type', e.target.value)}>
+              <option value="" style={optionStyle}>Select access type</option>
+              {['Direct Frontage', 'Easement/Deeded', 'Shared Drive', 'Private Road'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
             </select>
           </Field>
         </div>
@@ -871,15 +889,15 @@ function LandDetails({ details, setDetail }) {
       >
         <div className="grid grid-cols-2 gap-4">
           <Field label="Location Setting">
-            <select className={selectCls} value={details.location_setting || ''} onChange={e => setDetail('location_setting', e.target.value)}>
-              <option value="">Select setting</option>
-              {['Highway Frontage', 'Main Road', 'Industrial Park', 'Suburban/Residential', 'Rural/Country'].map(o => <option key={o} value={o}>{o}</option>)}
+            <select className={selectCls} style={selectStyle} value={details.location_setting || ''} onChange={e => setDetail('location_setting', e.target.value)}>
+              <option value="" style={optionStyle}>Select setting</option>
+              {['Highway Frontage', 'Main Road', 'Industrial Park', 'Suburban/Residential', 'Rural/Country'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
             </select>
           </Field>
           <Field label="Visibility">
-            <select className={selectCls} value={details.visibility || ''} onChange={e => setDetail('visibility', e.target.value)}>
-              <option value="">Select visibility</option>
-              {['High Visibility', 'Average', 'Hidden/Private'].map(o => <option key={o} value={o}>{o}</option>)}
+            <select className={selectCls} style={selectStyle} value={details.visibility || ''} onChange={e => setDetail('visibility', e.target.value)}>
+              <option value="" style={optionStyle}>Select visibility</option>
+              {['High Visibility', 'Average', 'Hidden/Private'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
             </select>
           </Field>
         </div>
@@ -894,7 +912,7 @@ function LandDetails({ details, setDetail }) {
         </Field>
         <Field label="Gross Square Feet"><Num field="gross_sqft" placeholder="e.g. 217800" details={details} setDetail={setDetail} /></Field>
       </div>
-      <div className="rounded-xl border border-gray-100 px-4 py-1">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Divisible" value={!!details.divisible} onChange={v => setDetail('divisible', v)} />
       </div>
 
@@ -905,9 +923,9 @@ function LandDetails({ details, setDetail }) {
           <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. B-2, M-1" />
         </Field>
         <Field label="Entitlements">
-          <select className={selectCls} value={details.entitlements || ''} onChange={e => setDetail('entitlements', e.target.value)}>
-            <option value="">Select status</option>
-            {['Raw', 'Shovel Ready', 'Site Plan Approved'].map(o => <option key={o} value={o}>{o}</option>)}
+          <select className={selectCls} style={selectStyle} value={details.entitlements || ''} onChange={e => setDetail('entitlements', e.target.value)}>
+            <option value="" style={optionStyle}>Select status</option>
+            {['Raw', 'Shovel Ready', 'Site Plan Approved'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
           </select>
         </Field>
         <Field label="Curb Cuts"><Num field="curb_cuts" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
@@ -917,37 +935,43 @@ function LandDetails({ details, setDetail }) {
       {/* Utilities & Infrastructure */}
       <SectionTitle>Utilities & Infrastructure</SectionTitle>
       <Field label="Utilities to Site">
-        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
           {[
             { key: 'municipal_water', label: 'Municipal Water' },
             { key: 'sanitary_sewer',  label: 'Sanitary Sewer' },
             { key: 'electric',        label: 'Electric' },
             { key: 'natural_gas',     label: 'Natural Gas' },
             { key: 'fiber_internet',  label: 'Fiber / Internet' },
-          ].map(u => (
-            <Toggle key={u.key} label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
+          ].map((u, idx) => (
+            <React.Fragment key={u.key}>
+              <Toggle label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
+              {idx < 4 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+            </React.Fragment>
           ))}
         </div>
       </Field>
       <Field label="Perc Test Status">
-        <select className={selectCls} value={details.perc_test || ''} onChange={e => setDetail('perc_test', e.target.value)}>
-          <option value="">Select status</option>
-          {['Completed', 'Needs Testing', 'Not Required'].map(o => <option key={o} value={o}>{o}</option>)}
+        <select className={selectCls} style={selectStyle} value={details.perc_test || ''} onChange={e => setDetail('perc_test', e.target.value)}>
+          <option value="" style={optionStyle}>Select status</option>
+          {['Completed', 'Needs Testing', 'Not Required'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
         </select>
       </Field>
 
       {/* Physical Site Characteristics */}
       <SectionTitle>Physical Site Characteristics</SectionTitle>
       <Field label="Topography (select all that apply)">
-        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
           {[
             { key: 'level',    label: 'Level / Flat' },
             { key: 'wooded',   label: 'Wooded' },
             { key: 'cleared',  label: 'Cleared' },
             { key: 'wetlands', label: 'Wetlands / Marsh' },
             { key: 'sloped',   label: 'Sloped' },
-          ].map(t => (
-            <Toggle key={t.key} label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />
+          ].map((t, idx) => (
+            <React.Fragment key={t.key}>
+              <Toggle label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />
+              {idx < 4 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+            </React.Fragment>
           ))}
         </div>
       </Field>
@@ -955,8 +979,9 @@ function LandDetails({ details, setDetail }) {
         <Field label="Road Frontage (ft)"><Num field="road_frontage" placeholder="e.g. 300" details={details} setDetail={setDetail} /></Field>
         <Field label="Traffic Count (vehicles/day)"><Num field="traffic_count" placeholder="e.g. 25000" details={details} setDetail={setDetail} /></Field>
       </div>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Environmental Phase 1 Completed" value={!!details.phase1_completed} onChange={v => setDetail('phase1_completed', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Survey Available" value={!!details.survey_available} onChange={v => setDetail('survey_available', v)} />
       </div>
 
@@ -1034,12 +1059,13 @@ function SpecialUseDetails({ details, setDetail }) {
       <SectionTitle>Current Use & Classification</SectionTitle>
       <Field label="Current Specific Use">
         <select
-          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2"
+          className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
           value={details.specific_use || ''}
           onChange={e => setDetail('specific_use', e.target.value)}
         >
-          <option value="">Select current use</option>
-          {SPECIAL_USE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          <option value="" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>Select current use</option>
+          {SPECIAL_USE_TYPES.map(t => <option key={t} value={t} style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>{t}</option>)}
         </select>
       </Field>
       {details.specific_use === 'Other' && (
@@ -1067,13 +1093,16 @@ function SpecialUseDetails({ details, setDetail }) {
 
       {/* Specialty Infrastructure */}
       <SectionTitle>Specialty Infrastructure</SectionTitle>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-        {SPECIAL_INFRA.map(f => (
-          <Toggle key={f.key} label={f.label} value={!!details[f.key]} onChange={() => toggleBool(f.key)} />
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        {SPECIAL_INFRA.map((f, idx) => (
+          <React.Fragment key={f.key}>
+            <Toggle label={f.label} value={!!details[f.key]} onChange={() => toggleBool(f.key)} />
+            {idx < SPECIAL_INFRA.length && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+          </React.Fragment>
         ))}
         <Toggle label="ADA Compliant" value={!!details.ada_compliant} onChange={() => toggleBool('ada_compliant')} />
       </div>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Specialty Equipment Included" value={!!details.specialty_equipment} onChange={() => toggleBool('specialty_equipment')} />
       </div>
       {details.specialty_equipment && (
@@ -1153,7 +1182,7 @@ export default function ListStep2Commercial({ data, update, onNext }) {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-gray-500 -mt-2">Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong> space.</p>
+      <p className="text-sm -mt-2" style={{ color: 'rgba(255,255,255,0.6)' }}>Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong> space.</p>
       {type === 'office'         && <OfficeDetails        details={details} setDetail={setDetail} />}
       {type === 'medical_office' && <MedicalOfficeDetails details={details} setDetail={setDetail} />}
       {type === 'retail'           && <RetailDetails          details={details} setDetail={setDetail} />}

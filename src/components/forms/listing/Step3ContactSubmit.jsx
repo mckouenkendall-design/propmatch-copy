@@ -8,9 +8,9 @@ import { base44 } from '@/api/base44Client';
 function Field({ label, children, hint }) {
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      <Label style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</Label>
       {children}
-      {hint && <p className="text-xs text-gray-400">{hint}</p>}
+      {hint && <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{hint}</p>}
     </div>
   );
 }
@@ -18,7 +18,7 @@ function Field({ label, children, hint }) {
 function SectionTitle({ children }) {
   return (
     <div className="pt-2">
-      <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-2">{children}</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-wide pb-2" style={{ color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{children}</h3>
     </div>
   );
 }
@@ -26,12 +26,12 @@ function SectionTitle({ children }) {
 function Toggle({ label, value, onChange }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{label}</span>
       <button
         type="button"
         onClick={() => onChange(!value)}
         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-        style={{ backgroundColor: value ? 'var(--tiffany-blue)' : '#d1d5db' }}
+        style={{ backgroundColor: value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)' }}
       >
         <span
           className="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
@@ -127,21 +127,21 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
               onClick={() => update({ visibility: opt.value })}
               className="w-full flex items-start gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all"
               style={{
-                borderColor: visibility === opt.value ? 'var(--tiffany-blue)' : '#e5e7eb',
-                backgroundColor: visibility === opt.value ? '#e6f7f5' : 'white',
+                borderColor: visibility === opt.value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
+                backgroundColor: visibility === opt.value ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
               }}
             >
               <div
                 className="mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-                style={{ borderColor: visibility === opt.value ? 'var(--tiffany-blue)' : '#d1d5db' }}
+                style={{ borderColor: visibility === opt.value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.3)' }}
               >
                 {visibility === opt.value && (
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--tiffany-blue)' }} />
                 )}
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800">{opt.label}</p>
-                <p className="text-xs text-gray-500">{opt.desc}</p>
+                <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>{opt.label}</p>
+                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{opt.desc}</p>
               </div>
             </button>
           ))}
@@ -171,7 +171,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
 
       {/* Allow Direct Contact toggle */}
       <SectionTitle>Settings</SectionTitle>
-      <div className="rounded-xl border border-gray-100 px-4 py-1">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle
           label="Allow Direct Contact (Email / Call buttons on post)"
           value={data.allow_direct_contact !== false}
@@ -188,7 +188,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
             onChange={e => setTermsAccepted(e.target.checked)}
             className="mt-0.5 w-4 h-4 rounded accent-teal-500"
           />
-          <span className="text-sm text-gray-600">
+          <span className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>
             I agree to the{' '}
             <span className="underline cursor-pointer" style={{ color: 'var(--tiffany-blue)' }}>
               PropMatch Terms of Service

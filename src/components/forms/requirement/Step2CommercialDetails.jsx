@@ -158,17 +158,20 @@ function BuildingAmenitiesSection({ details, setDetail, label = "Required Buildi
   const selected = amenities.length;
 
   return (
-    <div className="rounded-xl border border-gray-200 overflow-hidden">
+    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
+        style={{ background: 'rgba(255,255,255,0.05)' }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
       >
         <div>
-          <p className="text-sm font-semibold text-gray-700">{label}</p>
-          {!open && <p className="text-xs text-gray-400 mt-0.5">{selected > 0 ? `${selected} required` : 'Select must-have building features'}</p>}
+          <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</p>
+          {!open && <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{selected > 0 ? `${selected} required` : 'Select must-have building features'}</p>}
         </div>
-        <span className="text-lg leading-none text-gray-400 ml-2">{open ? '−' : '+'}</span>
+        <span className="text-lg leading-none ml-2" style={{ color: 'rgba(255,255,255,0.5)' }}>{open ? '−' : '+'}</span>
       </button>
       {open && (
         <div className="px-4 py-3">
@@ -219,7 +222,7 @@ function OfficeDetails({ details, setDetail }) {
       </div>
 
       {/* Restrooms */}
-      <div className="rounded-xl border border-gray-100 px-4 py-1">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="In-Suite Restrooms Required?" value={!!details.insuit_restrooms} onChange={() => toggleBool('insuit_restrooms')} />
       </div>
       {details.insuit_restrooms && (
@@ -244,9 +247,12 @@ function OfficeDetails({ details, setDetail }) {
 
       {/* In-Suite / Space Must-Haves */}
       <SectionTitle>In-Suite / Space Must-Have Features</SectionTitle>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-        {OFFICE_FEATURES.map(f => (
-          <Toggle key={f.key} label={f.label} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        {OFFICE_FEATURES.map((f, idx) => (
+          <React.Fragment key={f.key}>
+            <Toggle label={f.label} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
+            {idx < OFFICE_FEATURES.length - 1 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+          </React.Fragment>
         ))}
       </div>
       <Field label="Other In-Suite Must-Have">
@@ -274,7 +280,7 @@ function OfficeDetails({ details, setDetail }) {
           <Num field="max_parking" placeholder="e.g. 60" details={details} setDetail={setDetail} />
         </Field>
       </div>
-      <div className="rounded-xl border border-gray-100 px-4 py-1">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Dedicated Parking Required?" value={!!details.dedicated_parking_required} onChange={() => toggleBool('dedicated_parking_required')} />
       </div>
 
@@ -342,9 +348,12 @@ function MedicalOfficeReqDetails({ details, setDetail }) {
 
       {/* In-Suite / Practice-Specific Must-Haves */}
       <SectionTitle>In-Suite / Practice-Specific Must-Haves</SectionTitle>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-        {MEDICAL_FEATURES.map(f => (
-          <Toggle key={f.key} label={f.label} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        {MEDICAL_FEATURES.map((f, idx) => (
+          <React.Fragment key={f.key}>
+            <Toggle label={f.label} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
+            {idx < MEDICAL_FEATURES.length && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+          </React.Fragment>
         ))}
         <Toggle label="Medical Waste Disposal Required?" value={!!details.waste_disposal_required} onChange={() => toggleBool('waste_disposal_required')} />
       </div>
@@ -366,8 +375,9 @@ function MedicalOfficeReqDetails({ details, setDetail }) {
           <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. O-1 Medical" />
         </Field>
       </div>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Dedicated Parking Required?" value={!!details.dedicated_parking_required} onChange={() => toggleBool('dedicated_parking_required')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Valet Parking Required?" value={!!details.valet_parking_required} onChange={() => toggleBool('valet_parking_required')} />
       </div>
       <BuildingClassSelector details={details} setDetail={setDetail} />
@@ -418,13 +428,14 @@ function RetailDetails({ details, setDetail }) {
 
       <Field label="Signage Preference">
         <select
-          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none"
+          className="w-full rounded-md px-3 py-2 text-sm focus:outline-none"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
           value={details.signage_pref || ''}
           onChange={e => setDetail('signage_pref', e.target.value)}
         >
-          <option value="">No preference</option>
+          <option value="" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>No preference</option>
           {['Building', 'Pylon / Monument', 'Electronic', 'Window'].map(s => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s} style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>{s}</option>
           ))}
         </select>
       </Field>
@@ -440,19 +451,25 @@ function RetailDetails({ details, setDetail }) {
       />
 
       {/* Collapsible Required Features */}
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <button
           type="button"
           onClick={() => setFeaturesOpen(o => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors"
+          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.9)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
         >
           <span>Required Features {features.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>{features.length} selected</span>}</span>
-          <span className="text-lg leading-none">{featuresOpen ? '−' : '+'}</span>
+          <span className="text-lg leading-none" style={{ color: 'rgba(255,255,255,0.5)' }}>{featuresOpen ? '−' : '+'}</span>
         </button>
         {featuresOpen && (
-          <div className="px-4 py-3 divide-y divide-gray-50">
-            {RETAIL_SPECIAL_FEATURES.map(f => (
-              <Toggle key={f.key} label={f.label} value={features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
+          <div className="px-4 py-3">
+            {RETAIL_SPECIAL_FEATURES.map((f, idx) => (
+              <React.Fragment key={f.key}>
+                <Toggle label={f.label} value={features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
+                {idx < RETAIL_SPECIAL_FEATURES.length && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+              </React.Fragment>
             ))}
             <Toggle label="Other" value={details.feature_other !== undefined} onChange={v => setDetail('feature_other', v ? '' : undefined)} />
             {details.feature_other !== undefined && (
@@ -461,6 +478,7 @@ function RetailDetails({ details, setDetail }) {
                   value={details.feature_other || ''}
                   onChange={e => setDetail('feature_other', e.target.value)}
                   placeholder="Describe the required feature…"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                 />
               </div>
             )}
@@ -469,8 +487,9 @@ function RetailDetails({ details, setDetail }) {
       </div>
 
       {/* ADA & Restrooms */}
-      <div className="rounded-xl border border-gray-100 px-4 py-2 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-2" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="ADA Compliant Required" value={!!details.ada_required} onChange={v => setDetail('ada_required', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="In-Suite Restrooms Required" value={hasRestrooms} onChange={v => setDetail('in_suite_restrooms', v ? 1 : 0)} />
         {hasRestrooms && (
           <div className="pb-2 pt-1">
@@ -502,7 +521,7 @@ function RetailDetails({ details, setDetail }) {
           <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. C-2" />
         </Field>
       </div>
-      <div className="rounded-xl border border-gray-100 px-4 py-1">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Shared Parking Access Required" value={!!details.shared_parking_access_required} onChange={v => setDetail('shared_parking_access_required', v)} />
       </div>
 
@@ -562,7 +581,7 @@ function IndustrialFlexReqDetails({ details, setDetail }) {
           <Input type="number" value={details.office_pct_max || ''} onChange={e => setDetail('office_pct_max', e.target.value)} placeholder="e.g. 30" />
         </Field>
       </div>
-      <div className="rounded-xl border border-gray-100 px-4 py-1">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Cross-Dock Required" value={!!details.cross_dock_required} onChange={() => toggleBool('cross_dock_required')} />
       </div>
 
@@ -570,12 +589,13 @@ function IndustrialFlexReqDetails({ details, setDetail }) {
       <SectionTitle>Power & Infrastructure Needs</SectionTitle>
       <Field label="Min. Amperage">
         <select
-          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none"
+          className="w-full rounded-md px-3 py-2 text-sm focus:outline-none"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
           value={details.min_power_amps || ''}
           onChange={e => setDetail('min_power_amps', e.target.value)}
         >
-          <option value="">No preference</option>
-          {AMPERAGE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+          <option value="" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>No preference</option>
+          {AMPERAGE_OPTIONS.map(a => <option key={a} value={a} style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>{a}</option>)}
         </select>
       </Field>
 
@@ -586,8 +606,9 @@ function IndustrialFlexReqDetails({ details, setDetail }) {
         options={[{ value: '240v', label: '240V' }, { value: '480v', label: '480V' }, { value: 'any', label: 'No Preference' }]}
       />
 
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="3-Phase Power Required" value={!!details.three_phase_required} onChange={() => toggleBool('three_phase_required')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Substation On-Site Required" value={!!details.substation_on_site_required} onChange={() => toggleBool('substation_on_site_required')} />
       </div>
 
@@ -600,18 +621,26 @@ function IndustrialFlexReqDetails({ details, setDetail }) {
       {/* Systems & Exterior */}
       <SectionTitle>Systems & Exterior Features</SectionTitle>
       <Field label="Required Systems">
-        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-          {REQUIRED_SYSTEMS.map(s => (
-            <Toggle key={s.key} label={s.label} value={systems.includes(s.key)} onChange={() => toggleSystem(s.key)} />
+        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+          {REQUIRED_SYSTEMS.map((s, idx) => (
+            <React.Fragment key={s.key}>
+              <Toggle label={s.label} value={systems.includes(s.key)} onChange={() => toggleSystem(s.key)} />
+              {idx < REQUIRED_SYSTEMS.length - 1 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+            </React.Fragment>
           ))}
         </div>
       </Field>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Rail Access Required" value={!!details.rail_access_required} onChange={() => toggleBool('rail_access_required')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Fenced / Secured Yard Required" value={!!details.fenced_yard_required} onChange={() => toggleBool('fenced_yard_required')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Outside Storage Required" value={!!details.outside_storage_required} onChange={() => toggleBool('outside_storage_required')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Dock Levelers Required" value={!!details.dock_levelers_required} onChange={() => toggleBool('dock_levelers_required')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Gated Access Required" value={!!details.gated_access_required} onChange={() => toggleBool('gated_access_required')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Security Cameras Required" value={!!details.security_cameras_required} onChange={() => toggleBool('security_cameras_required')} />
       </div>
 
@@ -708,21 +737,25 @@ function LandDetails({ details, setDetail }) {
 
       <Field label="Road Surface Required">
         <select
-          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2"
+          className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
           value={details.road_surface_required || ''}
           onChange={e => setDetail('road_surface_required', e.target.value)}
         >
-          <option value="">No Preference</option>
-          <option value="paved">Paved/Asphalt Only</option>
-          <option value="gravel">Gravel OK</option>
-          <option value="no_preference">No Preference</option>
+          <option value="" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>No Preference</option>
+          <option value="paved" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>Paved/Asphalt Only</option>
+          <option value="gravel" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>Gravel OK</option>
+          <option value="no_preference" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>No Preference</option>
         </select>
       </Field>
 
       <Field label="Location Setting Preference (select all that apply)">
-        <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-          {LOCATION_SETTINGS.map(s => (
-            <Toggle key={s.key} label={s.label} value={locationSettings.includes(s.key)} onChange={() => toggleLocationSetting(s.key)} />
+        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+          {LOCATION_SETTINGS.map((s, idx) => (
+            <React.Fragment key={s.key}>
+              <Toggle label={s.label} value={locationSettings.includes(s.key)} onChange={() => toggleLocationSetting(s.key)} />
+              {idx < LOCATION_SETTINGS.length - 1 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+            </React.Fragment>
           ))}
         </div>
       </Field>
@@ -733,35 +766,42 @@ function LandDetails({ details, setDetail }) {
       </Field>
 
       <SectionTitle>Utilities Required</SectionTitle>
-      <p className="text-xs text-gray-500 -mt-3">Must be at Site / Curb</p>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <p className="text-xs -mt-3" style={{ color: 'rgba(255,255,255,0.5)' }}>Must be at Site / Curb</p>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         {[
           { key: 'municipal_water', label: 'Municipal Water' },
           { key: 'sanitary_sewer',  label: 'Sanitary Sewer' },
           { key: 'electric_3phase', label: 'Electric (3-Phase)' },
           { key: 'natural_gas',     label: 'Natural Gas' },
           { key: 'fiber_internet',  label: 'Fiber / Internet' },
-        ].map(u => (
-          <Toggle key={u.key} label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
+        ].map((u, idx) => (
+          <React.Fragment key={u.key}>
+            <Toggle label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
+            {idx < 5 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+          </React.Fragment>
         ))}
         <Toggle label="Perc Test Required" value={!!details.perc_test_required} onChange={() => toggleBool('perc_test_required')} />
       </div>
 
       <SectionTitle>Site Characteristic Preferences</SectionTitle>
-      <p className="text-xs text-gray-500 -mt-3">Required State</p>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <p className="text-xs -mt-3" style={{ color: 'rgba(255,255,255,0.5)' }}>Required State</p>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         {[
           { key: 'level',           label: 'Level / Flat' },
           { key: 'cleared',         label: 'Cleared' },
           { key: 'wooded',          label: 'Wooded' },
           { key: 'build_to_suit',   label: 'Build-to-Suit Only' },
-        ].map(s => (
-          <Toggle key={s.key} label={s.label} value={siteChars.includes(s.key)} onChange={() => toggleSiteChar(s.key)} />
+        ].map((s, idx) => (
+          <React.Fragment key={s.key}>
+            <Toggle label={s.label} value={siteChars.includes(s.key)} onChange={() => toggleSiteChar(s.key)} />
+            {idx < 3 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+          </React.Fragment>
         ))}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Other" value={!!details.site_char_other_enabled} onChange={v => setDetail('site_char_other_enabled', v)} />
         {details.site_char_other_enabled && (
           <div className="py-2">
-            <Input value={details.site_char_other || ''} onChange={e => setDetail('site_char_other', e.target.value)} placeholder="Describe specific land requirement…" />
+            <Input value={details.site_char_other || ''} onChange={e => setDetail('site_char_other', e.target.value)} placeholder="Describe specific land requirement…" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
           </div>
         )}
       </div>
@@ -774,8 +814,9 @@ function LandDetails({ details, setDetail }) {
           ))}
         </div>
       </Field>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Survey Available Required" value={!!details.survey_required} onChange={() => toggleBool('survey_required')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Environmental Phase 1 Required" value={!!details.phase1_required} onChange={() => toggleBool('phase1_required')} />
       </div>
 
@@ -851,11 +892,15 @@ function SpecialUseReqDetails({ details, setDetail }) {
       </div>
 
       <SectionTitle>Required Specialty Features</SectionTitle>
-      <div className="rounded-xl border border-gray-100 px-4 py-1 divide-y divide-gray-50">
-        {SPECIAL_INFRA_REQ.map(f => (
-          <Toggle key={f.key} label={f.key === 'commercial_kitchen' ? 'Commercial Kitchen Required' : f.label + ' Required'} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        {SPECIAL_INFRA_REQ.map((f, idx) => (
+          <React.Fragment key={f.key}>
+            <Toggle label={f.key === 'commercial_kitchen' ? 'Commercial Kitchen Required' : f.label + ' Required'} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
+            {idx < SPECIAL_INFRA_REQ.length && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
+          </React.Fragment>
         ))}
         <Toggle label="ADA Compliant Required" value={!!details.ada_required} onChange={() => toggleBool('ada_required')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Other" value={!!details.other_feature_enabled} onChange={v => setDetail('other_feature_enabled', v)} />
       </div>
       {details.other_feature_enabled && (
@@ -875,17 +920,20 @@ function SpecialUseReqDetails({ details, setDetail }) {
 
       {/* Building Amenities */}
       <SectionTitle>Building Amenities</SectionTitle>
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <button
           type="button"
           onClick={() => setAmenitiesOpen(o => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+          className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
+          style={{ background: 'rgba(255,255,255,0.05)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
         >
           <div>
-            <p className="text-sm font-semibold text-gray-700">Required Building Amenities</p>
-            {!amenitiesOpen && <p className="text-xs text-gray-400 mt-0.5">{buildingAmenities.length > 0 ? `${buildingAmenities.length} required` : 'Select must-have building features'}</p>}
+            <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>Required Building Amenities</p>
+            {!amenitiesOpen && <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{buildingAmenities.length > 0 ? `${buildingAmenities.length} required` : 'Select must-have building features'}</p>}
           </div>
-          <span className="text-lg leading-none text-gray-400 ml-2">{amenitiesOpen ? '−' : '+'}</span>
+          <span className="text-lg leading-none ml-2" style={{ color: 'rgba(255,255,255,0.5)' }}>{amenitiesOpen ? '−' : '+'}</span>
         </button>
         {amenitiesOpen && (
           <div className="px-4 py-3">
@@ -948,7 +996,7 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-gray-500 -mt-2">Specific needs for a <strong className="capitalize">{typeName}</strong> space.</p>
+      <p className="text-sm -mt-2" style={{ color: 'rgba(255,255,255,0.6)' }}>Specific needs for a <strong className="capitalize">{typeName}</strong> space.</p>
       {type === 'office'          && <OfficeDetails              details={details} setDetail={setDetail} />}
       {type === 'medical_office' && <MedicalOfficeReqDetails     details={details} setDetail={setDetail} />}
       {type === 'retail' && <RetailDetails details={details} setDetail={setDetail} />}
