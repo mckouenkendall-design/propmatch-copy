@@ -473,10 +473,10 @@ function ResidentialLandReq({ details, setDetail }) {
       <SectionTitle>Zoning & Development Goals</SectionTitle>
       <Field label="Intended Use">
         <Textarea value={details.intended_use || ''} onChange={e => setDetail('intended_use', e.target.value)}
-          placeholder="e.g., Build a custom single family home with a large backyard" rows={2} />
+          placeholder="e.g., Build a custom single family home with a large backyard" rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
       </Field>
       <Field label="Desired Zoning">
-        <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. R-1, must allow ADU" />
+        <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. R-1, must allow ADU" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
       </Field>
       <Field label="Entitlements Preferred">
         <select className={selectCls} value={details.entitlements_pref || ''} onChange={e => setDetail('entitlements_pref', e.target.value)}>
