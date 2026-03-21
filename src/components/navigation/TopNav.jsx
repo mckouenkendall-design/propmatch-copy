@@ -4,7 +4,6 @@ import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { 
   Bell, 
-  Search, 
   User, 
   Settings, 
   LogOut, 
@@ -22,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import GlobalSearch from './GlobalSearch';
 
 const ACCENT = '#00DBC5';
 
@@ -134,31 +134,13 @@ export default function TopNav() {
         </div>
 
         {/* Right Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {/* Search */}
-          <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '6px',
-              padding: '8px 12px',
-              cursor: 'pointer',
-              color: 'rgba(255,255,255,0.5)',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = ACCENT;
-              e.currentTarget.style.color = ACCENT;
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-              e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
-            }}
-          >
-            <Search style={{ width: '18px', height: '18px' }} />
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, maxWidth: '600px', marginLeft: '24px' }}>
+          {/* Global Search */}
+          <GlobalSearch />
 
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {/* Notifications */}
           <button style={{
             background: 'transparent',
