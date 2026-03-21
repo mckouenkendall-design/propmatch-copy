@@ -24,8 +24,7 @@ function Num({ field, placeholder, details, setDetail, step }) {
       value={details[field] || ''}
       onChange={e => setDetail(field, e.target.value)}
       placeholder={placeholder}
-      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground"
-      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
     />
   );
 }
@@ -77,7 +76,7 @@ function TagsInput({ value = [], onChange, placeholder }) {
           </span>
         ))}
       </div>
-      <Input value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} placeholder={placeholder || 'Press Enter to add'} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+      <Input value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} placeholder={placeholder || 'Press Enter to add'} />
     </div>
   );
 }
@@ -165,7 +164,7 @@ function SingleFamilyReq({ details, setDetail }) {
 
       <SectionTitle>Additional Preferences</SectionTitle>
       <Field label="School District Preference">
-        <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" />
       </Field>
       <Field label="Other Requirements">
         <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} placeholder="e.g. corner lot, quiet street (press Enter)" />
@@ -473,10 +472,10 @@ function ResidentialLandReq({ details, setDetail }) {
       <SectionTitle>Zoning & Development Goals</SectionTitle>
       <Field label="Intended Use">
         <Textarea value={details.intended_use || ''} onChange={e => setDetail('intended_use', e.target.value)}
-          placeholder="e.g., Build a custom single family home with a large backyard" rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          placeholder="e.g., Build a custom single family home with a large backyard" rows={2} />
       </Field>
       <Field label="Desired Zoning">
-        <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. R-1, must allow ADU" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. R-1, must allow ADU" />
       </Field>
       <Field label="Entitlements Preferred">
         <select className={selectCls} value={details.entitlements_pref || ''} onChange={e => setDetail('entitlements_pref', e.target.value)}>
@@ -525,7 +524,7 @@ function ResidentialLandReq({ details, setDetail }) {
       {/* Additional Preferences */}
       <SectionTitle>Additional Preferences</SectionTitle>
       <Field label="School District Preference">
-        <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" />
       </Field>
       <Field label="Other Requirements">
         <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} placeholder="e.g. HOA allowed, subdivision lot (press Enter)" />

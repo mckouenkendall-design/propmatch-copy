@@ -24,8 +24,7 @@ function Num({ field, placeholder, details, setDetail, step }) {
       value={details[field] || ''}
       onChange={e => setDetail(field, e.target.value)}
       placeholder={placeholder}
-      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground"
-      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
     />
   );
 }
@@ -97,7 +96,7 @@ function TagsInput({ value = [], onChange, placeholder }) {
           </span>
         ))}
       </div>
-      <Input value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} placeholder={placeholder || 'Press Enter to add'} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+      <Input value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} placeholder={placeholder || 'Press Enter to add'} />
     </div>
   );
 }
@@ -194,7 +193,7 @@ function SingleFamilyDetails({ details, setDetail }) {
         <TagsInput value={details.appliances || []} onChange={v => setDetail('appliances', v)} placeholder="e.g. Refrigerator, Washer/Dryer (press Enter)" />
       </Field>
       <Field label="School District">
-        <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" />
       </Field>
     </>
   );
@@ -229,7 +228,6 @@ function CondoDetails({ details, setDetail }) {
             value={details.unit_number || ''}
             onChange={e => setDetail('unit_number', e.target.value)}
             placeholder="e.g. Unit 804"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
         <Field label="Floor #"><Num field="floor_num" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
@@ -311,7 +309,6 @@ function ApartmentDetails({ details, setDetail }) {
             value={details.unit_number || ''}
             onChange={e => setDetail('unit_number', e.target.value)}
             placeholder="e.g. Apt 3B"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
         <Field label="Floor #"><Num field="floor_num" placeholder="e.g. 3" details={details} setDetail={setDetail} /></Field>
@@ -499,7 +496,6 @@ function ManufacturedDetails({ details, setDetail }) {
             value={details.space_number || ''}
             onChange={e => setDetail('space_number', e.target.value)}
             placeholder="e.g. Space 42"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
         <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2005" details={details} setDetail={setDetail} /></Field>
@@ -513,7 +509,7 @@ function ManufacturedDetails({ details, setDetail }) {
         <Field label="Lot Rent ($/mo)"><Num field="lot_rent" placeholder="e.g. 500" details={details} setDetail={setDetail} /></Field>
       )}
       <Field label="Community / Park Name">
-        <Input value={details.community_name || ''} onChange={e => setDetail('community_name', e.target.value)} placeholder="e.g. Sunrise Mobile Estates" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Input value={details.community_name || ''} onChange={e => setDetail('community_name', e.target.value)} placeholder="e.g. Sunrise Mobile Estates" />
       </Field>
       <ToggleGroup label="Age Restriction" value={details.age_restriction || ''} onChange={v => setDetail('age_restriction', v)}
         options={[{ value: '55_plus', label: '55+ Community' }, { value: 'all_ages', label: 'All Ages' }]} />
@@ -601,7 +597,7 @@ function ResidentialLandDetails({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Total Acreage"><Num field="acres" placeholder="e.g. 0.5" step="0.01" details={details} setDetail={setDetail} /></Field>
         <Field label="Lot Dimensions (ft × ft)">
-          <Input value={details.lot_dimensions || ''} onChange={e => setDetail('lot_dimensions', e.target.value)} placeholder="e.g. 80 x 120" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.lot_dimensions || ''} onChange={e => setDetail('lot_dimensions', e.target.value)} placeholder="e.g. 80 x 120" />
         </Field>
         <Field label="Gross Square Feet"><Num field="gross_sqft" placeholder="e.g. 9600" details={details} setDetail={setDetail} /></Field>
         <Field label="Road Frontage (ft)"><Num field="road_frontage" placeholder="e.g. 80" details={details} setDetail={setDetail} /></Field>
@@ -614,7 +610,7 @@ function ResidentialLandDetails({ details, setDetail }) {
       <SectionTitle>Zoning & Development Status</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Current Zoning">
-          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. R-1, R-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. R-1, R-2" />
         </Field>
         <Field label="Entitlements">
           <select className={selectCls} value={details.entitlements || ''} onChange={e => setDetail('entitlements', e.target.value)}>
@@ -677,15 +673,15 @@ function ResidentialLandDetails({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Annual Property Tax ($)"><Num field="annual_tax" placeholder="e.g. 2400" details={details} setDetail={setDetail} /></Field>
         <Field label="Parcel Number">
-          <Input value={details.parcel_number || ''} onChange={e => setDetail('parcel_number', e.target.value)} placeholder="e.g. 12-34-567-890" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.parcel_number || ''} onChange={e => setDetail('parcel_number', e.target.value)} placeholder="e.g. 12-34-567-890" />
         </Field>
         <Field label="HOA ($/yr)" hint="If in a subdivision"><Num field="hoa_annual" placeholder="e.g. 800" details={details} setDetail={setDetail} /></Field>
         <Field label="School District">
-          <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" />
         </Field>
       </div>
       <Field label="Description">
-        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the lot, its highlights, and development potential…" rows={4} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the lot, its highlights, and development potential…" rows={4} />
       </Field>
       <Field label="Tags" hint="Press Enter to add each tag">
         <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />

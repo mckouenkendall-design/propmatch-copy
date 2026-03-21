@@ -26,7 +26,6 @@ function Num({ field, placeholder, details, setDetail, step }) {
       value={details[field] || ''}
       onChange={e => setDetail(field, e.target.value)}
       placeholder={placeholder}
-      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
     />
   );
 }
@@ -167,7 +166,6 @@ function TagsInput({ value = [], onChange }) {
         onChange={e => setInput(e.target.value)}
         onKeyDown={handleKey}
         placeholder="e.g., move-in ready, high visibility (press Enter to add)"
-        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
       />
     </div>
   );
@@ -222,7 +220,6 @@ function BuildingAmenitiesSection({ details, setDetail }) {
             value={details.building_amenities_other || ''}
             onChange={e => setDetail('building_amenities_other', e.target.value)}
             placeholder="Describe the amenity…"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </div>
       )}
@@ -266,7 +263,6 @@ function OfficeDetails({ details, setDetail }) {
             value={details.suite_number || ''}
             onChange={e => setDetail('suite_number', e.target.value)}
             placeholder="e.g. Suite 200"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
         <Field label="Number of Offices">
@@ -331,7 +327,6 @@ function OfficeDetails({ details, setDetail }) {
           value={details.it_infrastructure || ''}
           onChange={e => setDetail('it_infrastructure', e.target.value)}
           placeholder="e.g., Cat6 wiring, dedicated fiber drop"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
         />
       </Field>
 
@@ -347,7 +342,6 @@ function OfficeDetails({ details, setDetail }) {
           onChange={e => setDetail('description', e.target.value)}
           placeholder="Describe the space, its highlights, and what makes it ideal for tenants…"
           rows={4}
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
         />
       </Field>
 
@@ -357,7 +351,6 @@ function OfficeDetails({ details, setDetail }) {
             value={details.tags || ''}
             onChange={e => setDetail('tags', e.target.value)}
             placeholder="e.g. renovated, corner location"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
         <Field label="Parking Ratio" hint="Spaces per 1,000 SF">
@@ -365,7 +358,6 @@ function OfficeDetails({ details, setDetail }) {
             value={details.parking_ratio || ''}
             onChange={e => setDetail('parking_ratio', e.target.value)}
             placeholder="e.g. 4/1,000 SF"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
         <Field label="Total Parking Spaces">
@@ -376,7 +368,6 @@ function OfficeDetails({ details, setDetail }) {
             value={details.ceiling_height || ''}
             onChange={e => setDetail('ceiling_height', e.target.value)}
             placeholder="e.g. 9 ft"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
         <Field label="Zoning">
@@ -384,7 +375,6 @@ function OfficeDetails({ details, setDetail }) {
             value={details.zoning || ''}
             onChange={e => setDetail('zoning', e.target.value)}
             placeholder="e.g. B-2"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
       </div>
@@ -452,7 +442,6 @@ function MedicalOfficeDetails({ details, setDetail }) {
             value={details.suite_number || ''}
             onChange={e => setDetail('suite_number', e.target.value)}
             placeholder="e.g. Suite 300"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
         <Field label="Exam Rooms"><Num field="exam_rooms" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
@@ -471,7 +460,7 @@ function MedicalOfficeDetails({ details, setDetail }) {
         </div>
       </Field>
       <Field label="Medical Waste Disposal">
-        <Input value={details.waste_disposal || ''} onChange={e => setDetail('waste_disposal', e.target.value)} placeholder="e.g., Sharps containers, biohazard" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Input value={details.waste_disposal || ''} onChange={e => setDetail('waste_disposal', e.target.value)} placeholder="e.g., Sharps containers, biohazard" />
       </Field>
 
       {/* Building Amenities */}
@@ -481,7 +470,7 @@ function MedicalOfficeDetails({ details, setDetail }) {
       {/* Specs & Docs */}
       <SectionTitle>Property Specs & Documentation</SectionTitle>
       <Field label="Description">
-        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space, its highlights, and what makes it ideal…" rows={4} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space, its highlights, and what makes it ideal…" rows={4} />
       </Field>
 
       <Field label="Tags" hint="Press Enter to add each tag">
@@ -490,16 +479,16 @@ function MedicalOfficeDetails({ details, setDetail }) {
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Parking Ratio" hint="Spaces per 1,000 SF">
-          <Input value={details.parking_ratio || ''} onChange={e => setDetail('parking_ratio', e.target.value)} placeholder="e.g. 5/1,000 SF" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.parking_ratio || ''} onChange={e => setDetail('parking_ratio', e.target.value)} placeholder="e.g. 5/1,000 SF" />
         </Field>
         <Field label="Total Parking Spaces">
           <Num field="total_parking_spaces" placeholder="e.g. 40" details={details} setDetail={setDetail} />
         </Field>
         <Field label="Ceiling Height">
-          <Input value={details.ceiling_height || ''} onChange={e => setDetail('ceiling_height', e.target.value)} placeholder="e.g. 9 ft" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.ceiling_height || ''} onChange={e => setDetail('ceiling_height', e.target.value)} placeholder="e.g. 9 ft" />
         </Field>
         <Field label="Zoning">
-          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. O-1 Medical" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. O-1 Medical" />
         </Field>
       </div>
 
@@ -559,7 +548,6 @@ function RetailDetails({ details, setDetail }) {
             value={details.suite_number || ''}
             onChange={e => setDetail('suite_number', e.target.value)}
             placeholder="e.g. Suite 150"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
         <Field label="Total SF"><Num field="total_sf" placeholder="e.g. 2500" details={details} setDetail={setDetail} /></Field>
@@ -651,7 +639,7 @@ function RetailDetails({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Total Parking Spaces"><Num field="total_parking_spaces" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
         <Field label="Zoning">
-          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. C-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. C-2" />
         </Field>
       </div>
 
@@ -674,7 +662,7 @@ function RetailDetails({ details, setDetail }) {
       />
 
       <Field label="Anchor Tenants">
-        <Textarea value={details.anchor_tenants || ''} onChange={e => setDetail('anchor_tenants', e.target.value)} placeholder="e.g. Target, Starbucks" rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Textarea value={details.anchor_tenants || ''} onChange={e => setDetail('anchor_tenants', e.target.value)} placeholder="e.g. Target, Starbucks" rows={2} />
       </Field>
 
       <Field label="Nearby Businesses">
@@ -682,7 +670,7 @@ function RetailDetails({ details, setDetail }) {
       </Field>
 
       <Field label="Description">
-        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space, its highlights, and what makes it ideal for tenants…" rows={4} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space, its highlights, and what makes it ideal for tenants…" rows={4} />
       </Field>
 
       <Field label="Tags" hint="Press Enter to add each tag">
@@ -729,13 +717,13 @@ function IndustrialFlexDetails({ details, setDetail }) {
         <Field label="Drive-In / Grade-Level Doors"><Num field="drive_in_doors" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
         <Field label="Clear Height (ft)"><Num field="clear_height" placeholder="e.g. 24" details={details} setDetail={setDetail} /></Field>
         <Field label="Truck Court Depth (ft)">
-          <Input value={details.truck_court_depth || ''} onChange={e => setDetail('truck_court_depth', e.target.value)} placeholder="e.g. 130" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.truck_court_depth || ''} onChange={e => setDetail('truck_court_depth', e.target.value)} placeholder="e.g. 130" />
         </Field>
         <Field label="Column Spacing (ft)">
-          <Input value={details.column_spacing || ''} onChange={e => setDetail('column_spacing', e.target.value)} placeholder="e.g. 50 x 50" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.column_spacing || ''} onChange={e => setDetail('column_spacing', e.target.value)} placeholder="e.g. 50 x 50" />
         </Field>
         <Field label="Loading Bay Size (ft)">
-          <Input value={details.loading_bay_size || ''} onChange={e => setDetail('loading_bay_size', e.target.value)} placeholder="e.g. 100 x 50" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.loading_bay_size || ''} onChange={e => setDetail('loading_bay_size', e.target.value)} placeholder="e.g. 100 x 50" />
         </Field>
       </div>
 
@@ -758,7 +746,7 @@ function IndustrialFlexDetails({ details, setDetail }) {
           </select>
         </Field>
         <Field label="Additional Power Specs">
-          <Input value={details.power_specs || ''} onChange={e => setDetail('power_specs', e.target.value)} placeholder="e.g. 480V, 3-Phase" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.power_specs || ''} onChange={e => setDetail('power_specs', e.target.value)} placeholder="e.g. 480V, 3-Phase" />
         </Field>
       </div>
 
@@ -777,7 +765,7 @@ function IndustrialFlexDetails({ details, setDetail }) {
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Crane System">
-          <Input value={details.crane_system || ''} onChange={e => setDetail('crane_system', e.target.value)} placeholder="e.g. 10-ton bridge crane" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.crane_system || ''} onChange={e => setDetail('crane_system', e.target.value)} placeholder="e.g. 10-ton bridge crane" />
         </Field>
         <Field label="Hook Height (ft)"><Num field="hook_height" placeholder="e.g. 22" details={details} setDetail={setDetail} /></Field>
         <Field label="Floor Load (lbs/sqft)"><Num field="floor_load" placeholder="e.g. 600" details={details} setDetail={setDetail} /></Field>
@@ -833,10 +821,10 @@ function IndustrialFlexDetails({ details, setDetail }) {
       </Field>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Parking">
-          <Input value={details.parking || ''} onChange={e => setDetail('parking', e.target.value)} placeholder="e.g. 40 spaces, truck parking" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.parking || ''} onChange={e => setDetail('parking', e.target.value)} placeholder="e.g. 40 spaces, truck parking" />
         </Field>
         <Field label="Zoning">
-          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. M-1, I-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. M-1, I-2" />
         </Field>
       </div>
       <ToggleGroup
@@ -920,7 +908,7 @@ function LandDetails({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Total Acreage"><Num field="acres" placeholder="e.g. 5.0" step="0.1" details={details} setDetail={setDetail} /></Field>
         <Field label="Lot Dimensions (ft × ft)">
-          <Input value={details.lot_dimensions || ''} onChange={e => setDetail('lot_dimensions', e.target.value)} placeholder="e.g. 300 x 725" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.lot_dimensions || ''} onChange={e => setDetail('lot_dimensions', e.target.value)} placeholder="e.g. 300 x 725" />
         </Field>
         <Field label="Gross Square Feet"><Num field="gross_sqft" placeholder="e.g. 217800" details={details} setDetail={setDetail} /></Field>
       </div>
@@ -932,7 +920,7 @@ function LandDetails({ details, setDetail }) {
       <SectionTitle>Zoning & Development Status</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Current Zoning">
-          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. B-2, M-1" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. B-2, M-1" />
         </Field>
         <Field label="Entitlements">
           <select className={selectCls} style={selectStyle} value={details.entitlements || ''} onChange={e => setDetail('entitlements', e.target.value)}>
@@ -1002,14 +990,14 @@ function LandDetails({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Annual Property Tax ($)"><Num field="annual_tax" placeholder="e.g. 8500" details={details} setDetail={setDetail} /></Field>
         <Field label="Parcel Number">
-          <Input value={details.parcel_number || ''} onChange={e => setDetail('parcel_number', e.target.value)} placeholder="e.g. 12-34-567-890" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.parcel_number || ''} onChange={e => setDetail('parcel_number', e.target.value)} placeholder="e.g. 12-34-567-890" />
         </Field>
         <Field label="Zoning Overlay">
-          <Input value={details.zoning_overlay || ''} onChange={e => setDetail('zoning_overlay', e.target.value)} placeholder="e.g. Opportunity Zone" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.zoning_overlay || ''} onChange={e => setDetail('zoning_overlay', e.target.value)} placeholder="e.g. Opportunity Zone" />
         </Field>
       </div>
       <Field label="Description">
-        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the site, its highlights, and development potential…" rows={4} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the site, its highlights, and development potential…" rows={4} />
       </Field>
       <Field label="Tags" hint="Press Enter to add each tag">
         <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
@@ -1086,7 +1074,6 @@ function SpecialUseDetails({ details, setDetail }) {
             value={details.specific_use_other || ''}
             onChange={e => setDetail('specific_use_other', e.target.value)}
             placeholder="e.g., Funeral Home, Bowling Alley"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
       )}
@@ -1125,17 +1112,16 @@ function SpecialUseDetails({ details, setDetail }) {
             onChange={e => setDetail('specialty_equipment_list', e.target.value)}
             placeholder="e.g., Dental chairs, Commercial ovens, Industrial lifts…"
             rows={3}
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
       )}
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Structural Modifications">
-          <Input value={details.structural_modifications || ''} onChange={e => setDetail('structural_modifications', e.target.value)} placeholder="e.g., Reinforced floors, soundproofing" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.structural_modifications || ''} onChange={e => setDetail('structural_modifications', e.target.value)} placeholder="e.g., Reinforced floors, soundproofing" />
         </Field>
         <Field label="HVAC / Environmental Systems">
-          <Input value={details.hvac_systems_details || ''} onChange={e => setDetail('hvac_systems_details', e.target.value)} placeholder="e.g., High-capacity HVAC, air filtration" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.hvac_systems_details || ''} onChange={e => setDetail('hvac_systems_details', e.target.value)} placeholder="e.g., High-capacity HVAC, air filtration" />
         </Field>
       </div>
 
@@ -1173,7 +1159,6 @@ function SpecialUseDetails({ details, setDetail }) {
           onChange={e => setDetail('description', e.target.value)}
           placeholder="Describe the property, its unique features, and ideal use…"
           rows={4}
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
         />
       </Field>
 

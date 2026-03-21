@@ -18,8 +18,7 @@ function Num({ field, placeholder, details, setDetail, step }) {
       value={details[field] || ''}
       onChange={e => setDetail(field, e.target.value)}
       placeholder={placeholder}
-      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground"
-      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
     />
   );
 }
@@ -93,7 +92,6 @@ function TagsInput({ value = [], onChange, placeholder }) {
         onChange={e => setInput(e.target.value)}
         onKeyDown={handleKey}
         placeholder={placeholder || "e.g., Ground Floor Only, Corner Unit (press Enter to add)"}
-        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
       />
     </div>
   );
@@ -211,7 +209,6 @@ function OfficeDetails({ details, setDetail }) {
           onChange={e => setDetail('intended_use', e.target.value)}
           placeholder="e.g., Professional services firm needing private offices and conference rooms."
           rows={3}
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
         />
       </Field>
 
@@ -263,7 +260,6 @@ function OfficeDetails({ details, setDetail }) {
           value={details.other_feature || ''}
           onChange={e => setDetail('other_feature', e.target.value)}
           placeholder="e.g., Dedicated server closet with cooling"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
         />
       </Field>
 
@@ -275,7 +271,7 @@ function OfficeDetails({ details, setDetail }) {
       <SectionTitle>Parking</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Min. Parking Ratio" hint="Spaces per 1,000 SF">
-          <Input value={details.min_parking_ratio || ''} onChange={e => setDetail('min_parking_ratio', e.target.value)} placeholder="e.g. 3/1,000 SF" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.min_parking_ratio || ''} onChange={e => setDetail('min_parking_ratio', e.target.value)} placeholder="e.g. 3/1,000 SF" />
         </Field>
         <Field label="Min. Total Parking Spaces">
           <Num field="min_total_parking_spaces" placeholder="e.g. 20" details={details} setDetail={setDetail} />
@@ -337,7 +333,6 @@ function MedicalOfficeReqDetails({ details, setDetail }) {
             value={details.intended_use_other || ''}
             onChange={e => setDetail('intended_use_other', e.target.value)}
             placeholder="e.g., Oncology, Ophthalmology"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
         </Field>
       )}
@@ -371,13 +366,13 @@ function MedicalOfficeReqDetails({ details, setDetail }) {
       <SectionTitle>Parking & General Preferences</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Min. Parking Ratio" hint="Spaces per 1,000 SF">
-          <Input value={details.min_parking_ratio || ''} onChange={e => setDetail('min_parking_ratio', e.target.value)} placeholder="e.g. 5/1,000 SF" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.min_parking_ratio || ''} onChange={e => setDetail('min_parking_ratio', e.target.value)} placeholder="e.g. 5/1,000 SF" />
         </Field>
         <Field label="Min. Total Parking Spaces">
           <Num field="min_total_parking_spaces" placeholder="e.g. 20" details={details} setDetail={setDetail} />
         </Field>
         <Field label="Zoning Preference">
-          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. O-1 Medical" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. O-1 Medical" />
         </Field>
       </div>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -566,7 +561,6 @@ function IndustrialFlexReqDetails({ details, setDetail }) {
           onChange={e => setDetail('intended_use', e.target.value)}
           placeholder="e.g., Third-party logistics (3PL) requiring heavy power and 5 docks."
           rows={3}
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
         />
       </Field>
 
@@ -581,10 +575,10 @@ function IndustrialFlexReqDetails({ details, setDetail }) {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Office % Min">
-          <Input type="number" value={details.office_pct_min || ''} onChange={e => setDetail('office_pct_min', e.target.value)} placeholder="e.g. 10" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input type="number" value={details.office_pct_min || ''} onChange={e => setDetail('office_pct_min', e.target.value)} placeholder="e.g. 10" />
         </Field>
         <Field label="Office % Max">
-          <Input type="number" value={details.office_pct_max || ''} onChange={e => setDetail('office_pct_max', e.target.value)} placeholder="e.g. 30" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input type="number" value={details.office_pct_max || ''} onChange={e => setDetail('office_pct_max', e.target.value)} placeholder="e.g. 30" />
         </Field>
       </div>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -658,7 +652,7 @@ function IndustrialFlexReqDetails({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Min. Parking Spaces"><Num field="min_parking" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
         <Field label="Zoning Preference">
-          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. Must be zoned M-1" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. Must be zoned M-1" />
         </Field>
       </div>
       <Field label="Building Class (select all acceptable)">
@@ -719,7 +713,6 @@ function LandDetails({ details, setDetail }) {
           onChange={e => setDetail('intended_use', e.target.value)}
           placeholder="e.g., Retail pad site for a fast-food drive-thru requiring high traffic count and visibility."
           rows={3}
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
         />
       </Field>
 
@@ -769,7 +762,7 @@ function LandDetails({ details, setDetail }) {
 
       <SectionTitle>Zoning & Development</SectionTitle>
       <Field label="Zoning Required">
-        <Input value={details.zoning_required || ''} onChange={e => setDetail('zoning_required', e.target.value)} placeholder="e.g., Must allow for Heavy Industrial M-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Input value={details.zoning_required || ''} onChange={e => setDetail('zoning_required', e.target.value)} placeholder="e.g., Must allow for Heavy Industrial M-2" />
       </Field>
 
       <SectionTitle>Utilities Required</SectionTitle>
@@ -877,7 +870,6 @@ function SpecialUseReqDetails({ details, setDetail }) {
           onChange={e => setDetail('intended_use', e.target.value)}
           placeholder="e.g., Religious organization seeking a sanctuary with a commercial kitchen and parking for 200+ vehicles."
           rows={3}
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
         />
       </Field>
 
@@ -913,16 +905,16 @@ function SpecialUseReqDetails({ details, setDetail }) {
       </div>
       {details.other_feature_enabled && (
         <Field label="Describe Required Feature">
-          <Input value={details.other_feature || ''} onChange={e => setDetail('other_feature', e.target.value)} placeholder="e.g., Baptismal pool, Indoor track, Recording studio" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.other_feature || ''} onChange={e => setDetail('other_feature', e.target.value)} placeholder="e.g., Baptismal pool, Indoor track, Recording studio" />
         </Field>
       )}
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Structural Modifications Required">
-          <Input value={details.structural_modifications_required || ''} onChange={e => setDetail('structural_modifications_required', e.target.value)} placeholder="e.g., Reinforced floors, soundproofing" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.structural_modifications_required || ''} onChange={e => setDetail('structural_modifications_required', e.target.value)} placeholder="e.g., Reinforced floors, soundproofing" />
         </Field>
         <Field label="HVAC / Environmental Systems Required">
-          <Input value={details.hvac_systems_required || ''} onChange={e => setDetail('hvac_systems_required', e.target.value)} placeholder="e.g., High-capacity HVAC, air filtration" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.hvac_systems_required || ''} onChange={e => setDetail('hvac_systems_required', e.target.value)} placeholder="e.g., High-capacity HVAC, air filtration" />
         </Field>
       </div>
 
@@ -959,10 +951,10 @@ function SpecialUseReqDetails({ details, setDetail }) {
         <Field label="Min. Parking Spaces"><Num field="min_parking" placeholder="e.g. 50" details={details} setDetail={setDetail} /></Field>
         <Field label="Max. Parking Spaces"><Num field="max_parking" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
         <Field label="Zoning Preference">
-          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g., Must allow for School use" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g., Must allow for School use" />
         </Field>
         <Field label="Licensing Required">
-          <Input value={details.licensing_required || ''} onChange={e => setDetail('licensing_required', e.target.value)} placeholder="e.g., State-approved daycare license" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <Input value={details.licensing_required || ''} onChange={e => setDetail('licensing_required', e.target.value)} placeholder="e.g., State-approved daycare license" />
         </Field>
       </div>
 
