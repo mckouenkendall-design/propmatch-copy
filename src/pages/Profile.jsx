@@ -73,16 +73,7 @@ export default function Profile() {
     onSuccess: () => {
       queryClient.invalidateQueries(['user']);
       setEditing(false);
-      toast({ 
-        title: 'Changes saved',
-        className: 'bg-green-600 text-white border-green-600'
-      });
-    },
-    onError: () => {
-      toast({ 
-        title: 'Something went wrong. Please try again.',
-        variant: 'destructive'
-      });
+      toast({ title: 'Profile updated successfully' });
     },
   });
 
@@ -105,16 +96,6 @@ export default function Profile() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Validate required fields
-    if (!formData.full_name?.trim()) {
-      toast({ 
-        title: 'Full name is required',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
     const { employing_broker_number, license_number, ...editableData } = formData;
     updateMutation.mutate(editableData);
   };
