@@ -4,13 +4,15 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Building2, Search, TrendingUp, MessageSquare, Plus, ArrowRight, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import CreatePostModal from '@/components/dashboard/CreatePostModal';
+import ListingWizard from '@/components/forms/ListingWizard';
+import RequirementWizard from '@/components/forms/RequirementWizard';
 
 const ACCENT = '#00DBC5';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showListingWizard, setShowListingWizard] = useState(false);
+  const [showRequirementWizard, setShowRequirementWizard] = useState(false);
 
   const { data: listings = [] } = useQuery({
     queryKey: ['my-listings'],
@@ -130,7 +132,7 @@ export default function Dashboard() {
         marginBottom: '48px' 
       }}>
         <Card 
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => setShowListingWizard(true)}
           style={{ 
             background: `linear-gradient(135deg, ${ACCENT}15 0%, ${ACCENT}05 100%)`, 
             border: `1px solid ${ACCENT}40`,
@@ -175,7 +177,7 @@ export default function Dashboard() {
         </Card>
 
         <Card 
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => setShowRequirementWizard(true)}
           style={{ 
             background: `linear-gradient(135deg, ${ACCENT}15 0%, ${ACCENT}05 100%)`, 
             border: `1px solid ${ACCENT}40`,
@@ -377,12 +379,20 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {showCreateModal && (
-        <CreatePostModal
-          onClose={() => setShowCreateModal(false)}
+      {showListingWizard && (
+        <ListingWizard
+          onClose={() => setShowListingWizard(false)}
           onSuccess={() => {
-            setShowCreateModal(false);
-            // Refresh data
+            setShowListingWizard(false);
+          }}
+        />
+      )}
+
+      {showRequirementWizard && (
+        <RequirementWizard
+          onClose={() => setShowRequirementWizard(false)}
+          onSuccess={() => {
+            setShowRequirementWizard(false);
           }}
         />
       )}
