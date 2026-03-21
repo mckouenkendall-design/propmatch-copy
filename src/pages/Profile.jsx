@@ -30,15 +30,15 @@ export default function Profile() {
     phone: user?.phone || '',
     brokerage_name: user?.brokerage_name || '',
     brokerage_address: user?.brokerage_address || '',
-    employing_broker_number: user?.employing_broker_number || '',
+    employing_broker_id: user?.employing_broker_id || '',
     license_number: user?.license_number || '',
     license_state: user?.license_state || '',
     years_experience: user?.years_experience || '',
-    specialties: user?.specialties || '',
+    specialization: user?.specialization || '',
     certifications: user?.certifications || '',
     languages: user?.languages || '',
-    website: user?.website || '',
-    linkedin: user?.linkedin || '',
+    website_url: user?.website_url || '',
+    linkedin_url: user?.linkedin_url || '',
     instagram: user?.instagram || '',
     tiktok: user?.tiktok || '',
     facebook: user?.facebook || '',
@@ -55,15 +55,15 @@ export default function Profile() {
         phone: user.phone || '',
         brokerage_name: user.brokerage_name || '',
         brokerage_address: user.brokerage_address || '',
-        employing_broker_number: user.employing_broker_number || '',
+        employing_broker_id: user.employing_broker_id || '',
         license_number: user.license_number || '',
         license_state: user.license_state || '',
         years_experience: user.years_experience || '',
-        specialties: user.specialties || '',
+        specialization: user.specialization || '',
         certifications: user.certifications || '',
         languages: user.languages || '',
-        website: user.website || '',
-        linkedin: user.linkedin || '',
+        website_url: user.website_url || '',
+        linkedin_url: user.linkedin_url || '',
         instagram: user.instagram || '',
         tiktok: user.tiktok || '',
         facebook: user.facebook || '',
@@ -115,7 +115,26 @@ export default function Profile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { employing_broker_number, license_number, ...dataToUpdate } = formData;
+    
+    // Only send editable fields to updateMe - exclude built-in and read-only fields
+    const dataToUpdate = {
+      username: formData.username,
+      bio: formData.bio,
+      phone: formData.phone,
+      brokerage_name: formData.brokerage_name,
+      brokerage_address: formData.brokerage_address,
+      license_state: formData.license_state,
+      years_experience: formData.years_experience,
+      specialization: formData.specialization,
+      certifications: formData.certifications,
+      languages: formData.languages,
+      website_url: formData.website_url,
+      linkedin_url: formData.linkedin_url,
+      instagram: formData.instagram,
+      tiktok: formData.tiktok,
+      facebook: formData.facebook,
+    };
+    
     updateMutation.mutate(dataToUpdate);
   };
 
@@ -323,8 +342,8 @@ export default function Profile() {
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Specialties</Label>
                   <Input
                     disabled={!editing}
-                    value={formData.specialties}
-                    onChange={(e) => setFormData({ ...formData, specialties: e.target.value })}
+                    value={formData.specialization}
+                    onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
                     placeholder="Commercial, Residential, Luxury"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                   />
@@ -385,7 +404,7 @@ export default function Profile() {
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Employing Broker Number <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>(Read-only)</span></Label>
                   <Input
                     disabled
-                    value={formData.employing_broker_number}
+                    value={formData.employing_broker_id}
                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }}
                   />
                 </div>
@@ -423,8 +442,8 @@ export default function Profile() {
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Website</Label>
                   <Input
                     disabled={!editing}
-                    value={formData.website}
-                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    value={formData.website_url}
+                    onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
                     placeholder="https://yourwebsite.com"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                   />
@@ -433,8 +452,8 @@ export default function Profile() {
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>LinkedIn</Label>
                   <Input
                     disabled={!editing}
-                    value={formData.linkedin}
-                    onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
+                    value={formData.linkedin_url}
+                    onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
                     placeholder="https://linkedin.com/in/yourprofile"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                   />
