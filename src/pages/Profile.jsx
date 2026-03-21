@@ -30,11 +30,15 @@ export default function Profile() {
     employing_broker_number: user?.employing_broker_number || '',
     license_number: user?.license_number || '',
     license_state: user?.license_state || '',
+    years_experience: user?.years_experience || '',
     specialties: user?.specialties || '',
     certifications: user?.certifications || '',
     languages: user?.languages || '',
     website: user?.website || '',
     linkedin: user?.linkedin || '',
+    instagram: user?.instagram || '',
+    tiktok: user?.tiktok || '',
+    facebook: user?.facebook || '',
     profile_photo_url: user?.profile_photo_url || '',
   });
 
@@ -50,11 +54,15 @@ export default function Profile() {
         employing_broker_number: user.employing_broker_number || '',
         license_number: user.license_number || '',
         license_state: user.license_state || '',
+        years_experience: user.years_experience || '',
         specialties: user.specialties || '',
         certifications: user.certifications || '',
         languages: user.languages || '',
         website: user.website || '',
         linkedin: user.linkedin || '',
+        instagram: user.instagram || '',
+        tiktok: user.tiktok || '',
+        facebook: user.facebook || '',
         profile_photo_url: user.profile_photo_url || '',
       });
     }
@@ -88,7 +96,7 @@ export default function Profile() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { employing_broker_number, license_number, ...editableData } = formData;
+    const { employing_broker_number, license_number, profile_photo_url, ...editableData } = formData;
     updateMutation.mutate(editableData);
   };
 
@@ -270,6 +278,17 @@ export default function Profile() {
                   />
                 </div>
                 <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Years of Experience</Label>
+                  <Input
+                    disabled={!editing}
+                    type="number"
+                    value={formData.years_experience}
+                    onChange={(e) => setFormData({ ...formData, years_experience: e.target.value })}
+                    placeholder="5"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                  />
+                </div>
+                <div>
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Specialties</Label>
                   <Input
                     disabled={!editing}
@@ -386,6 +405,36 @@ export default function Profile() {
                     value={formData.linkedin}
                     onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
                     placeholder="https://linkedin.com/in/yourprofile"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                  />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Instagram</Label>
+                  <Input
+                    disabled={!editing}
+                    value={formData.instagram}
+                    onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
+                    placeholder="https://instagram.com/yourprofile"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                  />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>TikTok</Label>
+                  <Input
+                    disabled={!editing}
+                    value={formData.tiktok}
+                    onChange={(e) => setFormData({ ...formData, tiktok: e.target.value })}
+                    placeholder="https://tiktok.com/@yourprofile"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                  />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Facebook</Label>
+                  <Input
+                    disabled={!editing}
+                    value={formData.facebook}
+                    onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
+                    placeholder="https://facebook.com/yourprofile"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                   />
                 </div>
