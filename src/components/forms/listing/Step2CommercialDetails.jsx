@@ -11,9 +11,9 @@ import { base44 } from '@/api/base44Client';
 function Field({ label, children, hint }) {
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      <Label style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</Label>
       {children}
-      {hint && <p className="text-xs text-gray-400">{hint}</p>}
+      {hint && <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{hint}</p>}
     </div>
   );
 }
@@ -37,9 +37,9 @@ function Chip({ label, selected, onClick }) {
       onClick={onClick}
       className="px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all"
       style={{
-        borderColor: selected ? 'var(--tiffany-blue)' : '#e5e7eb',
-        backgroundColor: selected ? '#e6f7f5' : 'white',
-        color: selected ? '#3A8A82' : '#6b7280',
+        borderColor: selected ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
+        backgroundColor: selected ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
+        color: selected ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)',
       }}
     >
       {label}
@@ -50,12 +50,12 @@ function Chip({ label, selected, onClick }) {
 function Toggle({ label, value, onChange }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{label}</span>
       <button
         type="button"
         onClick={() => onChange(!value)}
         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-        style={{ backgroundColor: value ? 'var(--tiffany-blue)' : '#d1d5db' }}
+        style={{ backgroundColor: value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)' }}
       >
         <span
           className="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
@@ -69,17 +69,20 @@ function Toggle({ label, value, onChange }) {
 function CollapsiblePanel({ title, summary, children, defaultOpen }) {
   const [open, setOpen] = React.useState(defaultOpen || false);
   return (
-    <div className="rounded-xl border border-gray-200 overflow-hidden">
+    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
+        style={{ background: 'rgba(255,255,255,0.05)' }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
       >
         <div>
-          <p className="text-sm font-semibold text-gray-700">{title}</p>
-          {!open && <p className="text-xs text-gray-400 mt-0.5">{summary}</p>}
+          <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>{title}</p>
+          {!open && <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{summary}</p>}
         </div>
-        <span className="text-lg leading-none text-gray-400 ml-2">{open ? '−' : '+'}</span>
+        <span className="text-lg leading-none ml-2" style={{ color: 'rgba(255,255,255,0.5)' }}>{open ? '−' : '+'}</span>
       </button>
       {open && <div className="px-4 py-3">{children}</div>}
     </div>
@@ -89,7 +92,7 @@ function CollapsiblePanel({ title, summary, children, defaultOpen }) {
 function SectionTitle({ children }) {
   return (
     <div className="pt-2">
-      <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-2">{children}</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-wide pb-2" style={{ color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{children}</h3>
     </div>
   );
 }

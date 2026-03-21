@@ -7,7 +7,7 @@ import ToggleGroup from '../wizard/ToggleGroup';
 import { ArrowRight, X } from 'lucide-react';
 
 function Field({ label, children, hint }) {
-  return <div className="space-y-1.5"><Label>{label}</Label>{children}{hint && <p className="text-xs text-gray-400">{hint}</p>}</div>;
+  return <div className="space-y-1.5"><Label style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</Label>{children}{hint && <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{hint}</p>}</div>;
 }
 
 function Num({ field, placeholder, details, setDetail, step }) {
@@ -26,7 +26,7 @@ function Num({ field, placeholder, details, setDetail, step }) {
 function SectionTitle({ children }) {
   return (
     <div className="pt-2">
-      <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-2">{children}</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-wide pb-2" style={{ color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{children}</h3>
     </div>
   );
 }
@@ -34,12 +34,12 @@ function SectionTitle({ children }) {
 function Toggle({ label, value, onChange }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{label}</span>
       <button
         type="button"
         onClick={() => onChange(!value)}
         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-        style={{ backgroundColor: value ? 'var(--tiffany-blue)' : '#d1d5db' }}
+        style={{ backgroundColor: value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)' }}
       >
         <span
           className="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
@@ -57,9 +57,9 @@ function Chip({ label, selected, onClick }) {
       onClick={onClick}
       className="px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all"
       style={{
-        borderColor: selected ? 'var(--tiffany-blue)' : '#e5e7eb',
-        backgroundColor: selected ? '#e6f7f5' : 'white',
-        color: selected ? '#3A8A82' : '#6b7280',
+        borderColor: selected ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
+        backgroundColor: selected ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
+        color: selected ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)',
       }}
     >
       {label}
