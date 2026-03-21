@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, Briefcase, MapPin, Phone, Mail, Building, Award, Calendar } from 'lucide-react';
+import { Camera, Briefcase, MapPin, Phone, Mail, Building, Award, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 const ACCENT = '#00DBC5';
@@ -16,8 +16,10 @@ export default function Profile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef(null);
   
   const [editing, setEditing] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
     username: user?.username || '',
@@ -25,15 +27,38 @@ export default function Profile() {
     phone: user?.phone || '',
     brokerage_name: user?.brokerage_name || '',
     brokerage_address: user?.brokerage_address || '',
+    employing_broker_number: user?.employing_broker_number || '',
     license_number: user?.license_number || '',
     license_state: user?.license_state || '',
-    years_experience: user?.years_experience || '',
     specialties: user?.specialties || '',
     certifications: user?.certifications || '',
     languages: user?.languages || '',
     website: user?.website || '',
     linkedin: user?.linkedin || '',
+    profile_photo_url: user?.profile_photo_url || '',
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        full_name: user.full_name || '',
+        username: user.username || '',
+        bio: user.bio || '',
+        phone: user.phone || '',
+        brokerage_name: user.brokerage_name || '',
+        brokerage_address: user.brokerage_address || '',
+        employing_broker_number: user.employing_broker_number || '',
+        license_number: user.license_number || '',
+        license_state: user.license_state || '',
+        specialties: user.specialties || '',
+        certifications: user.certifications || '',
+        languages: user.languages || '',
+        website: user.website || '',
+        linkedin: user.linkedin || '',
+        profile_photo_url: user.profile_photo_url || '',
+      });
+    }
+  }, [user]);
 
   const updateMutation = useMutation({
     mutationFn: (data) => base44.auth.updateMe(data),
@@ -44,9 +69,27 @@ export default function Profile() {
     },
   });
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPhoto(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.auth.updateMe({ profile_photo_url: file_url });
+      queryClient.invalidateQueries(['user']);
+      toast({ title: 'Profile photo updated' });
+    } catch (error) {
+      toast({ title: 'Failed to upload photo', variant: 'destructive' });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    updateMutation.mutate(formData);
+    const { employing_broker_number, license_number, ...editableData } = formData;
+    updateMutation.mutate(editableData);
   };
 
   return (
@@ -59,36 +102,64 @@ export default function Profile() {
             <div style={{ display: 'flex', alignItems: 'start', gap: '24px', flexWrap: 'wrap' }}>
               {/* Avatar */}
               <div style={{ position: 'relative' }}>
-                <div style={{
-                  width: '120px',
-                  height: '120px',
-                  borderRadius: '50%',
-                  background: ACCENT,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  fontSize: '48px',
-                  fontWeight: 300,
-                  color: '#111827',
-                }}>
-                  {user?.full_name?.[0]?.toUpperCase() || 'U'}
-                </div>
-                <button style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  right: 0,
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <Camera style={{ width: '18px', height: '18px', color: 'white' }} />
+                {formData.profile_photo_url ? (
+                  <img 
+                    src={formData.profile_photo_url} 
+                    alt="Profile" 
+                    style={{
+                      width: '120px',
+                      height: '120px',
+                      borderRadius: '50%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    background: ACCENT,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    fontSize: '48px',
+                    fontWeight: 300,
+                    color: '#111827',
+                  }}>
+                    {user?.full_name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  style={{ display: 'none' }}
+                />
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    cursor: uploadingPhoto ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {uploadingPhoto ? (
+                    <Loader2 style={{ width: '18px', height: '18px', color: 'white', animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    <Camera style={{ width: '18px', height: '18px', color: 'white' }} />
+                  )}
                 </button>
               </div>
 
@@ -199,23 +270,32 @@ export default function Profile() {
                   />
                 </div>
                 <div>
-                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Years of Experience</Label>
-                  <Input
-                    disabled={!editing}
-                    type="number"
-                    value={formData.years_experience}
-                    onChange={(e) => setFormData({ ...formData, years_experience: e.target.value })}
-                    placeholder="5"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                  />
-                </div>
-                <div>
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Specialties</Label>
                   <Input
                     disabled={!editing}
                     value={formData.specialties}
                     onChange={(e) => setFormData({ ...formData, specialties: e.target.value })}
                     placeholder="Commercial, Residential, Luxury"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                  />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Certifications</Label>
+                  <Input
+                    disabled={!editing}
+                    value={formData.certifications}
+                    onChange={(e) => setFormData({ ...formData, certifications: e.target.value })}
+                    placeholder="CRS, GRI, ABR"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                  />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Languages</Label>
+                  <Input
+                    disabled={!editing}
+                    value={formData.languages}
+                    onChange={(e) => setFormData({ ...formData, languages: e.target.value })}
+                    placeholder="English, Spanish"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                   />
                 </div>
@@ -252,13 +332,19 @@ export default function Profile() {
                   />
                 </div>
                 <div>
-                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>License Number</Label>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Employing Broker Number <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>(Read-only)</span></Label>
                   <Input
-                    disabled={!editing}
+                    disabled
+                    value={formData.employing_broker_number}
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }}
+                  />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>License Number <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>(Read-only)</span></Label>
+                  <Input
+                    disabled
                     value={formData.license_number}
-                    onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
-                    placeholder="RE123456"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }}
                   />
                 </div>
                 <div>
@@ -274,35 +360,15 @@ export default function Profile() {
               </CardContent>
             </Card>
 
-            {/* Additional Information */}
+            {/* Online Presence */}
             <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <CardHeader>
                 <CardTitle style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Award style={{ width: '20px', height: '20px', color: ACCENT }} />
-                  Additional Information
+                  Online Presence
                 </CardTitle>
               </CardHeader>
               <CardContent style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Certifications</Label>
-                  <Input
-                    disabled={!editing}
-                    value={formData.certifications}
-                    onChange={(e) => setFormData({ ...formData, certifications: e.target.value })}
-                    placeholder="CRS, GRI, ABR"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                  />
-                </div>
-                <div>
-                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Languages</Label>
-                  <Input
-                    disabled={!editing}
-                    value={formData.languages}
-                    onChange={(e) => setFormData({ ...formData, languages: e.target.value })}
-                    placeholder="English, Spanish"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                  />
-                </div>
                 <div>
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Website</Label>
                   <Input
@@ -348,6 +414,13 @@ export default function Profile() {
           )}
         </form>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
