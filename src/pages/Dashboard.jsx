@@ -4,15 +4,13 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Building2, Search, TrendingUp, MessageSquare, Plus, ArrowRight, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import ListingWizard from '@/components/forms/ListingWizard';
-import RequirementWizard from '@/components/forms/RequirementWizard';
+import CreatePostModal from '@/components/dashboard/CreatePostModal';
 
 const ACCENT = '#00DBC5';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [showListingWizard, setShowListingWizard] = useState(false);
-  const [showRequirementWizard, setShowRequirementWizard] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const { data: listings = [] } = useQuery({
     queryKey: ['my-listings'],
@@ -132,7 +130,7 @@ export default function Dashboard() {
         marginBottom: '48px' 
       }}>
         <Card 
-          onClick={() => setShowListingWizard(true)}
+          onClick={() => setShowCreateModal(true)}
           style={{ 
             background: `linear-gradient(135deg, ${ACCENT}15 0%, ${ACCENT}05 100%)`, 
             border: `1px solid ${ACCENT}40`,
@@ -177,7 +175,7 @@ export default function Dashboard() {
         </Card>
 
         <Card 
-          onClick={() => setShowRequirementWizard(true)}
+          onClick={() => setShowCreateModal(true)}
           style={{ 
             background: `linear-gradient(135deg, ${ACCENT}15 0%, ${ACCENT}05 100%)`, 
             border: `1px solid ${ACCENT}40`,
@@ -379,20 +377,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {showListingWizard && (
-        <ListingWizard
-          onClose={() => setShowListingWizard(false)}
+      {showCreateModal && (
+        <CreatePostModal
+          onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
-            setShowListingWizard(false);
-          }}
-        />
-      )}
-
-      {showRequirementWizard && (
-        <RequirementWizard
-          onClose={() => setShowRequirementWizard(false)}
-          onSuccess={() => {
-            setShowRequirementWizard(false);
+            setShowCreateModal(false);
+            // Refresh data
           }}
         />
       )}
