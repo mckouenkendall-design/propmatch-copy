@@ -149,13 +149,6 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
             />
           </Field>
         </div>
-        <Field label="Brokerage ID Number" hint="Used to power brokerage-only matching and visibility">
-          <Input
-            value={data.brokerage_id || ''}
-            onChange={e => update({ brokerage_id: e.target.value })}
-            placeholder="e.g. BRK-00123"
-          />
-        </Field>
       </div>
 
       {/* Visibility */}
