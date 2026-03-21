@@ -134,10 +134,13 @@ export default function TopNav() {
         </div>
 
         {/* Right Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, maxWidth: '600px', marginLeft: '24px' }}>
           {/* Global Search */}
           <GlobalSearch />
 
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
