@@ -66,20 +66,45 @@ export default function Settings() {
   const updateMutation = useMutation({
     mutationFn: async (data) => {
       const result = await base44.auth.updateMe(data);
-      // Wait for the query to be invalidated and refetched
       await queryClient.invalidateQueries(['user']);
       await queryClient.refetchQueries(['user']);
       return result;
     },
     onSuccess: () => {
       toast({ 
-        title: 'Settings updated successfully',
-        duration: 4000,
+        title: 'Changes saved',
+        className: 'bg-green-600 text-white border-green-600',
+        duration: 3000,
+      });
+    },
+    onError: () => {
+      toast({ 
+        title: 'Something went wrong. Please try again.',
+        variant: 'destructive',
+        duration: 3000,
       });
     },
   });
 
   const saveAccountSettings = async () => {
+    // Validate required fields
+    if (!fullName?.trim()) {
+      toast({ 
+        title: 'Full name is required',
+        variant: 'destructive',
+        duration: 3000,
+      });
+      return;
+    }
+    if (!email?.trim()) {
+      toast({ 
+        title: 'Email is required',
+        variant: 'destructive',
+        duration: 3000,
+      });
+      return;
+    }
+    
     await updateMutation.mutateAsync({ full_name: fullName, email });
   };
 
