@@ -23,24 +23,21 @@ export default function Profile() {
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
     username: user?.username || '',
-    bio: user?.bio || '',
+    contact_email: user?.contact_email || '',
     phone: user?.phone || '',
-    contact_email: user?.contact_email || user?.email || '',
+    state: user?.state || '',
     brokerage_name: user?.brokerage_name || '',
     brokerage_address: user?.brokerage_address || '',
-    employing_broker_number: user?.employing_broker_number || '',
-    license_number: user?.license_number || '',
-    license_state: user?.license_state || '',
-    state: user?.state || '',
+    bio: user?.bio || '',
+    years_experience: user?.years_experience || '',
     specialties: user?.specialties || '',
     certifications: user?.certifications || '',
     languages: user?.languages || '',
-    website: user?.website || '',
     linkedin: user?.linkedin || '',
+    website: user?.website || '',
     instagram: user?.instagram || '',
     tiktok: user?.tiktok || '',
     facebook: user?.facebook || '',
-    years_experience: user?.years_experience || '',
     profile_photo_url: user?.profile_photo_url || '',
   });
 
@@ -49,24 +46,21 @@ export default function Profile() {
       setFormData({
         full_name: user.full_name || '',
         username: user.username || '',
-        bio: user.bio || '',
+        contact_email: user.contact_email || '',
         phone: user.phone || '',
-        contact_email: user.contact_email || user.email || '',
+        state: user.state || '',
         brokerage_name: user.brokerage_name || '',
         brokerage_address: user.brokerage_address || '',
-        employing_broker_number: user.employing_broker_number || '',
-        license_number: user.license_number || '',
-        license_state: user.license_state || '',
-        state: user.state || '',
+        bio: user.bio || '',
+        years_experience: user.years_experience || '',
         specialties: user.specialties || '',
         certifications: user.certifications || '',
         languages: user.languages || '',
-        website: user.website || '',
         linkedin: user.linkedin || '',
+        website: user.website || '',
         instagram: user.instagram || '',
         tiktok: user.tiktok || '',
         facebook: user.facebook || '',
-        years_experience: user.years_experience || '',
         profile_photo_url: user.profile_photo_url || '',
       });
     }
@@ -100,8 +94,25 @@ export default function Profile() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { employing_broker_number, license_number, profile_photo_url, ...editableData } = formData;
-    updateMutation.mutate(editableData);
+    updateMutation.mutate({
+      full_name: formData.full_name,
+      username: formData.username,
+      contact_email: formData.contact_email,
+      phone: formData.phone,
+      state: formData.state,
+      brokerage_name: formData.brokerage_name,
+      brokerage_address: formData.brokerage_address,
+      bio: formData.bio,
+      years_experience: formData.years_experience,
+      specialties: formData.specialties,
+      certifications: formData.certifications,
+      languages: formData.languages,
+      linkedin: formData.linkedin,
+      website: formData.website,
+      instagram: formData.instagram,
+      tiktok: formData.tiktok,
+      facebook: formData.facebook,
+    });
   };
 
   return (
@@ -367,10 +378,10 @@ export default function Profile() {
                   />
                 </div>
                 <div>
-                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Employing Broker Number <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>(Read-only)</span></Label>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Employing Broker ID <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>(Read-only)</span></Label>
                   <Input
                     disabled
-                    value={formData.employing_broker_number}
+                    value={user?.employing_broker_id || ''}
                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }}
                   />
                 </div>
