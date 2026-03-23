@@ -25,11 +25,13 @@ export default function Profile() {
     username: user?.username || '',
     bio: user?.bio || '',
     phone: user?.phone || '',
+    contact_email: user?.contact_email || user?.email || '',
     brokerage_name: user?.brokerage_name || '',
     brokerage_address: user?.brokerage_address || '',
     employing_broker_number: user?.employing_broker_number || '',
     license_number: user?.license_number || '',
     license_state: user?.license_state || '',
+    state: user?.state || '',
     specialties: user?.specialties || '',
     certifications: user?.certifications || '',
     languages: user?.languages || '',
@@ -49,11 +51,13 @@ export default function Profile() {
         username: user.username || '',
         bio: user.bio || '',
         phone: user.phone || '',
+        contact_email: user.contact_email || user.email || '',
         brokerage_name: user.brokerage_name || '',
         brokerage_address: user.brokerage_address || '',
         employing_broker_number: user.employing_broker_number || '',
         license_number: user.license_number || '',
         license_state: user.license_state || '',
+        state: user.state || '',
         specialties: user.specialties || '',
         certifications: user.certifications || '',
         languages: user.languages || '',
@@ -96,7 +100,7 @@ export default function Profile() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { employing_broker_number, license_number, ...editableData } = formData;
+    const { employing_broker_number, license_number, profile_photo_url, ...editableData } = formData;
     updateMutation.mutate(editableData);
   };
 
@@ -206,22 +210,34 @@ export default function Profile() {
                     )}
                   </>
                 )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Mail style={{ width: '16px', height: '16px', color: ACCENT }} />
-                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>
-                      {user?.email}
-                    </span>
+                {editing ? (
+                  <div style={{ marginBottom: '12px' }}>
+                    <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Contact Email</Label>
+                    <Input
+                      value={formData.contact_email}
+                      onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                      placeholder="your.email@example.com"
+                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                    />
                   </div>
-                  {user?.phone && (
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Phone style={{ width: '16px', height: '16px', color: ACCENT }} />
+                      <Mail style={{ width: '16px', height: '16px', color: ACCENT }} />
                       <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>
-                        {user.phone}
+                        {user?.contact_email || user?.email}
                       </span>
                     </div>
-                  )}
-                </div>
+                    {user?.phone && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Phone style={{ width: '16px', height: '16px', color: ACCENT }} />
+                        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>
+                          {user.phone}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {!editing && user?.bio && (
                   <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>
                     {user.bio}
@@ -367,11 +383,11 @@ export default function Profile() {
                   />
                 </div>
                 <div>
-                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>License State</Label>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>State</Label>
                   <Input
                     disabled={!editing}
-                    value={formData.license_state}
-                    onChange={(e) => setFormData({ ...formData, license_state: e.target.value })}
+                    value={formData.state}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                     placeholder="MI"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                   />
