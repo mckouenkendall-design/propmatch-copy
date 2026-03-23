@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { useTheme } from '@/lib/ThemeProvider';
 import { base44 } from '@/api/base44Client';
@@ -21,11 +22,13 @@ import {
   Bell, 
   Lock, 
   Shield,
-  Mail,
   Moon,
-  Globe
+  Globe,
+  Briefcase
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import RoleChangeModal from '@/components/settings/RoleChangeModal';
+import PaymentScreen from '@/components/onboarding/PaymentScreen';
 
 const ACCENT = '#00DBC5';
 
@@ -34,12 +37,21 @@ export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Account Settings
   const [fullName, setFullName] = useState(user?.full_name || '');
-  const [email, setEmail] = useState(user?.email || '');
-
-
+  const [contactEmail, setContactEmail] = useState(user?.contact_email || user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [username, setUsername] = useState(user?.username || '');
+  const [bio, setBio] = useState(user?.bio || '');
+  
+  // Professional Settings
+  const [userType, setUserType] = useState(user?.user_type || '');
+  const [brokerageName, setBrokerageName] = useState(user?.brokerage_name || '');
+  const [state, setState] = useState(user?.state || '');
+  const [employingBrokerNumber, setEmployingBrokerNumber] = useState(user?.employing_broker_number || '');
+  const [licenseNumber, setLicenseNumber] = useState(user?.license_number || '');
 
   // Notification Settings
   const [emailNotifications, setEmailNotifications] = useState(user?.email_notifications !== false);
@@ -50,11 +62,24 @@ export default function Settings() {
   // Preferences
   const [language, setLanguage] = useState(user?.language || 'en');
 
+  // Role change flow
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [pendingUserType, setPendingUserType] = useState('');
+  const [showPaymentScreen, setShowPaymentScreen] = useState(false);
+
   // Sync state with updated user data
   useEffect(() => {
     if (user) {
       setFullName(user.full_name || '');
-      setEmail(user.email || '');
+      setContactEmail(user.contact_email || user.email || '');
+      setPhone(user.phone || '');
+      setUsername(user.username || '');
+      setBio(user.bio || '');
+      setUserType(user.user_type || '');
+      setBrokerageName(user.brokerage_name || '');
+      setState(user.state || '');
+      setEmployingBrokerNumber(user.employing_broker_number || '');
+      setLicenseNumber(user.license_number || '');
       setEmailNotifications(user.email_notifications !== false);
       setMatchAlerts(user.match_alerts !== false);
       setGroupNotifications(user.group_notifications !== false);
@@ -63,10 +88,46 @@ export default function Settings() {
     }
   }, [user]);
 
+  // Handle role change
+  const handleUserTypeChange = (newType) => {
+    if (newType === 'principal_broker' && userType !== 'principal_broker') {
+      setPendingUserType(newType);
+      setShowRoleModal(true);
+    } else {
+      setUserType(newType);
+    }
+  };
+
+  const confirmRoleChange = () => {
+    setShowRoleModal(false);
+    setShowPaymentScreen(true);
+  };
+
+  const handlePaymentComplete = async (plan) => {
+    try {
+      await base44.auth.updateMe({
+        user_type: 'principal_broker',
+        selected_plan: plan,
+      });
+      await queryClient.invalidateQueries(['user']);
+      await queryClient.refetchQueries(['user']);
+      setShowPaymentScreen(false);
+      toast({
+        title: 'Role updated successfully',
+        description: 'You are now a Principal Broker with full access.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update role',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const updateMutation = useMutation({
     mutationFn: async (data) => {
       const result = await base44.auth.updateMe(data);
-      // Wait for the query to be invalidated and refetched
       await queryClient.invalidateQueries(['user']);
       await queryClient.refetchQueries(['user']);
       return result;
@@ -80,7 +141,21 @@ export default function Settings() {
   });
 
   const saveAccountSettings = async () => {
-    await updateMutation.mutateAsync({ full_name: fullName, email });
+    await updateMutation.mutateAsync({ 
+      full_name: fullName, 
+      contact_email: contactEmail,
+      phone,
+      username,
+      bio,
+    });
+  };
+
+  const saveProfessionalSettings = async () => {
+    await updateMutation.mutateAsync({
+      user_type: userType,
+      brokerage_name: brokerageName,
+      state,
+    });
   };
 
   const saveNotificationSettings = async () => {
@@ -93,12 +168,31 @@ export default function Settings() {
   };
 
   const savePreferences = async () => {
-    // Theme is now handled by ThemeProvider and saves automatically
     await updateMutation.mutateAsync({ language });
   };
 
+  if (showPaymentScreen) {
+    return (
+      <PaymentScreen
+        isBroker={true}
+        employingBrokerNumber={employingBrokerNumber}
+        fromSettings={true}
+        onComplete={handlePaymentComplete}
+      />
+    );
+  }
+
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px' }}>
+      {showRoleModal && (
+        <RoleChangeModal
+          onConfirm={confirmRoleChange}
+          onCancel={() => {
+            setShowRoleModal(false);
+            setPendingUserType('');
+          }}
+        />
+      )}
       
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '28px', fontWeight: 400, color: 'white', margin: '0 0 6px' }}>
@@ -121,6 +215,17 @@ export default function Settings() {
             >
               <User style={{ width: '16px', height: '16px', marginRight: '8px' }} />
               Account
+            </TabsTrigger>
+            <TabsTrigger 
+              value="professional" 
+              style={{ 
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: "'Inter', sans-serif"
+              }}
+              className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]"
+            >
+              <Briefcase style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+              Professional
             </TabsTrigger>
             <TabsTrigger 
               value="notifications" 
@@ -163,7 +268,7 @@ export default function Settings() {
               <CardHeader>
                 <CardTitle style={{ color: 'white' }}>Account Information</CardTitle>
                 <CardDescription style={{ color: 'rgba(255,255,255,0.5)' }}>
-                  Update your account details
+                  Update your personal details
                 </CardDescription>
               </CardHeader>
               <CardContent style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -176,31 +281,121 @@ export default function Settings() {
                   />
                 </div>
                 <div>
-                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>Email Address</Label>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>Contact Email</Label>
                   <Input
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                  />
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>
+                    This email will be visible to other agents for contact purposes.
+                  </p>
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>Phone</Label>
+                  <Input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                   />
                 </div>
                 <div>
-                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>Account Type</Label>
-                  <div style={{
-                    background: 'rgba(0,219,197,0.08)',
-                    border: `1px solid ${ACCENT}`,
-                    borderRadius: '6px',
-                    padding: '12px 16px',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    color: ACCENT,
-                    textTransform: 'capitalize',
-                  }}>
-                    {user?.role || 'User'}
-                  </div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>Username</Label>
+                  <Input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                  />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>Bio</Label>
+                  <Input
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Tell us about yourself..."
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                  />
                 </div>
                 <Button
                   onClick={saveAccountSettings}
+                  disabled={updateMutation.isPending}
+                  style={{ background: ACCENT, color: '#111827', alignSelf: 'flex-start' }}
+                >
+                  {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Professional Settings */}
+          <TabsContent value="professional">
+            <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <CardHeader>
+                <CardTitle style={{ color: 'white' }}>Professional Information</CardTitle>
+                <CardDescription style={{ color: 'rgba(255,255,255,0.5)' }}>
+                  Your brokerage and licensing details
+                </CardDescription>
+              </CardHeader>
+              <CardContent style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>Role</Label>
+                  <Select value={userType} onValueChange={handleUserTypeChange}>
+                    <SelectTrigger style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <SelectItem value="agent" style={{ color: 'rgba(255,255,255,0.85)' }}>Agent</SelectItem>
+                      <SelectItem value="principal_broker" style={{ color: 'rgba(255,255,255,0.85)' }}>Principal Broker</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>State</Label>
+                  <Input
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                  />
+                </div>
+
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>Brokerage Name</Label>
+                  <Input
+                    value={brokerageName}
+                    onChange={(e) => setBrokerageName(e.target.value)}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                  />
+                </div>
+
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>Employing Broker Number</Label>
+                  <Input
+                    value={employingBrokerNumber}
+                    disabled
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', cursor: 'not-allowed' }}
+                  />
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginTop: '6px' }}>
+                    This field cannot be edited after registration.
+                  </p>
+                </div>
+
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>License Number</Label>
+                  <Input
+                    value={licenseNumber}
+                    disabled
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', cursor: 'not-allowed' }}
+                  />
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginTop: '6px' }}>
+                    This field cannot be edited after registration.
+                  </p>
+                </div>
+
+                <Button
+                  onClick={saveProfessionalSettings}
                   disabled={updateMutation.isPending}
                   style={{ background: ACCENT, color: '#111827', alignSelf: 'flex-start' }}
                 >
