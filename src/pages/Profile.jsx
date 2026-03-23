@@ -389,7 +389,7 @@ export default function Profile() {
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>License Number <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>(Read-only)</span></Label>
                   <Input
                     disabled
-                    value={formData.license_number}
+                    value={user?.license_number || ''}
                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }}
                   />
                 </div>
