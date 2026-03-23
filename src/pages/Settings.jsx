@@ -125,50 +125,13 @@ export default function Settings() {
     }
   };
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const result = await base44.auth.updateMe(data);
-      await queryClient.invalidateQueries(['user']);
-      await queryClient.refetchQueries(['user']);
-      return result;
-    },
-    onSuccess: () => {
-      toast({ 
-        title: 'Settings updated successfully',
-        duration: 4000,
-      });
-    },
-  });
-
-  const saveAccountSettings = async () => {
-    await updateMutation.mutateAsync({ 
-      full_name: fullName, 
-      contact_email: contactEmail,
-      phone,
-      username,
-      bio,
-    });
-  };
-
-  const saveProfessionalSettings = async () => {
-    await updateMutation.mutateAsync({
-      user_type: userType,
-      brokerage_name: brokerageName,
-      state,
-    });
-  };
-
-  const saveNotificationSettings = async () => {
-    await updateMutation.mutateAsync({
-      email_notifications: emailNotifications,
-      match_alerts: matchAlerts,
-      group_notifications: groupNotifications,
-      message_notifications: messageNotifications,
-    });
-  };
-
-  const savePreferences = async () => {
-    await updateMutation.mutateAsync({ language });
+  const handleFieldChange = async (field, value) => {
+    try {
+      await base44.auth.updateMe({ [field]: value });
+      queryClient.invalidateQueries(['user']);
+    } catch (error) {
+      toast({ title: 'Failed to update', variant: 'destructive' });
+    }
   };
 
   if (showPaymentScreen) {
@@ -255,7 +218,13 @@ export default function Settings() {
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>Email Notifications</p>
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Receive updates via email</p>
                   </div>
-                  <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
+                  <Switch 
+                    checked={emailNotifications} 
+                    onCheckedChange={(val) => {
+                      setEmailNotifications(val);
+                      handleFieldChange('email_notifications', val);
+                    }} 
+                  />
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
@@ -263,7 +232,13 @@ export default function Settings() {
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>New Match Alerts</p>
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Get notified when new matches are found</p>
                   </div>
-                  <Switch checked={matchAlerts} onCheckedChange={setMatchAlerts} />
+                  <Switch 
+                    checked={matchAlerts} 
+                    onCheckedChange={(val) => {
+                      setMatchAlerts(val);
+                      handleFieldChange('match_alerts', val);
+                    }} 
+                  />
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
@@ -271,7 +246,13 @@ export default function Settings() {
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>Group Activity</p>
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Updates from groups you've joined</p>
                   </div>
-                  <Switch checked={groupNotifications} onCheckedChange={setGroupNotifications} />
+                  <Switch 
+                    checked={groupNotifications} 
+                    onCheckedChange={(val) => {
+                      setGroupNotifications(val);
+                      handleFieldChange('group_notifications', val);
+                    }} 
+                  />
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
@@ -279,16 +260,16 @@ export default function Settings() {
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>Direct Messages</p>
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Notifications for new messages</p>
                   </div>
-                  <Switch checked={messageNotifications} onCheckedChange={setMessageNotifications} />
+                  <Switch 
+                    checked={messageNotifications} 
+                    onCheckedChange={(val) => {
+                      setMessageNotifications(val);
+                      handleFieldChange('message_notifications', val);
+                    }} 
+                  />
                 </div>
 
-                <Button
-                  onClick={saveNotificationSettings}
-                  disabled={updateMutation.isPending}
-                  style={{ background: ACCENT, color: '#111827', alignSelf: 'flex-start' }}
-                >
-                  {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-                </Button>
+
               </CardContent>
             </Card>
           </TabsContent>
@@ -322,7 +303,10 @@ export default function Settings() {
 
                 <div>
                   <Label style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '8px', display: 'block' }}>Language</Label>
-                  <Select value={language} onValueChange={setLanguage}>
+                  <Select value={language} onValueChange={(val) => {
+                    setLanguage(val);
+                    handleFieldChange('language', val);
+                  }}>
                     <SelectTrigger style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}>
                       <SelectValue />
                     </SelectTrigger>
@@ -334,13 +318,7 @@ export default function Settings() {
                   </Select>
                 </div>
 
-                <Button
-                  onClick={savePreferences}
-                  disabled={updateMutation.isPending}
-                  style={{ background: ACCENT, color: '#111827', alignSelf: 'flex-start' }}
-                >
-                  {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-                </Button>
+
               </CardContent>
             </Card>
           </TabsContent>
