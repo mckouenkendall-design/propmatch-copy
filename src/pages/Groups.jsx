@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search as SearchIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import GroupsFeed from '@/components/groups/GroupsFeed';
@@ -15,6 +15,7 @@ export default function Groups() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('feed');
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -258,7 +259,11 @@ export default function Groups() {
       {showCreateModal && (
         <CreateGroupModal
           onClose={() => setShowCreateModal(false)}
-          onSuccess={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['all-groups'] });
+            queryClient.invalidateQueries({ queryKey: ['my-memberships'] });
+            setShowCreateModal(false);
+          }}
         />
       )}
     </div>
