@@ -69,7 +69,7 @@ export default function Profile() {
   const updateMutation = useMutation({
     mutationFn: (data) => base44.auth.updateMe(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['user']);
+      queryClient.invalidateQueries();
       setEditing(false);
       toast({ title: 'Profile updated successfully' });
     },
@@ -150,7 +150,7 @@ export default function Profile() {
                     fontWeight: 300,
                     color: '#111827',
                   }}>
-                    {user?.full_name?.[0]?.toUpperCase() || 'U'}
+                    {formData.full_name?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
                 <input
@@ -212,11 +212,11 @@ export default function Profile() {
                 ) : (
                   <>
                     <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '32px', fontWeight: 300, color: 'white', margin: '0 0 4px' }}>
-                      {user?.full_name}
+                      {formData.full_name}
                     </h1>
-                    {user?.username && (
+                    {formData.username && (
                       <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: ACCENT, margin: '0 0 8px' }}>
-                        @{user.username}
+                        @{formData.username}
                       </p>
                     )}
                   </>
@@ -236,22 +236,22 @@ export default function Profile() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Mail style={{ width: '16px', height: '16px', color: ACCENT }} />
                       <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>
-                        {user?.contact_email || user?.email}
+                        {formData.contact_email || user?.email}
                       </span>
                     </div>
-                    {user?.phone && (
+                    {formData.phone && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Phone style={{ width: '16px', height: '16px', color: ACCENT }} />
                         <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>
-                          {user.phone}
+                          {formData.phone}
                         </span>
                       </div>
                     )}
                   </div>
                 )}
-                {!editing && user?.bio && (
+                {!editing && formData.bio && (
                   <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>
-                    {user.bio}
+                    {formData.bio}
                   </p>
                 )}
               </div>
