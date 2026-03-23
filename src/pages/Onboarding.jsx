@@ -6,7 +6,7 @@ import PostOnboarding from '@/components/onboarding/PostOnboarding';
 import PaymentScreen from '@/components/onboarding/PaymentScreen';
 
 const ACCENT = '#00DBC5';
-// ─── State license format rules ───────────────────────────────────────────────
+
 const STATE_RULES = {
   Michigan:       { pattern: /^\d{10}$/, hint: '10 digits' },
   Florida:        { pattern: /^[A-Za-z]{2}\d{5,6}$/, hint: '2 letters + 5–6 digits (e.g. BK12345)' },
@@ -41,7 +41,6 @@ const US_STATES = [
   'Virginia','Washington','West Virginia','Wisconsin','Wyoming',
 ];
 
-// ─── Shared UI ─────────────────────────────────────────────────────────────────
 const STEPS_LABELS = ['Your Info', 'Your Practice'];
 
 function StepIndicator({ current }) {
@@ -168,7 +167,6 @@ function ToggleChip({ label, selected, onClick, disabled }) {
   );
 }
 
-// ─── Phone formatter ───────────────────────────────────────────────────────────
 function formatPhone(raw) {
   const digits = raw.replace(/\D/g, '').slice(0, 10);
   if (digits.length < 4) return digits;
@@ -176,7 +174,6 @@ function formatPhone(raw) {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
-// ─── STEP 1 ────────────────────────────────────────────────────────────────────
 function Step1({ data, setData, errors, setErrors }) {
   const clearError = (field) => {
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
@@ -281,7 +278,6 @@ function Step1({ data, setData, errors, setErrors }) {
   );
 }
 
-// ─── STEP 2 ────────────────────────────────────────────────────────────────────
 const CAT_OPTIONS = ['Residential', 'Commercial', 'Both', 'Other'];
 const TX_OPTIONS = ['Sales', 'Leasing', 'Rentals', 'All', 'Other'];
 
@@ -311,55 +307,37 @@ function Step2({ data, setData }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      {/* Property Categories */}
       <div>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.4)', margin: '0 0 14px' }}>
           What property categories do you work in?
         </p>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: catOtherSelected ? '12px' : '0' }}>
           {CAT_OPTIONS.map(cat => (
-            <ToggleChip
-              key={cat}
-              label={cat}
-              selected={data.propertyCategories.includes(cat)}
-              onClick={() => toggleCat(cat)}
-            />
+            <ToggleChip key={cat} label={cat} selected={data.propertyCategories.includes(cat)} onClick={() => toggleCat(cat)} />
           ))}
         </div>
         {catOtherSelected && (
           <div style={{ marginTop: '12px' }}>
             <FieldLabel>Please specify</FieldLabel>
-            <StyledInput
-              value={data.catOther}
-              onChange={e => setData({ ...data, catOther: e.target.value })}
-            />
+            <StyledInput value={data.catOther} onChange={e => setData({ ...data, catOther: e.target.value })} />
           </div>
         )}
       </div>
 
-      {/* Transaction Types */}
       <div>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.4)', margin: '0 0 14px' }}>
           What transaction types do you handle?
         </p>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           {TX_OPTIONS.map(tx => (
-            <ToggleChip
-              key={tx}
-              label={tx}
-              selected={data.transactionTypes.includes(tx)}
-              disabled={allSelected && tx !== 'All' && tx !== 'Other'}
-              onClick={() => toggleTx(tx)}
-            />
+            <ToggleChip key={tx} label={tx} selected={data.transactionTypes.includes(tx)}
+              disabled={allSelected && tx !== 'All' && tx !== 'Other'} onClick={() => toggleTx(tx)} />
           ))}
         </div>
         {txOtherSelected && !allSelected && (
           <div style={{ marginTop: '12px' }}>
             <FieldLabel>Please specify</FieldLabel>
-            <StyledInput
-              value={data.txOther}
-              onChange={e => setData({ ...data, txOther: e.target.value })}
-            />
+            <StyledInput value={data.txOther} onChange={e => setData({ ...data, txOther: e.target.value })} />
           </div>
         )}
       </div>
@@ -367,7 +345,6 @@ function Step2({ data, setData }) {
   );
 }
 
-// ─── Main page ─────────────────────────────────────────────────────────────────
 const STEP1_INIT = { fullName: '', email: '', phone: '', username: '', state: '', role: '', brokerageName: '', employingBrokerId: '', licenseNumber: '' };
 const STEP2_INIT = { propertyCategories: [], catOther: '', transactionTypes: [], txOther: '' };
 
@@ -388,11 +365,9 @@ export default function Onboarding() {
     }
   }, [user]);
 
-  // Step 1 all-fields check
   const step1Filled = step1.fullName && step1.email && step1.phone && step1.username && step1.state &&
     step1.role && step1.brokerageName && step1.employingBrokerId && step1.licenseNumber;
 
-  // Step 2 validity
   const catOtherSelected = step2.propertyCategories.includes('Other');
   const txOtherSelected = step2.transactionTypes.includes('Other');
   const step2Valid =
@@ -406,7 +381,6 @@ export default function Onboarding() {
   const handleStep1Continue = async () => {
     if (!step1Filled) return;
 
-    // Run format validation
     const brokerError = step1.state ? validateLicenseField(step1.employingBrokerId, step1.state) : null;
     const licenseError = step1.state ? validateLicenseField(step1.licenseNumber, step1.state) : null;
 
@@ -415,28 +389,27 @@ export default function Onboarding() {
       return;
     }
 
-    // Check username uniqueness
     try {
       const existingUsers = await base44.entities.User.filter({ username: step1.username.trim() });
       if (existingUsers.length > 0) {
         setErrors({ username: 'This username is already taken. Please choose another.' });
         return;
       }
-    } catch (e) {
-      // If check fails, proceed anyway
-    }
+    } catch (e) {}
 
-    // Save to user profile
     try {
+      // Save full_name to BOTH 'full_name' and 'name' so it persists regardless of Base44 internals
+      // Save employing_broker_id (the canonical field used throughout the app)
       await base44.auth.updateMe({
         full_name: step1.fullName,
+        name: step1.fullName,
         contact_email: step1.email,
         phone: step1.phone,
         username: step1.username.trim(),
         state: step1.state,
         user_type: step1.role === 'Principal Broker' ? 'principal_broker' : 'agent',
         brokerage_name: step1.brokerageName,
-        employing_broker_number: step1.employingBrokerId,
+        employing_broker_id: step1.employingBrokerId,
         license_number: step1.licenseNumber,
         verification_status: 'format_verified',
       });
@@ -458,9 +431,7 @@ export default function Onboarding() {
         transaction_types: step2.transactionTypes,
         transaction_types_other: step2.txOther || null,
       });
-    } catch (e) {
-      // Non-blocking
-    }
+    } catch (e) {}
 
     setShowPayment(true);
   };
@@ -472,10 +443,7 @@ export default function Onboarding() {
 
   const isBroker = step1.role === 'Principal Broker';
 
-  const headings = [
-    'Professional Credentials',
-    'Your Practice',
-  ];
+  const headings = ['Professional Credentials', 'Your Practice'];
   const subheadings = [
     'Your license and brokerage details are required to verify your credentials.',
     "This helps us personalize your experience and understand who's joining the platform.",
@@ -487,12 +455,12 @@ export default function Onboarding() {
         isBroker={isBroker}
         employingBrokerNumber={step1.employingBrokerId}
         onComplete={(plan, rosterData) => {
-          try { 
-            base44.auth.updateMe({ 
+          try {
+            base44.auth.updateMe({
               selected_plan: plan,
               broker_sponsored: plan === 'broker_sponsored',
               roster_broker_email: rosterData?.broker_email || null,
-            }); 
+            });
           } catch (e) {}
           setShowPayment(false);
           setShowPostOnboarding(true);
@@ -507,7 +475,6 @@ export default function Onboarding() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#080C10', display: 'flex', flexDirection: 'column' }}>
-      {/* Nav */}
       <div style={{ padding: '24px 48px', display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
         <Link to="/Landing" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="180" height="36">
@@ -529,10 +496,8 @@ export default function Onboarding() {
         </Link>
       </div>
 
-      {/* Content */}
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '56px 24px 80px' }}>
         <div style={{ width: '100%', maxWidth: '580px' }}>
-          {/* Badge + heading */}
           <div style={{ marginBottom: '36px' }}>
             <span style={{
               fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase',
@@ -552,41 +517,39 @@ export default function Onboarding() {
 
           <StepIndicator current={step} />
 
-          {/* Step content */}
           <div style={{ marginBottom: '32px' }}>
             {step === 0 && <Step1 data={step1} setData={setStep1} errors={errors} setErrors={setErrors} />}
             {step === 1 && <Step2 data={step2} setData={setStep2} />}
           </div>
 
-          {/* Navigation buttons */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              {step > 0 ? (
-                <button
-                  onClick={() => setStep(step - 1)}
-                  style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'color 0.2s ease' }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
-                >
-                  ← Back
-                </button>
-              ) : <div />}
-
+            {step > 0 ? (
               <button
-                onClick={handleContinue}
-                disabled={!canContinue}
-                style={{
-                  fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
-                  textTransform: 'uppercase', letterSpacing: '0.05em',
-                  color: canContinue ? '#111827' : 'rgba(255,255,255,0.2)',
-                  background: canContinue ? ACCENT : 'rgba(255,255,255,0.06)',
-                  border: 'none', borderRadius: '6px',
-                  padding: '12px 28px', cursor: canContinue ? 'pointer' : 'not-allowed',
-                  transition: 'all 0.2s ease',
-                }}
+                onClick={() => setStep(step - 1)}
+                style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'color 0.2s ease' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
               >
-                Continue →
+                ← Back
               </button>
-            </div>
+            ) : <div />}
+
+            <button
+              onClick={handleContinue}
+              disabled={!canContinue}
+              style={{
+                fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
+                textTransform: 'uppercase', letterSpacing: '0.05em',
+                color: canContinue ? '#111827' : 'rgba(255,255,255,0.2)',
+                background: canContinue ? ACCENT : 'rgba(255,255,255,0.06)',
+                border: 'none', borderRadius: '6px',
+                padding: '12px 28px', cursor: canContinue ? 'pointer' : 'not-allowed',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Continue →
+            </button>
+          </div>
         </div>
       </div>
 
