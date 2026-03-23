@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,7 +28,7 @@ export default function Profile() {
     contact_email: user?.contact_email || user?.email || '',
     brokerage_name: user?.brokerage_name || '',
     brokerage_address: user?.brokerage_address || '',
-    employing_broker_id: user?.employing_broker_id || '',
+    employing_broker_number: user?.employing_broker_number || '',
     license_number: user?.license_number || '',
     license_state: user?.license_state || '',
     state: user?.state || '',
@@ -54,7 +54,7 @@ export default function Profile() {
         contact_email: user.contact_email || user.email || '',
         brokerage_name: user.brokerage_name || '',
         brokerage_address: user.brokerage_address || '',
-        employing_broker_id: user.employing_broker_id || '',
+        employing_broker_number: user.employing_broker_number || '',
         license_number: user.license_number || '',
         license_state: user.license_state || '',
         state: user.state || '',
@@ -72,7 +72,14 @@ export default function Profile() {
     }
   }, [user]);
 
-
+  const updateMutation = useMutation({
+    mutationFn: (data) => base44.auth.updateMe(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['user']);
+      setEditing(false);
+      toast({ title: 'Profile updated successfully' });
+    },
+  });
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -81,7 +88,6 @@ export default function Profile() {
     setUploadingPhoto(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setFormData({ ...formData, profile_photo_url: file_url });
       await base44.auth.updateMe({ profile_photo_url: file_url });
       queryClient.invalidateQueries(['user']);
       toast({ title: 'Profile photo updated' });
@@ -92,34 +98,10 @@ export default function Profile() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      await base44.auth.updateMe({
-        full_name: formData.full_name,
-        username: formData.username,
-        contact_email: formData.contact_email,
-        phone: formData.phone,
-        state: formData.state,
-        brokerage_name: formData.brokerage_name,
-        brokerage_address: formData.brokerage_address,
-        bio: formData.bio,
-        years_experience: formData.years_experience,
-        specialties: formData.specialties,
-        certifications: formData.certifications,
-        languages: formData.languages,
-        linkedin: formData.linkedin,
-        website: formData.website,
-        instagram: formData.instagram,
-        tiktok: formData.tiktok,
-        facebook: formData.facebook,
-      });
-      queryClient.invalidateQueries(['user']);
-      setEditing(false);
-      toast({ title: 'Profile updated successfully' });
-    } catch (error) {
-      toast({ title: 'Failed to update profile', variant: 'destructive' });
-    }
+    const { employing_broker_number, license_number, profile_photo_url, ...editableData } = formData;
+    updateMutation.mutate(editableData);
   };
 
   return (
@@ -388,7 +370,7 @@ export default function Profile() {
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Employing Broker Number <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>(Read-only)</span></Label>
                   <Input
                     disabled
-                    value={formData.employing_broker_id}
+                    value={formData.employing_broker_number}
                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }}
                   />
                 </div>
@@ -488,9 +470,10 @@ export default function Profile() {
               </Button>
               <Button
                 type="submit"
+                disabled={updateMutation.isPending}
                 style={{ background: ACCENT, color: '#111827' }}
               >
-                Save Changes
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           )}
