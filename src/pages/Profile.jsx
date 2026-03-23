@@ -50,7 +50,7 @@ export default function Profile() {
   useEffect(() => {
     if (user) {
       setFormData({
-        full_name: user.full_name || user.name || '',
+        full_name: user.full_name || '',
         username: user.username || '',
         contact_email: user.contact_email || '',
         phone: user.phone || '',
@@ -74,11 +74,62 @@ export default function Profile() {
 
   const updateMutation = useMutation({
     mutationFn: async (data) => {
-      // Save full_name to BOTH 'full_name' and 'name' so Base44 picks it up regardless of which field it reads
-      await base44.auth.updateMe({
-        ...data,
-        name: data.full_name,
-      });
+      const email = user?.email;
+      if (!email) throw new Error('No user email');
+
+      // Check if a UserProfile record already exists for this user
+      const existing = await base44.entities.UserProfile.filter({ user_email: email });
+
+      const profileData = {
+        user_email: email,
+        full_name: data.full_name,
+        username: data.username,
+        contact_email: data.contact_email,
+        phone: data.phone,
+        state: data.state,
+        brokerage_name: data.brokerage_name,
+        brokerage_address: data.brokerage_address,
+        bio: data.bio,
+        years_experience: data.years_experience ? Number(data.years_experience) : null,
+        specialties: data.specialties,
+        certifications: data.certifications,
+        languages: data.languages,
+        linkedin: data.linkedin,
+        website: data.website,
+        instagram: data.instagram,
+        tiktok: data.tiktok,
+        facebook: data.facebook,
+        profile_photo_url: data.profile_photo_url,
+        // Preserve read-only fields
+        employing_broker_id: user.employing_broker_id || '',
+        license_number: user.license_number || '',
+        user_type: user.user_type || '',
+        verification_status: user.verification_status || '',
+        property_categories: user.property_categories || [],
+        transaction_types: user.transaction_types || [],
+        selected_plan: user.selected_plan || '',
+      };
+
+      if (existing && existing.length > 0) {
+        // Update existing record
+        await base44.entities.UserProfile.update(existing[0].id, profileData);
+      } else {
+        // Create new record
+        await base44.entities.UserProfile.create(profileData);
+      }
+
+      // Also try to update the auth object for the fields it supports
+      try {
+        await base44.auth.updateMe({
+          full_name: data.full_name,
+          name: data.full_name,
+          username: data.username,
+          contact_email: data.contact_email,
+          phone: data.phone,
+        });
+      } catch (e) {
+        // Non-blocking — entity is the source of truth
+      }
     },
     onSuccess: async () => {
       await refreshUser();
@@ -97,7 +148,17 @@ export default function Profile() {
     setUploadingPhoto(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.auth.updateMe({ profile_photo_url: file_url });
+      // Save photo URL to UserProfile entity
+      const email = user?.email;
+      if (email) {
+        const existing = await base44.entities.UserProfile.filter({ user_email: email });
+        if (existing && existing.length > 0) {
+          await base44.entities.UserProfile.update(existing[0].id, { profile_photo_url: file_url });
+        } else {
+          await base44.entities.UserProfile.create({ user_email: email, profile_photo_url: file_url });
+        }
+      }
+      setFormData(prev => ({ ...prev, profile_photo_url: file_url }));
       await refreshUser();
       toast({ title: 'Profile photo updated' });
     } catch (error) {
@@ -109,25 +170,7 @@ export default function Profile() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    updateMutation.mutate({
-      full_name: formData.full_name,
-      username: formData.username,
-      contact_email: formData.contact_email,
-      phone: formData.phone,
-      state: formData.state,
-      brokerage_name: formData.brokerage_name,
-      brokerage_address: formData.brokerage_address,
-      bio: formData.bio,
-      years_experience: formData.years_experience,
-      specialties: formData.specialties,
-      certifications: formData.certifications,
-      languages: formData.languages,
-      linkedin: formData.linkedin,
-      website: formData.website,
-      instagram: formData.instagram,
-      tiktok: formData.tiktok,
-      facebook: formData.facebook,
-    });
+    updateMutation.mutate(formData);
   };
 
   const displayName = formData.full_name || user?.email?.split('@')[0] || 'User';
@@ -137,7 +180,6 @@ export default function Profile() {
     <div style={{ minHeight: '100vh', background: '#0E1318', paddingTop: '64px' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '48px 24px' }}>
 
-        {/* Header Card */}
         <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
           <CardContent style={{ padding: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'start', gap: '24px', flexWrap: 'wrap' }}>
@@ -157,17 +199,14 @@ export default function Profile() {
                   </div>
                 )}
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingPhoto}
+                <button onClick={() => fileInputRef.current?.click()} disabled={uploadingPhoto}
                   style={{
-                    position: 'absolute', bottom: 0, right: 0,
-                    width: '36px', height: '36px', borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                    position: 'absolute', bottom: 0, right: 0, width: '36px', height: '36px',
+                    borderRadius: '50%', background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.2)',
                     cursor: uploadingPhoto ? 'not-allowed' : 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
+                  }}>
                   {uploadingPhoto
                     ? <Loader2 style={{ width: '18px', height: '18px', color: 'white', animation: 'spin 1s linear infinite' }} />
                     : <Camera style={{ width: '18px', height: '18px', color: 'white' }} />
@@ -181,21 +220,17 @@ export default function Profile() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                     <div>
                       <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Full Name</Label>
-                      <Input
-                        value={formData.full_name}
+                      <Input value={formData.full_name}
                         onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                         placeholder="First Last"
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                      />
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                     </div>
                     <div>
                       <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Username</Label>
-                      <Input
-                        value={formData.username}
+                      <Input value={formData.username}
                         onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                         placeholder="@username"
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                      />
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                     </div>
                   </div>
                 ) : (
@@ -211,12 +246,10 @@ export default function Profile() {
                 {editing ? (
                   <div style={{ marginBottom: '12px' }}>
                     <Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Contact Email</Label>
-                    <Input
-                      value={formData.contact_email}
+                    <Input value={formData.contact_email}
                       onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
                       placeholder="your.email@example.com"
-                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                    />
+                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                   </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
@@ -239,26 +272,21 @@ export default function Profile() {
                 )}
               </div>
 
-              {/* Edit Button */}
-              <Button
-                onClick={() => setEditing(!editing)}
+              <Button onClick={() => setEditing(!editing)}
                 style={{
                   background: editing ? 'transparent' : ACCENT,
                   color: editing ? ACCENT : '#111827',
                   border: editing ? `1px solid ${ACCENT}` : 'none',
-                }}
-              >
+                }}>
                 {editing ? 'Cancel' : 'Edit Profile'}
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Profile Form */}
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
 
-            {/* Professional Information */}
             <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <CardHeader>
                 <CardTitle style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -312,7 +340,6 @@ export default function Profile() {
               </CardContent>
             </Card>
 
-            {/* Brokerage Information */}
             <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <CardHeader>
                 <CardTitle style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -339,7 +366,7 @@ export default function Profile() {
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>
                     Employing Broker ID <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>(Read-only)</span>
                   </Label>
-                  <Input disabled value={user?.employing_broker_id || user?.employing_broker_number || ''}
+                  <Input disabled value={user?.employing_broker_id || ''}
                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }} />
                 </div>
                 <div>
@@ -359,7 +386,6 @@ export default function Profile() {
               </CardContent>
             </Card>
 
-            {/* Online Presence */}
             <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <CardHeader>
                 <CardTitle style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
