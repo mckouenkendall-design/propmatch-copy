@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import PostOnboarding from '@/components/onboarding/PostOnboarding';
 import PaymentScreen from '@/components/onboarding/PaymentScreen';
 
@@ -199,6 +200,9 @@ function Step1({ data, setData, errors, setErrors }) {
             value={data.email}
             onChange={e => { setData({ ...data, email: e.target.value }); clearError('email'); }}
           />
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '6px 0 0', lineHeight: 1.5 }}>
+            This email will be visible to other agents for contact purposes.
+          </p>
         </div>
         <div>
           <FieldLabel>Phone Number</FieldLabel>
@@ -232,7 +236,7 @@ function Step1({ data, setData, errors, setErrors }) {
       <div>
         <FieldLabel>Role</FieldLabel>
         <div style={{ display: 'flex', gap: '10px' }}>
-          {['Agent', 'Broker'].map(role => (
+          {['Agent', 'Principal Broker'].map(role => (
             <ToggleChip
               key={role}
               label={role}
@@ -368,6 +372,7 @@ const STEP1_INIT = { fullName: '', email: '', phone: '', username: '', state: ''
 const STEP2_INIT = { propertyCategories: [], catOther: '', transactionTypes: [], txOther: '' };
 
 export default function Onboarding() {
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [step1, setStep1] = useState(STEP1_INIT);
   const [step2, setStep2] = useState(STEP2_INIT);
@@ -375,6 +380,13 @@ export default function Onboarding() {
   const [showPayment, setShowPayment] = useState(false);
   const [showPostOnboarding, setShowPostOnboarding] = useState(false);
   const navigate = useNavigate();
+
+  // Pre-fill email from authenticated user
+  useEffect(() => {
+    if (user?.email && !step1.email) {
+      setStep1(prev => ({ ...prev, email: user.email }));
+    }
+  }, [user]);
 
   // Step 1 all-fields check
   const step1Filled = step1.fullName && step1.email && step1.phone && step1.username && step1.state &&
@@ -418,13 +430,13 @@ export default function Onboarding() {
     try {
       await base44.auth.updateMe({
         full_name: step1.fullName,
-        email: step1.email,
+        contact_email: step1.email,
         phone: step1.phone,
         username: step1.username.trim(),
         state: step1.state,
-        role_type: step1.role.toLowerCase(),
+        user_type: step1.role === 'Principal Broker' ? 'principal_broker' : 'agent',
         brokerage_name: step1.brokerageName,
-        employing_broker_id: step1.employingBrokerId,
+        employing_broker_number: step1.employingBrokerId,
         license_number: step1.licenseNumber,
         verification_status: 'format_verified',
       });
@@ -458,7 +470,7 @@ export default function Onboarding() {
     else if (step === 1) handleStep2Continue();
   };
 
-  const isBroker = step1.role === 'Broker';
+  const isBroker = step1.role === 'Principal Broker';
 
   const headings = [
     'Professional Credentials',

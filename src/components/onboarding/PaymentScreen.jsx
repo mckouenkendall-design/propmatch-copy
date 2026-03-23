@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -45,8 +46,9 @@ function XIcon() {
   );
 }
 
-export default function PaymentScreen({ isBroker, employingBrokerNumber, onComplete }) {
+export default function PaymentScreen({ isBroker, employingBrokerNumber, onComplete, fromSettings }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isAnnual, setIsAnnual] = useState(false);
   const [agentCount, setAgentCount] = useState(isBroker ? 2 : 2);
   const [agentInput, setAgentInput] = useState('2');
@@ -172,6 +174,33 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
             <tspan fill="#FFFFFF" fontWeight="300">Prop</tspan><tspan fill="#00DBC5" fontWeight="600">Match</tspan>
           </text>
         </svg>
+        {fromSettings && (
+          <button
+            onClick={() => navigate('/Settings')}
+            style={{
+              marginLeft: 'auto',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '13px',
+              color: 'rgba(255,255,255,0.5)',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '6px',
+              padding: '8px 16px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.8)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+            }}
+          >
+            ← Back to Settings
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -227,6 +256,25 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
 
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+            {isBroker && !rosterCheck && (
+              <div style={{
+                background: 'rgba(0,219,197,0.08)',
+                border: `1px solid ${ACCENT}`,
+                borderRadius: '8px',
+                padding: '16px 20px',
+                marginBottom: '24px',
+              }}>
+                <p style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: ACCENT,
+                  margin: 0,
+                  fontWeight: 500,
+                }}>
+                  ✓ You selected your role as Principal Broker
+                </p>
+              </div>
+            )}
             <span style={{
               fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase',
               letterSpacing: '0.1em', color: ACCENT, border: '1px solid rgba(0,219,197,0.4)',
