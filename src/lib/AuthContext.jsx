@@ -17,12 +17,50 @@ export const AuthProvider = ({ children }) => {
     checkAppState();
   }, []);
 
-  // Normalize user so full_name is always populated regardless of which field Base44 uses internally
-  const normalizeUser = (rawUser) => {
-    if (!rawUser) return null;
+  // Fetch UserProfile entity record for this user and merge with auth user
+  const fetchAndMergeProfile = async (authUser) => {
+    if (!authUser?.email) return authUser;
+    try {
+      const profiles = await base44.entities.UserProfile.filter({ user_email: authUser.email });
+      if (profiles && profiles.length > 0) {
+        const profile = profiles[0];
+        // Merge: profile fields override auth fields for display purposes
+        return {
+          ...authUser,
+          full_name: profile.full_name || authUser.full_name || authUser.name || '',
+          username: profile.username || authUser.username || '',
+          contact_email: profile.contact_email || authUser.contact_email || authUser.email || '',
+          phone: profile.phone || authUser.phone || '',
+          state: profile.state || authUser.state || '',
+          user_type: profile.user_type || authUser.user_type || '',
+          brokerage_name: profile.brokerage_name || authUser.brokerage_name || '',
+          brokerage_address: profile.brokerage_address || authUser.brokerage_address || '',
+          employing_broker_id: profile.employing_broker_id || authUser.employing_broker_id || authUser.employing_broker_number || '',
+          license_number: profile.license_number || authUser.license_number || '',
+          verification_status: profile.verification_status || authUser.verification_status || '',
+          property_categories: profile.property_categories || authUser.property_categories || [],
+          transaction_types: profile.transaction_types || authUser.transaction_types || [],
+          bio: profile.bio || authUser.bio || '',
+          years_experience: profile.years_experience || authUser.years_experience || '',
+          specialties: profile.specialties || authUser.specialties || '',
+          certifications: profile.certifications || authUser.certifications || '',
+          languages: profile.languages || authUser.languages || '',
+          linkedin: profile.linkedin || authUser.linkedin || '',
+          website: profile.website || authUser.website || '',
+          instagram: profile.instagram || authUser.instagram || '',
+          tiktok: profile.tiktok || authUser.tiktok || '',
+          facebook: profile.facebook || authUser.facebook || '',
+          profile_photo_url: profile.profile_photo_url || authUser.profile_photo_url || '',
+          selected_plan: profile.selected_plan || authUser.selected_plan || '',
+          _profileId: profile.id, // Store the profile record ID for updates
+        };
+      }
+    } catch (e) {
+      console.error('Failed to fetch UserProfile:', e);
+    }
     return {
-      ...rawUser,
-      full_name: rawUser.full_name || rawUser.name || '',
+      ...authUser,
+      full_name: authUser.full_name || authUser.name || '',
     };
   };
 
@@ -77,15 +115,16 @@ export const AuthProvider = ({ children }) => {
   const checkUserAuth = async () => {
     try {
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
-      setUser(normalizeUser(currentUser));
+      const authUser = await base44.auth.me();
+      const mergedUser = await fetchAndMergeProfile(authUser);
+      setUser(mergedUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
 
-      if (window.location.pathname === '/' && currentUser) {
-        const needsOnboarding = !currentUser.user_type;
+      if (window.location.pathname === '/' && authUser) {
+        const needsOnboarding = !authUser.user_type;
         if (!needsOnboarding) {
-          const defaultPage = currentUser.user_type === 'principal_broker' ? '/BrokerDashboard' : '/Dealboard';
+          const defaultPage = authUser.user_type === 'principal_broker' ? '/BrokerDashboard' : '/Dealboard';
           window.location.href = defaultPage;
         } else {
           window.location.href = '/Onboarding';
@@ -101,11 +140,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Call this after any profile update to sync fresh user data into context
+  // Call this after any profile update to re-fetch and re-merge
   const refreshUser = async () => {
     try {
-      const currentUser = await base44.auth.me();
-      setUser(normalizeUser(currentUser));
+      const authUser = await base44.auth.me();
+      const mergedUser = await fetchAndMergeProfile(authUser);
+      setUser(mergedUser);
     } catch (error) {
       console.error('Failed to refresh user:', error);
     }
