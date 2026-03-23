@@ -95,6 +95,19 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
+      
+      // Check if user needs onboarding (redirect handled in App.jsx)
+      if (window.location.pathname === '/' && currentUser) {
+        const needsOnboarding = !currentUser.user_type;
+        if (!needsOnboarding) {
+          // Redirect authenticated users away from landing page
+          const defaultPage = currentUser.user_type === 'principal_broker' ? '/BrokerDashboard' : '/Dealboard';
+          window.location.href = defaultPage;
+        } else {
+          // Redirect to onboarding
+          window.location.href = '/Onboarding';
+        }
+      }
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
