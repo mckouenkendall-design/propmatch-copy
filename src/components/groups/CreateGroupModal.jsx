@@ -55,7 +55,10 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
       });
       return group;
     },
-    onSuccess,
+    onSuccess: (group) => {
+      onSuccess(group);
+      onClose();
+    },
   });
 
   const canSubmit = form.name.trim().length > 0 && form.cover_image_url.trim().length > 0;
@@ -200,12 +203,15 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
         <div className="p-6 flex justify-end gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <Button variant="outline" onClick={onClose} style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.9)' }}>Cancel</Button>
           <Button
-            onClick={() => mutation.mutate(form)}
-            disabled={!canSubmit || mutation.isPending}
+            onClick={() => {
+              if (canSubmit) {
+                mutation.mutate(form);
+              }
+            }}
+            disabled={!canSubmit}
             className="text-white gap-2"
             style={{ backgroundColor: 'var(--tiffany-blue)' }}
           >
-            {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             Create Fish Tank
           </Button>
         </div>
