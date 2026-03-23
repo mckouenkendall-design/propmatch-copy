@@ -222,12 +222,10 @@ export default function Profile() {
                     placeholder="Tell us about yourself..."
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                   />
+                </div>
               </div>
-
-
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
         {/* Profile Form */}
         <div>
@@ -394,7 +392,6 @@ export default function Profile() {
               </CardContent>
             </Card>
           </div>
-
         </div>
       </div>
 
