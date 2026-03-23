@@ -72,14 +72,7 @@ export default function Profile() {
     }
   }, [user]);
 
-  const updateMutation = useMutation({
-    mutationFn: (data) => base44.auth.updateMe(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user']);
-      setEditing(false);
-      toast({ title: 'Profile updated successfully' });
-    },
-  });
+
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -88,6 +81,7 @@ export default function Profile() {
     setUploadingPhoto(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setFormData({ ...formData, profile_photo_url: file_url });
       await base44.auth.updateMe({ profile_photo_url: file_url });
       queryClient.invalidateQueries(['user']);
       toast({ title: 'Profile photo updated' });
@@ -98,10 +92,18 @@ export default function Profile() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const { employing_broker_number, license_number, profile_photo_url, ...editableData } = formData;
-    updateMutation.mutate(editableData);
+    
+    try {
+      await base44.auth.updateMe(editableData);
+      queryClient.invalidateQueries(['user']);
+      setEditing(false);
+      toast({ title: 'Profile updated successfully' });
+    } catch (error) {
+      toast({ title: 'Failed to update profile', variant: 'destructive' });
+    }
   };
 
   return (
@@ -470,10 +472,9 @@ export default function Profile() {
               </Button>
               <Button
                 type="submit"
-                disabled={updateMutation.isPending}
                 style={{ background: ACCENT, color: '#111827' }}
               >
-                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+                Save Changes
               </Button>
             </div>
           )}
