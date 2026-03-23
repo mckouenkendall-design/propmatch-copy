@@ -13,7 +13,6 @@ import { useToast } from '@/components/ui/use-toast';
 const ACCENT = '#00DBC5';
 
 export default function Profile() {
-  const { user } = useAuth();
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
