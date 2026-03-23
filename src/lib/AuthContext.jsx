@@ -17,50 +17,54 @@ export const AuthProvider = ({ children }) => {
     checkAppState();
   }, []);
 
-  // Fetch UserProfile entity record for this user and merge with auth user
-  const fetchAndMergeProfile = async (authUser) => {
-    if (!authUser?.email) return authUser;
+  const fetchUserProfile = async (email) => {
+    if (!email) return null;
     try {
-      const profiles = await base44.entities.UserProfile.filter({ user_email: authUser.email });
-      if (profiles && profiles.length > 0) {
-        const profile = profiles[0];
-        // Merge: profile fields override auth fields for display purposes
-        return {
-          ...authUser,
-          full_name: profile.full_name || authUser.full_name || authUser.name || '',
-          username: profile.username || authUser.username || '',
-          contact_email: profile.contact_email || authUser.contact_email || authUser.email || '',
-          phone: profile.phone || authUser.phone || '',
-          state: profile.state || authUser.state || '',
-          user_type: profile.user_type || authUser.user_type || '',
-          brokerage_name: profile.brokerage_name || authUser.brokerage_name || '',
-          brokerage_address: profile.brokerage_address || authUser.brokerage_address || '',
-          employing_broker_id: profile.employing_broker_id || authUser.employing_broker_id || authUser.employing_broker_number || '',
-          license_number: profile.license_number || authUser.license_number || '',
-          verification_status: profile.verification_status || authUser.verification_status || '',
-          property_categories: profile.property_categories || authUser.property_categories || [],
-          transaction_types: profile.transaction_types || authUser.transaction_types || [],
-          bio: profile.bio || authUser.bio || '',
-          years_experience: profile.years_experience || authUser.years_experience || '',
-          specialties: profile.specialties || authUser.specialties || '',
-          certifications: profile.certifications || authUser.certifications || '',
-          languages: profile.languages || authUser.languages || '',
-          linkedin: profile.linkedin || authUser.linkedin || '',
-          website: profile.website || authUser.website || '',
-          instagram: profile.instagram || authUser.instagram || '',
-          tiktok: profile.tiktok || authUser.tiktok || '',
-          facebook: profile.facebook || authUser.facebook || '',
-          profile_photo_url: profile.profile_photo_url || authUser.profile_photo_url || '',
-          selected_plan: profile.selected_plan || authUser.selected_plan || '',
-          _profileId: profile.id, // Store the profile record ID for updates
-        };
-      }
+      const results = await base44.entities.UserProfile.list();
+      if (!results || results.length === 0) return null;
+      const match = results.find(r => r.user_email === email);
+      return match || null;
     } catch (e) {
-      console.error('Failed to fetch UserProfile:', e);
+      console.error('UserProfile fetch error:', e);
+      return null;
+    }
+  };
+
+  const buildMergedUser = (authUser, profile) => {
+    if (!profile) {
+      return {
+        ...authUser,
+        full_name: authUser.full_name || authUser.name || '',
+      };
     }
     return {
       ...authUser,
-      full_name: authUser.full_name || authUser.name || '',
+      full_name: profile.full_name || authUser.full_name || authUser.name || '',
+      username: profile.username || authUser.username || '',
+      contact_email: profile.contact_email || authUser.contact_email || authUser.email || '',
+      phone: profile.phone || authUser.phone || '',
+      state: profile.state || authUser.state || '',
+      user_type: profile.user_type || authUser.user_type || '',
+      brokerage_name: profile.brokerage_name || authUser.brokerage_name || '',
+      brokerage_address: profile.brokerage_address || authUser.brokerage_address || '',
+      employing_broker_id: profile.employing_broker_id || authUser.employing_broker_id || '',
+      license_number: profile.license_number || authUser.license_number || '',
+      verification_status: profile.verification_status || authUser.verification_status || '',
+      property_categories: profile.property_categories || authUser.property_categories || [],
+      transaction_types: profile.transaction_types || authUser.transaction_types || [],
+      bio: profile.bio || authUser.bio || '',
+      years_experience: profile.years_experience || authUser.years_experience || '',
+      specialties: profile.specialties || authUser.specialties || '',
+      certifications: profile.certifications || authUser.certifications || '',
+      languages: profile.languages || authUser.languages || '',
+      linkedin: profile.linkedin || authUser.linkedin || '',
+      website: profile.website || authUser.website || '',
+      instagram: profile.instagram || authUser.instagram || '',
+      tiktok: profile.tiktok || authUser.tiktok || '',
+      facebook: profile.facebook || authUser.facebook || '',
+      profile_photo_url: profile.profile_photo_url || authUser.profile_photo_url || '',
+      selected_plan: profile.selected_plan || authUser.selected_plan || '',
+      _profileId: profile.id,
     };
   };
 
@@ -79,7 +83,6 @@ export const AuthProvider = ({ children }) => {
       try {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
         setAppPublicSettings(publicSettings);
-
         if (appParams.token) {
           await checkUserAuth();
         } else {
@@ -116,15 +119,17 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoadingAuth(true);
       const authUser = await base44.auth.me();
-      const mergedUser = await fetchAndMergeProfile(authUser);
+      const profile = await fetchUserProfile(authUser?.email);
+      const mergedUser = buildMergedUser(authUser, profile);
       setUser(mergedUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
 
       if (window.location.pathname === '/' && authUser) {
-        const needsOnboarding = !authUser.user_type;
+        const needsOnboarding = !authUser.user_type && !(profile?.user_type);
         if (!needsOnboarding) {
-          const defaultPage = authUser.user_type === 'principal_broker' ? '/BrokerDashboard' : '/Dealboard';
+          const userType = profile?.user_type || authUser.user_type;
+          const defaultPage = userType === 'principal_broker' ? '/BrokerDashboard' : '/Dealboard';
           window.location.href = defaultPage;
         } else {
           window.location.href = '/Onboarding';
@@ -140,11 +145,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Call this after any profile update to re-fetch and re-merge
   const refreshUser = async () => {
     try {
       const authUser = await base44.auth.me();
-      const mergedUser = await fetchAndMergeProfile(authUser);
+      const profile = await fetchUserProfile(authUser?.email);
+      const mergedUser = buildMergedUser(authUser, profile);
       setUser(mergedUser);
     } catch (error) {
       console.error('Failed to refresh user:', error);
