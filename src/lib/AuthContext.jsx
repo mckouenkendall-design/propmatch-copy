@@ -17,6 +17,15 @@ export const AuthProvider = ({ children }) => {
     checkAppState();
   }, []);
 
+  // Normalize user so full_name is always populated regardless of which field Base44 uses internally
+  const normalizeUser = (rawUser) => {
+    if (!rawUser) return null;
+    return {
+      ...rawUser,
+      full_name: rawUser.full_name || rawUser.name || '',
+    };
+  };
+
   const checkAppState = async () => {
     try {
       setIsLoadingPublicSettings(true);
@@ -42,7 +51,6 @@ export const AuthProvider = ({ children }) => {
         setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
-
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;
           if (reason === 'auth_required') {
@@ -70,7 +78,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
-      setUser(currentUser);
+      setUser(normalizeUser(currentUser));
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
 
@@ -87,18 +95,17 @@ export const AuthProvider = ({ children }) => {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
-
       if (error.status === 401 || error.status === 403) {
         setAuthError({ type: 'auth_required', message: 'Authentication required' });
       }
     }
   };
 
-  // Call this after any profile update to sync the latest user data
+  // Call this after any profile update to sync fresh user data into context
   const refreshUser = async () => {
     try {
       const currentUser = await base44.auth.me();
-      setUser(currentUser);
+      setUser(normalizeUser(currentUser));
     } catch (error) {
       console.error('Failed to refresh user:', error);
     }
