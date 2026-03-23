@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, X } from 'lucide-react';
 import FormProgress from './wizard/FormProgress';
@@ -13,6 +14,7 @@ import ReqStep4 from './requirement/Step4Review';
 const STEPS = ['General', 'Details', 'Notes', 'Review'];
 
 export default function RequirementWizard({ category, onClose, onSuccess, initialData }) {
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(initialData || {
     property_category: category,
@@ -34,6 +36,12 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     visibility: 'public',
     visibility_groups: '',
     visibility_recipient_email: '',
+    // Auto-populate contact info from the user's saved profile
+    contact_agent_name: user?.full_name || user?.name || '',
+    contact_agent_email: user?.contact_email || user?.email || '',
+    contact_agent_phone: user?.phone || '',
+    company_name: user?.brokerage_name || '',
+    brokerage_id: user?.employing_broker_id || user?.employing_broker_number || '',
   });
 
   const generateTitle = (data) => {
@@ -80,13 +88,17 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
           <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" onClick={back}><ArrowLeft className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} /></Button>
+                <Button variant="ghost" size="icon" onClick={back}>
+                  <ArrowLeft className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
+                </Button>
                 <div>
                   <h2 className="text-xl font-bold capitalize" style={{ color: 'white' }}>{category} Requirement</h2>
                   <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Step {step} of {STEPS.length}</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => onClose('close')}><X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} /></Button>
+              <Button variant="ghost" size="icon" onClick={() => onClose('close')}>
+                <X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
+              </Button>
             </div>
             <FormProgress currentStep={step} steps={STEPS} />
           </div>
@@ -95,11 +107,20 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
             {step === 2 && category === 'commercial' && <ReqStep2Commercial data={formData} update={update} onNext={next} />}
             {step === 2 && category === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
             {step === 3 && <ReqStep3 data={formData} update={update} onNext={next} />}
-            {step === 4 && <ReqStep4 data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />}
+            {step === 4 && (
+              <ReqStep4
+                data={formData}
+                update={update}
+                onSubmit={() => mutation.mutate(formData)}
+                isLoading={mutation.isPending}
+              />
+            )}
           </div>
           {step === 2 && (
             <div className="px-6 pb-4 text-left">
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Fields left blank will be treated as "No Preference" and will not impact the Match Score.</p>
+              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                Fields left blank will be treated as "No Preference" and will not impact the Match Score.
+              </p>
             </div>
           )}
         </div>
