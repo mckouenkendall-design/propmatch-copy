@@ -4,8 +4,6 @@ import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { 
   Bell, 
-  User, 
-  Settings, 
   LogOut, 
   Building2,
   Users,
@@ -168,25 +166,7 @@ export default function TopNav() {
                   {user?.email}
                 </p>
               </div>
-              <DropdownMenuItem 
-                onClick={() => navigate('/Profile')} 
-                style={{ color: 'rgba(255,255,255,0.85)', cursor: 'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <User style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-                My Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => navigate('/Settings')} 
-                style={{ color: 'rgba(255,255,255,0.85)', cursor: 'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.15)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <Settings style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator style={{ background: 'rgba(255,255,255,0.08)' }} />
+
               <DropdownMenuItem 
                 onClick={handleLogout} 
                 style={{ color: '#ef4444', cursor: 'pointer' }}
