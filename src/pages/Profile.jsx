@@ -12,6 +12,13 @@ import { useToast } from '@/components/ui/use-toast';
 
 const ACCENT = '#00DBC5';
 
+function formatPhone(raw) {
+  const digits = raw.replace(/\D/g, '').slice(0, 10);
+  if (digits.length < 4) return digits;
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 export default function Profile() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
@@ -43,7 +50,7 @@ export default function Profile() {
   useEffect(() => {
     if (user) {
       setFormData({
-        full_name: user.full_name || '',
+        full_name: user.full_name || user.name || '',
         username: user.username || '',
         contact_email: user.contact_email || '',
         phone: user.phone || '',
@@ -67,8 +74,11 @@ export default function Profile() {
 
   const updateMutation = useMutation({
     mutationFn: async (data) => {
-      const result = await base44.auth.updateMe(data);
-      return result;
+      // Save full_name to BOTH 'full_name' and 'name' so Base44 picks it up regardless of which field it reads
+      await base44.auth.updateMe({
+        ...data,
+        name: data.full_name,
+      });
     },
     onSuccess: async () => {
       await refreshUser();
@@ -135,16 +145,13 @@ export default function Profile() {
               {/* Avatar */}
               <div style={{ position: 'relative' }}>
                 {formData.profile_photo_url ? (
-                  <img
-                    src={formData.profile_photo_url}
-                    alt="Profile"
-                    style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' }}
-                  />
+                  <img src={formData.profile_photo_url} alt="Profile"
+                    style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' }} />
                 ) : (
                   <div style={{
-                    width: '120px', height: '120px', borderRadius: '50%',
-                    background: ACCENT, display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: '48px', fontWeight: 300, color: '#111827',
+                    width: '120px', height: '120px', borderRadius: '50%', background: ACCENT,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '48px', fontWeight: 300, color: '#111827',
                   }}>
                     {displayInitial}
                   </div>
@@ -260,36 +267,48 @@ export default function Profile() {
                 </CardTitle>
               </CardHeader>
               <CardContent style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {[
-                  { label: 'Bio', key: 'bio', type: 'textarea', placeholder: 'Tell us about yourself...' },
-                  { label: 'Phone', key: 'phone', placeholder: '(555) 123-4567' },
-                  { label: 'Years of Experience', key: 'years_experience', type: 'number', placeholder: '5' },
-                  { label: 'Specialties', key: 'specialties', placeholder: 'Commercial, Residential, Luxury' },
-                  { label: 'Certifications', key: 'certifications', placeholder: 'CRS, GRI, ABR' },
-                  { label: 'Languages', key: 'languages', placeholder: 'English, Spanish' },
-                ].map(field => (
-                  <div key={field.key}>
-                    <Label style={{ color: 'rgba(255,255,255,0.7)' }}>{field.label}</Label>
-                    {field.type === 'textarea' ? (
-                      <Textarea
-                        disabled={!editing}
-                        value={formData[field.key]}
-                        onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                        placeholder={field.placeholder}
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                      />
-                    ) : (
-                      <Input
-                        disabled={!editing}
-                        type={field.type || 'text'}
-                        value={formData[field.key]}
-                        onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                        placeholder={field.placeholder}
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                      />
-                    )}
-                  </div>
-                ))}
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Bio</Label>
+                  <Textarea disabled={!editing} value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    placeholder="Tell us about yourself..."
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Phone</Label>
+                  <Input disabled={!editing} value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
+                    placeholder="(555) 123-4567"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Years of Experience</Label>
+                  <Input disabled={!editing} type="number" value={formData.years_experience}
+                    onChange={(e) => setFormData({ ...formData, years_experience: e.target.value })}
+                    placeholder="5"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Specialties</Label>
+                  <Input disabled={!editing} value={formData.specialties}
+                    onChange={(e) => setFormData({ ...formData, specialties: e.target.value })}
+                    placeholder="Commercial, Residential, Luxury"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Certifications</Label>
+                  <Input disabled={!editing} value={formData.certifications}
+                    onChange={(e) => setFormData({ ...formData, certifications: e.target.value })}
+                    placeholder="CRS, GRI, ABR"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Languages</Label>
+                  <Input disabled={!editing} value={formData.languages}
+                    onChange={(e) => setFormData({ ...formData, languages: e.target.value })}
+                    placeholder="English, Spanish"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                </div>
               </CardContent>
             </Card>
 
@@ -302,50 +321,40 @@ export default function Profile() {
                 </CardTitle>
               </CardHeader>
               <CardContent style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {[
-                  { label: 'Brokerage Name', key: 'brokerage_name', placeholder: 'ABC Realty Group' },
-                  { label: 'Brokerage Address', key: 'brokerage_address', placeholder: '123 Main St, City, State 12345' },
-                ].map(field => (
-                  <div key={field.key}>
-                    <Label style={{ color: 'rgba(255,255,255,0.7)' }}>{field.label}</Label>
-                    <Input
-                      disabled={!editing}
-                      value={formData[field.key]}
-                      onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                      placeholder={field.placeholder}
-                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                    />
-                  </div>
-                ))}
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Brokerage Name</Label>
+                  <Input disabled={!editing} value={formData.brokerage_name}
+                    onChange={(e) => setFormData({ ...formData, brokerage_name: e.target.value })}
+                    placeholder="ABC Realty Group"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                </div>
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Brokerage Address</Label>
+                  <Input disabled={!editing} value={formData.brokerage_address}
+                    onChange={(e) => setFormData({ ...formData, brokerage_address: e.target.value })}
+                    placeholder="123 Main St, City, State 12345"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                </div>
                 <div>
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>
                     Employing Broker ID <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>(Read-only)</span>
                   </Label>
-                  <Input
-                    disabled
-                    value={user?.employing_broker_id || ''}
-                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }}
-                  />
+                  <Input disabled value={user?.employing_broker_id || user?.employing_broker_number || ''}
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }} />
                 </div>
                 <div>
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>
                     License No. <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>(Read-only)</span>
                   </Label>
-                  <Input
-                    disabled
-                    value={user?.license_number || ''}
-                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }}
-                  />
+                  <Input disabled value={user?.license_number || ''}
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }} />
                 </div>
                 <div>
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>State</Label>
-                  <Input
-                    disabled={!editing}
-                    value={formData.state}
+                  <Input disabled={!editing} value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                     placeholder="MI"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                  />
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                 </div>
               </CardContent>
             </Card>
@@ -368,13 +377,10 @@ export default function Profile() {
                 ].map(field => (
                   <div key={field.key}>
                     <Label style={{ color: 'rgba(255,255,255,0.7)' }}>{field.label}</Label>
-                    <Input
-                      disabled={!editing}
-                      value={formData[field.key]}
+                    <Input disabled={!editing} value={formData[field.key]}
                       onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
                       placeholder={field.placeholder}
-                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                    />
+                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                   </div>
                 ))}
               </CardContent>
@@ -383,19 +389,12 @@ export default function Profile() {
 
           {editing && (
             <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <Button
-                type="button"
-                onClick={() => setEditing(false)}
-                variant="outline"
-                style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'white' }}
-              >
+              <Button type="button" onClick={() => setEditing(false)} variant="outline"
+                style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'white' }}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={updateMutation.isPending}
-                style={{ background: ACCENT, color: '#111827' }}
-              >
+              <Button type="submit" disabled={updateMutation.isPending}
+                style={{ background: ACCENT, color: '#111827' }}>
                 {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
