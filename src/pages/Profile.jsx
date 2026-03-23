@@ -14,6 +14,7 @@ const ACCENT = '#00DBC5';
 
 export default function Profile() {
   const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
@@ -68,8 +69,8 @@ export default function Profile() {
 
   const updateMutation = useMutation({
     mutationFn: (data) => base44.auth.updateMe(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries();
+    onSuccess: async () => {
+      await refreshUser();
       setEditing(false);
       toast({ title: 'Profile updated successfully' });
     },
