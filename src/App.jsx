@@ -15,8 +15,7 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import AboutUs from './pages/AboutUs';
 import Onboarding from './pages/Onboarding';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
+
 import BrokerDashboard from './pages/BrokerDashboard';
 import GroupDetail from './pages/GroupDetail';
 import Inventory from './pages/Inventory';
@@ -80,22 +79,7 @@ const AuthenticatedApp = () => {
       <Route path="/Terms" element={<Terms />} />
       <Route path="/AboutUs" element={<AboutUs />} />
       <Route path="/Onboarding" element={<Onboarding />} />
-      <Route 
-        path="/Profile" 
-        element={
-          <LayoutWrapper currentPageName="Profile">
-            <Profile />
-          </LayoutWrapper>
-        } 
-      />
-      <Route 
-        path="/Settings" 
-        element={
-          <LayoutWrapper currentPageName="Settings">
-            <Settings />
-          </LayoutWrapper>
-        } 
-      />
+
       <Route 
         path="/BrokerDashboard" 
         element={
