@@ -28,7 +28,7 @@ export default function ShareResourceModal({ onClose }) {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.TeamResource.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['teamResources']);
+      queryClient.invalidateQueries({ queryKey: ['teamResources'] });
       toast({ title: 'Resource shared successfully' });
       onClose();
     },

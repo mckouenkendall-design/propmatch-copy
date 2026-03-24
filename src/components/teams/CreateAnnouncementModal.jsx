@@ -21,7 +21,7 @@ export default function CreateAnnouncementModal({ onClose }) {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.TeamAnnouncement.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['teamAnnouncements']);
+      queryClient.invalidateQueries({ queryKey: ['teamAnnouncements'] });
       toast({ title: 'Announcement posted successfully' });
       onClose();
     },

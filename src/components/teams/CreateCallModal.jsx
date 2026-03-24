@@ -24,7 +24,7 @@ export default function CreateCallModal({ onClose }) {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.TeamCall.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['teamCalls']);
+      queryClient.invalidateQueries({ queryKey: ['teamCalls'] });
       toast({ title: 'Team call scheduled successfully' });
       onClose();
     },
