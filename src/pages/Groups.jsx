@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search as SearchIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -11,23 +12,20 @@ import CreateGroupModal from '@/components/groups/CreateGroupModal';
 const ACCENT = '#00DBC5';
 
 export default function Groups() {
-  const [currentUser, setCurrentUser] = useState(null);
+  // Use useAuth() so we get the merged UserProfile data — not raw Base44 auth
+  const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('feed');
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
-  }, []);
-
   const { data: myMemberships = [] } = useQuery({
-    queryKey: ['my-memberships', currentUser?.email],
+    queryKey: ['my-memberships', user?.email],
     queryFn: () => base44.entities.GroupMember.filter({ 
-      user_email: currentUser.email, 
+      user_email: user.email, 
       status: 'active' 
     }),
-    enabled: !!currentUser,
+    enabled: !!user,
   });
 
   const { data: allGroups = [] } = useQuery({
@@ -60,7 +58,6 @@ export default function Groups() {
             Fish Tanks
           </h2>
 
-          {/* Search Groups */}
           <div style={{ marginBottom: '24px', position: 'relative' }}>
             <SearchIcon style={{ 
               position: 'absolute', 
@@ -86,62 +83,29 @@ export default function Groups() {
             />
           </div>
 
-          {/* Navigation Buttons */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '20px' }}>
-            <button
-              onClick={() => setActiveView('feed')}
-              style={{
-                padding: '10px 14px',
-                background: activeView === 'feed' ? `${ACCENT}15` : 'transparent',
-                border: activeView === 'feed' ? `1px solid ${ACCENT}30` : 'none',
-                borderRadius: '6px',
-                textAlign: 'left',
-                color: activeView === 'feed' ? ACCENT : 'rgba(255,255,255,0.7)',
-                cursor: 'pointer',
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '14px',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              Your Feed
-            </button>
-            <button
-              onClick={() => setActiveView('discover')}
-              style={{
-                padding: '10px 14px',
-                background: activeView === 'discover' ? `${ACCENT}15` : 'transparent',
-                border: activeView === 'discover' ? `1px solid ${ACCENT}30` : 'none',
-                borderRadius: '6px',
-                textAlign: 'left',
-                color: activeView === 'discover' ? ACCENT : 'rgba(255,255,255,0.7)',
-                cursor: 'pointer',
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '14px',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              Discover
-            </button>
-            <button
-              onClick={() => setActiveView('your-groups')}
-              style={{
-                padding: '10px 14px',
-                background: activeView === 'your-groups' ? `${ACCENT}15` : 'transparent',
-                border: activeView === 'your-groups' ? `1px solid ${ACCENT}30` : 'none',
-                borderRadius: '6px',
-                textAlign: 'left',
-                color: activeView === 'your-groups' ? ACCENT : 'rgba(255,255,255,0.7)',
-                cursor: 'pointer',
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '14px',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              Your Fish Tanks
-            </button>
+            {['feed', 'discover', 'your-groups'].map((view) => (
+              <button
+                key={view}
+                onClick={() => setActiveView(view)}
+                style={{
+                  padding: '10px 14px',
+                  background: activeView === view ? `${ACCENT}15` : 'transparent',
+                  border: activeView === view ? `1px solid ${ACCENT}30` : 'none',
+                  borderRadius: '6px',
+                  textAlign: 'left',
+                  color: activeView === view ? ACCENT : 'rgba(255,255,255,0.7)',
+                  cursor: 'pointer',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {view === 'feed' ? 'Your Feed' : view === 'discover' ? 'Discover' : 'Your Fish Tanks'}
+              </button>
+            ))}
           </div>
 
-          {/* Create Group Button */}
           <button
             onClick={() => setShowCreateModal(true)}
             style={{
@@ -166,7 +130,6 @@ export default function Groups() {
             Create Fish Tank
           </button>
 
-          {/* Groups You've Joined */}
           <div>
             <h3 style={{
               fontFamily: "'Inter', sans-serif",
