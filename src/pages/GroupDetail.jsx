@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,17 +29,14 @@ export default function GroupDetail() {
   const params = new URLSearchParams(window.location.search);
   const groupId = params.get('id');
   const [activeTab, setActiveTab] = useState('discussion');
-  const [currentUser, setCurrentUser] = useState(null);
+  // Use useAuth() so we get the merged UserProfile data — not raw Base44 auth
+  const { user: currentUser } = useAuth();
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [editingAbout, setEditingAbout] = useState(false);
   const [aboutDescription, setAboutDescription] = useState('');
   const [aboutRules, setAboutRules] = useState('');
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
-  useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
-  }, []);
 
   const { data: group, isLoading: loadingGroup } = useQuery({
     queryKey: ['group', groupId],
@@ -82,7 +80,7 @@ export default function GroupDetail() {
       const newMembership = await base44.entities.GroupMember.create({
         group_id: groupId,
         user_email: currentUser.email,
-        user_name: currentUser.full_name,
+        user_name: currentUser.full_name || currentUser.email,
         role: 'member',
         status: group?.group_type === 'private' ? 'pending' : 'active',
       });
@@ -150,14 +148,12 @@ export default function GroupDetail() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px', minHeight: 'calc(100vh - 64px)' }}>
-      {/* Cover Image */}
       {group.cover_image_url && (
         <div style={{ height: '200px', width: '100%', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
           <img src={group.cover_image_url} alt={group.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
       )}
 
-      {/* Group Header */}
       <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -177,7 +173,6 @@ export default function GroupDetail() {
             </div>
           </div>
 
-          {/* Join / Leave / Admin Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
             {isAdmin && (
               <Button
@@ -208,15 +203,9 @@ export default function GroupDetail() {
                 onClick={() => leaveMutation.mutate()}
                 disabled={leaveMutation.isPending}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '14px',
-                  color: 'rgba(255,255,255,0.5)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'color 0.2s',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  fontSize: '14px', color: 'rgba(255,255,255,0.5)',
+                  background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s',
                 }}
                 onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
                 onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
@@ -228,7 +217,6 @@ export default function GroupDetail() {
         </div>
       </div>
 
-      {/* Private group gate */}
       {group.group_type === 'private' && !isMember ? (
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '80px 40px', textAlign: 'center' }}>
           <Lock style={{ width: '48px', height: '48px', color: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
@@ -239,7 +227,6 @@ export default function GroupDetail() {
         </div>
       ) : (
         <>
-          {/* Tab Navigation */}
           <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', marginBottom: '24px', overflow: 'hidden' }}>
             <div style={{ display: 'flex', overflowX: 'auto' }}>
               {TABS.map((tab) => {
@@ -250,21 +237,13 @@ export default function GroupDetail() {
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '16px 20px',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      fontFamily: "'Inter', sans-serif",
-                      whiteSpace: 'nowrap',
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '16px 20px', fontSize: '14px', fontWeight: 500,
+                      fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap',
                       transition: 'all 0.2s',
                       borderBottom: `2px solid ${isActive ? ACCENT : 'transparent'}`,
                       color: isActive ? ACCENT : 'rgba(255,255,255,0.6)',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      flexShrink: 0,
+                      background: 'transparent', border: 'none', cursor: 'pointer', flexShrink: 0,
                     }}
                   >
                     <Icon style={{ width: '16px', height: '16px' }} />
@@ -275,17 +254,12 @@ export default function GroupDetail() {
             </div>
           </div>
 
-          {/* Tab Content */}
           <div>
             {activeTab === 'discussion' && (
               <GroupDiscussion groupId={groupId} currentUser={currentUser} />
             )}
             {activeTab === 'listings' && (
-              <GroupListingsRequirements
-                groupId={groupId}
-                memberEmails={memberEmails}
-                currentUser={currentUser}
-              />
+              <GroupListingsRequirements groupId={groupId} memberEmails={memberEmails} currentUser={currentUser} />
             )}
             {activeTab === 'events' && (
               <GroupEvents groupId={groupId} currentUser={currentUser} />
@@ -303,20 +277,12 @@ export default function GroupDetail() {
                       disabled={updateGroupMutation.isPending}
                       style={{ background: editingAbout ? ACCENT : 'transparent', color: editingAbout ? '#111827' : 'rgba(255,255,255,0.7)', border: editingAbout ? 'none' : '1px solid rgba(255,255,255,0.2)', gap: '6px' }}
                     >
-                      {editingAbout ? (
-                        <><Save style={{ width: '14px', height: '14px' }} /> Save</>
-                      ) : (
-                        <><Edit2 style={{ width: '14px', height: '14px' }} /> Edit</>
-                      )}
+                      {editingAbout ? <><Save style={{ width: '14px', height: '14px' }} /> Save</> : <><Edit2 style={{ width: '14px', height: '14px' }} /> Edit</>}
                     </Button>
                   )}
                   {editingAbout && (
                     <Button
-                      onClick={() => {
-                        setEditingAbout(false);
-                        setAboutDescription(group.description || '');
-                        setAboutRules(group.rules || '');
-                      }}
+                      onClick={() => { setEditingAbout(false); setAboutDescription(group.description || ''); setAboutRules(group.rules || ''); }}
                       variant="ghost"
                       style={{ color: 'rgba(255,255,255,0.5)', marginLeft: '8px' }}
                     >
@@ -324,26 +290,15 @@ export default function GroupDetail() {
                     </Button>
                   )}
                 </div>
-
                 {editingAbout ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: 'rgba(255,255,255,0.7)', marginBottom: '8px' }}>Description</label>
-                      <Textarea
-                        value={aboutDescription}
-                        onChange={e => setAboutDescription(e.target.value)}
-                        rows={4}
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                      />
+                      <Textarea value={aboutDescription} onChange={e => setAboutDescription(e.target.value)} rows={4} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: 'rgba(255,255,255,0.7)', marginBottom: '8px' }}>Rules</label>
-                      <Textarea
-                        value={aboutRules}
-                        onChange={e => setAboutRules(e.target.value)}
-                        rows={4}
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                      />
+                      <Textarea value={aboutRules} onChange={e => setAboutRules(e.target.value)} rows={4} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                     </div>
                   </div>
                 ) : (
@@ -355,12 +310,8 @@ export default function GroupDetail() {
         </>
       )}
 
-      {/* Add Admin Modal */}
       {showAddAdminModal && (
-        <AddAdminModal
-          groupId={groupId}
-          onClose={() => setShowAddAdminModal(false)}
-        />
+        <AddAdminModal groupId={groupId} onClose={() => setShowAddAdminModal(false)} />
       )}
     </div>
   );
@@ -394,61 +345,18 @@ function AddAdminModal({ groupId, onClose }) {
   });
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(4px)',
-        zIndex: 100,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-      }}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: '#1a1f25',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '12px',
-          maxWidth: '500px',
-          width: '100%',
-        }}
-      >
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '24px',
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
-        }}>
-          <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: 0 }}>
-            Add Admin
-          </h2>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', maxWidth: '500px', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: 0 }}>Add Admin</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
             <X style={{ width: '20px', height: '20px' }} />
           </button>
         </div>
-
         <div style={{ padding: '24px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: 'rgba(255,255,255,0.7)', marginBottom: '8px' }}>
-            Email Address
-          </label>
-          <Input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="admin@example.com"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', marginBottom: '20px' }}
-          />
-          <Button
-            onClick={() => addAdminMutation.mutate()}
-            disabled={!email || addAdminMutation.isPending}
-            style={{ background: ACCENT, color: '#111827', width: '100%' }}
-          >
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: 'rgba(255,255,255,0.7)', marginBottom: '8px' }}>Email Address</label>
+          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@example.com" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', marginBottom: '20px' }} />
+          <Button onClick={() => addAdminMutation.mutate()} disabled={!email || addAdminMutation.isPending} style={{ background: ACCENT, color: '#111827', width: '100%' }}>
             {addAdminMutation.isPending ? 'Adding...' : 'Add Admin'}
           </Button>
         </div>
