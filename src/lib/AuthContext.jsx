@@ -64,6 +64,7 @@ export const AuthProvider = ({ children }) => {
       facebook: profile.facebook || authUser.facebook || '',
       profile_photo_url: profile.profile_photo_url || authUser.profile_photo_url || '',
       selected_plan: profile.selected_plan || authUser.selected_plan || '',
+      brokerage_id: profile.employing_broker_id || authUser.brokerage_id || authUser.employing_broker_id || '',
       _profileId: profile.id,
     };
   };
