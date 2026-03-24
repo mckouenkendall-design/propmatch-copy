@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }) => {
       return {
         ...authUser,
         full_name: authUser.full_name || authUser.name || '',
+        brokerage_id: authUser.brokerage_id || authUser.employing_broker_id || '',
       };
     }
     return {
