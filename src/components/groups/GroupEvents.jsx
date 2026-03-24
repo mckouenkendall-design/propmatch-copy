@@ -2,29 +2,20 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Plus, Calendar, MapPin, Video, Clock, Users, ExternalLink, Trash2 } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import GroupEventModal from './GroupEventModal';
 
+const ACCENT = '#00DBC5';
+
 const EVENT_TYPE_LABELS = {
-  networking: 'Networking Mixer',
-  workshop: 'Workshop',
-  open_house: 'Open House',
-  webinar: 'Webinar',
-  social: 'Social Gathering',
-  site_tour: 'Site Tour',
-  other: 'Event',
+  networking: 'Networking Mixer', workshop: 'Workshop', open_house: 'Open House',
+  webinar: 'Webinar', social: 'Social Gathering', site_tour: 'Site Tour', other: 'Event',
 };
 
 const EVENT_TYPE_COLORS = {
-  networking: '#4FB3A9',
-  workshop: '#6366f1',
-  open_house: '#f59e0b',
-  webinar: '#3b82f6',
-  social: '#ec4899',
-  site_tour: '#10b981',
-  other: '#9ca3af',
+  networking: '#4FB3A9', workshop: '#6366f1', open_house: '#f59e0b',
+  webinar: '#3b82f6', social: '#ec4899', site_tour: '#10b981', other: '#9ca3af',
 };
 
 export default function GroupEvents({ groupId, currentUser }) {
@@ -41,9 +32,7 @@ export default function GroupEvents({ groupId, currentUser }) {
       const rsvpList = JSON.parse(event.rsvp_list || '[]');
       const userEmail = currentUser?.email;
       const alreadyRsvpd = rsvpList.includes(userEmail);
-      const updated = alreadyRsvpd
-        ? rsvpList.filter(e => e !== userEmail)
-        : [...rsvpList, userEmail];
+      const updated = alreadyRsvpd ? rsvpList.filter(e => e !== userEmail) : [...rsvpList, userEmail];
       return base44.entities.GroupEvent.update(event.id, { rsvp_list: JSON.stringify(updated) });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-events', groupId] }),
@@ -58,56 +47,40 @@ export default function GroupEvents({ groupId, currentUser }) {
   const past = events.filter(e => isPast(new Date(e.start_datetime)) || e.status === 'cancelled');
 
   return (
-    <div className="space-y-6">
-      {/* Create Event Button */}
-      <div className="flex justify-end">
-        <Button
-          onClick={() => setShowCreate(true)}
-          className="text-white gap-2"
-          style={{ backgroundColor: 'var(--tiffany-blue)' }}
-        >
-          <Plus className="w-4 h-4" /> Create Event
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Button onClick={() => setShowCreate(true)} style={{ background: ACCENT, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Plus style={{ width: '16px', height: '16px' }} /> Create Event
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-gray-400">Loading events...</div>
+        <div style={{ textAlign: 'center', padding: '32px', color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter', sans-serif" }}>Loading events...</div>
       ) : events.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl shadow-md">
-          <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No events yet. Create the first one!</p>
+        <div style={{ textAlign: 'center', padding: '48px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
+          <Calendar style={{ width: '48px', height: '48px', color: 'rgba(255,255,255,0.2)', margin: '0 auto 12px', display: 'block' }} />
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>No events yet. Create the first one!</p>
         </div>
       ) : (
         <>
           {upcoming.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Upcoming</h3>
-              <div className="space-y-4">
+              <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px' }}>Upcoming</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {upcoming.map(event => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    currentUser={currentUser}
-                    onRsvp={() => rsvpMutation.mutate(event)}
-                    onDelete={() => deleteMutation.mutate(event.id)}
-                  />
+                  <EventCard key={event.id} event={event} currentUser={currentUser}
+                    onRsvp={() => rsvpMutation.mutate(event)} onDelete={() => deleteMutation.mutate(event.id)} />
                 ))}
               </div>
             </div>
           )}
           {past.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Past Events</h3>
-              <div className="space-y-4 opacity-75">
+            <div style={{ opacity: 0.7 }}>
+              <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px' }}>Past Events</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {past.map(event => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    currentUser={currentUser}
-                    onRsvp={() => rsvpMutation.mutate(event)}
-                    onDelete={() => deleteMutation.mutate(event.id)}
-                    isPast
-                  />
+                  <EventCard key={event.id} event={event} currentUser={currentUser}
+                    onRsvp={() => rsvpMutation.mutate(event)} onDelete={() => deleteMutation.mutate(event.id)} isPast />
                 ))}
               </div>
             </div>
@@ -116,14 +89,8 @@ export default function GroupEvents({ groupId, currentUser }) {
       )}
 
       {showCreate && (
-        <GroupEventModal
-          groupId={groupId}
-          onClose={() => setShowCreate(false)}
-          onSuccess={() => {
-            setShowCreate(false);
-            queryClient.invalidateQueries({ queryKey: ['group-events', groupId] });
-          }}
-        />
+        <GroupEventModal groupId={groupId} onClose={() => setShowCreate(false)}
+          onSuccess={() => { setShowCreate(false); queryClient.invalidateQueries({ queryKey: ['group-events', groupId] }); }} />
       )}
     </div>
   );
@@ -137,93 +104,89 @@ function EventCard({ event, currentUser, onRsvp, onDelete, isPast }) {
   const cohosts = event.cohosts ? event.cohosts.split(',').map(e => e.trim()).filter(Boolean) : [];
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden">
+    <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
       {event.cover_image_url && (
-        <div className="h-32 w-full overflow-hidden">
-          <img src={event.cover_image_url} alt={event.title} className="w-full h-full object-cover" />
+        <div style={{ height: '128px', width: '100%', overflow: 'hidden' }}>
+          <img src={event.cover_image_url} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
       )}
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-4 mb-3">
+      <div style={{ padding: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '12px' }}>
           <div>
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <Badge className="text-white text-xs" style={{ backgroundColor: color }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: 'white', background: color, padding: '2px 8px', borderRadius: '99px' }}>
                 {EVENT_TYPE_LABELS[event.event_type] || 'Event'}
-              </Badge>
+              </span>
               {event.status === 'cancelled' && (
-                <Badge variant="outline" className="text-xs text-red-500 border-red-200">Cancelled</Badge>
+                <span style={{ fontSize: '11px', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', padding: '2px 8px', borderRadius: '99px' }}>Cancelled</span>
               )}
               {event.rsvp_required && (
-                <Badge variant="outline" className="text-xs">RSVP Required</Badge>
+                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.15)', padding: '2px 8px', borderRadius: '99px' }}>RSVP Required</span>
               )}
             </div>
-            <h3 className="text-lg font-bold text-gray-900">{event.title}</h3>
+            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 700, color: 'white', margin: 0 }}>{event.title}</h3>
             {(isHost || cohosts.includes(currentUser?.email)) && (
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0' }}>
                 {isHost ? 'You are hosting' : 'You are a co-host'}
               </p>
             )}
           </div>
           {isHost && !isPast && (
-            <button onClick={onDelete} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors">
-              <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500" />
+            <button onClick={onDelete} style={{ padding: '6px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '6px' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+              <Trash2 style={{ width: '16px', height: '16px', color: 'rgba(255,255,255,0.3)' }} />
             </button>
           )}
         </div>
 
         {/* Date / Time */}
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-gray-400" />
-            <span>{format(new Date(event.start_datetime), 'EEE, MMM d, yyyy · h:mm a')}</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Calendar style={{ width: '14px', height: '14px', color: 'rgba(255,255,255,0.4)' }} />
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{format(new Date(event.start_datetime), 'EEE, MMM d, yyyy · h:mm a')}</span>
           </div>
           {event.end_datetime && (
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-gray-400" />
-              <span>Ends {format(new Date(event.end_datetime), 'h:mm a')}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Clock style={{ width: '14px', height: '14px', color: 'rgba(255,255,255,0.4)' }} />
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Ends {format(new Date(event.end_datetime), 'h:mm a')}</span>
             </div>
           )}
         </div>
 
         {/* Location */}
         {event.location_type === 'physical' && event.address && (
-          <div className="flex items-center gap-1.5 text-sm text-gray-600 mb-3">
-            <MapPin className="w-3.5 h-3.5 text-gray-400" />
-            <span>{event.address}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+            <MapPin style={{ width: '14px', height: '14px', color: 'rgba(255,255,255,0.4)' }} />
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{event.address}</span>
           </div>
         )}
         {event.location_type === 'online' && event.online_link && (
-          <div className="flex items-center gap-1.5 text-sm text-gray-600 mb-3">
-            <Video className="w-3.5 h-3.5 text-gray-400" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+            <Video style={{ width: '14px', height: '14px', color: 'rgba(255,255,255,0.4)' }} />
             <a href={event.online_link} target="_blank" rel="noreferrer"
-              className="hover:underline flex items-center gap-1" style={{ color: 'var(--tiffany-blue)' }}>
-              Join Online <ExternalLink className="w-3 h-3" />
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: ACCENT, display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+              Join Online <ExternalLink style={{ width: '12px', height: '12px' }} />
             </a>
           </div>
         )}
 
-        {/* Description */}
         {event.description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{event.description}</p>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 12px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{event.description}</p>
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <Users className="w-3.5 h-3.5" />
-            <span>{rsvpList.length} {rsvpList.length === 1 ? 'attendee' : 'attendees'}</span>
-            {event.max_attendees && <span className="text-gray-400">/ {event.max_attendees} max</span>}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Users style={{ width: '14px', height: '14px', color: 'rgba(255,255,255,0.4)' }} />
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
+              {rsvpList.length} {rsvpList.length === 1 ? 'attendee' : 'attendees'}
+              {event.max_attendees && ` / ${event.max_attendees} max`}
+            </span>
           </div>
-          {!isPast && (event.rsvp_required || true) && (
-            <button
-              onClick={onRsvp}
-              className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
-              style={{
-                backgroundColor: isRsvpd ? '#dcfce7' : 'var(--tiffany-blue)',
-                color: isRsvpd ? '#15803d' : 'white',
-                border: isRsvpd ? '1px solid #86efac' : 'none',
-              }}
-            >
+          {!isPast && (
+            <button onClick={onRsvp}
+              style={{ padding: '6px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', border: isRsvpd ? '1px solid rgba(74,222,128,0.4)' : 'none', background: isRsvpd ? 'rgba(74,222,128,0.1)' : ACCENT, color: isRsvpd ? '#4ade80' : '#111827', transition: 'all 0.2s' }}>
               {isRsvpd ? '✓ Going' : 'RSVP'}
             </button>
           )}

@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import DealPost from '../dashboard/DealPost';
 import { Building2, Search, Sparkles } from 'lucide-react';
 
+const ACCENT = '#00DBC5';
+
 export default function GroupListingsRequirements({ groupId, memberEmails, currentUser }) {
   const [tab, setTab] = useState('all');
 
@@ -19,12 +21,6 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
     enabled: memberEmails.length > 0,
   });
 
-  // Visibility filter logic:
-  // A listing/requirement shows in this group if:
-  // - It's public → show (since the poster is a group member)
-  // - It's team visibility AND visibility_groups includes this group → show
-  // - brokerage only → NEVER show in group
-  // - private → NEVER show in group
   const isVisibleInGroup = (post) => {
     const visibility = post.visibility || 'public';
     if (visibility === 'brokerage' || visibility === 'private') return false;
@@ -37,21 +33,10 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
   };
 
   const memberEmailSet = new Set(memberEmails);
+  const groupListings = listings.filter(l => memberEmailSet.has(l.created_by)).filter(isVisibleInGroup).map(l => ({ ...l, postType: 'listing' }));
+  const groupRequirements = requirements.filter(r => memberEmailSet.has(r.created_by)).filter(isVisibleInGroup).map(r => ({ ...r, postType: 'requirement' }));
+  const allPosts = [...groupListings, ...groupRequirements].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
-  const groupListings = listings
-    .filter(l => memberEmailSet.has(l.created_by))
-    .filter(isVisibleInGroup)
-    .map(l => ({ ...l, postType: 'listing' }));
-
-  const groupRequirements = requirements
-    .filter(r => memberEmailSet.has(r.created_by))
-    .filter(isVisibleInGroup)
-    .map(r => ({ ...r, postType: 'requirement' }));
-
-  const allPosts = [...groupListings, ...groupRequirements]
-    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-
-  // "Matches" tab: show listings/requirements from the group that match the current user's own posts
   const myListings = groupListings.filter(l => l.created_by === currentUser?.email);
   const myRequirements = groupRequirements.filter(r => r.created_by === currentUser?.email);
   const myPosts = [...myListings, ...myRequirements].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
@@ -60,39 +45,20 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
     if (!currentUser) return [];
     const matched = new Set();
     const result = [];
-
-    // Match my requirements against group listings
     myRequirements.forEach(req => {
-      groupListings
-        .filter(l => l.created_by !== currentUser.email)
-        .forEach(listing => {
-          const typeMatch = listing.property_type === req.property_type;
-          const txMatch = listing.transaction_type === req.transaction_type ||
-            (req.transaction_type === 'purchase' && listing.transaction_type === 'sale') ||
-            (req.transaction_type === 'lease' && listing.transaction_type === 'sublease');
-          if (typeMatch && txMatch && !matched.has(listing.id)) {
-            matched.add(listing.id);
-            result.push(listing);
-          }
-        });
+      groupListings.filter(l => l.created_by !== currentUser.email).forEach(listing => {
+        const typeMatch = listing.property_type === req.property_type;
+        const txMatch = listing.transaction_type === req.transaction_type || (req.transaction_type === 'purchase' && listing.transaction_type === 'sale') || (req.transaction_type === 'lease' && listing.transaction_type === 'sublease');
+        if (typeMatch && txMatch && !matched.has(listing.id)) { matched.add(listing.id); result.push(listing); }
+      });
     });
-
-    // Match my listings against group requirements
     myListings.forEach(listing => {
-      groupRequirements
-        .filter(r => r.created_by !== currentUser.email)
-        .forEach(req => {
-          const typeMatch = listing.property_type === req.property_type;
-          const txMatch = listing.transaction_type === req.transaction_type ||
-            (req.transaction_type === 'purchase' && listing.transaction_type === 'sale') ||
-            (req.transaction_type === 'lease' && listing.transaction_type === 'sublease');
-          if (typeMatch && txMatch && !matched.has(req.id)) {
-            matched.add(req.id);
-            result.push(req);
-          }
-        });
+      groupRequirements.filter(r => r.created_by !== currentUser.email).forEach(req => {
+        const typeMatch = listing.property_type === req.property_type;
+        const txMatch = listing.transaction_type === req.transaction_type || (req.transaction_type === 'purchase' && listing.transaction_type === 'sale') || (req.transaction_type === 'lease' && listing.transaction_type === 'sublease');
+        if (typeMatch && txMatch && !matched.has(req.id)) { matched.add(req.id); result.push(req); }
+      });
     });
-
     return result;
   }, [myListings, myRequirements, groupListings, groupRequirements, currentUser]);
 
@@ -105,28 +71,15 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
   ];
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Sub-tabs */}
-      <div className="flex gap-2">
+      <div style={{ display: 'flex', gap: '8px' }}>
         {tabs.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-            style={{
-              backgroundColor: tab === t.key ? 'var(--tiffany-blue)' : '#f3f4f6',
-              color: tab === t.key ? 'white' : '#6b7280',
-            }}
-          >
-            <t.icon className="w-3.5 h-3.5" />
+          <button key={t.key} onClick={() => setTab(t.key)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', border: 'none', transition: 'all 0.2s', background: tab === t.key ? ACCENT : 'rgba(255,255,255,0.06)', color: tab === t.key ? '#111827' : 'rgba(255,255,255,0.6)' }}>
+            <t.icon style={{ width: '14px', height: '14px' }} />
             {t.label}
-            <span
-              className="ml-0.5 px-1.5 py-0.5 rounded-full text-xs"
-              style={{
-                backgroundColor: tab === t.key ? 'rgba(255,255,255,0.25)' : '#e5e7eb',
-                color: tab === t.key ? 'white' : '#6b7280',
-              }}
-            >
+            <span style={{ marginLeft: '2px', padding: '1px 6px', borderRadius: '99px', fontSize: '11px', background: tab === t.key ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)', color: tab === t.key ? '#111827' : 'rgba(255,255,255,0.5)' }}>
               {t.count}
             </span>
           </button>
@@ -135,27 +88,27 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
 
       {/* Posts */}
       {displayPosts.length === 0 ? (
-        <div className="text-center py-10 bg-white rounded-xl shadow-md">
+        <div style={{ textAlign: 'center', padding: '40px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
           {tab === 'matches' ? (
             <>
-              <Sparkles className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">No matches found yet.</p>
-              <p className="text-xs text-gray-400 mt-1">Post your own listings or requirements to see what aligns with group members.</p>
+              <Sparkles style={{ width: '40px', height: '40px', color: 'rgba(255,255,255,0.2)', margin: '0 auto 12px', display: 'block' }} />
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: '0 0 4px' }}>No matches found yet.</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>Post your own listings or requirements to see what aligns.</p>
             </>
           ) : tab === 'my' ? (
             <>
-              <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">You haven't posted any listings or requirements yet.</p>
+              <Building2 style={{ width: '40px', height: '40px', color: 'rgba(255,255,255,0.2)', margin: '0 auto 12px', display: 'block' }} />
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>You haven't posted any listings or requirements yet.</p>
             </>
           ) : (
             <>
-              <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">No listings or requirements from group members yet.</p>
+              <Building2 style={{ width: '40px', height: '40px', color: 'rgba(255,255,255,0.2)', margin: '0 auto 12px', display: 'block' }} />
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>No listings or requirements from group members yet.</p>
             </>
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {displayPosts.map(post => (
             <DealPost key={`${post.postType}-${post.id}`} post={post} />
           ))}
