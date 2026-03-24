@@ -6,12 +6,14 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const ACCENT = '#00DBC5';
 
-export default function GroupsDiscover({ myGroupIds = [] }) {
-  const { data: allGroups = [] } = useQuery({
+export default function GroupsDiscover({ myGroupIds = [], groups }) {
+  const { data: fetchedGroups = [] } = useQuery({
     queryKey: ['all-groups'],
     queryFn: () => base44.entities.Group.filter({ status: 'active' }, '-created_date'),
+    enabled: !groups,
   });
 
+  const allGroups = groups ?? fetchedGroups;
   const suggestedGroups = allGroups.filter(g => !myGroupIds.includes(g.id));
 
   if (suggestedGroups.length === 0) {

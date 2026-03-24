@@ -36,6 +36,12 @@ export default function Groups() {
   const myGroupIds = myMemberships.map(m => m.group_id);
   const myGroups = allGroups.filter(g => myGroupIds.includes(g.id));
 
+  const q = searchQuery.toLowerCase().trim();
+  const filteredAllGroups = q
+    ? allGroups.filter(g => g.name?.toLowerCase().includes(q) || g.location?.toLowerCase().includes(q) || g.description?.toLowerCase().includes(q))
+    : allGroups;
+  const filteredMyGroups = q ? myGroups.filter(g => g.name?.toLowerCase().includes(q) || g.location?.toLowerCase().includes(q)) : myGroups;
+
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 64px)', background: '#0E1318' }}>
       {/* Left Sidebar */}
@@ -142,7 +148,7 @@ export default function Groups() {
             }}>
               Fish Tanks You've Joined
             </h3>
-            {myGroups.length === 0 ? (
+            {filteredMyGroups.length === 0 ? (
               <p style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '13px',
@@ -152,8 +158,8 @@ export default function Groups() {
                 No fish tanks joined yet
               </p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {myGroups.map(group => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {filteredMyGroups.map(group => (
                   <a
                     key={group.id}
                     href={`/GroupDetail?id=${group.id}`}
@@ -213,9 +219,9 @@ export default function Groups() {
       {/* Main Content Area */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 32px' }}>
-          {activeView === 'feed' && <GroupsFeed myGroupIds={myGroupIds} />}
-          {activeView === 'discover' && <GroupsDiscover myGroupIds={myGroupIds} />}
-          {activeView === 'your-groups' && <YourGroupsGrid groups={myGroups} isFishTanks={true} />}
+          {activeView === 'feed' && !q && <GroupsFeed myGroupIds={myGroupIds} />}
+          {(activeView === 'discover' || (q && activeView === 'feed')) && <GroupsDiscover myGroupIds={myGroupIds} groups={filteredAllGroups} />}
+          {activeView === 'your-groups' && <YourGroupsGrid groups={filteredMyGroups} isFishTanks={true} />}
         </div>
       </div>
 
