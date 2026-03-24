@@ -46,6 +46,12 @@ export default function TopNav() {
     await base44.auth.logout('/Landing');
   };
 
+  // Display name: use full_name from UserProfile, fall back to email prefix
+  const displayName = user?.full_name || user?.email?.split('@')[0] || 'User';
+  const displayInitial = displayName[0]?.toUpperCase() || 'U';
+  // Display email: use contact_email from UserProfile, fall back to auth email
+  const displayEmail = user?.contact_email || user?.email || '';
+
   return (
     <nav style={{
       position: 'fixed',
@@ -76,7 +82,7 @@ export default function TopNav() {
           </svg>
         </Link>
 
-        {/* Center Nav - Always Visible */}
+        {/* Center Nav */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, justifyContent: 'center' }}>
           {mainNavItems.map(item => (
             <Link
@@ -105,7 +111,6 @@ export default function TopNav() {
             </Link>
           ))}
           
-          {/* Teams Tab (for all brokerage members) */}
           {teamNavItem && (
             <Link
               to={teamNavItem.path}
@@ -135,10 +140,8 @@ export default function TopNav() {
 
         {/* Right Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {/* Global Search */}
           <GlobalSearch />
           
-          {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button style={{
@@ -156,16 +159,16 @@ export default function TopNav() {
                 fontWeight: 500,
                 color: '#111827',
               }}>
-                {user?.full_name?.[0]?.toUpperCase() || 'U'}
+                {displayInitial}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)', minWidth: '200px' }}>
               <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: 0 }}>
-                  {user?.full_name || 'User'}
+                  {displayName}
                 </p>
                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>
-                  {user?.email}
+                  {displayEmail}
                 </p>
               </div>
               <DropdownMenuItem 
@@ -200,10 +203,6 @@ export default function TopNav() {
           </DropdownMenu>
         </div>
       </div>
-
-      <style>{`
-        /* Navigation always visible */
-      `}</style>
     </nav>
   );
 }
