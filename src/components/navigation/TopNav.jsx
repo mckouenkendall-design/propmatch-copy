@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import GlobalSearch from './GlobalSearch';
+import NotificationBell from './NotificationBell';
 
 const ACCENT = '#00DBC5';
 
@@ -141,6 +142,7 @@ export default function TopNav() {
         {/* Right Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <GlobalSearch />
+          <NotificationBell />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
