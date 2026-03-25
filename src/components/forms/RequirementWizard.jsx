@@ -9,9 +9,8 @@ import ReqStep1 from './requirement/Step1General';
 import ReqStep2Commercial from './requirement/Step2CommercialDetails';
 import ReqStep2Residential from './requirement/Step2ResidentialDetails';
 import ReqStep3 from './requirement/Step3Notes';
-import ReqStep4 from './requirement/Step4Review';
 
-const STEPS = ['General', 'Details', 'Notes', 'Review'];
+const STEPS = ['General', 'Details', 'Notes & Submit'];
 
 export default function RequirementWizard({ category, onClose, onSuccess, initialData }) {
   const { user } = useAuth();
@@ -77,7 +76,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   });
 
   const update = (patch) => setFormData(prev => ({ ...prev, ...patch }));
-  const next = () => setStep(s => Math.min(s + 1, 4));
+  const next = () => setStep(s => Math.min(s + 1, 3));
   const back = () => step === 1 ? onClose('back') : setStep(s => s - 1);
 
   return (
@@ -90,7 +89,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
                 <Button variant="ghost" size="icon" onClick={back}><ArrowLeft className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} /></Button>
                 <div>
                   <h2 className="text-xl font-bold capitalize" style={{ color: 'white' }}>{category} Requirement</h2>
-                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Step {step} of {STEPS.length}</p>
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Step {step} of 3</p>
                 </div>
               </div>
               <Button variant="ghost" size="icon" onClick={() => onClose('close')}><X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} /></Button>
@@ -101,8 +100,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
             {step === 1 && <ReqStep1 data={formData} update={update} onNext={next} />}
             {step === 2 && category === 'commercial' && <ReqStep2Commercial data={formData} update={update} onNext={next} />}
             {step === 2 && category === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
-            {step === 3 && <ReqStep3 data={formData} update={update} onNext={next} />}
-            {step === 4 && <ReqStep4 data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />}
+            {step === 3 && <ReqStep3 data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />}
           </div>
           {step === 2 && (
             <div className="px-6 pb-4 text-left">
