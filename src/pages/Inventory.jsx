@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Building2, Search, Plus, Grid, List as ListIcon } from 'lucide-react';
@@ -10,6 +10,7 @@ const ACCENT = '#00DBC5';
 
 export default function Inventory() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('listings');
   const [viewMode, setViewMode] = useState('grid');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -313,7 +314,11 @@ export default function Inventory() {
       {showCreateModal && (
         <CreatePostModal
           onClose={() => setShowCreateModal(false)}
-          onSuccess={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            queryClient.invalidateQueries({ queryKey: ['my-listings'] });
+            queryClient.invalidateQueries({ queryKey: ['my-requirements'] });
+          }}
         />
       )}
     </div>
