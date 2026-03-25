@@ -75,12 +75,28 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
           return `${type} ${tx}${loc ? ` in ${loc}` : ''}`;
         })(),
       };
-      if (submitData.price) submitData.price = parseFloat(submitData.price);
-      if (submitData.size_sqft) submitData.size_sqft = parseFloat(submitData.size_sqft);
+      const numericFields = ['price', 'size_sqft'];
+      numericFields.forEach(f => {
+        if (submitData[f] === '' || submitData[f] === null || submitData[f] === undefined) {
+          delete submitData[f];
+        } else {
+          submitData[f] = parseFloat(submitData[f]);
+        }
+      });
       return base44.entities.Listing.create(submitData);
     },
     onSuccess: (...args) => { setSubmitError(null); onSuccess?.(...args); },
-    onError: (err) => setSubmitError(err.message || 'Something went wrong. Please try again.'),
+    onError: (err) => {
+      const raw = err.message || 'Something went wrong. Please try again.';
+      const friendly = raw
+        .replace(/price/g, 'Price')
+        .replace(/size_sqft/g, 'Size (SF)')
+        .replace(/property_type/g, 'Property type')
+        .replace(/transaction_type/g, 'Transaction type')
+        .replace(/city/g, 'City')
+        .replace(/Input should be a valid number, unable to parse string as a number/g, 'must be a number');
+      setSubmitError(friendly);
+    },
   });
 
   const update = (patch) => setFormData(prev => ({ ...prev, ...patch }));

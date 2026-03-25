@@ -75,14 +75,31 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
       submitData.property_details = JSON.stringify(data.property_details || {});
       submitData.area_map_data = JSON.stringify(data.mapAreas || []);
       delete submitData.mapAreas;
-      if (submitData.min_price) submitData.min_price = parseFloat(submitData.min_price);
-      if (submitData.max_price) submitData.max_price = parseFloat(submitData.max_price);
-      if (submitData.min_size_sqft) submitData.min_size_sqft = parseFloat(submitData.min_size_sqft);
-      if (submitData.max_size_sqft) submitData.max_size_sqft = parseFloat(submitData.max_size_sqft);
+      const numericFields = ['min_price', 'max_price', 'min_size_sqft', 'max_size_sqft', 'min_bedrooms', 'min_bathrooms'];
+      numericFields.forEach(f => {
+        if (submitData[f] === '' || submitData[f] === null || submitData[f] === undefined) {
+          delete submitData[f];
+        } else {
+          submitData[f] = parseFloat(submitData[f]);
+        }
+      });
       return base44.entities.Requirement.create(submitData);
     },
     onSuccess: (...args) => { setSubmitError(null); onSuccess?.(...args); },
-    onError: (err) => setSubmitError(err.message || 'Something went wrong. Please try again.'),
+    onError: (err) => {
+      const raw = err.message || 'Something went wrong. Please try again.';
+      const friendly = raw
+        .replace(/min_size_sqft/g, 'Minimum size (SF)')
+        .replace(/max_size_sqft/g, 'Maximum size (SF)')
+        .replace(/min_price/g, 'Minimum price')
+        .replace(/max_price/g, 'Maximum budget')
+        .replace(/min_bedrooms/g, 'Minimum bedrooms')
+        .replace(/min_bathrooms/g, 'Minimum bathrooms')
+        .replace(/property_type/g, 'Property type')
+        .replace(/transaction_type/g, 'Transaction type')
+        .replace(/Input should be a valid number, unable to parse string as a number/g, 'must be a number');
+      setSubmitError(friendly);
+    },
   });
 
   const update = (patch) => setFormData(prev => ({ ...prev, ...patch }));
