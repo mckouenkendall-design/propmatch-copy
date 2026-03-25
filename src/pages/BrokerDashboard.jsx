@@ -1,455 +1,478 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Users, Building2, TrendingUp, DollarSign, Award, Activity, Settings, Plus } from 'lucide-react';
+import { Users, Building2, Activity, Plus, X, ChevronDown, ChevronUp, MessageSquare, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import AddTeamModal from '@/components/broker/AddTeamModal';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
+import StartConversationModal from '@/components/messages/StartConversationModal';
 
 const ACCENT = '#00DBC5';
 
-export default function BrokerDashboard() {
-  const { user } = useAuth();
-  const [showAddTeam, setShowAddTeam] = useState(false);
+// ── Add Agent Modal ──────────────────────────────────────────────────────────
+function AddAgentModal({ broker, onClose, onSuccess }) {
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [found, setFound] = useState(null);
+  const [searching, setSearching] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data: rosterEntries = [] } = useQuery({
-    queryKey: ['brokerage-roster'],
-    queryFn: () => base44.entities.BrokerageRoster.filter({ 
-      broker_email: user?.email,
-      status: 'active'
-    }),
-  });
+  const searchAgent = async () => {
+    if (!licenseNumber.trim()) return;
+    setSearching(true);
+    setFound(null);
+    try {
+      const allProfiles = await base44.entities.UserProfile.list();
+      const match = allProfiles.find(p =>
+        p.employing_broker_id === broker.employing_broker_id &&
+        p.license_number === licenseNumber.trim()
+      );
+      setFound(match || 'not_found');
+    } catch (e) {
+      setFound('error');
+    } finally {
+      setSearching(false);
+    }
+  };
 
-  const { data: allListings = [] } = useQuery({
-    queryKey: ['team-listings'],
-    queryFn: () => base44.entities.Listing.list('-created_date', 100),
-  });
+  const addAgent = async () => {
+    setLoading(true);
+    try {
+      const existing = await base44.entities.BrokerageRoster.list();
+      const alreadyAdded = existing.find(r =>
+        r.employing_broker_number === broker.employing_broker_id &&
+        r.agent_license === licenseNumber.trim() &&
+        r.status === 'active'
+      );
+      if (alreadyAdded) {
+        toast({ title: 'This agent is already on your roster', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
 
-  const { data: allRequirements = [] } = useQuery({
-    queryKey: ['team-requirements'],
-    queryFn: () => base44.entities.Requirement.list('-created_date', 100),
-  });
+      await base44.entities.BrokerageRoster.create({
+        broker_email: broker.contact_email || broker.email,
+        broker_name: broker.full_name || '',
+        brokerage_name: broker.brokerage_name || '',
+        employing_broker_number: broker.employing_broker_id || '',
+        agent_license: licenseNumber.trim(),
+        agent_email: found && found !== 'not_found' ? (found.contact_email || found.user_email) : '',
+        agent_name: found && found !== 'not_found' ? found.full_name : '',
+        status: 'active',
+      });
 
-  // Mock data for team performance
-  const totalAgents = rosterEntries.length;
-  const totalDeals = allListings.length + allRequirements.length;
-  const pipelineValue = allListings.reduce((sum, l) => sum + (l.price || 0), 0);
-  const dealsClosed = Math.floor(totalDeals * 0.15); // Mock 15% close rate
+      // If agent already on PropMatch — update their plan to broker_sponsored.
+      // NOTE: No manual createNotification here — onSubscriptionChanged trigger fires
+      // automatically when selected_plan changes and sends the right notification.
+      if (found && found !== 'not_found') {
+        const now = new Date().toISOString();
+        // Calculate banked days if they had a paid individual plan
+        let bankedDays = found.banked_days || 0;
+        if (found.selected_plan === 'individual' && found.subscription_status === 'active') {
+          // Store current date as pause date; banked_days calculated at resume time
+          // For now just mark it as paused — full banked days logic requires Stripe data
+          bankedDays = found.banked_days || 0;
+        }
 
-  const StatCard = ({ icon: Icon, label, value, subtext, color = ACCENT }) => (
-    <Card style={{
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      transition: 'all 0.2s ease',
-    }}
-    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-    >
-      <CardContent style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '14px',
-            background: `${color}15`,
-            border: `1px solid ${color}30`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <Icon style={{ width: '28px', height: '28px', color }} />
+        await base44.entities.UserProfile.update(found.id, {
+          selected_plan: 'broker_sponsored',
+          subscription_status: 'paused',
+          individual_plan_paused_date: now,
+          banked_days: bankedDays,
+        });
+        // onSubscriptionChanged fires here and sends the agent their notification
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['broker-roster'] });
+      queryClient.invalidateQueries({ queryKey: ['all-user-profiles'] });
+      toast({ title: found && found !== 'not_found' ? `${found.full_name} added successfully` : 'Seat added — pending agent signup' });
+      onSuccess();
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Failed to add agent', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const canAdd = licenseNumber.trim() && found && found !== 'error' && !loading;
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} onClick={onClose}>
+      <div style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', maxWidth: '500px', width: '100%', padding: '32px' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: 0 }}>Add Agent to Roster</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
+            <X style={{ width: '20px', height: '20px' }} />
+          </button>
+        </div>
+
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: '0 0 20px', lineHeight: 1.6 }}>
+          Enter the agent's License No. The system will verify they are licensed under your employing broker number. If they are already on PropMatch they will be notified automatically.
+        </p>
+
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '8px' }}>
+            Agent License No.
+          </label>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Input
+              value={licenseNumber}
+              onChange={e => { setLicenseNumber(e.target.value); setFound(null); }}
+              placeholder="Enter license number"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', flex: 1 }}
+              onKeyDown={e => e.key === 'Enter' && searchAgent()}
+            />
+            <button
+              onClick={searchAgent}
+              disabled={searching || !licenseNumber.trim()}
+              style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '13px', whiteSpace: 'nowrap' }}
+            >
+              {searching ? 'Searching...' : 'Look Up'}
+            </button>
           </div>
         </div>
-        <p style={{
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '36px',
-          fontWeight: 600,
-          color: 'white',
-          margin: '0 0 4px'
-        }}>
-          {value}
-        </p>
-        <p style={{
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '14px',
-          color: 'rgba(255,255,255,0.5)',
-          margin: '0 0 8px'
-        }}>
-          {label}
-        </p>
-        {subtext && (
-          <p style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '12px',
-            color: color,
-            margin: 0
-          }}>
-            {subtext}
-          </p>
+
+        {found && found !== 'not_found' && found !== 'error' && (
+          <div style={{ background: 'rgba(0,219,197,0.08)', border: `1px solid ${ACCENT}30`, borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: '0 0 8px', fontWeight: 600 }}>✓ Agent Found on PropMatch</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 600, color: 'white', margin: '0 0 4px' }}>{found.full_name}</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>{found.contact_email || found.user_email}</p>
+          </div>
         )}
-      </CardContent>
-    </Card>
-  );
+        {found === 'not_found' && (
+          <div style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#FBB936', margin: 0, lineHeight: 1.6 }}>
+              No PropMatch account found with this license number under your brokerage. The seat will be added as pending — it activates when they complete onboarding.
+            </p>
+          </div>
+        )}
+        {found === 'error' && (
+          <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#ef4444', margin: 0 }}>Search failed. Please try again.</p>
+          </div>
+        )}
 
-  const AgentRow = ({ agent, rank }) => {
-    const mockDeals = Math.floor(Math.random() * 15) + 5;
-    const mockValue = Math.floor(Math.random() * 2000000) + 500000;
-
-    return (
-      <div style={{
-        padding: '16px 20px',
-        background: rank <= 3 ? 'rgba(0,219,197,0.04)' : 'rgba(255,255,255,0.02)',
-        border: rank <= 3 ? `1px solid ${ACCENT}20` : '1px solid rgba(255,255,255,0.05)',
-        borderRadius: '10px',
-        marginBottom: '12px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '20px'
-      }}>
-        <div style={{
-          width: '32px',
-          textAlign: 'center',
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '18px',
-          fontWeight: 600,
-          color: rank <= 3 ? ACCENT : 'rgba(255,255,255,0.4)'
-        }}>
-          #{rank}
-        </div>
-
-        <div style={{
-          width: '48px',
-          height: '48px',
-          borderRadius: '50%',
-          background: ACCENT,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '16px',
-          fontWeight: 600,
-          color: '#111827'
-        }}>
-          {agent.agent_name?.split(' ').map(n => n[0]).join('') || 'AG'}
-        </div>
-
-        <div style={{ flex: 1 }}>
-          <p style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '15px',
-            fontWeight: 500,
-            color: 'white',
-            margin: '0 0 4px'
-          }}>
-            {agent.agent_name}
-          </p>
-          <p style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '13px',
-            color: 'rgba(255,255,255,0.5)',
-            margin: 0
-          }}>
-            {agent.agent_email}
-          </p>
-        </div>
-
-        <div style={{ textAlign: 'right', marginRight: '20px' }}>
-          <p style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '18px',
-            fontWeight: 600,
-            color: ACCENT,
-            margin: '0 0 4px'
-          }}>
-            {mockDeals}
-          </p>
-          <p style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '12px',
-            color: 'rgba(255,255,255,0.5)',
-            margin: 0
-          }}>
-            Active Deals
-          </p>
-        </div>
-
-        <div style={{ textAlign: 'right' }}>
-          <p style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '18px',
-            fontWeight: 600,
-            color: 'white',
-            margin: '0 0 4px'
-          }}>
-            ${(mockValue / 1000).toFixed(0)}K
-          </p>
-          <p style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '12px',
-            color: 'rgba(255,255,255,0.5)',
-            margin: 0
-          }}>
-            Pipeline Value
-          </p>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+            Cancel
+          </button>
+          <button
+            onClick={addAgent}
+            disabled={!canAdd}
+            style={{ flex: 1, padding: '12px', background: canAdd ? ACCENT : 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: canAdd ? '#111827' : 'rgba(255,255,255,0.3)', cursor: canAdd ? 'pointer' : 'not-allowed' }}
+          >
+            {loading ? 'Adding...' : 'Add to Roster'}
+          </button>
         </div>
       </div>
-    );
+    </div>
+  );
+}
+
+// ── Agent Row ────────────────────────────────────────────────────────────────
+function AgentRow({ profile, rosterEntry, onMessage, onRemove }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const { data: agentListings = [] } = useQuery({
+    queryKey: ['agent-listings', profile?.user_email],
+    queryFn: () => base44.entities.Listing.filter({ created_by: profile.user_email }),
+    enabled: !!profile?.user_email && expanded,
+  });
+
+  const { data: agentRequirements = [] } = useQuery({
+    queryKey: ['agent-requirements', profile?.user_email],
+    queryFn: () => base44.entities.Requirement.filter({ created_by: profile.user_email }),
+    enabled: !!profile?.user_email && expanded,
+  });
+
+  const initial = (profile?.full_name || profile?.user_email || '?')[0]?.toUpperCase();
+
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', marginBottom: '10px', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
+        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 600, color: '#111827', flexShrink: 0 }}>
+          {initial}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 600, color: 'white', margin: '0 0 2px' }}>
+            {profile?.full_name || 'Unknown'}
+          </p>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            {profile?.username && <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT }}>@{profile.username}</span>}
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{profile?.contact_email || profile?.user_email}</span>
+            {profile?.phone && <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{profile.phone}</span>}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <button
+            onClick={e => { e.stopPropagation(); onMessage(profile); }}
+            style={{ padding: '6px 12px', background: 'rgba(0,219,197,0.1)', border: `1px solid ${ACCENT}30`, borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            <MessageSquare style={{ width: '12px', height: '12px' }} /> Message
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); onRemove(rosterEntry, profile); }}
+            style={{ padding: '6px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#ef4444', cursor: 'pointer' }}
+          >
+            Remove
+          </button>
+          {expanded ? <ChevronUp style={{ width: '16px', height: '16px', color: 'rgba(255,255,255,0.4)' }} /> : <ChevronDown style={{ width: '16px', height: '16px', color: 'rgba(255,255,255,0.4)' }} />}
+        </div>
+      </div>
+
+      {expanded && (
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.4)', margin: '0 0 10px' }}>
+              Active Listings ({agentListings.length})
+            </p>
+            {agentListings.length === 0
+              ? <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>No active listings</p>
+              : agentListings.slice(0, 5).map(l => (
+                <div key={l.id} style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', marginBottom: '6px' }}>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'white', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title}</p>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: 0 }}>${(l.price || 0).toLocaleString()}</p>
+                </div>
+              ))
+            }
+          </div>
+          <div>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.4)', margin: '0 0 10px' }}>
+              Active Requirements ({agentRequirements.length})
+            </p>
+            {agentRequirements.length === 0
+              ? <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>No active requirements</p>
+              : agentRequirements.slice(0, 5).map(r => (
+                <div key={r.id} style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', marginBottom: '6px' }}>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'white', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</p>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>Max ${(r.max_price || 0).toLocaleString()}</p>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main BrokerDashboard ─────────────────────────────────────────────────────
+export default function BrokerDashboard() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [messagingUser, setMessagingUser] = useState(null);
+
+  const { data: rosterEntries = [] } = useQuery({
+    queryKey: ['broker-roster'],
+    queryFn: async () => {
+      const all = await base44.entities.BrokerageRoster.list();
+      return all.filter(r => r.employing_broker_number === user?.employing_broker_id);
+    },
+    enabled: !!user?.employing_broker_id,
+  });
+
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['all-user-profiles'],
+    queryFn: () => base44.entities.UserProfile.list(),
+  });
+
+  const activeEntries = rosterEntries.filter(r => r.status === 'active');
+  const pendingEntries = activeEntries.filter(r => !r.agent_email);
+
+  const agentProfiles = activeEntries
+    .filter(r => r.agent_license)
+    .map(entry => {
+      const profile = allProfiles.find(p =>
+        p.employing_broker_id === user?.employing_broker_id &&
+        p.license_number === entry.agent_license
+      );
+      return { entry, profile };
+    })
+    .filter(({ profile }) => !!profile);
+
+  const brokerProfile = allProfiles.find(p => p.user_email === user?.email);
+  const totalSeats = user?.brokerage_seats || 2;
+  const usedSeats = agentProfiles.length + 1;
+
+  const removeMutation = useMutation({
+    mutationFn: async ({ entry, profile }) => {
+      await base44.entities.BrokerageRoster.update(entry.id, { status: 'inactive' });
+
+      if (profile) {
+        const bankedDays = profile.banked_days || 0;
+        const newExpiry = new Date();
+        newExpiry.setDate(newExpiry.getDate() + bankedDays);
+
+        // Update agent's plan — this triggers onSubscriptionChanged which sends notification
+        await base44.entities.UserProfile.update(profile.id, {
+          selected_plan: bankedDays > 0 ? 'individual' : 'free',
+          subscription_status: bankedDays > 0 ? 'active' : 'expired',
+          banked_days: 0,
+        });
+        // NOTE: No manual createNotification — onSubscriptionChanged handles it
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['broker-roster'] });
+      queryClient.invalidateQueries({ queryKey: ['all-user-profiles'] });
+      toast({ title: 'Agent removed from roster' });
+    },
+    onError: () => toast({ title: 'Failed to remove agent', variant: 'destructive' }),
+  });
+
+  const handleRemove = (entry, profile) => {
+    if (!confirm('Remove this agent from your plan? Their banked days will be restored.')) return;
+    removeMutation.mutate({ entry, profile });
   };
 
   return (
-    <div style={{ maxWidth: '1600px', margin: '0 auto', padding: '48px 32px' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '48px 32px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: '42px',
-            fontWeight: 300,
-            color: 'white',
-            margin: '0 0 8px'
-          }}>
+          <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '36px', fontWeight: 300, color: 'white', margin: '0 0 6px' }}>
             Brokerage Admin
           </h1>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-            {user?.brokerage_name || 'Your Brokerage'} • Manage your team and view performance
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+            {user?.brokerage_name || 'Your Brokerage'} · {usedSeats} of {totalSeats} seats used
           </p>
         </div>
-
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
-            onClick={() => setShowAddTeam(true)}
-            style={{
-              padding: '10px 20px',
-              background: ACCENT,
-              border: 'none',
-              borderRadius: '8px',
-              color: '#111827',
-              cursor: 'pointer',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '14px',
-              fontWeight: 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
+            onClick={() => setShowAddModal(true)}
+            disabled={usedSeats >= totalSeats}
+            style={{ padding: '10px 20px', background: usedSeats >= totalSeats ? 'rgba(255,255,255,0.06)' : ACCENT, border: 'none', borderRadius: '8px', color: usedSeats >= totalSeats ? 'rgba(255,255,255,0.3)' : '#111827', cursor: usedSeats >= totalSeats ? 'not-allowed' : 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             <Plus style={{ width: '16px', height: '16px' }} />
-            Add Agents
+            {usedSeats >= totalSeats ? 'No seats available' : 'Add Agent'}
           </button>
-
           <button
             onClick={() => window.location.href = '/Settings'}
-            style={{
-              padding: '10px 20px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              color: 'rgba(255,255,255,0.7)',
-              cursor: 'pointer',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '14px',
-              fontWeight: 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
+            style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '14px' }}
           >
-            <Settings style={{ width: '16px', height: '16px' }} />
             Manage Subscription
           </button>
         </div>
       </div>
 
-      {/* Overview Stats */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '20px',
-        marginBottom: '48px'
-      }}>
-        <StatCard
-          icon={Users}
-          label="Active Agents"
-          value={totalAgents}
-          subtext={`of ${user?.brokerage_seats || totalAgents} seats`}
-        />
-        <StatCard
-          icon={Activity}
-          label="Active Deals"
-          value={totalDeals}
-          subtext="+12% this month"
-        />
-        <StatCard
-          icon={DollarSign}
-          label="Pipeline Value"
-          value={`$${(pipelineValue / 1000000).toFixed(1)}M`}
-          subtext="+8% this month"
-        />
-        <StatCard
-          icon={Award}
-          label="Closed Deals"
-          value={dealsClosed}
-          subtext="This month"
-        />
-      </div>
-
-      {/* Top Performers */}
-      <div style={{ marginBottom: '48px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-          <h2 style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: '28px',
-            fontWeight: 500,
-            color: 'white',
-            margin: 0
-          }}>
-            Team Performance
-          </h2>
-        </div>
-
-        {rosterEntries.length === 0 ? (
-          <Card style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <CardContent style={{ padding: '64px', textAlign: 'center' }}>
-              <Users style={{ width: '64px', height: '64px', color: `${ACCENT}40`, margin: '0 auto 24px' }} />
-              <h3 style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontSize: '24px',
-                fontWeight: 500,
-                color: 'white',
-                margin: '0 0 12px'
-              }}>
-                No agents added yet
-              </h3>
-              <p style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '15px',
-                color: 'rgba(255,255,255,0.5)',
-                margin: '0 0 24px'
-              }}>
-                Add your first team member to start tracking performance
-              </p>
-              <button
-                onClick={() => setShowAddTeam(true)}
-                style={{
-                  padding: '12px 24px',
-                  background: ACCENT,
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#111827',
-                  cursor: 'pointer',
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-              >
-                Add Team Members
-              </button>
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '40px' }}>
+        {[
+          { icon: Users, label: 'Agents on Plan', value: usedSeats, sub: `${totalSeats - usedSeats} seats available` },
+          { icon: Building2, label: 'Active Agent Seats', value: agentProfiles.length, sub: 'Excluding you' },
+          { icon: Activity, label: 'Pending Seats', value: pendingEntries.length, sub: 'Awaiting agent signup' },
+        ].map(stat => (
+          <Card key={stat.label} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <CardContent style={{ padding: '20px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${ACCENT}15`, border: `1px solid ${ACCENT}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                <stat.icon style={{ width: '20px', height: '20px', color: ACCENT }} />
+              </div>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '32px', fontWeight: 600, color: 'white', margin: '0 0 4px' }}>{stat.value}</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 4px' }}>{stat.label}</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: 0 }}>{stat.sub}</p>
             </CardContent>
           </Card>
-        ) : (
-          <div>
-            {rosterEntries.map((agent, idx) => (
-              <AgentRow key={agent.id} agent={agent} rank={idx + 1} />
-            ))}
+        ))}
+      </div>
+
+      {/* Roster */}
+      <div style={{ marginBottom: '32px' }}>
+        <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '22px', fontWeight: 500, color: 'white', margin: '0 0 16px' }}>
+          Roster
+        </h2>
+
+        {/* Broker — Seat 1, always first, read-only */}
+        {brokerProfile && (
+          <div style={{ background: 'rgba(0,219,197,0.04)', border: `1px solid ${ACCENT}20`, borderRadius: '10px', padding: '16px 20px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 600, color: '#111827', flexShrink: 0 }}>
+              {(brokerProfile.full_name || user?.email || '?')[0]?.toUpperCase()}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 600, color: 'white', margin: 0 }}>
+                  {brokerProfile.full_name || user?.email}
+                </p>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: ACCENT, background: 'rgba(0,219,197,0.1)', border: `1px solid ${ACCENT}30`, borderRadius: '4px', padding: '2px 8px' }}>Principal Broker</span>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {brokerProfile.username && <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT }}>@{brokerProfile.username}</span>}
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{brokerProfile.contact_email || brokerProfile.user_email}</span>
+                {brokerProfile.phone && <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{brokerProfile.phone}</span>}
+              </div>
+            </div>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>Seat 1 (You)</span>
           </div>
+        )}
+
+        {agentProfiles.length === 0 && pendingEntries.length === 0 ? (
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '48px', textAlign: 'center' }}>
+            <Users style={{ width: '48px', height: '48px', color: `${ACCENT}40`, margin: '0 auto 16px' }} />
+            <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: '0 0 8px' }}>No agents added yet</h3>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: '0 0 20px' }}>
+              Add agents by their license number. They'll be notified automatically.
+            </p>
+            <button onClick={() => setShowAddModal(true)} style={{ padding: '10px 20px', background: ACCENT, border: 'none', borderRadius: '8px', color: '#111827', cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500 }}>
+              Add First Agent
+            </button>
+          </div>
+        ) : (
+          <>
+            {agentProfiles.map(({ entry, profile }) => (
+              <AgentRow
+                key={entry.id}
+                profile={profile}
+                rosterEntry={entry}
+                onMessage={setMessagingUser}
+                onRemove={handleRemove}
+              />
+            ))}
+
+            {pendingEntries.length > 0 && (
+              <div style={{ marginTop: '24px' }}>
+                <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px' }}>
+                  Pending — Awaiting Agent Signup ({pendingEntries.length})
+                </h3>
+                {pendingEntries.map(entry => (
+                  <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', background: 'rgba(251,191,36,0.04)', border: '1px solid rgba(251,191,36,0.15)', borderRadius: '8px', marginBottom: '8px' }}>
+                    <AlertCircle style={{ width: '18px', height: '18px', color: '#FBB936', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.7)', margin: '0 0 2px' }}>
+                        License: <strong style={{ color: 'white' }}>{entry.agent_license}</strong>
+                      </p>
+                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.35)', margin: 0 }}>
+                        Seat activates when agent completes onboarding with this license number.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleRemove(entry, null)}
+                      style={{ padding: '4px 10px', background: 'transparent', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#ef4444', cursor: 'pointer' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Billing Summary */}
-      <div>
-        <h2 style={{
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-          fontSize: '28px',
-          fontWeight: 500,
-          color: 'white',
-          margin: '0 0 24px'
-        }}>
-          Billing Summary
-        </h2>
-
-        <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <CardContent style={{ padding: '32px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>
-              <div>
-                <p style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '13px',
-                  color: 'rgba(255,255,255,0.5)',
-                  margin: '0 0 8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  Current Plan
-                </p>
-                <p style={{
-                  fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  fontSize: '24px',
-                  fontWeight: 500,
-                  color: 'white',
-                  margin: 0
-                }}>
-                  Brokerage Plan
-                </p>
-              </div>
-
-              <div>
-                <p style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '13px',
-                  color: 'rgba(255,255,255,0.5)',
-                  margin: '0 0 8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  Seats Used
-                </p>
-                <p style={{
-                  fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  fontSize: '24px',
-                  fontWeight: 500,
-                  color: ACCENT,
-                  margin: 0
-                }}>
-                  {totalAgents} / {user?.brokerage_seats || totalAgents}
-                </p>
-              </div>
-
-              <div>
-                <p style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '13px',
-                  color: 'rgba(255,255,255,0.5)',
-                  margin: '0 0 8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  Next Billing
-                </p>
-                <p style={{
-                  fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  fontSize: '24px',
-                  fontWeight: 500,
-                  color: 'white',
-                  margin: 0
-                }}>
-                  {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {showAddTeam && (
-        <AddTeamModal
-          totalSeats={user?.brokerage_seats || 10}
-          brokerEmail={user?.email}
-          brokerName={user?.full_name}
-          brokerageName={user?.brokerage_name}
-          employingBrokerNumber={user?.employing_broker_id}
-          stripeSubscriptionId={user?.stripe_subscription_id}
-          onClose={() => setShowAddTeam(false)}
-          onComplete={() => setShowAddTeam(false)}
+      {showAddModal && (
+        <AddAgentModal
+          broker={user}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => setShowAddModal(false)}
+        />
+      )}
+      {messagingUser && (
+        <StartConversationModal
+          onClose={() => setMessagingUser(null)}
+          onSelectUser={(u) => { console.log('Starting conversation with:', u); setMessagingUser(null); }}
         />
       )}
     </div>
