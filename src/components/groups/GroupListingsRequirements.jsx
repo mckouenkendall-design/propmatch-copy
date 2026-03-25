@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import DealPost from '../dashboard/DealPost';
 import { Building2, Search, Sparkles } from 'lucide-react';
 
@@ -8,6 +8,18 @@ const ACCENT = '#00DBC5';
 
 export default function GroupListingsRequirements({ groupId, memberEmails, currentUser }) {
   const [tab, setTab] = useState('all');
+  const queryClient = useQueryClient();
+
+  // Real-time updates when listings or requirements are created
+  useEffect(() => {
+    const unsubListing = base44.entities.Listing.subscribe(() => {
+      queryClient.invalidateQueries({ queryKey: ['group-listings'] });
+    });
+    const unsubReq = base44.entities.Requirement.subscribe(() => {
+      queryClient.invalidateQueries({ queryKey: ['group-requirements'] });
+    });
+    return () => { unsubListing(); unsubReq(); };
+  }, [queryClient]);
 
   const { data: listings = [] } = useQuery({
     queryKey: ['group-listings', groupId, memberEmails],

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Building2, Search, TrendingUp, MessageSquare, Plus, ArrowRight, Clock } from 'lucide-react';
@@ -10,6 +10,7 @@ const ACCENT = '#00DBC5';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const { data: listings = [] } = useQuery({
@@ -337,7 +338,12 @@ export default function Dashboard() {
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
             setShowCreateModal(false);
-            // Refresh data
+            queryClient.invalidateQueries({ queryKey: ['my-listings'] });
+            queryClient.invalidateQueries({ queryKey: ['my-requirements'] });
+            queryClient.invalidateQueries({ queryKey: ['all-listings'] });
+            queryClient.invalidateQueries({ queryKey: ['all-requirements'] });
+            queryClient.invalidateQueries({ queryKey: ['group-listings'] });
+            queryClient.invalidateQueries({ queryKey: ['group-requirements'] });
           }}
         />
       )}

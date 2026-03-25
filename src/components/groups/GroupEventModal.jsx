@@ -65,34 +65,36 @@ export default function GroupEventModal({ groupId, onClose, onSuccess, existingE
   const canSubmit = form.title.trim() && form.start_datetime;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl my-8">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">
+    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ backdropFilter: 'blur(4px)' }}>
+      <div className="rounded-2xl shadow-2xl w-full max-w-xl my-8" style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <div className="flex items-center justify-between p-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <h2 className="text-xl font-bold" style={{ color: 'white' }}>
             {existingEvent ? 'Edit Event' : 'Create Event'}
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onClose} className="p-2 rounded-lg" style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            <X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.6)' }} />
           </button>
         </div>
 
         <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
           {/* Basic Details */}
           <div className="space-y-1.5">
-            <Label>Event Title <span className="text-red-500">*</span></Label>
-            <Input value={form.title} onChange={e => update({ title: e.target.value })} placeholder="e.g. Q2 Networking Mixer" />
+            <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Event Title <span className="text-red-400">*</span></Label>
+            <Input value={form.title} onChange={e => update({ title: e.target.value })} placeholder="e.g. Q2 Networking Mixer" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Event Type</Label>
+            <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Event Type</Label>
             <div className="grid grid-cols-3 gap-2">
               {EVENT_TYPES.map(opt => (
                 <button key={opt.value} type="button" onClick={() => update({ event_type: opt.value })}
                   className="py-2 px-2 rounded-lg border-2 text-xs font-medium transition-all text-center"
                   style={{
-                    borderColor: form.event_type === opt.value ? 'var(--tiffany-blue)' : '#e5e7eb',
-                    backgroundColor: form.event_type === opt.value ? '#e6f7f5' : 'white',
-                    color: form.event_type === opt.value ? '#3A8A82' : '#6b7280',
+                    borderColor: form.event_type === opt.value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.12)',
+                    backgroundColor: form.event_type === opt.value ? 'rgba(0,219,197,0.12)' : 'rgba(255,255,255,0.04)',
+                    color: form.event_type === opt.value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.6)',
                   }}>
                   {opt.label}
                 </button>
@@ -101,34 +103,34 @@ export default function GroupEventModal({ groupId, onClose, onSuccess, existingE
           </div>
 
           <div className="space-y-1.5">
-            <Label>Description</Label>
+            <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Description</Label>
             <textarea value={form.description} onChange={e => update({ description: e.target.value })}
               placeholder="Describe the event, agenda, what to expect..."
               rows={3}
-              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+              style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '8px 12px', color: 'white', fontSize: '14px', resize: 'none', outline: 'none' }}
             />
           </div>
 
           {/* Date & Time */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Start Date & Time <span className="text-red-500">*</span></Label>
-              <Input type="datetime-local" value={form.start_datetime} onChange={e => update({ start_datetime: e.target.value })} />
+              <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Start Date & Time <span className="text-red-400">*</span></Label>
+              <Input type="datetime-local" value={form.start_datetime} onChange={e => update({ start_datetime: e.target.value })} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
             </div>
             <div className="space-y-1.5">
-              <Label>End Date & Time</Label>
-              <Input type="datetime-local" value={form.end_datetime} onChange={e => update({ end_datetime: e.target.value })} />
+              <Label style={{ color: 'rgba(255,255,255,0.7)' }}>End Date & Time</Label>
+              <Input type="datetime-local" value={form.end_datetime} onChange={e => update({ end_datetime: e.target.value })} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Timezone</Label>
-            <Input value={form.timezone} onChange={e => update({ timezone: e.target.value })} placeholder="e.g. America/Detroit" />
+            <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Timezone</Label>
+            <Input value={form.timezone} onChange={e => update({ timezone: e.target.value })} placeholder="e.g. America/Detroit" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
           </div>
 
           {/* Location */}
           <div className="space-y-1.5">
-            <Label>Address</Label>
+            <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Address</Label>
             <AddressAutocomplete
               value={form.address}
               onChange={({ address }) => update({ address })}
@@ -137,58 +139,60 @@ export default function GroupEventModal({ groupId, onClose, onSuccess, existingE
           </div>
 
           <div className="space-y-1.5">
-            <Label className="flex items-center gap-1.5"><Video className="w-3.5 h-3.5" /> Virtual Link <span className="text-gray-400 font-normal">(optional)</span></Label>
+            <Label className="flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.7)' }}><Video className="w-3.5 h-3.5" /> Virtual Link <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>(optional)</span></Label>
             <Input
               value={form.online_link}
               onChange={e => update({ online_link: e.target.value })}
               placeholder="Zoom, Google Meet, Teams link..."
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
             />
           </div>
 
           {/* Attendance */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Max Attendees</Label>
-              <Input type="number" value={form.max_attendees} onChange={e => update({ max_attendees: e.target.value })} placeholder="Unlimited" />
+              <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Max Attendees</Label>
+              <Input type="number" value={form.max_attendees} onChange={e => update({ max_attendees: e.target.value })} placeholder="Unlimited" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
             </div>
             <div className="space-y-1.5">
-              <Label>Contact Email</Label>
-              <Input type="email" value={form.contact_email} onChange={e => update({ contact_email: e.target.value })} placeholder="event@example.com" />
+              <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Contact Email</Label>
+              <Input type="email" value={form.contact_email} onChange={e => update({ contact_email: e.target.value })} placeholder="event@example.com" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
             </div>
           </div>
 
           {/* Toggles */}
-          <div className="rounded-xl border divide-y">
+          <div className="rounded-xl divide-y" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
             <ToggleRow label="RSVP Required" value={form.rsvp_required} onChange={v => update({ rsvp_required: v })} />
             <ToggleRow label="Allow +1 Guests" value={form.allow_guests} onChange={v => update({ allow_guests: v })} />
           </div>
 
           {form.rsvp_required && (
             <div className="space-y-1.5">
-              <Label>RSVP Deadline</Label>
-              <Input type="date" value={form.rsvp_deadline} onChange={e => update({ rsvp_deadline: e.target.value })} />
+              <Label style={{ color: 'rgba(255,255,255,0.7)' }}>RSVP Deadline</Label>
+              <Input type="date" value={form.rsvp_deadline} onChange={e => update({ rsvp_deadline: e.target.value })} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
             </div>
           )}
 
           {/* Co-hosts */}
           <div className="space-y-1.5">
-            <Label className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Co-hosts</Label>
+            <Label className="flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.7)' }}><Users className="w-3.5 h-3.5" /> Co-hosts</Label>
             <Input
               value={form.cohosts}
               onChange={e => update({ cohosts: e.target.value })}
               placeholder="Enter co-host emails, comma-separated"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
             />
-            <p className="text-xs text-gray-400">e.g. jane@realty.com, bob@broker.com</p>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>e.g. jane@realty.com, bob@broker.com</p>
           </div>
         </div>
 
-        <div className="p-6 border-t flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <div className="p-6 flex justify-end gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <Button variant="outline" onClick={onClose} style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)' }}>Cancel</Button>
           <Button
             onClick={() => mutation.mutate(form)}
             disabled={!canSubmit || mutation.isPending}
-            className="text-white gap-2"
-            style={{ backgroundColor: 'var(--tiffany-blue)' }}
+            className="gap-2"
+            style={{ backgroundColor: 'var(--tiffany-blue)', color: '#111827' }}
           >
             {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
             {existingEvent ? 'Save Changes' : 'Create Event'}
@@ -202,7 +206,7 @@ export default function GroupEventModal({ groupId, onClose, onSuccess, existingE
 function ToggleRow({ label, value, onChange }) {
   return (
     <div className="flex items-center justify-between px-4 py-3">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.7)' }}>{label}</span>
       <button
         type="button"
         onClick={() => onChange(!value)}
