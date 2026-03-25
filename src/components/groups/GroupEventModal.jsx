@@ -54,7 +54,15 @@ export default function GroupEventModal({ groupId, onClose, onSuccess, existingE
   const mutation = useMutation({
     mutationFn: (data) => {
       const payload = { ...data };
-      if (payload.max_attendees) payload.max_attendees = parseInt(payload.max_attendees);
+      if (payload.max_attendees) {
+        payload.max_attendees = parseInt(payload.max_attendees);
+      } else {
+        delete payload.max_attendees;
+      }
+      // Remove empty optional string fields to avoid validation errors
+      ['rsvp_deadline', 'online_link', 'address', 'cohosts', 'contact_email', 'end_datetime'].forEach(k => {
+        if (payload[k] === '') delete payload[k];
+      });
       return existingEvent
         ? base44.entities.GroupEvent.update(existingEvent.id, payload)
         : base44.entities.GroupEvent.create(payload);
