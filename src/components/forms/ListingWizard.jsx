@@ -110,15 +110,15 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
             {step === 2 && category === 'residential' && <ListStep2Residential data={formData} update={update} onNext={next} />}
             {step === 3 && (
               <>
+                <ListStep3ContactSubmit data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />
                 {submitError && (
-                  <div className="mb-4 rounded-xl px-4 py-3" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>
+                  <div className="mt-4 rounded-xl px-4 py-3" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>
                     <p className="text-sm font-semibold mb-1" style={{ color: '#f87171' }}>Please fix the following before submitting:</p>
                     {submitError.split('\n').map((e, i) => (
                       <p key={i} className="text-sm" style={{ color: '#fca5a5' }}>• {e}</p>
                     ))}
                   </div>
                 )}
-                <ListStep3ContactSubmit data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />
               </>
             )}
           </div>
