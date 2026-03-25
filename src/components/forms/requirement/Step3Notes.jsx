@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Check, Loader2, ChevronDown, Bookmark } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import SaveTemplateModal from '@/components/templates/SaveTemplateModal';
-
-const AMENITIES = [
-  'Elevator', 'ADA Compliant', 'High Speed Internet', 'Generator', 'Storage',
-  'Rooftop Access', 'Security System', '24/7 Access', 'Loading Dock', 'HVAC',
-  'Kitchenette', 'Gym', 'Parking', 'EV Charging', 'Fiber Optic'
-];
 
 const VISIBILITY_OPTIONS = [
   { value: 'public', label: 'Public', desc: 'Visible to all users on PropMatch' },
@@ -73,11 +66,6 @@ export default function ReqStep3({ data, update, onSubmit, isLoading }) {
     enabled: !!currentUserEmail,
   });
 
-  const toggle = (a) => {
-    const cur = data.required_amenities || [];
-    update({ required_amenities: cur.includes(a) ? cur.filter(x => x !== a) : [...cur, a] });
-  };
-
   const filteredGroups = userGroups.filter(g =>
     g.name.toLowerCase().includes(groupSearchInput.toLowerCase())
   );
@@ -100,28 +88,6 @@ export default function ReqStep3({ data, update, onSubmit, isLoading }) {
 
   return (
     <div className="space-y-6" onClick={e => e.stopPropagation()}>
-      {/* Amenities */}
-      <SectionTitle>Must-Have Amenities</SectionTitle>
-      <div className="flex flex-wrap gap-2">
-        {AMENITIES.map(a => {
-          const sel = (data.required_amenities || []).includes(a);
-          return (
-            <button key={a} type="button" onClick={() => toggle(a)}
-              className="px-3 py-1.5 rounded-full text-sm border-2 transition-all"
-              style={{ borderColor: sel ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)', backgroundColor: sel ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)', color: sel ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)' }}>
-              {a}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Notes */}
-      <Field label="Additional Notes">
-        <Textarea value={data.notes || ''} onChange={e => update({ notes: e.target.value })}
-          placeholder="Any deal-breakers, special requirements, or context about the client..." rows={3}
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
-      </Field>
-
       {/* Contact Info */}
       <SectionTitle>Contact Information</SectionTitle>
       <div className="grid grid-cols-2 gap-4">

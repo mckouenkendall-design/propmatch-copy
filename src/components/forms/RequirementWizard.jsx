@@ -10,7 +10,7 @@ import ReqStep2Commercial from './requirement/Step2CommercialDetails';
 import ReqStep2Residential from './requirement/Step2ResidentialDetails';
 import ReqStep3 from './requirement/Step3Notes';
 
-const STEPS = ['General', 'Details', 'Notes & Submit'];
+const STEPS = ['General', 'Details', 'Post'];
 
 export default function RequirementWizard({ category, onClose, onSuccess, initialData }) {
   const { user } = useAuth();
