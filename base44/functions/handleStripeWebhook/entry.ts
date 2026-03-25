@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
   try {
     console.log('Stripe webhook event:', event.type);
 
+    // ── Checkout completed — activate plan ──────────────────────────────────
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       const plan = session.metadata && session.metadata.plan;
@@ -91,9 +92,85 @@ Deno.serve(async (req) => {
         stripe_customer_id: String(customerId || ''),
       });
 
-      console.log('Updated plan for', customerEmail, '→', plan);
+      console.log('Activated plan for', customerEmail, '→', plan);
     }
 
+    // ── Invoice upcoming — renewal/expiry notifications ─────────────────────
+    // Stripe sends this event based on your reminder settings in the dashboard.
+    // Set to 30 days for annual, 7 days for monthly in Stripe Settings → Billing.
+    else if (event.type === 'invoice.upcoming') {
+      const invoice = event.data.object;
+      const customerId = String(invoice.customer || '');
+      const subscriptionId = invoice.subscription;
+
+      const profiles = await base44.asServiceRole.entities.UserProfile.list();
+      const profile = profiles.find(p => p.stripe_customer_id === customerId);
+      if (!profile) {
+        return Response.json({ received: true });
+      }
+
+      // Skip broker_sponsored — their billing is managed by the broker
+      if (profile.selected_plan === 'broker_sponsored') {
+        return Response.json({ received: true });
+      }
+
+      // Fetch subscription to determine billing interval
+      let billingInterval = 'month';
+      let renewalAmount = '';
+      if (subscriptionId) {
+        const subscription = await stripeGet(`/subscriptions/${subscriptionId}`);
+        if (subscription.items && subscription.items.data && subscription.items.data[0]) {
+          const item = subscription.items.data[0];
+          billingInterval = item.price && item.price.recurring && item.price.recurring.interval || 'month';
+          // Format the upcoming amount
+          const amount = invoice.amount_due;
+          if (amount) {
+            renewalAmount = `$${(amount / 100).toFixed(2)}`;
+          }
+        }
+      }
+
+      const isAnnual = billingInterval === 'year';
+      const autoRenew = profile.auto_renew !== false; // default true if not set
+      const daysOut = isAnnual ? 30 : 7;
+
+      let title = '';
+      let body = '';
+
+      if (autoRenew) {
+        // Auto-renew is ON — warn about upcoming charge
+        if (isAnnual) {
+          title = 'Your annual plan renews in 30 days';
+          body = `Your PropMatch annual plan will automatically renew in 30 days${renewalAmount ? ` for ${renewalAmount}` : ''}. To cancel or make changes, go to Settings before your renewal date.`;
+        } else {
+          title = 'Your monthly plan renews in 7 days';
+          body = `Your PropMatch monthly plan will automatically renew in 7 days${renewalAmount ? ` for ${renewalAmount}` : ''}. To cancel or make changes, go to Settings.`;
+        }
+      } else {
+        // Auto-renew is OFF — warn about upcoming expiry
+        if (isAnnual) {
+          title = 'Your annual plan expires in 30 days';
+          body = `Your PropMatch annual plan expires in 30 days and will not renew automatically. Turn on auto-renew in Settings to keep your access uninterrupted.`;
+        } else {
+          title = 'Your monthly plan expires in 7 days';
+          body = `Your PropMatch monthly plan expires in 7 days and will not renew automatically. Turn on auto-renew in Settings to keep your access.`;
+        }
+      }
+
+      await base44.asServiceRole.entities.Notification.create({
+        user_email: profile.user_email,
+        type: 'subscription',
+        title,
+        body,
+        link: '/Settings',
+        read: false,
+        related_id: profile.id || '',
+      });
+
+      console.log('Sent renewal notification to', profile.user_email, '— isAnnual:', isAnnual, '— autoRenew:', autoRenew);
+    }
+
+    // ── Payment failed — grace period ───────────────────────────────────────
     else if (event.type === 'invoice.payment_failed') {
       const invoice = event.data.object;
       const customerId = String(invoice.customer || '');
@@ -122,7 +199,7 @@ Deno.serve(async (req) => {
               user_email: agentProfile.user_email,
               type: 'subscription',
               title: "Your broker's plan has a payment issue",
-              body: `Your broker's PropMatch plan has a payment problem. You have 7 days of full access. Activate your own plan in Settings to avoid interruption — your banked days will apply.`,
+              body: `Your broker's PropMatch plan has a payment problem. You have 7 days of full access remaining. Activate your own plan in Settings to avoid interruption — your banked days will apply as a credit.`,
               link: '/Settings',
               read: false,
               related_id: profile.id || '',
@@ -145,6 +222,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Subscription cancelled ──────────────────────────────────────────────
     else if (event.type === 'customer.subscription.deleted') {
       const subscription = event.data.object;
       const customerId = String(subscription.customer || '');
@@ -155,6 +233,7 @@ Deno.serve(async (req) => {
         return Response.json({ received: true });
       }
 
+      // selected_plan change triggers onSubscriptionChanged notification
       await base44.asServiceRole.entities.UserProfile.update(profile.id, {
         selected_plan: 'free',
         subscription_status: 'expired',
@@ -162,6 +241,7 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Subscription renewed successfully ───────────────────────────────────
     else if (event.type === 'invoice.paid') {
       const invoice = event.data.object;
       if (invoice.billing_reason !== 'subscription_cycle') {
