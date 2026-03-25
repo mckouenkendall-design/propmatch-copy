@@ -12,9 +12,33 @@ import ReqStep3 from './requirement/Step3Notes';
 
 const STEPS = ['General', 'Details', 'Post'];
 
+const generateTitle = (data) => {
+  const txMap = { lease: 'Lease', purchase: 'Purchase', rent: 'Rent' };
+  const typeMap = {
+    office: 'Office Space', medical_office: 'Medical Office Space', retail: 'Retail Space',
+    industrial_flex: 'Industrial/Flex Space', land: 'Land', special_use: 'Special Use Property',
+    single_family: 'Single Family Home', condo: 'Condo', apartment: 'Apartment',
+    multi_family: 'Multi-Family Property', multi_family_5: 'Multi-Family (5+) Property',
+    townhouse: 'Townhouse', manufactured: 'Manufactured Home', land_residential: 'Residential Land',
+  };
+  const tx = txMap[data.transaction_type] || data.transaction_type;
+  const type = typeMap[data.property_type] || data.property_type;
+  const cityStr = (data.cities || []).slice(0, 2).join(', ');
+  return `Client looking to ${tx} ${type}${cityStr ? ` in ${cityStr}` : ''}`;
+};
+
+const validate = (data) => {
+  const errors = [];
+  if (!data.property_type) errors.push('Property type is required (Step 1)');
+  if (!data.transaction_type) errors.push('Transaction type is required (Step 1)');
+  if (!data.max_price) errors.push('Max price / budget is required (Step 1)');
+  return errors;
+};
+
 export default function RequirementWizard({ category, onClose, onSuccess, initialData }) {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
+  const [submitError, setSubmitError] = useState(null);
   const [formData, setFormData] = useState(initialData || {
     property_category: category,
     title: '',
@@ -42,29 +66,14 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     brokerage_id: user?.employing_broker_id || '',
   });
 
-  const generateTitle = (data) => {
-    const txMap = { lease: 'Lease', purchase: 'Purchase', rent: 'Rent' };
-    const typeMap = {
-      office: 'Office Space', medical_office: 'Medical Office Space', retail: 'Retail Space',
-      industrial_flex: 'Industrial/Flex Space', land: 'Land', special_use: 'Special Use Property',
-      single_family: 'Single Family Home', condo: 'Condo', apartment: 'Apartment',
-      multi_family: 'Multi-Family Property', multi_family_5: 'Multi-Family (5+) Property',
-      townhouse: 'Townhouse', manufactured: 'Manufactured Home', land_residential: 'Residential Land',
-    };
-    const tx = txMap[data.transaction_type] || data.transaction_type;
-    const type = typeMap[data.property_type] || data.property_type;
-    const cityStr = (data.cities || []).slice(0, 2).join(', ');
-    return `Client looking to ${tx} ${type}${cityStr ? ` in ${cityStr}` : ''}`;
-  };
-
   const mutation = useMutation({
     mutationFn: (data) => {
-      const submitData = {
-        ...data,
-        title: generateTitle(data),
-        property_details: JSON.stringify(data.property_details || {}),
-        area_map_data: JSON.stringify(data.mapAreas || []),
-      };
+      const errors = validate(data);
+      if (errors.length > 0) throw new Error(errors.join('\n'));
+      const submitData = { ...data };
+      submitData.title = generateTitle(data);
+      submitData.property_details = JSON.stringify(data.property_details || {});
+      submitData.area_map_data = JSON.stringify(data.mapAreas || []);
       delete submitData.mapAreas;
       if (submitData.min_price) submitData.min_price = parseFloat(submitData.min_price);
       if (submitData.max_price) submitData.max_price = parseFloat(submitData.max_price);
@@ -72,7 +81,8 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
       if (submitData.max_size_sqft) submitData.max_size_sqft = parseFloat(submitData.max_size_sqft);
       return base44.entities.Requirement.create(submitData);
     },
-    onSuccess
+    onSuccess: (...args) => { setSubmitError(null); onSuccess?.(...args); },
+    onError: (err) => setSubmitError(err.message || 'Something went wrong. Please try again.'),
   });
 
   const update = (patch) => setFormData(prev => ({ ...prev, ...patch }));
@@ -100,7 +110,19 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
             {step === 1 && <ReqStep1 data={formData} update={update} onNext={next} />}
             {step === 2 && category === 'commercial' && <ReqStep2Commercial data={formData} update={update} onNext={next} />}
             {step === 2 && category === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
-            {step === 3 && <ReqStep3 data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />}
+            {step === 3 && (
+              <>
+                {submitError && (
+                  <div className="mb-4 rounded-xl px-4 py-3" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: '#f87171' }}>Please fix the following before submitting:</p>
+                    {submitError.split('\n').map((e, i) => (
+                      <p key={i} className="text-sm" style={{ color: '#fca5a5' }}>• {e}</p>
+                    ))}
+                  </div>
+                )}
+                <ReqStep3 data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />
+              </>
+            )}
           </div>
           {step === 2 && (
             <div className="px-6 pb-4 text-left">

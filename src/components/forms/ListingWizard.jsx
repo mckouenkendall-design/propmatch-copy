@@ -12,9 +12,19 @@ import ListStep3ContactSubmit from './listing/Step3ContactSubmit';
 
 const STEPS = ['Property', 'Details', 'Post'];
 
+const validateListing = (data) => {
+  const errors = [];
+  if (!data.property_type) errors.push('Property type is required (Step 1)');
+  if (!data.transaction_type) errors.push('Transaction type is required (Step 1)');
+  if (!data.city) errors.push('City is required (Step 1)');
+  if (!data.price) errors.push('Price is required (Step 1)');
+  return errors;
+};
+
 export default function ListingWizard({ category, onClose, onSuccess, initialData }) {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
+  const [submitError, setSubmitError] = useState(null);
   const [formData, setFormData] = useState(initialData || {
     property_category: category,
     title: '',
@@ -45,6 +55,8 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
 
   const mutation = useMutation({
     mutationFn: (data) => {
+      const errors = validateListing(data);
+      if (errors.length > 0) throw new Error(errors.join('\n'));
       const submitData = {
         ...data,
         property_details: JSON.stringify(data.property_details || {}),
@@ -67,7 +79,8 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       if (submitData.size_sqft) submitData.size_sqft = parseFloat(submitData.size_sqft);
       return base44.entities.Listing.create(submitData);
     },
-    onSuccess
+    onSuccess: (...args) => { setSubmitError(null); onSuccess?.(...args); },
+    onError: (err) => setSubmitError(err.message || 'Something went wrong. Please try again.'),
   });
 
   const update = (patch) => setFormData(prev => ({ ...prev, ...patch }));
@@ -95,7 +108,19 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
             {step === 1 && <ListStep1 data={formData} update={update} onNext={next} />}
             {step === 2 && category === 'commercial' && <ListStep2Commercial data={formData} update={update} onNext={next} />}
             {step === 2 && category === 'residential' && <ListStep2Residential data={formData} update={update} onNext={next} />}
-            {step === 3 && <ListStep3ContactSubmit data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />}
+            {step === 3 && (
+              <>
+                {submitError && (
+                  <div className="mb-4 rounded-xl px-4 py-3" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: '#f87171' }}>Please fix the following before submitting:</p>
+                    {submitError.split('\n').map((e, i) => (
+                      <p key={i} className="text-sm" style={{ color: '#fca5a5' }}>• {e}</p>
+                    ))}
+                  </div>
+                )}
+                <ListStep3ContactSubmit data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />
+              </>
+            )}
           </div>
         </div>
       </div>
