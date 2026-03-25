@@ -56,6 +56,7 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
   const [loading, setLoading] = useState(false);
   const [rosterCheck, setRosterCheck] = useState(null);
   const [checkingRoster, setCheckingRoster] = useState(true);
+  const [autoRenewAcknowledged, setAutoRenewAcknowledged] = useState(false);
 
   // ── Roster verification ──────────────────────────────────────────────────
   // Matches on employing_broker_id (from UserProfile) + license_number (from UserProfile)
@@ -431,25 +432,63 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
             </div>
           </div>
 
+          {/* Auto-renew acknowledgment — only shown for paid plans */}
+          {selected && selected !== 'free' && selected !== 'broker_sponsored' && (
+            <div style={{ maxWidth: '560px', margin: '0 auto 24px', padding: '16px 20px', background: 'rgba(0,219,197,0.04)', border: `1px solid ${autoRenewAcknowledged ? ACCENT : 'rgba(255,255,255,0.1)'}`, borderRadius: '10px', transition: 'border-color 0.2s' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', cursor: 'pointer' }}>
+                {/* Custom checkbox */}
+                <div
+                  onClick={() => setAutoRenewAcknowledged(!autoRenewAcknowledged)}
+                  style={{
+                    width: '20px', height: '20px', borderRadius: '5px', flexShrink: 0, marginTop: '1px',
+                    border: `2px solid ${autoRenewAcknowledged ? ACCENT : 'rgba(255,255,255,0.25)'}`,
+                    background: autoRenewAcknowledged ? ACCENT : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.15s',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {autoRenewAcknowledged && (
+                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="2 7 5.5 10.5 12 3.5" />
+                    </svg>
+                  )}
+                </div>
+                <p
+                  onClick={() => setAutoRenewAcknowledged(!autoRenewAcknowledged)}
+                  style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.6, margin: 0 }}
+                >
+                  I understand my subscription will <strong style={{ color: 'white' }}>auto-renew</strong> at the end of each billing period. I can turn off auto-renew or cancel at any time in Settings.
+                </p>
+              </label>
+            </div>
+          )}
+
           {/* Continue button */}
           <div style={{ textAlign: 'center' }}>
-            <button
-              onClick={handleContinue}
-              disabled={!selected || loading}
-              style={{
-                fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500,
-                textTransform: 'uppercase', letterSpacing: '0.05em',
-                color: (selected && !loading) ? '#111827' : 'rgba(255,255,255,0.2)',
-                background: (selected && !loading) ? ACCENT : 'rgba(255,255,255,0.06)',
-                border: 'none', borderRadius: '6px', padding: '14px 40px',
-                cursor: (selected && !loading) ? 'pointer' : 'not-allowed',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              {getContinueLabel()}
-            </button>
+            {(() => {
+              const needsAck = selected && selected !== 'free' && selected !== 'broker_sponsored';
+              const canProceed = selected && !loading && (!needsAck || autoRenewAcknowledged);
+              return (
+                <button
+                  onClick={handleContinue}
+                  disabled={!canProceed}
+                  style={{
+                    fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500,
+                    textTransform: 'uppercase', letterSpacing: '0.05em',
+                    color: canProceed ? '#111827' : 'rgba(255,255,255,0.2)',
+                    background: canProceed ? ACCENT : 'rgba(255,255,255,0.06)',
+                    border: 'none', borderRadius: '6px', padding: '14px 40px',
+                    cursor: canProceed ? 'pointer' : 'not-allowed',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {getContinueLabel()}
+                </button>
+              );
+            })()}
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.2)', marginTop: '12px' }}>
-              You can upgrade or change your plan at any time.
+              You can upgrade, downgrade, or cancel at any time.
             </p>
           </div>
         </div>
