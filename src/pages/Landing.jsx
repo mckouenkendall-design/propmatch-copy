@@ -12,7 +12,7 @@ import LandingFooter from '../components/landing/LandingFooter';
 
 export default function Landing() {
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", overflowX: 'hidden', background: '#FFFFFF' }}>
+    <div className="light-page" style={{ fontFamily: "'Inter', sans-serif", overflowX: 'hidden', background: '#FFFFFF' }}>
       <LandingNav />
       <HeroSection />
       <ProblemSolution />
