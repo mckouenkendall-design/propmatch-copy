@@ -40,6 +40,7 @@ function AddAgentModal({ broker, onClose, onSuccess }) {
   const addAgent = async () => {
     setLoading(true);
     try {
+      // Check if already on roster
       const existing = await base44.entities.BrokerageRoster.list();
       const alreadyAdded = existing.find(r =>
         r.employing_broker_number === broker.employing_broker_id &&
@@ -52,6 +53,7 @@ function AddAgentModal({ broker, onClose, onSuccess }) {
         return;
       }
 
+      // Create roster entry
       await base44.entities.BrokerageRoster.create({
         broker_email: broker.contact_email || broker.email,
         broker_name: broker.full_name || '',
@@ -63,31 +65,22 @@ function AddAgentModal({ broker, onClose, onSuccess }) {
         status: 'active',
       });
 
-      // If agent already on PropMatch — update their plan to broker_sponsored.
-      // NOTE: No manual createNotification here — onSubscriptionChanged trigger fires
-      // automatically when selected_plan changes and sends the right notification.
+      // If agent already exists on PropMatch — call pauseSubscription
+      // This handles Stripe pause + banked days calculation + UserProfile update
+      // + notification (via onSubscriptionChanged trigger)
       if (found && found !== 'not_found') {
-        const now = new Date().toISOString();
-        // Calculate banked days if they had a paid individual plan
-        let bankedDays = found.banked_days || 0;
-        if (found.selected_plan === 'individual' && found.subscription_status === 'active') {
-          // Store current date as pause date; banked_days calculated at resume time
-          // For now just mark it as paused — full banked days logic requires Stripe data
-          bankedDays = found.banked_days || 0;
-        }
-
-        await base44.entities.UserProfile.update(found.id, {
-          selected_plan: 'broker_sponsored',
-          subscription_status: 'paused',
-          individual_plan_paused_date: now,
-          banked_days: bankedDays,
+        await base44.functions.invoke('pauseSubscription', {
+          agent_user_email: found.user_email,
         });
-        // onSubscriptionChanged fires here and sends the agent their notification
       }
 
       queryClient.invalidateQueries({ queryKey: ['broker-roster'] });
       queryClient.invalidateQueries({ queryKey: ['all-user-profiles'] });
-      toast({ title: found && found !== 'not_found' ? `${found.full_name} added successfully` : 'Seat added — pending agent signup' });
+      toast({
+        title: found && found !== 'not_found'
+          ? `${found.full_name} added — they've been notified`
+          : 'Seat added — pending agent signup',
+      });
       onSuccess();
     } catch (e) {
       console.error(e);
@@ -110,7 +103,7 @@ function AddAgentModal({ broker, onClose, onSuccess }) {
         </div>
 
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: '0 0 20px', lineHeight: 1.6 }}>
-          Enter the agent's License No. The system will verify they are licensed under your employing broker number. If they are already on PropMatch they will be notified automatically.
+          Enter the agent's License No. The system will verify they are licensed under your employing broker number. If they're already on PropMatch, their plan will be paused and they'll be notified automatically.
         </p>
 
         <div style={{ marginBottom: '16px' }}>
@@ -140,12 +133,17 @@ function AddAgentModal({ broker, onClose, onSuccess }) {
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: '0 0 8px', fontWeight: 600 }}>✓ Agent Found on PropMatch</p>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 600, color: 'white', margin: '0 0 4px' }}>{found.full_name}</p>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>{found.contact_email || found.user_email}</p>
+            {found.selected_plan === 'individual' && (
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#FBB936', margin: '8px 0 0' }}>
+                ⚠ This agent has an active individual plan. Adding them will pause it and bank their remaining days.
+              </p>
+            )}
           </div>
         )}
         {found === 'not_found' && (
           <div style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#FBB936', margin: 0, lineHeight: 1.6 }}>
-              No PropMatch account found with this license number under your brokerage. The seat will be added as pending — it activates when they complete onboarding.
+              No PropMatch account found with this license number. The seat will be added as pending — it activates automatically when they complete onboarding.
             </p>
           </div>
         )}
@@ -219,7 +217,10 @@ function AgentRow({ profile, rosterEntry, onMessage, onRemove }) {
           >
             Remove
           </button>
-          {expanded ? <ChevronUp style={{ width: '16px', height: '16px', color: 'rgba(255,255,255,0.4)' }} /> : <ChevronDown style={{ width: '16px', height: '16px', color: 'rgba(255,255,255,0.4)' }} />}
+          {expanded
+            ? <ChevronUp style={{ width: '16px', height: '16px', color: 'rgba(255,255,255,0.4)' }} />
+            : <ChevronDown style={{ width: '16px', height: '16px', color: 'rgba(255,255,255,0.4)' }} />
+          }
         </div>
       </div>
 
@@ -297,36 +298,34 @@ export default function BrokerDashboard() {
 
   const brokerProfile = allProfiles.find(p => p.user_email === user?.email);
   const totalSeats = user?.brokerage_seats || 2;
-  const usedSeats = agentProfiles.length + 1;
+  const usedSeats = agentProfiles.length + 1; // +1 for broker themselves
 
   const removeMutation = useMutation({
     mutationFn: async ({ entry, profile }) => {
+      // Mark roster entry as inactive
       await base44.entities.BrokerageRoster.update(entry.id, { status: 'inactive' });
 
-      if (profile) {
-        const bankedDays = profile.banked_days || 0;
-        const newExpiry = new Date();
-        newExpiry.setDate(newExpiry.getDate() + bankedDays);
-
-        // Update agent's plan — this triggers onSubscriptionChanged which sends notification
-        await base44.entities.UserProfile.update(profile.id, {
-          selected_plan: bankedDays > 0 ? 'individual' : 'free',
-          subscription_status: bankedDays > 0 ? 'active' : 'expired',
-          banked_days: 0,
+      if (profile?.user_email) {
+        // Call resumeSubscription — handles Stripe resume + banked days + UserProfile update
+        // + notification (via onSubscriptionChanged trigger when selected_plan changes)
+        await base44.functions.invoke('resumeSubscription', {
+          agent_user_email: profile.user_email,
         });
-        // NOTE: No manual createNotification — onSubscriptionChanged handles it
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['broker-roster'] });
       queryClient.invalidateQueries({ queryKey: ['all-user-profiles'] });
-      toast({ title: 'Agent removed from roster' });
+      toast({ title: 'Agent removed — their subscription has been restored' });
     },
-    onError: () => toast({ title: 'Failed to remove agent', variant: 'destructive' }),
+    onError: (e) => {
+      console.error(e);
+      toast({ title: 'Failed to remove agent', variant: 'destructive' });
+    },
   });
 
   const handleRemove = (entry, profile) => {
-    if (!confirm('Remove this agent from your plan? Their banked days will be restored.')) return;
+    if (!confirm('Remove this agent from your plan? Their banked subscription days will be restored automatically.')) return;
     removeMutation.mutate({ entry, profile });
   };
 
@@ -363,9 +362,9 @@ export default function BrokerDashboard() {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '40px' }}>
         {[
-          { icon: Users, label: 'Agents on Plan', value: usedSeats, sub: `${totalSeats - usedSeats} seats available` },
-          { icon: Building2, label: 'Active Agent Seats', value: agentProfiles.length, sub: 'Excluding you' },
-          { icon: Activity, label: 'Pending Seats', value: pendingEntries.length, sub: 'Awaiting agent signup' },
+          { icon: Users, label: 'Total Seats', value: totalSeats, sub: `${totalSeats - usedSeats} available` },
+          { icon: Building2, label: 'Active Agents', value: agentProfiles.length, sub: 'Excluding you' },
+          { icon: Activity, label: 'Pending Seats', value: pendingEntries.length, sub: 'Awaiting signup' },
         ].map(stat => (
           <Card key={stat.label} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <CardContent style={{ padding: '20px' }}>
@@ -386,7 +385,7 @@ export default function BrokerDashboard() {
           Roster
         </h2>
 
-        {/* Broker — Seat 1, always first, read-only */}
+        {/* Broker row — Seat 1, always read-only */}
         {brokerProfile && (
           <div style={{ background: 'rgba(0,219,197,0.04)', border: `1px solid ${ACCENT}20`, borderRadius: '10px', padding: '16px 20px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 600, color: '#111827', flexShrink: 0 }}>
@@ -397,7 +396,9 @@ export default function BrokerDashboard() {
                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 600, color: 'white', margin: 0 }}>
                   {brokerProfile.full_name || user?.email}
                 </p>
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: ACCENT, background: 'rgba(0,219,197,0.1)', border: `1px solid ${ACCENT}30`, borderRadius: '4px', padding: '2px 8px' }}>Principal Broker</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: ACCENT, background: 'rgba(0,219,197,0.1)', border: `1px solid ${ACCENT}30`, borderRadius: '4px', padding: '2px 8px' }}>
+                  Principal Broker
+                </span>
               </div>
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 {brokerProfile.username && <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT }}>@{brokerProfile.username}</span>}
@@ -432,6 +433,7 @@ export default function BrokerDashboard() {
               />
             ))}
 
+            {/* Pending seats */}
             {pendingEntries.length > 0 && (
               <div style={{ marginTop: '24px' }}>
                 <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px' }}>
