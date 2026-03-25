@@ -50,53 +50,60 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isAnnual, setIsAnnual] = useState(false);
-  const [agentCount, setAgentCount] = useState(isBroker ? 2 : 2);
+  const [agentCount, setAgentCount] = useState(2);
   const [agentInput, setAgentInput] = useState('2');
   const [selected, setSelected] = useState(isBroker ? 'brokerage' : null);
   const [loading, setLoading] = useState(false);
   const [rosterCheck, setRosterCheck] = useState(null);
   const [checkingRoster, setCheckingRoster] = useState(true);
 
-  // Check if user is on a broker's roster
+  // ── Roster verification ──────────────────────────────────────────────────
+  // Matches on employing_broker_id (from UserProfile) + license_number (from UserProfile)
+  // NOT email — the broker adds agents by license number, not email
   useEffect(() => {
     async function checkRoster() {
-      if (!user?.email || !employingBrokerNumber) {
+      if (isBroker || !user?.employing_broker_id || !user?.license_number) {
+        setRosterCheck(false);
         setCheckingRoster(false);
         return;
       }
 
       try {
-        const roster = await base44.entities.BrokerageRoster.filter({
-          employing_broker_number: employingBrokerNumber,
-          agent_email: user.email.toLowerCase(),
-          status: 'active',
-        });
+        const allRoster = await base44.entities.BrokerageRoster.list();
+        const match = allRoster.find(r =>
+          r.employing_broker_number === user.employing_broker_id &&
+          r.agent_license === user.license_number &&
+          r.status === 'active'
+        );
 
-        if (roster.length > 0) {
-          setRosterCheck(roster[0]);
+        if (match) {
+          setRosterCheck(match);
+          setSelected('broker_sponsored');
+        } else {
+          setRosterCheck(false);
         }
       } catch (error) {
         console.error('Roster check error:', error);
+        setRosterCheck(false);
       } finally {
         setCheckingRoster(false);
       }
     }
 
     checkRoster();
-  }, [user?.email, employingBrokerNumber]);
+  }, [user?.employing_broker_id, user?.license_number, isBroker]);
 
+  // ── Proceed handler ──────────────────────────────────────────────────────
   const handleContinue = async () => {
     if (!selected) return;
-    
-    // If on broker's roster, bypass payment
-    if (rosterCheck && selected === 'broker_sponsored') {
+
+    if (selected === 'broker_sponsored') {
       onComplete('broker_sponsored', rosterCheck);
       return;
     }
 
-    // Free plan — skip Stripe
     if (selected === 'free') {
-      onComplete(selected);
+      onComplete('free');
       return;
     }
 
@@ -109,16 +116,24 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
       });
 
       if (response.data.checkoutUrl) {
-        // Redirect to Stripe Checkout
         window.location.href = response.data.checkoutUrl;
       } else {
-        // Free plan handled
         onComplete(selected);
       }
     } catch (error) {
       console.error('Checkout error:', error);
       setLoading(false);
     }
+  };
+
+  const getContinueLabel = () => {
+    if (loading) return 'Processing...';
+    if (!selected) return 'Select a plan to continue';
+    if (selected === 'broker_sponsored') return 'Activate Broker-Sponsored Access →';
+    if (selected === 'free') return 'Continue with Free →';
+    if (selected === 'individual') return 'Continue with Individual →';
+    if (selected === 'brokerage') return 'Continue with Brokerage →';
+    return 'Continue →';
   };
 
   const cardBase = {
@@ -134,9 +149,11 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
     if (isFeatured) {
       return {
         ...cardBase,
-        border: `2px solid ${isSelected ? '#00DBC5' : '#00DBC5'}`,
+        border: `2px solid ${ACCENT}`,
         background: isSelected ? 'rgba(0,219,197,0.07)' : 'rgba(0,219,197,0.03)',
-        boxShadow: isSelected ? '0 0 0 2px rgba(0,219,197,0.4), 0 12px 40px rgba(0,219,197,0.12)' : '0 0 0 1px #00DBC5, 0 8px 24px rgba(0,219,197,0.08)',
+        boxShadow: isSelected
+          ? '0 0 0 2px rgba(0,219,197,0.4), 0 12px 40px rgba(0,219,197,0.12)'
+          : '0 0 0 1px #00DBC5, 0 8px 24px rgba(0,219,197,0.08)',
       };
     }
     return {
@@ -146,6 +163,14 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
       boxShadow: isSelected ? '0 0 0 1px rgba(0,219,197,0.3)' : 'none',
     };
   };
+
+  const selectedCheckmark = (
+    <div style={{ position: 'absolute', top: '12px', right: '12px', width: '18px', height: '18px', borderRadius: '50%', background: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="2 7 5.5 10.5 12 3.5" />
+      </svg>
+    </div>
+  );
 
   if (checkingRoster) {
     return (
@@ -177,110 +202,79 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
         {fromSettings && (
           <button
             onClick={() => navigate('/Settings')}
-            style={{
-              marginLeft: 'auto',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '13px',
-              color: 'rgba(255,255,255,0.5)',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '6px',
-              padding: '8px 16px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-              e.currentTarget.style.color = 'rgba(255,255,255,0.8)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-              e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
-            }}
+            style={{ marginLeft: 'auto', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', padding: '8px 16px', cursor: 'pointer' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
           >
             ← Back to Settings
           </button>
         )}
       </div>
 
-      {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '48px 24px 80px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          {/* Broker-Sponsored Banner */}
+
+          {/* ── Broker-Sponsored Banner ── */}
           {rosterCheck && (
             <div style={{
-              background: `linear-gradient(135deg, rgba(0,219,197,0.15) 0%, rgba(0,219,197,0.05) 100%)`,
+              background: 'linear-gradient(135deg, rgba(0,219,197,0.15) 0%, rgba(0,219,197,0.05) 100%)',
               border: `2px solid ${ACCENT}`,
               borderRadius: '12px',
-              padding: '24px',
+              padding: '24px 28px',
               marginBottom: '32px',
-              textAlign: 'center',
             }}>
-              <h3 style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontSize: '24px',
-                fontWeight: 300,
-                color: 'white',
-                margin: '0 0 8px',
-              }}>
-                ✨ Great News!
-              </h3>
-              <p style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '15px',
-                color: 'rgba(255,255,255,0.7)',
-                margin: '0 0 16px',
-              }}>
-                Your broker at <strong style={{ color: ACCENT }}>{rosterCheck.brokerage_name}</strong> has already covered your subscription.
-              </p>
-              <button
-                onClick={() => setSelected('broker_sponsored')}
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  color: '#111827',
-                  background: ACCENT,
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '12px 32px',
-                  cursor: 'pointer',
-                }}
-              >
-                Activate Your Access →
-              </button>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '22px', fontWeight: 300, color: 'white', margin: '0 0 8px' }}>
+                    ✨ Great news — your broker has you covered
+                  </h3>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.65)', margin: '0 0 16px', lineHeight: 1.6 }}>
+                    Your license was found on <strong style={{ color: ACCENT }}>{rosterCheck.brokerage_name || 'your brokerage'}</strong>'s authorized roster.
+                    Your subscription is included under their plan at no cost to you.
+                  </p>
+                  {/* ── ACTIVATE BUTTON — calls handleContinue directly ── */}
+                  <button
+                    onClick={async () => {
+                      setSelected('broker_sponsored');
+                      await handleContinue();
+                    }}
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: '#111827',
+                      background: ACCENT,
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '12px 28px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    Activate Your Access →
+                  </button>
+                </div>
+                <div style={{ background: 'rgba(0,219,197,0.12)', border: '1px solid rgba(0,219,197,0.3)', borderRadius: '8px', padding: '10px 18px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500, color: ACCENT, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  ✓ Roster Verified
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Header */}
+          {/* ── Header ── */}
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            {isBroker && !rosterCheck && (
-              <div style={{
-                background: 'rgba(0,219,197,0.08)',
-                border: `1px solid ${ACCENT}`,
-                borderRadius: '8px',
-                padding: '16px 20px',
-                marginBottom: '24px',
-              }}>
-                <p style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  color: ACCENT,
-                  margin: 0,
-                  fontWeight: 500,
-                }}>
+            {isBroker && (
+              <div style={{ background: 'rgba(0,219,197,0.08)', border: `1px solid ${ACCENT}`, borderRadius: '8px', padding: '16px 20px', marginBottom: '24px' }}>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: ACCENT, margin: 0, fontWeight: 500 }}>
                   ✓ You selected your role as Principal Broker
                 </p>
               </div>
             )}
-            <span style={{
-              fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase',
-              letterSpacing: '0.1em', color: ACCENT, border: '1px solid rgba(0,219,197,0.4)',
-              padding: '4px 12px', borderRadius: '4px', background: 'rgba(0,219,197,0.06)',
-              display: 'inline-block', marginBottom: '20px',
-            }}>{rosterCheck ? 'Or Choose Your Own Plan' : 'Choose Your Plan'}</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: ACCENT, border: '1px solid rgba(0,219,197,0.4)', padding: '4px 12px', borderRadius: '4px', background: 'rgba(0,219,197,0.06)', display: 'inline-block', marginBottom: '20px' }}>
+              {rosterCheck ? 'Or Choose Your Own Plan' : 'Choose Your Plan'}
+            </span>
             <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: 'clamp(26px, 3.5vw, 42px)', color: '#FFFFFF', lineHeight: 1.15, margin: '0 0 12px' }}>
               Simple, transparent plans.
             </h2>
@@ -289,38 +283,24 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
             </p>
           </div>
 
-          {/* Toggle */}
+          {/* ── Billing Toggle ── */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '36px' }}>
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: isAnnual ? 'rgba(255,255,255,0.3)' : '#FFFFFF' }}>Monthly</span>
-            <button
-              onClick={() => setIsAnnual(!isAnnual)}
-              style={{
-                width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                background: isAnnual ? ACCENT : 'rgba(255,255,255,0.15)', position: 'relative',
-                transition: 'background 0.2s ease', padding: 0,
-              }}
-            >
-              <span style={{
-                position: 'absolute', top: '3px', left: isAnnual ? '23px' : '3px',
-                width: '18px', height: '18px', borderRadius: '50%', background: 'white',
-                transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-              }} />
+            <button onClick={() => setIsAnnual(!isAnnual)}
+              style={{ width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer', background: isAnnual ? ACCENT : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'background 0.2s ease', padding: 0 }}>
+              <span style={{ position: 'absolute', top: '3px', left: isAnnual ? '23px' : '3px', width: '18px', height: '18px', borderRadius: '50%', background: 'white', transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
             </button>
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: isAnnual ? '#FFFFFF' : 'rgba(255,255,255,0.3)' }}>
               Annual <span style={{ color: ACCENT, fontSize: '11px' }}>Save up to 25%</span>
             </span>
           </div>
 
-          {/* Cards */}
+          {/* ── Plan Cards — all always fully clickable ── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '32px' }} className="payment-grid">
 
             {/* Free */}
             <div onClick={() => setSelected('free')} style={cardStyle('free', false)}>
-              {selected === 'free' && (
-                <div style={{ position: 'absolute', top: '12px', right: '12px', width: '18px', height: '18px', borderRadius: '50%', background: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 7 5.5 10.5 12 3.5" /></svg>
-                </div>
-              )}
+              {selected === 'free' && selectedCheckmark}
               <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.12)', padding: '4px 12px', borderRadius: '4px', display: 'inline-block', marginBottom: '20px' }}>Free</span>
               <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
                 <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '48px', color: '#FFFFFF', lineHeight: 1 }}>$0</span>
@@ -333,17 +313,13 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.25)', margin: '0 0 10px' }}>Included</p>
                 <ul style={{ listStyle: 'none', margin: '0 0 16px', padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {FREE_FEATURES.map(f => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
-                      <CheckIcon />{f}
-                    </li>
+                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}><CheckIcon />{f}</li>
                   ))}
                 </ul>
                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.25)', margin: '0 0 10px' }}>Not included</p>
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {FREE_LIMITS.map(f => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>
-                      <XIcon />{f}
-                    </li>
+                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}><XIcon />{f}</li>
                   ))}
                 </ul>
               </div>
@@ -351,11 +327,7 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
 
             {/* Individual */}
             <div onClick={() => setSelected('individual')} style={cardStyle('individual', false)}>
-              {selected === 'individual' && (
-                <div style={{ position: 'absolute', top: '12px', right: '12px', width: '18px', height: '18px', borderRadius: '50%', background: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 7 5.5 10.5 12 3.5" /></svg>
-                </div>
-              )}
+              {selected === 'individual' && selectedCheckmark}
               <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: ACCENT, border: '1px solid rgba(0,219,197,0.4)', padding: '4px 12px', borderRadius: '4px', background: 'rgba(0,219,197,0.06)', display: 'inline-block', marginBottom: '20px' }}>Individual Agent</span>
               <div style={{ marginBottom: '10px' }}>
                 {isAnnual ? (
@@ -383,42 +355,20 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '20px' }}>
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {INDIVIDUAL_FEATURES.map(f => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
-                      <CheckIcon />{f}
-                    </li>
+                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}><CheckIcon />{f}</li>
                   ))}
                 </ul>
               </div>
             </div>
 
-            {/* Brokerage — Featured (or disabled if not broker) */}
-            <div 
-              onClick={() => !rosterCheck && setSelected('brokerage')} 
-              style={{
-                ...cardStyle('brokerage', true),
-                opacity: rosterCheck ? 0.5 : 1,
-                cursor: rosterCheck ? 'not-allowed' : 'pointer',
-                pointerEvents: rosterCheck ? 'none' : 'auto',
-              }}
-            >
-              {/* Most Popular badge */}
-              <div style={{
-                position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-                background: ACCENT, color: '#111827',
-                fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 500,
-                textTransform: 'uppercase', letterSpacing: '0.08em',
-                padding: '4px 16px', borderRadius: '0 0 6px 6px',
-              }}>Most Popular</div>
-
-              {selected === 'brokerage' && (
-                <div style={{ position: 'absolute', top: '12px', right: '12px', width: '18px', height: '18px', borderRadius: '50%', background: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 7 5.5 10.5 12 3.5" /></svg>
-                </div>
-              )}
-
+            {/* Brokerage */}
+            <div onClick={() => setSelected('brokerage')} style={cardStyle('brokerage', true)}>
+              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', background: ACCENT, color: '#111827', fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 16px', borderRadius: '0 0 6px 6px' }}>
+                Most Popular
+              </div>
+              {selected === 'brokerage' && selectedCheckmark}
               <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: ACCENT, border: '1px solid rgba(0,219,197,0.4)', padding: '4px 12px', borderRadius: '4px', background: 'rgba(0,219,197,0.06)', display: 'inline-block', marginBottom: '20px' }}>Brokerage</span>
 
-              {/* Agent count */}
               <div style={{ marginBottom: '16px' }} onClick={e => e.stopPropagation()}>
                 <label style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '6px' }}>
                   How many agents will use PropMatch?
@@ -439,26 +389,18 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
                     setAgentCount(clamped);
                     setAgentInput(String(clamped));
                   }}
-                  style={{
-                    width: '100%', boxSizing: 'border-box',
-                    border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px',
-                    padding: '9px 12px', fontFamily: "'Inter', sans-serif", fontSize: '15px',
-                    color: '#FFFFFF', outline: 'none', background: 'rgba(255,255,255,0.06)',
-                  }}
+                  style={{ width: '100%', boxSizing: 'border-box', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '9px 12px', fontFamily: "'Inter', sans-serif", fontSize: '15px', color: '#FFFFFF', outline: 'none', background: 'rgba(255,255,255,0.06)' }}
                   onFocus={e => { e.currentTarget.style.borderColor = ACCENT; setSelected('brokerage'); }}
                   onBlurCapture={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'}
                 />
                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: '4px 0 0' }}>Minimum 2 agents · yourself included.</p>
               </div>
 
-              {/* Dynamic price */}
               <div style={{ marginBottom: '6px' }}>
                 {isAnnual ? (
                   <>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                      <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '38px', color: '#FFFFFF', lineHeight: 1 }}>
-                        ${(agentCount * 708).toLocaleString()}
-                      </span>
+                      <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '38px', color: '#FFFFFF', lineHeight: 1 }}>${(agentCount * 708).toLocaleString()}</span>
                       <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>/ yr</span>
                     </div>
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: '4px 0 0' }}>$59 / agent / mo · billed as ${(agentCount * 708).toLocaleString()} / yr</p>
@@ -467,9 +409,7 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
                 ) : (
                   <>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                      <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '38px', color: '#FFFFFF', lineHeight: 1 }}>
-                        ${(agentCount * 64).toLocaleString()}
-                      </span>
+                      <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: '38px', color: '#FFFFFF', lineHeight: 1 }}>${(agentCount * 64).toLocaleString()}</span>
                       <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>/ mo</span>
                     </div>
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: '4px 0 0' }}>$64 / agent / month</p>
@@ -484,9 +424,7 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
               <div style={{ borderTop: '1px solid rgba(0,219,197,0.2)', paddingTop: '20px' }}>
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {BROKERAGE_FEATURES.map(f => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>
-                      <CheckIcon />{f}
-                    </li>
+                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}><CheckIcon />{f}</li>
                   ))}
                 </ul>
               </div>
@@ -503,14 +441,12 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
                 textTransform: 'uppercase', letterSpacing: '0.05em',
                 color: (selected && !loading) ? '#111827' : 'rgba(255,255,255,0.2)',
                 background: (selected && !loading) ? ACCENT : 'rgba(255,255,255,0.06)',
-                border: 'none', borderRadius: '6px',
-                padding: '14px 40px', cursor: (selected && !loading) ? 'pointer' : 'not-allowed',
+                border: 'none', borderRadius: '6px', padding: '14px 40px',
+                cursor: (selected && !loading) ? 'pointer' : 'not-allowed',
                 transition: 'all 0.2s ease',
               }}
             >
-              {loading ? 'Processing...' : selected
-                ? `Continue with ${selected === 'free' ? 'Free' : selected === 'individual' ? 'Individual' : 'Brokerage'} →`
-                : 'Select a plan to continue'}
+              {getContinueLabel()}
             </button>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.2)', marginTop: '12px' }}>
               You can upgrade or change your plan at any time.
@@ -520,9 +456,8 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
       </div>
 
       <style>{`
-        @media (max-width: 900px) {
-          .payment-grid { grid-template-columns: 1fr !important; }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 900px) { .payment-grid { grid-template-columns: 1fr !important; } }
       `}</style>
     </div>
   );
