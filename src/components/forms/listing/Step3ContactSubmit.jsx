@@ -243,15 +243,6 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
         </Field>
       )}
 
-      {/* Allow Direct Contact toggle */}
-      <SectionTitle>Settings</SectionTitle>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle
-          label="Allow Direct Contact (Email / Call buttons on post)"
-          value={data.allow_direct_contact !== false}
-          onChange={v => update({ allow_direct_contact: v })}
-        />
-      </div>
 
       {/* Terms + Submit */}
       <div className="pt-2 space-y-4">
