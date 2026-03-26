@@ -82,6 +82,10 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       if (submitData[f] === '' || submitData[f] == null) delete submitData[f];
       else submitData[f] = parseFloat(submitData[f]);
     });
+    // Strip optional string fields that may be null/undefined (API expects string or absent)
+    ['lease_sub', 'lease_type', 'address', 'zip_code', 'description', 'visibility_groups', 'visibility_recipient_email', 'company_name', 'brokerage_id'].forEach(f => {
+      if (submitData[f] == null || submitData[f] === '') delete submitData[f];
+    });
     return submitData;
   };
 
@@ -101,9 +105,12 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
     onError: (err) => {
       const raw = err.message || 'Something went wrong. Please try again.';
       setSubmitError(raw
+        .replace(/lease_sub/g, 'Lease sub-type')
+        .replace(/lease_type/g, 'Lease type')
         .replace(/price/g, 'Price').replace(/size_sqft/g, 'Size (SF)')
         .replace(/property_type/g, 'Property type').replace(/transaction_type/g, 'Transaction type')
         .replace(/city/g, 'City')
+        .replace(/Input should be a valid string/g, 'is required')
         .replace(/Input should be a valid number, unable to parse string as a number/g, 'must be a number'));
     },
   });
