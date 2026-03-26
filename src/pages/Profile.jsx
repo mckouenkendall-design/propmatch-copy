@@ -31,21 +31,26 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
   const imgRef = useRef(null);
 
   const [zoom, setZoom] = useState(MIN_ZOOM);
-  const [pos, setPos] = useState({ x: 0, y: 0 }); // offset from center, in px at zoom=1
+  const [pos, setPos] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ mx: 0, my: 0, px: 0, py: 0 });
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgNatural, setImgNatural] = useState({ w: 1, h: 1 });
 
-  // Container size — fixed square for the preview area
-  const CONTAINER = CROP_SIZE + 80; // 360px — image area with some padding around circle
+  const CONTAINER = CROP_SIZE + 80;
 
-  const onImgLoad = (e) => {
-    setImgNatural({ w: e.target.naturalWidth, h: e.target.naturalHeight });
-    setImgLoaded(true);
-    setZoom(MIN_ZOOM);
-    setPos({ x: 0, y: 0 });
-  };
+  // Preload via JS Image — avoids onLoad not firing when browser has cached the src
+  useEffect(() => {
+    const image = new Image();
+    image.onload = () => {
+      setImgNatural({ w: image.naturalWidth, h: image.naturalHeight });
+      setImgLoaded(true);
+      setZoom(MIN_ZOOM);
+      setPos({ x: 0, y: 0 });
+    };
+    image.onerror = () => console.error('CropModal: failed to load image');
+    image.src = imageSrc;
+  }, [imageSrc]);
 
   // Rendered image size at current zoom
   const aspect = imgNatural.w / imgNatural.h;
@@ -199,7 +204,6 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
               <img
                 ref={imgRef}
                 src={imageSrc}
-                onLoad={onImgLoad}
                 draggable={false}
                 style={{
                   position: 'absolute',
