@@ -34,7 +34,7 @@ const VISIBILITY_OPTIONS = [
 ];
 
 export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoading, editMode }) {
-  const [termsAccepted, setTermsAccepted] = useState(!!editMode); // pre-checked in edit mode
+  const [termsAccepted, setTermsAccepted] = useState(true);
   const [groupsDropdownOpen, setGroupsDropdownOpen] = useState(false);
   const [groupSearchInput, setGroupSearchInput] = useState('');
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
