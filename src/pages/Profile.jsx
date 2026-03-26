@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Cropper from 'react-easy-crop';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useMutation } from '@tanstack/react-query';
@@ -11,9 +12,6 @@ import { Camera, Briefcase, Phone, Mail, Building, Award, Loader2, Check, X } fr
 import { useToast } from '@/components/ui/use-toast';
 
 const ACCENT = '#00DBC5';
-const CROP_SIZE = 280;
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 4;
 
 function formatPhone(raw) {
   const digits = raw.replace(/\D/g, '').slice(0, 10);
@@ -22,99 +20,38 @@ function formatPhone(raw) {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
-// ── Circular Crop Modal ──────────────────────────────────────────────────────
-// Single <img> element. SVG overlay darkens everything outside the circle.
-// No two-image alignment issues. Drag to reposition, slider to zoom.
+// ── Circular Crop Modal using react-easy-crop ─────────────────────────────────
 function CropModal({ imageSrc, onConfirm, onCancel }) {
-  const CONTAINER = 360;
-  const imgRef = useRef(null);
-
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ mx: 0, my: 0, px: 0, py: 0 });
-  const [imgNatural, setImgNatural] = useState({ w: 1, h: 1 });
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
-  useEffect(() => {
-    const image = new Image();
-    image.onload = () => {
-      setImgNatural({ w: image.naturalWidth, h: image.naturalHeight });
-      setImgLoaded(true);
-      setZoom(1);
-      setPos({ x: 0, y: 0 });
-    };
-    image.onerror = () => console.error('CropModal: failed to load image');
-    image.src = imageSrc;
-  }, [imageSrc]);
+  const onCropComplete = useCallback((_, cappx) => {
+    setCroppedAreaPixels(cappx);
+  }, []);
 
-  // At zoom=1, fit so shorter side fills the container
-  const aspect = imgNatural.w / (imgNatural.h || 1);
-  let baseW, baseH;
-  if (aspect >= 1) { baseH = CONTAINER; baseW = CONTAINER * aspect; }
-  else             { baseW = CONTAINER; baseH = CONTAINER / aspect; }
-  const rendW = baseW * zoom;
-  const rendH = baseH * zoom;
-
-  const clamp = useCallback((px, py, z) => {
-    const rw = baseW * z;
-    const rh = baseH * z;
-    const maxX = Math.max(0, (rw - CONTAINER) / 2);
-    const maxY = Math.max(0, (rh - CONTAINER) / 2);
-    return {
-      x: Math.max(-maxX, Math.min(maxX, px)),
-      y: Math.max(-maxY, Math.min(maxY, py)),
-    };
-  }, [baseW, baseH]);
-
-  // Image top-left in container
-  const imgLeft = (CONTAINER - rendW) / 2 + pos.x;
-  const imgTop  = (CONTAINER - rendH) / 2 + pos.y;
-
-  const handleMouseDown = (e) => {
-    e.preventDefault();
-    setDragging(true);
-    setDragStart({ mx: e.clientX, my: e.clientY, px: pos.x, py: pos.y });
-  };
-
-  const handleMouseMove = useCallback((e) => {
-    if (!dragging) return;
-    setPos(clamp(dragStart.px + e.clientX - dragStart.mx, dragStart.py + e.clientY - dragStart.my, zoom));
-  }, [dragging, dragStart, zoom, clamp]);
-
-  const handleMouseUp = useCallback(() => setDragging(false), []);
-
-  useEffect(() => {
-    if (!dragging) return;
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [dragging, handleMouseMove, handleMouseUp]);
-
-  const handleZoomChange = (e) => {
-    const z = parseFloat(e.target.value);
-    setZoom(z);
-    setPos(prev => clamp(prev.x, prev.y, z));
-  };
-
-  const handleConfirm = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = CROP_SIZE;
-    canvas.height = CROP_SIZE;
-    const ctx = canvas.getContext('2d');
-    const img = imgRef.current;
-    if (!img) return;
-    const circleLeft = (CONTAINER - CROP_SIZE) / 2;
-    const circleTop  = (CONTAINER - CROP_SIZE) / 2;
-    const srcX = (circleLeft - imgLeft) / rendW * imgNatural.w;
-    const srcY = (circleTop  - imgTop)  / rendH * imgNatural.h;
-    const srcW = CROP_SIZE / rendW * imgNatural.w;
-    const srcH = CROP_SIZE / rendH * imgNatural.h;
-    ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, CROP_SIZE, CROP_SIZE);
-    canvas.toBlob(blob => { if (blob) onConfirm(blob); }, 'image/jpeg', 0.92);
+  const handleConfirm = async () => {
+    if (!croppedAreaPixels) return;
+    try {
+      const image = new Image();
+      image.src = imageSrc;
+      await new Promise((res) => { image.onload = res; });
+      const canvas = document.createElement('canvas');
+      canvas.width = 400;
+      canvas.height = 400;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(
+        image,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0, 0, 400, 400
+      );
+      canvas.toBlob((blob) => { if (blob) onConfirm(blob); }, 'image/jpeg', 0.92);
+    } catch (e) {
+      console.error('Crop error:', e);
+    }
   };
 
   return (
@@ -122,86 +59,93 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
       <div style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px', padding: '28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', maxWidth: '420px', width: '100%' }}>
 
         <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>Position your photo</h2>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Drag to reposition · Use the slider to zoom</p>
+          <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>
+            Position your photo
+          </h2>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+            Drag to reposition · Use the slider to zoom
+          </p>
         </div>
 
-        {/* ── Preview ── */}
-        <div
-          style={{ width: CONTAINER, height: CONTAINER, position: 'relative', overflow: 'hidden', cursor: dragging ? 'grabbing' : 'grab', borderRadius: '8px', background: '#0a0d10', flexShrink: 0 }}
-          onMouseDown={handleMouseDown}
-        >
-          {/* Single image — no alignment issues */}
-          {imgLoaded && (
-            <img
-              ref={imgRef}
-              src={imageSrc}
-              draggable={false}
-              style={{ position: 'absolute', left: imgLeft, top: imgTop, width: rendW, height: rendH, pointerEvents: 'none', userSelect: 'none' }}
-            />
-          )}
-
-          {/* SVG overlay: semi-transparent mask outside circle + teal border */}
-          <svg
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
-            viewBox={`0 0 \${CONTAINER} \${CONTAINER}`}
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <mask id="cropHole">
-                <rect width={CONTAINER} height={CONTAINER} fill="white" />
-                <circle cx={CONTAINER / 2} cy={CONTAINER / 2} r={CROP_SIZE / 2} fill="black" />
-              </mask>
-            </defs>
-            {/* Dark area outside circle */}
-            <rect width={CONTAINER} height={CONTAINER} fill="rgba(0,0,0,0.62)" mask="url(#cropHole)" />
-            {/* Teal circle border */}
-            <circle cx={CONTAINER / 2} cy={CONTAINER / 2} r={CROP_SIZE / 2} fill="none" stroke="#00DBC5" strokeWidth="2.5" />
-          </svg>
-
-          {!imgLoaded && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Loader2 style={{ width: '32px', height: '32px', color: ACCENT, animation: 'spin 0.8s linear infinite' }} />
-            </div>
-          )}
+        <div style={{ position: 'relative', width: '320px', height: '320px', borderRadius: '8px', overflow: 'hidden', background: '#000' }}>
+          <Cropper
+            image={imageSrc}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            cropShape="round"
+            showGrid={false}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={onCropComplete}
+            style={{
+              containerStyle: { borderRadius: '8px' },
+              cropAreaStyle: { border: '2.5px solid #00DBC5', color: 'rgba(0,0,0,0.55)' },
+            }}
+          />
         </div>
 
-        {/* ── Zoom slider ── */}
         <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>Zoom</span>
           <input
             type="range"
             min={1}
-            max={4}
+            max={3}
             step={0.01}
             value={zoom}
-            onChange={handleZoomChange}
-            style={{ flex: 1, height: '4px', appearance: 'none', background: `linear-gradient(to right, \${ACCENT} 0%, \${ACCENT} \${((zoom - 1) / 3) * 100}%, rgba(255,255,255,0.15) \${((zoom - 1) / 3) * 100}%, rgba(255,255,255,0.15) 100%)`, borderRadius: '2px', outline: 'none', cursor: 'pointer' }}
+            onChange={(e) => setZoom(parseFloat(e.target.value))}
+            style={{
+              flex: 1, height: '4px', appearance: 'none',
+              borderRadius: '2px', outline: 'none', cursor: 'pointer',
+              background: `linear-gradient(to right, #00DBC5 0%, #00DBC5 ${((zoom - 1) / 2) * 100}%, rgba(255,255,255,0.15) ${((zoom - 1) / 2) * 100}%, rgba(255,255,255,0.15) 100%)`,
+            }}
           />
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', flexShrink: 0, minWidth: '30px', textAlign: 'right' }}>{zoom.toFixed(1)}×</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', flexShrink: 0, minWidth: '30px', textAlign: 'right' }}>
+            {zoom.toFixed(1)}x
+          </span>
         </div>
 
-        {/* ── Actions ── */}
         <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <button
+            onClick={onCancel}
+            style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+          >
             <X style={{ width: '15px', height: '15px' }} /> Cancel
           </button>
-          <button onClick={handleConfirm} disabled={!imgLoaded} style={{ flex: 1, padding: '11px', background: imgLoaded ? ACCENT : 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: imgLoaded ? '#111827' : 'rgba(255,255,255,0.3)', cursor: imgLoaded ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <button
+            onClick={handleConfirm}
+            style={{ flex: 1, padding: '11px', background: '#00DBC5', border: 'none', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: '#111827', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+          >
             <Check style={{ width: '15px', height: '15px' }} /> Use Photo
           </button>
         </div>
 
         <style>{`
-          input[type=range]::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; border-radius: 50%; background: \${ACCENT}; cursor: pointer; border: 2px solid #1a1f25; box-shadow: 0 0 0 1px \${ACCENT}; }
-          input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: \${ACCENT}; cursor: pointer; border: 2px solid #1a1f25; }
-          @keyframes spin { to { transform: rotate(360deg); } }
+          input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #00DBC5;
+            cursor: pointer;
+            border: 2px solid #1a1f25;
+            box-shadow: 0 0 0 1px #00DBC5;
+          }
+          input[type=range]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #00DBC5;
+            cursor: pointer;
+            border: 2px solid #1a1f25;
+          }
         `}</style>
       </div>
     </div>
   );
 }
 
-// ── Main Profile Page ────────────────────────────────────────────────────────
+// ── Main Profile Page ─────────────────────────────────────────────────────────
 export default function Profile() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
@@ -209,7 +153,7 @@ export default function Profile() {
 
   const [editing, setEditing] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [cropSrc, setCropSrc] = useState(null); // raw image src for crop modal
+  const [cropSrc, setCropSrc] = useState(null);
   const [formData, setFormData] = useState({
     full_name: '', username: '', contact_email: '', phone: '',
     state: '', brokerage_name: '', brokerage_address: '', bio: '',
@@ -302,18 +246,15 @@ export default function Profile() {
     },
   });
 
-  // Step 1: file selected → open crop modal
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Reset so same file can be selected again
     e.target.value = '';
     const reader = new FileReader();
     reader.onload = (ev) => setCropSrc(ev.target.result);
     reader.readAsDataURL(file);
   };
 
-  // Step 2: crop confirmed → upload cropped blob
   const handleCropConfirm = async (blob) => {
     setCropSrc(null);
     setUploadingPhoto(true);
@@ -364,7 +305,6 @@ export default function Profile() {
           <CardContent style={{ padding: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'start', gap: '24px', flexWrap: 'wrap' }}>
 
-              {/* Avatar */}
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 {photoUrl ? (
                   <img src={photoUrl} alt="Profile" style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: `2px solid ${ACCENT}30` }} />
@@ -386,7 +326,6 @@ export default function Profile() {
                 </button>
               </div>
 
-              {/* Info */}
               <div style={{ flex: 1 }}>
                 {editing ? (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
