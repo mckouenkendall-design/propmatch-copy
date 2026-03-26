@@ -470,7 +470,7 @@ export function calculateMatchScore(listing, requirement) {
 export function getScoreColor(score) {
   if (score >= 70) return '#00DBC5';
   if (score >= 50) return '#F59E0B';
-  if (score >= 30) return '#9CA3AF';
+  if (score >= 30) return '#F97316';
   return '#374151';
 }
 
