@@ -94,42 +94,44 @@ function Req() {
   return <span style={{ color: ACCENT, marginLeft: '2px' }}>*</span>;
 }
 
-// Numeric input with auto comma formatting
-function NumericInput({ value, onChange, placeholder, style, className, step }) {
-  const fmt = (v) => {
-    if (v === '' || v == null) return '';
-    const n = parseFloat(String(v).replace(/,/g, ''));
-    if (isNaN(n)) return '';
-    // Keep decimals if step is fractional
-    const dec = step && step < 1 ? 2 : 0;
-    return n.toLocaleString('en-US', { maximumFractionDigits: dec });
+function NumericInput({ value, onChange, placeholder, style, className }) {
+  const addCommas = (str) => {
+    if (!str) return '';
+    const parts = str.replace(/,/g, '').split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
   };
 
-  const [display, setDisplay] = React.useState(() => fmt(value));
-
-  React.useEffect(() => {
-    setDisplay(fmt(value));
-  }, []); // only on mount
+  const [display, setDisplay] = React.useState(() => addCommas(String(value || '')));
 
   const handleChange = (e) => {
     const raw = e.target.value.replace(/[^0-9.]/g, '');
-    setDisplay(e.target.value.replace(/[^0-9.,]/g, ''));
+    setDisplay(addCommas(raw));
     onChange(raw);
   };
 
-  const handleBlur = () => {
-    setDisplay(fmt(value));
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    color: 'white',
+    borderRadius: '6px',
+    height: '36px',
+    width: '100%',
+    padding: '0 12px',
+    fontSize: '14px',
+    outline: 'none',
+    ...style,
   };
 
   return (
     <input
       type="text"
+      inputMode="decimal"
       value={display}
       onChange={handleChange}
-      onBlur={handleBlur}
       placeholder={placeholder}
-      style={style}
-      className={className || "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"}
+      style={inputStyle}
+      className={className}
     />
   );
 }
