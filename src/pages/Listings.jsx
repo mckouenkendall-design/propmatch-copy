@@ -199,9 +199,11 @@ export default function Listings() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 700, color: ACCENT }}>
                     ${(parseFloat(listing.price) || 0).toLocaleString()}
+                    {(listing.transaction_type === 'lease' || listing.transaction_type === 'sublease') && <span style={{ fontSize: '13px', fontWeight: 400 }}>/SF/yr</span>}
+                    {listing.transaction_type === 'rent' && <span style={{ fontSize: '13px', fontWeight: 400 }}>/mo</span>}
                   </span>
                   {listing.size_sqft && <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>· {parseFloat(listing.size_sqft).toLocaleString()} SF</span>}
                 </div>
