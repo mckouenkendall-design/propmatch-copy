@@ -45,7 +45,7 @@ function Toggle({ label, value, onChange }) {
 
 const VISIBILITY_OPTIONS = [
   { value: 'public', label: 'Public', desc: 'Visible to all users on PropMatch' },
-  { value: 'team', label: 'Team / Group Only', desc: 'Only members of selected networking groups' },
+  { value: 'team', label: 'Fishtank(s)', desc: 'Only members of selected networking groups' },
   { value: 'brokerage', label: 'Brokerage Only', desc: 'Only users sharing your Brokerage ID' },
   { value: 'private', label: 'Private (Invite Only)', desc: 'Direct access link sent to a specific person' },
 ];
