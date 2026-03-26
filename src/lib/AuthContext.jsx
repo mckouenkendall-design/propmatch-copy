@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
 
       const pathname = window.location.pathname;
-      const isOnRootOrLanding = pathname === '/' || pathname === '/Landing' || pathname === '/Landing/';
+      const isOnRootOrLanding = pathname === '/';
 
       if (isOnRootOrLanding && authUser) {
         const needsOnboarding = !authUser.user_type && !(profile?.user_type);
