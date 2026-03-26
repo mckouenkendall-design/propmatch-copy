@@ -458,7 +458,17 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
                   onClick={() => setAutoRenewAcknowledged(!autoRenewAcknowledged)}
                   style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.6, margin: 0 }}
                 >
-                  I understand my subscription will <strong style={{ color: 'white' }}>auto-renew</strong> at the end of each billing period. I can turn off auto-renew or cancel at any time in Settings.
+                  You agree that PropMatch will charge your card in the amount shown above, and on a recurring basis until you cancel, in accordance with our{' '}
+                  <a
+                    href="/Terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    style={{ color: ACCENT, textDecoration: 'underline', textUnderlineOffset: '2px' }}
+                  >
+                    Terms of Service
+                  </a>
+                  . You can cancel or turn off auto-renew at any time in Settings.
                 </p>
               </label>
             </div>
