@@ -68,14 +68,42 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       title: buildTitle(data),
       created_by: data.created_by || user?.email,
     };
+
+    // Auto-default lease_type so Base44 never sees a blank required field
     const isLease = submitData.transaction_type === 'lease' || submitData.transaction_type === 'sublease';
     if (isLease && !submitData.lease_type) {
       submitData.lease_type = 'full_service_gross';
     }
+
+    // Strip any field that is null, undefined, or empty string
+    // Base44 rejects null/undefined on string fields like lease_sub
+    const optionalStringFields = ['lease_sub', 'lease_type', 'address', 'description', 'visibility_groups', 'visibility_recipient_email'];
+    optionalStringFields.forEach(f => {
+      if (submitData[f] === null || submitData[f] === undefined || submitData[f] === '') {
+        delete submitData[f];
+      }
+    });
+
+    // If lease_sub is an array (modified_gross tenant expenses), stringify it
+    if (Array.isArray(submitData.lease_sub)) {
+      if (submitData.lease_sub.length === 0) delete submitData.lease_sub;
+      else submitData.lease_sub = JSON.stringify(submitData.lease_sub);
+    }
+
+    // Strip empty arrays
+    if (Array.isArray(submitData.utilities_included) && submitData.utilities_included.length === 0) {
+      delete submitData.utilities_included;
+    }
+    if (Array.isArray(submitData.amenities) && submitData.amenities.length === 0) {
+      delete submitData.amenities;
+    }
+
+    // Parse numeric fields
     ['price', 'size_sqft'].forEach(f => {
       if (submitData[f] === '' || submitData[f] == null) delete submitData[f];
       else submitData[f] = parseFloat(submitData[f]);
     });
+
     return submitData;
   };
 
