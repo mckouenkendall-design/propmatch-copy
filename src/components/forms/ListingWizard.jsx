@@ -12,15 +12,6 @@ import ListStep3ContactSubmit from './listing/Step3ContactSubmit';
 
 const STEPS = ['Property', 'Details', 'Post'];
 
-const validateListing = (data) => {
-  const errors = [];
-  if (!data.property_type) errors.push('Property type is required (Step 1)');
-  if (!data.transaction_type) errors.push('Transaction type is required (Step 1)');
-  if (!data.city) errors.push('City is required (Step 1)');
-  if (!data.price) errors.push('Price is required (Step 1)');
-  return errors;
-};
-
 const buildTitle = (data) => {
   const typeMap = {
     office: 'Office Space', medical_office: 'Medical Office Space', retail: 'Retail Space',
@@ -40,7 +31,6 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
-  const [submitError, setSubmitError] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [formData, setFormData] = useState(initialData || {
@@ -78,40 +68,26 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       title: buildTitle(data),
       created_by: data.created_by || user?.email,
     };
+    const isLease = submitData.transaction_type === 'lease' || submitData.transaction_type === 'sublease';
+    if (isLease && !submitData.lease_type) {
+      submitData.lease_type = 'full_service_gross';
+    }
     ['price', 'size_sqft'].forEach(f => {
       if (submitData[f] === '' || submitData[f] == null) delete submitData[f];
       else submitData[f] = parseFloat(submitData[f]);
-    });
-    // Strip optional string fields that may be null/undefined (API expects string or absent)
-    ['lease_sub', 'lease_type', 'address', 'zip_code', 'description', 'visibility_groups', 'visibility_recipient_email', 'company_name', 'brokerage_id'].forEach(f => {
-      if (submitData[f] == null || submitData[f] === '') delete submitData[f];
     });
     return submitData;
   };
 
   const saveMutation = useMutation({
     mutationFn: (data) => {
-      const errors = validateListing(data);
-      if (errors.length > 0) throw new Error(errors.join('\n'));
       const submitData = prepareSubmitData(data);
       if (editMode && data.id) return base44.entities.Listing.update(data.id, submitData);
       return base44.entities.Listing.create(submitData);
     },
     onSuccess: (...args) => {
-      setSubmitError(null);
       queryClient.invalidateQueries({ queryKey: ['my-listings'] });
       onSuccess?.(...args);
-    },
-    onError: (err) => {
-      const raw = err.message || 'Something went wrong. Please try again.';
-      setSubmitError(raw
-        .replace(/lease_sub/g, 'Lease sub-type')
-        .replace(/lease_type/g, 'Lease type')
-        .replace(/price/g, 'Price').replace(/size_sqft/g, 'Size (SF)')
-        .replace(/property_type/g, 'Property type').replace(/transaction_type/g, 'Transaction type')
-        .replace(/city/g, 'City')
-        .replace(/Input should be a valid string/g, 'is required')
-        .replace(/Input should be a valid number, unable to parse string as a number/g, 'must be a number'));
     },
   });
 
@@ -126,11 +102,13 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
   const update = (patch) => setFormData(prev => ({ ...prev, ...patch }));
   const next = () => setStep(s => Math.min(s + 1, 3));
   const back = () => step === 1 ? onClose('back') : setStep(s => s - 1);
+  const cat = formData.property_category || category;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center p-4 overflow-y-auto">
       <div className="w-full max-w-2xl my-8">
         <div style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }} className="rounded-2xl shadow-2xl overflow-hidden">
+
           <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -141,7 +119,9 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
                   <h2 className="text-xl font-bold capitalize" style={{ color: 'white' }}>
                     {editMode ? 'Edit Listing' : `${category} Listing`}
                   </h2>
-                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Step {step} of {STEPS.length}</p>
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                    Step {step} of {STEPS.length}
+                  </p>
                 </div>
               </div>
               <Button variant="ghost" size="icon" onClick={() => onClose('close')}>
@@ -152,11 +132,17 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
           </div>
 
           <div className="px-6 py-6">
-            {step === 1 && <ListStep1 data={formData} update={update} onNext={next} />}
-            {step === 2 && (formData.property_category || category) === 'commercial' && <ListStep2Commercial data={formData} update={update} onNext={next} />}
-            {step === 2 && (formData.property_category || category) === 'residential' && <ListStep2Residential data={formData} update={update} onNext={next} />}
+            {step === 1 && (
+              <ListStep1 data={formData} update={update} onNext={next} />
+            )}
+            {step === 2 && cat === 'commercial' && (
+              <ListStep2Commercial data={formData} update={update} onNext={next} />
+            )}
+            {step === 2 && cat === 'residential' && (
+              <ListStep2Residential data={formData} update={update} onNext={next} />
+            )}
             {step === 3 && (
-              <>
+              <div>
                 <ListStep3ContactSubmit
                   data={formData}
                   update={update}
@@ -173,10 +159,17 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
                           Are you sure? This listing will be permanently deleted and cannot be recovered.
                         </p>
                         <div style={{ display: 'flex', gap: '10px' }}>
-                          <button onClick={() => setShowDeleteConfirm(false)} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+                          <button
+                            onClick={() => setShowDeleteConfirm(false)}
+                            style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}
+                          >
                             Cancel
                           </button>
-                          <button onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending} style={{ flex: 1, padding: '10px', background: '#ef4444', border: 'none', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'white', cursor: 'pointer' }}>
+                          <button
+                            onClick={() => deleteMutation.mutate()}
+                            disabled={deleteMutation.isPending}
+                            style={{ flex: 1, padding: '10px', background: '#ef4444', border: 'none', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'white', cursor: 'pointer' }}
+                          >
                             {deleteMutation.isPending ? 'Deleting...' : 'Yes, Delete Listing'}
                           </button>
                         </div>
@@ -193,16 +186,10 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
                     )}
                   </div>
                 )}
-
-                {submitError && (
-                  <div className="mt-4 rounded-xl px-4 py-3" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>
-                    <p className="text-sm font-semibold mb-1" style={{ color: '#f87171' }}>Please fix the following before submitting:</p>
-                    {submitError.split('\n').map((e, i) => <p key={i} className="text-sm" style={{ color: '#fca5a5' }}>• {e}</p>)}
-                  </div>
-                )}
-              </>
+              </div>
             )}
           </div>
+
         </div>
       </div>
     </div>
