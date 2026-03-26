@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, X } from 'lucide-react';
+import { ArrowLeft, X, Trash2 } from 'lucide-react';
 import FormProgress from './wizard/FormProgress';
 import ReqStep1 from './requirement/Step1General';
 import ReqStep2Commercial from './requirement/Step2CommercialDetails';
@@ -35,10 +35,13 @@ const validate = (data) => {
   return errors;
 };
 
-export default function RequirementWizard({ category, onClose, onSuccess, initialData }) {
+export default function RequirementWizard({ category, onClose, onSuccess, initialData, editMode }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [submitError, setSubmitError] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const [formData, setFormData] = useState(initialData || {
     property_category: category,
     title: '',
@@ -66,39 +69,49 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     brokerage_id: user?.employing_broker_id || '',
   });
 
-  const mutation = useMutation({
+  const prepareSubmitData = (data) => {
+    const submitData = { ...data };
+    submitData.title = generateTitle(data);
+    submitData.property_details = JSON.stringify(data.property_details || {});
+    submitData.area_map_data = JSON.stringify(data.mapAreas || []);
+    submitData.created_by = data.created_by || user?.email;
+    delete submitData.mapAreas;
+    ['min_price', 'max_price', 'min_size_sqft', 'max_size_sqft', 'min_bedrooms', 'min_bathrooms'].forEach(f => {
+      if (submitData[f] === '' || submitData[f] == null) delete submitData[f];
+      else submitData[f] = parseFloat(submitData[f]);
+    });
+    return submitData;
+  };
+
+  const saveMutation = useMutation({
     mutationFn: (data) => {
       const errors = validate(data);
       if (errors.length > 0) throw new Error(errors.join('\n'));
-      const submitData = { ...data };
-      submitData.title = generateTitle(data);
-      submitData.property_details = JSON.stringify(data.property_details || {});
-      submitData.area_map_data = JSON.stringify(data.mapAreas || []);
-      delete submitData.mapAreas;
-      const numericFields = ['min_price', 'max_price', 'min_size_sqft', 'max_size_sqft', 'min_bedrooms', 'min_bathrooms'];
-      numericFields.forEach(f => {
-        if (submitData[f] === '' || submitData[f] === null || submitData[f] === undefined) {
-          delete submitData[f];
-        } else {
-          submitData[f] = parseFloat(submitData[f]);
-        }
-      });
+      const submitData = prepareSubmitData(data);
+      if (editMode && data.id) return base44.entities.Requirement.update(data.id, submitData);
       return base44.entities.Requirement.create(submitData);
     },
-    onSuccess: (...args) => { setSubmitError(null); onSuccess?.(...args); },
+    onSuccess: (...args) => {
+      setSubmitError(null);
+      queryClient.invalidateQueries({ queryKey: ['my-requirements'] });
+      onSuccess?.(...args);
+    },
     onError: (err) => {
       const raw = err.message || 'Something went wrong. Please try again.';
-      const friendly = raw
-        .replace(/min_size_sqft/g, 'Minimum size (SF)')
-        .replace(/max_size_sqft/g, 'Maximum size (SF)')
-        .replace(/min_price/g, 'Minimum price')
-        .replace(/max_price/g, 'Maximum budget')
-        .replace(/min_bedrooms/g, 'Minimum bedrooms')
-        .replace(/min_bathrooms/g, 'Minimum bathrooms')
-        .replace(/property_type/g, 'Property type')
-        .replace(/transaction_type/g, 'Transaction type')
-        .replace(/Input should be a valid number, unable to parse string as a number/g, 'must be a number');
-      setSubmitError(friendly);
+      setSubmitError(raw
+        .replace(/min_size_sqft/g, 'Minimum size (SF)').replace(/max_size_sqft/g, 'Maximum size (SF)')
+        .replace(/min_price/g, 'Minimum price').replace(/max_price/g, 'Maximum budget')
+        .replace(/min_bedrooms/g, 'Minimum bedrooms').replace(/min_bathrooms/g, 'Minimum bathrooms')
+        .replace(/property_type/g, 'Property type').replace(/transaction_type/g, 'Transaction type')
+        .replace(/Input should be a valid number, unable to parse string as a number/g, 'must be a number'));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => base44.entities.Requirement.delete(formData.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-requirements'] });
+      onSuccess?.();
     },
   });
 
@@ -113,36 +126,78 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
           <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" onClick={back}><ArrowLeft className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} /></Button>
+                <Button variant="ghost" size="icon" onClick={back}>
+                  <ArrowLeft className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
+                </Button>
                 <div>
-                  <h2 className="text-xl font-bold capitalize" style={{ color: 'white' }}>{category} Requirement</h2>
+                  <h2 className="text-xl font-bold capitalize" style={{ color: 'white' }}>
+                    {editMode ? 'Edit Requirement' : `${category} Requirement`}
+                  </h2>
                   <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Step {step} of 3</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => onClose('close')}><X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} /></Button>
+              <Button variant="ghost" size="icon" onClick={() => onClose('close')}>
+                <X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
+              </Button>
             </div>
             <FormProgress currentStep={step} steps={STEPS} />
           </div>
+
           <div className="px-6 py-6">
             {step === 1 && <ReqStep1 data={formData} update={update} onNext={next} />}
-            {step === 2 && category === 'commercial' && <ReqStep2Commercial data={formData} update={update} onNext={next} />}
-            {step === 2 && category === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
+            {step === 2 && (formData.property_category || category) === 'commercial' && <ReqStep2Commercial data={formData} update={update} onNext={next} />}
+            {step === 2 && (formData.property_category || category) === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
             {step === 3 && (
               <>
-                <ReqStep3 data={formData} update={update} onSubmit={() => mutation.mutate(formData)} isLoading={mutation.isPending} />
+                <ReqStep3
+                  data={formData}
+                  update={update}
+                  onSubmit={() => saveMutation.mutate(formData)}
+                  isLoading={saveMutation.isPending}
+                  editMode={editMode}
+                />
+
+                {editMode && (
+                  <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                    {showDeleteConfirm ? (
+                      <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '10px', padding: '16px' }}>
+                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '0 0 12px' }}>
+                          Are you sure? This requirement will be permanently deleted and cannot be recovered.
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button onClick={() => setShowDeleteConfirm(false)} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+                            Cancel
+                          </button>
+                          <button onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending} style={{ flex: 1, padding: '10px', background: '#ef4444', border: 'none', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'white', cursor: 'pointer' }}>
+                            {deleteMutation.isPending ? 'Deleting...' : 'Yes, Delete Requirement'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#ef4444', cursor: 'pointer' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Trash2 style={{ width: '15px', height: '15px' }} /> Delete Requirement
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {submitError && (
                   <div className="mt-4 rounded-xl px-4 py-3" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>
                     <p className="text-sm font-semibold mb-1" style={{ color: '#f87171' }}>Please fix the following before submitting:</p>
-                    {submitError.split('\n').map((e, i) => (
-                      <p key={i} className="text-sm" style={{ color: '#fca5a5' }}>• {e}</p>
-                    ))}
+                    {submitError.split('\n').map((e, i) => <p key={i} className="text-sm" style={{ color: '#fca5a5' }}>• {e}</p>)}
                   </div>
                 )}
               </>
             )}
           </div>
+
           {step === 2 && (
-            <div className="px-6 pb-4 text-left">
+            <div className="px-6 pb-4">
               <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Fields left blank will be treated as "No Preference" and will not impact the Match Score.</p>
             </div>
           )}
