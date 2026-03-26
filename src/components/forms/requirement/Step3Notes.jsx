@@ -35,7 +35,7 @@ const VISIBILITY_OPTIONS = [
 ];
 
 export default function ReqStep3({ data, update, onSubmit, isLoading, editMode }) {
-  const [termsAccepted, setTermsAccepted] = useState(!!editMode);
+  const [termsAccepted, setTermsAccepted] = useState(true);
   const [groupsDropdownOpen, setGroupsDropdownOpen] = useState(false);
   const [groupSearchInput, setGroupSearchInput] = useState('');
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
