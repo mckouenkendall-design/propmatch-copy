@@ -36,10 +36,13 @@ export default function ReqStep1({ data, update, onNext }) {
   const types = data.property_category === 'commercial' ? COMMERCIAL_TYPES : RESIDENTIAL_TYPES;
 
   // Required: property_type, at least one preferred area, transaction_type
+  const hasPrice = !!(data.min_price || data.max_price);
+
   const canNext = !!(
     data.property_type &&
     data.cities && data.cities.length > 0 &&
-    data.transaction_type
+    data.transaction_type &&
+    hasPrice
   );
 
   return (
@@ -104,7 +107,7 @@ export default function ReqStep1({ data, update, onNext }) {
 
       {/* Price Range */}
       <div className="space-y-1.5">
-        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Price Range</Label>
+        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Price Range<Req /></Label>
         {data.transaction_type === 'purchase' ? (
           <p className="text-xs italic" style={{ color: 'rgba(255,255,255,0.5)' }}>Total purchase price range</p>
         ) : (data.transaction_type === 'lease' || data.transaction_type === 'rent') ? (
