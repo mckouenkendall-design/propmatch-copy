@@ -128,26 +128,17 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
 
       const pathname = window.location.pathname;
+      const isOnRootOrLanding = pathname === '/' || pathname === '/Landing' || pathname === '/Landing/';
 
-      // Pages that should never trigger auto-routing
-      const noRedirectPages = ['/Onboarding', '/Terms', '/Privacy', '/AboutUs', '/Blog', '/Careers', '/Affiliate'];
-      const isNoRedirect = noRedirectPages.some(p => pathname.startsWith(p));
-
-      if (!isNoRedirect && authUser) {
+      if (isOnRootOrLanding && authUser) {
         const needsOnboarding = !authUser.user_type && !(profile?.user_type);
-
         if (needsOnboarding) {
-          // Brand new user — always send to Onboarding regardless of how they signed in
-          window.location.href = '/Onboarding';
+          // New user — show them the landing page first, CTA will take them to Onboarding
+          window.location.href = '/Landing';
         } else {
-          // Existing user on root or Landing — send to their dashboard
-          const onLandingOrRoot = pathname === '/' || pathname.startsWith('/Landing');
-          if (onLandingOrRoot) {
-            const userType = profile?.user_type || authUser.user_type;
-            const defaultPage = userType === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
-            window.location.href = defaultPage;
-          }
-          // Already on an app page — don't redirect, let them stay
+          const userType = profile?.user_type || authUser.user_type;
+          const defaultPage = userType === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
+          window.location.href = defaultPage;
         }
       }
     } catch (error) {
