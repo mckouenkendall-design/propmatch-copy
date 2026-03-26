@@ -67,7 +67,7 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
           </p>
         </div>
 
-        <div style={{ position: 'relative', width: '320px', height: '320px', borderRadius: '8px', overflow: 'hidden', background: '#000' }}>
+        <div style={{ position: 'relative', width: '360px', height: '360px', borderRadius: '8px', overflow: 'hidden', background: '#000' }}>
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -75,6 +75,7 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
             aspect={1}
             cropShape="round"
             showGrid={false}
+            cropSize={{ width: 260, height: 260 }}
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={onCropComplete}
