@@ -32,6 +32,37 @@ function Req() {
   return <span style={{ color: ACCENT, marginLeft: '2px' }}>*</span>;
 }
 
+function NumericInput({ value, onChange, placeholder, style, className }) {
+  const fmt = (v) => {
+    if (v === '' || v == null) return '';
+    const n = parseFloat(String(v).replace(/,/g, ''));
+    if (isNaN(n)) return '';
+    return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  };
+
+  const [display, setDisplay] = React.useState(() => fmt(value));
+
+  const handleChange = (e) => {
+    const raw = e.target.value.replace(/[^0-9.]/g, '');
+    setDisplay(e.target.value.replace(/[^0-9.,]/g, ''));
+    onChange(raw);
+  };
+
+  const handleBlur = () => setDisplay(fmt(value));
+
+  return (
+    <input
+      type="text"
+      value={display}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      placeholder={placeholder}
+      style={style}
+      className={className || "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"}
+    />
+  );
+}
+
 export default function ReqStep1({ data, update, onNext }) {
   const types = data.property_category === 'commercial' ? COMMERCIAL_TYPES : RESIDENTIAL_TYPES;
 
@@ -80,12 +111,12 @@ export default function ReqStep1({ data, update, onNext }) {
       <div className="space-y-1.5">
         <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Size Range (SF)</Label>
         <div className="flex items-center gap-3">
-          <Input type="number" placeholder="Min" value={data.min_size_sqft || ''}
-            onChange={e => update({ min_size_sqft: e.target.value })} className="flex-1"
+          <NumericInput placeholder="Min" value={data.min_size_sqft || ''}
+            onChange={v => update({ min_size_sqft: v })} className="flex-1"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
           <span className="font-medium flex-shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }}>–</span>
-          <Input type="number" placeholder="Max" value={data.max_size_sqft || ''}
-            onChange={e => update({ max_size_sqft: e.target.value })} className="flex-1"
+          <NumericInput placeholder="Max" value={data.max_size_sqft || ''}
+            onChange={v => update({ max_size_sqft: v })} className="flex-1"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
         </div>
       </div>
@@ -122,10 +153,10 @@ export default function ReqStep1({ data, update, onNext }) {
           />
         ) : null}
         <div className="flex items-center gap-3 mt-2">
-          <Input type="number" placeholder="Min $" value={data.min_price || ''} onChange={e => update({ min_price: e.target.value })} className="flex-1"
+          <NumericInput placeholder="Min $" value={data.min_price || ''} onChange={v => update({ min_price: v })} className="flex-1"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
           <span className="font-medium flex-shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }}>–</span>
-          <Input type="number" placeholder="Max $" value={data.max_price || ''} onChange={e => update({ max_price: e.target.value })} className="flex-1"
+          <NumericInput placeholder="Max $" value={data.max_price || ''} onChange={v => update({ max_price: v })} className="flex-1"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
         </div>
       </div>
