@@ -89,6 +89,10 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       queryClient.invalidateQueries({ queryKey: ['my-listings'] });
       onSuccess?.(...args);
     },
+    onError: (err) => {
+      console.error('Listing save error:', err);
+      alert('Could not save listing: ' + (err?.message || 'Unknown error'));
+    },
   });
 
   const deleteMutation = useMutation({
