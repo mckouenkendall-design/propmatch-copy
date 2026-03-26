@@ -29,6 +29,13 @@ export default function GroupDiscussion({ groupId, currentUser }) {
     queryFn: () => base44.entities.GroupPost.filter({ group_id: groupId }, '-created_date'),
   });
 
+  // Fetch all profiles so we can show photos
+  const { data: userProfiles = [] } = useQuery({
+    queryKey: ['all-user-profiles'],
+    queryFn: () => base44.entities.UserProfile.list(),
+  });
+  const profileMap = Object.fromEntries(userProfiles.map(p => [p.user_email, p]));
+
   const createPostMutation = useMutation({
     mutationFn: async () => {
       const mediaUrls = [];
@@ -95,16 +102,20 @@ export default function GroupDiscussion({ groupId, currentUser }) {
   const canPost = postText.trim() || mediaFiles.length > 0 || attachFiles.length > 0 ||
     (showPoll && pollQuestion.trim() && pollOptions.filter(o => o.trim()).length >= 2);
 
+  // Avatar for the composer — current user's photo
+  const currentUserProfile = profileMap[currentUser?.email];
+  const currentUserPhoto = currentUserProfile?.profile_photo_url;
+  const currentUserInitial = (currentUser?.full_name || currentUser?.email || 'U')[0]?.toUpperCase();
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Composer Trigger */}
       {!isComposerOpen ? (
-        <div
-          onClick={() => setIsComposerOpen(true)}
-          style={{ background: DARK_BG, border: DARK_BORDER, borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'text' }}
-        >
-          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${ACCENT}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <User style={{ width: '16px', height: '16px', color: ACCENT }} />
+        <div onClick={() => setIsComposerOpen(true)} style={{ background: DARK_BG, border: DARK_BORDER, borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'text' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', color: '#111827', fontSize: '14px', fontWeight: 700 }}>
+            {currentUserPhoto
+              ? <img src={currentUserPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : currentUserInitial}
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.35)', margin: 0 }}>Write something to the group...</p>
         </div>
@@ -117,47 +128,33 @@ export default function GroupDiscussion({ groupId, currentUser }) {
             </button>
           </div>
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <textarea
-              autoFocus
-              value={postText}
-              onChange={e => setPostText(e.target.value)}
+            <textarea autoFocus value={postText} onChange={e => setPostText(e.target.value)}
               placeholder={showPoll ? "Add context for your poll..." : "What's on your mind?"}
-              rows={4}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: DARK_BORDER, borderRadius: '8px', padding: '12px', color: 'white', fontFamily: "'Inter', sans-serif", fontSize: '14px', resize: 'none', outline: 'none', boxSizing: 'border-box' }}
-            />
+              rows={4} style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: DARK_BORDER, borderRadius: '8px', padding: '12px', color: 'white', fontFamily: "'Inter', sans-serif", fontSize: '14px', resize: 'none', outline: 'none', boxSizing: 'border-box' }} />
 
-            {/* Poll Builder */}
             {showPoll && (
               <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <p style={{ fontSize: '12px', fontWeight: 600, color: '#a5b4fc', margin: 0 }}>Poll</p>
-                  <button onClick={() => setShowPoll(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                    <X style={{ width: '14px', height: '14px', color: '#a5b4fc' }} />
-                  </button>
+                  <button onClick={() => setShowPoll(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X style={{ width: '14px', height: '14px', color: '#a5b4fc' }} /></button>
                 </div>
                 <input value={pollQuestion} onChange={e => setPollQuestion(e.target.value)} placeholder="Ask a question..."
                   style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '6px', padding: '8px 12px', color: 'white', fontSize: '13px', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
                 {pollOptions.map((opt, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input value={opt} onChange={e => setPollOptions(prev => prev.map((o, idx) => idx === i ? e.target.value : o))}
-                      placeholder={`Option ${i + 1}`}
+                    <input value={opt} onChange={e => setPollOptions(prev => prev.map((o, idx) => idx === i ? e.target.value : o))} placeholder={`Option ${i + 1}`}
                       style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '6px', padding: '8px 12px', color: 'white', fontSize: '13px', outline: 'none' }} />
                     {pollOptions.length > 2 && (
-                      <button onClick={() => setPollOptions(prev => prev.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                        <X style={{ width: '14px', height: '14px', color: 'rgba(255,255,255,0.4)' }} />
-                      </button>
+                      <button onClick={() => setPollOptions(prev => prev.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X style={{ width: '14px', height: '14px', color: 'rgba(255,255,255,0.4)' }} /></button>
                     )}
                   </div>
                 ))}
                 {pollOptions.length < 5 && (
-                  <button onClick={() => setPollOptions(prev => [...prev, ''])} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#a5b4fc', textAlign: 'left', padding: 0 }}>
-                    + Add option
-                  </button>
+                  <button onClick={() => setPollOptions(prev => [...prev, ''])} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#a5b4fc', textAlign: 'left', padding: 0 }}>+ Add option</button>
                 )}
               </div>
             )}
 
-            {/* Media previews */}
             {mediaFiles.length > 0 && (
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {mediaFiles.map((f, i) => (
@@ -175,15 +172,12 @@ export default function GroupDiscussion({ groupId, currentUser }) {
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px', padding: '4px 10px' }}>
                     <Paperclip style={{ width: '12px', height: '12px', color: 'rgba(255,255,255,0.5)' }} />
                     <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-                    <button onClick={() => setAttachFiles(prev => prev.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                      <X style={{ width: '12px', height: '12px', color: 'rgba(255,255,255,0.4)' }} />
-                    </button>
+                    <button onClick={() => setAttachFiles(prev => prev.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X style={{ width: '12px', height: '12px', color: 'rgba(255,255,255,0.4)' }} /></button>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Actions */}
             <div style={{ border: DARK_BORDER, borderRadius: '8px', padding: '10px' }}>
               <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '0 0 8px', fontWeight: 500 }}>Add to your post</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -206,7 +200,6 @@ export default function GroupDiscussion({ groupId, currentUser }) {
         </div>
       )}
 
-      {/* Posts Feed */}
       {isLoading ? (
         <div style={{ textAlign: 'center', padding: '32px', color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter', sans-serif" }}>Loading posts...</div>
       ) : posts.length === 0 ? (
@@ -216,9 +209,14 @@ export default function GroupDiscussion({ groupId, currentUser }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {posts.map(post => (
-            <DiscussionPostCard key={post.id} post={post} currentUser={currentUser}
+            <DiscussionPostCard
+              key={post.id}
+              post={post}
+              currentUser={currentUser}
+              authorProfile={profileMap[post.author_email]}
               onDelete={() => deletePostMutation.mutate(post.id)}
-              onVote={(optionIndex) => voteMutation.mutate({ post, optionIndex })} />
+              onVote={(optionIndex) => voteMutation.mutate({ post, optionIndex })}
+            />
           ))}
         </div>
       )}
@@ -244,7 +242,7 @@ function ActionButton({ icon, label, color, onClick, active }) {
   );
 }
 
-function DiscussionPostCard({ post, currentUser, onDelete, onVote }) {
+function DiscussionPostCard({ post, currentUser, authorProfile, onDelete, onVote }) {
   const [showFull, setShowFull] = useState(false);
   const isAuthor = post.author_email === currentUser?.email;
   const pollOptions = post.poll_options ? JSON.parse(post.poll_options) : [];
@@ -254,17 +252,22 @@ function DiscussionPostCard({ post, currentUser, onDelete, onVote }) {
   const isLong = post.content?.length > 200;
   const displayContent = isLong && !showFull ? post.content.slice(0, 200) + '...' : post.content;
 
+  const photoUrl = authorProfile?.profile_photo_url;
+  const displayName = authorProfile?.full_name || post.author_name || 'Member';
+  const initial = displayName[0]?.toUpperCase() || '?';
+
   return (
     <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
       <div style={{ padding: '16px' }}>
-        {/* Author */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111827', fontSize: '13px', fontWeight: 700, flexShrink: 0 }}>
-              {post.author_name?.[0]?.toUpperCase() || '?'}
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#00DBC5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111827', fontSize: '13px', fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+              {photoUrl
+                ? <img src={photoUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : initial}
             </div>
             <div>
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'white', margin: 0 }}>{post.author_name || 'Member'}</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'white', margin: 0 }}>{displayName}</p>
               <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: 0 }}>{format(new Date(post.created_date), 'MMM d, yyyy · h:mm a')}</p>
             </div>
           </div>
@@ -275,17 +278,15 @@ function DiscussionPostCard({ post, currentUser, onDelete, onVote }) {
           )}
         </div>
 
-        {/* Content */}
         {post.content && (
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: '0 0 8px' }}>{displayContent}</p>
         )}
         {isLong && (
-          <button onClick={() => setShowFull(!showFull)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: ACCENT, display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
+          <button onClick={() => setShowFull(!showFull)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#00DBC5', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
             {showFull ? <><ChevronUp style={{ width: '12px', height: '12px' }} /> Show less</> : <><ChevronDown style={{ width: '12px', height: '12px' }} /> See more</>}
           </button>
         )}
 
-        {/* Media */}
         {post.media_urls?.length > 0 && (
           <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
             {post.media_urls.map((url, i) => (
@@ -294,12 +295,11 @@ function DiscussionPostCard({ post, currentUser, onDelete, onVote }) {
           </div>
         )}
 
-        {/* Files */}
         {post.file_urls?.length > 0 && (
           <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {post.file_urls.map((url, i) => (
               <a key={i} href={url} target="_blank" rel="noreferrer"
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: ACCENT, background: 'rgba(255,255,255,0.04)', borderRadius: '6px', padding: '6px 12px', textDecoration: 'none' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#00DBC5', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', padding: '6px 12px', textDecoration: 'none' }}>
                 <Paperclip style={{ width: '14px', height: '14px' }} />
                 {post.file_names?.[i] || `Attachment ${i + 1}`}
               </a>
@@ -307,7 +307,6 @@ function DiscussionPostCard({ post, currentUser, onDelete, onVote }) {
           </div>
         )}
 
-        {/* Poll */}
         {post.post_type === 'poll' && pollOptions.length > 0 && (
           <div style={{ marginTop: '12px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '8px', padding: '12px' }}>
             <p style={{ fontSize: '13px', fontWeight: 600, color: '#a5b4fc', margin: '0 0 10px' }}>{post.poll_question}</p>
@@ -317,8 +316,8 @@ function DiscussionPostCard({ post, currentUser, onDelete, onVote }) {
                 const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
                 const hasVoted = userVoted?.[0] === String(i);
                 return (
-                  <button key={i} onClick={() => onVote(i)} style={{ width: '100%', textAlign: 'left', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${hasVoted ? ACCENT : 'rgba(99,102,241,0.3)'}`, background: 'none', cursor: 'pointer', position: 'relative' }}>
-                    <div style={{ position: 'absolute', inset: 0, width: `${pct}%`, background: hasVoted ? `${ACCENT}20` : 'rgba(99,102,241,0.1)', borderRadius: '8px' }} />
+                  <button key={i} onClick={() => onVote(i)} style={{ width: '100%', textAlign: 'left', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${hasVoted ? '#00DBC5' : 'rgba(99,102,241,0.3)'}`, background: 'none', cursor: 'pointer', position: 'relative' }}>
+                    <div style={{ position: 'absolute', inset: 0, width: `${pct}%`, background: hasVoted ? 'rgba(0,219,197,0.2)' : 'rgba(99,102,241,0.1)', borderRadius: '8px' }} />
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', position: 'relative' }}>
                       <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.8)' }}>{opt}</span>
                       <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{pct}%</span>
