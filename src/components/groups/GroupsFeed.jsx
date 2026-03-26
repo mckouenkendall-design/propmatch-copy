@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Rss, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const ACCENT = '#00DBC5';
+
 export default function GroupsFeed({ myGroupIds = [] }) {
   const queryClient = useQueryClient();
 
@@ -34,6 +36,13 @@ export default function GroupsFeed({ myGroupIds = [] }) {
     queryFn: () => base44.entities.Group.filter({ status: 'active' }, '-created_date'),
   });
 
+  // Fetch all UserProfiles so we can show profile photos
+  const { data: userProfiles = [] } = useQuery({
+    queryKey: ['all-user-profiles'],
+    queryFn: () => base44.entities.UserProfile.list(),
+  });
+
+  const profileMap = Object.fromEntries(userProfiles.map(p => [p.user_email, p]));
   const groupMap = Object.fromEntries(groups.map(g => [g.id, g]));
 
   if (myGroupIds.length === 0) {
@@ -49,7 +58,7 @@ export default function GroupsFeed({ myGroupIds = [] }) {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: '80px' }}>
-        <div style={{ width: '28px', height: '28px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--tiffany-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ width: '28px', height: '28px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: ACCENT, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
@@ -69,19 +78,24 @@ export default function GroupsFeed({ myGroupIds = [] }) {
       <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: 0 }}>Your Feed</h2>
       {posts.map(post => {
         const group = groupMap[post.group_id];
+        const profile = profileMap[post.author_email];
+        const photoUrl = profile?.profile_photo_url;
+        const displayName = profile?.full_name || post.author_name || 'Unknown';
+        const initial = displayName[0]?.toUpperCase() || 'U';
+
         return (
           <div key={post.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px' }}>
             {/* Group label */}
             {group && (
               <Link
                 to={`/GroupDetail?id=${post.group_id}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', textDecoration: 'none', color: 'var(--tiffany-blue)', fontSize: '12px', fontWeight: 600 }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', textDecoration: 'none', color: ACCENT, fontSize: '12px', fontWeight: 600 }}
               >
                 {group.cover_image_url ? (
                   <img src={group.cover_image_url} alt={group.name} style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} />
                 ) : (
                   <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(0,219,197,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Users style={{ width: '12px', height: '12px', color: 'var(--tiffany-blue)' }} />
+                    <Users style={{ width: '12px', height: '12px', color: ACCENT }} />
                   </div>
                 )}
                 {group.name}
@@ -90,12 +104,17 @@ export default function GroupsFeed({ myGroupIds = [] }) {
 
             {/* Author & date */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--tiffany-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111827', fontSize: '13px', fontWeight: 700, flexShrink: 0 }}>
-                {(post.author_name || 'U')[0].toUpperCase()}
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111827', fontSize: '13px', fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+                {photoUrl
+                  ? <img src={photoUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : initial
+                }
               </div>
               <div>
-                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: 'white', margin: 0 }}>{post.author_name || 'Unknown'}</p>
-                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>{new Date(post.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: 'white', margin: 0 }}>{displayName}</p>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+                  {new Date(post.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
               </div>
             </div>
 
