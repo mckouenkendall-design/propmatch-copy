@@ -94,6 +94,46 @@ function Req() {
   return <span style={{ color: ACCENT, marginLeft: '2px' }}>*</span>;
 }
 
+// Numeric input with auto comma formatting
+function NumericInput({ value, onChange, placeholder, style, className, step }) {
+  const fmt = (v) => {
+    if (v === '' || v == null) return '';
+    const n = parseFloat(String(v).replace(/,/g, ''));
+    if (isNaN(n)) return '';
+    // Keep decimals if step is fractional
+    const dec = step && step < 1 ? 2 : 0;
+    return n.toLocaleString('en-US', { maximumFractionDigits: dec });
+  };
+
+  const [display, setDisplay] = React.useState(() => fmt(value));
+
+  React.useEffect(() => {
+    setDisplay(fmt(value));
+  }, []); // only on mount
+
+  const handleChange = (e) => {
+    const raw = e.target.value.replace(/[^0-9.]/g, '');
+    setDisplay(e.target.value.replace(/[^0-9.,]/g, ''));
+    onChange(raw);
+  };
+
+  const handleBlur = () => {
+    setDisplay(fmt(value));
+  };
+
+  return (
+    <input
+      type="text"
+      value={display}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      placeholder={placeholder}
+      style={style}
+      className={className || "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"}
+    />
+  );
+}
+
 export default function ListStep1({ data, update, onNext }) {
   const isCommercial = data.property_category === 'commercial';
   const types = isCommercial ? COMMERCIAL_TYPES : RESIDENTIAL_TYPES;
@@ -154,7 +194,7 @@ export default function ListStep1({ data, update, onNext }) {
       {/* Size (SF) */}
       <div className="space-y-1.5">
         <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Size (SF)<Req /></Label>
-        <Input type="number" value={data.size_sqft || ''} onChange={e => update({ size_sqft: e.target.value })}
+        <NumericInput value={data.size_sqft || ''} onChange={v => update({ size_sqft: v })}
           placeholder="5,000"
           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
       </div>
@@ -172,8 +212,8 @@ export default function ListStep1({ data, update, onNext }) {
         <>
           <div className="space-y-1.5">
             <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Asking Rate ($ / SF / yr)<Req /></Label>
-            <Input type="number" value={data.price || ''} onChange={e => update({ price: e.target.value })}
-              placeholder="e.g. 24.00"
+            <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
+              placeholder="e.g. 24.00" step={0.01}
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
             <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Price per square foot per year</p>
             {data.price && data.size_sqft && (
@@ -224,7 +264,7 @@ export default function ListStep1({ data, update, onNext }) {
       {isCommercial && showSalePrice && (
         <div className="space-y-1.5">
           <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($)<Req /></Label>
-          <Input type="number" value={data.price || ''} onChange={e => update({ price: e.target.value })}
+          <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
             placeholder="e.g. 1,250,000"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
         </div>
@@ -235,7 +275,7 @@ export default function ListStep1({ data, update, onNext }) {
         <>
           <div className="space-y-1.5">
             <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Monthly Rent ($/mo)<Req /></Label>
-            <Input type="number" value={data.price || ''} onChange={e => update({ price: e.target.value })}
+            <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
               placeholder="e.g. 2,500"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
           </div>
@@ -254,7 +294,7 @@ export default function ListStep1({ data, update, onNext }) {
       {!isCommercial && showSalePrice && (
         <div className="space-y-1.5">
           <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($)<Req /></Label>
-          <Input type="number" value={data.price || ''} onChange={e => update({ price: e.target.value })}
+          <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
             placeholder="e.g. 450,000"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
         </div>
