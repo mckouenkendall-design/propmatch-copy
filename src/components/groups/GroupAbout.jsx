@@ -12,7 +12,7 @@ export default function GroupAbout({ group, memberCount }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: 'white', margin: 0 }}>About this Group</h3>
+        <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: 'white', margin: 0 }}>About this Fishtank</h3>
 
         {group.description && (
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, margin: 0 }}>{group.description}</p>
@@ -58,7 +58,7 @@ export default function GroupAbout({ group, memberCount }) {
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <BookOpen style={{ width: '16px', height: '16px', color: ACCENT }} />
-            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: 'white', margin: 0 }}>Group Rules</h3>
+            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: 'white', margin: 0 }}>Fishtank Rules</h3>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>{group.rules}</p>
         </div>

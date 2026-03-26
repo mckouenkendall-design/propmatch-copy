@@ -117,7 +117,7 @@ export default function GroupDiscussion({ groupId, currentUser }) {
               ? <img src={currentUserPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : currentUserInitial}
           </div>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.35)', margin: 0 }}>Write something to the group...</p>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.35)', margin: 0 }}>Write something to the Fishtank...</p>
         </div>
       ) : (
         <div style={{ background: DARK_BG, border: DARK_BORDER, borderRadius: '12px', overflow: 'hidden' }}>
