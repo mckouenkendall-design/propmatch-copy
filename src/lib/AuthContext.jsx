@@ -127,14 +127,27 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
 
-      if (window.location.pathname === '/' && authUser) {
+      const pathname = window.location.pathname;
+
+      // Pages that should never trigger auto-routing
+      const noRedirectPages = ['/Onboarding', '/Terms', '/Privacy', '/AboutUs', '/Blog', '/Careers', '/Affiliate'];
+      const isNoRedirect = noRedirectPages.some(p => pathname.startsWith(p));
+
+      if (!isNoRedirect && authUser) {
         const needsOnboarding = !authUser.user_type && !(profile?.user_type);
-        if (!needsOnboarding) {
-          const userType = profile?.user_type || authUser.user_type;
-          const defaultPage = userType === 'principal_broker' ? '/BrokerDashboard' : '/Dealboard';
-          window.location.href = defaultPage;
-        } else {
+
+        if (needsOnboarding) {
+          // Brand new user — always send to Onboarding regardless of how they signed in
           window.location.href = '/Onboarding';
+        } else {
+          // Existing user on root or Landing — send to their dashboard
+          const onLandingOrRoot = pathname === '/' || pathname.startsWith('/Landing');
+          if (onLandingOrRoot) {
+            const userType = profile?.user_type || authUser.user_type;
+            const defaultPage = userType === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
+            window.location.href = defaultPage;
+          }
+          // Already on an app page — don't redirect, let them stay
         }
       }
     } catch (error) {
