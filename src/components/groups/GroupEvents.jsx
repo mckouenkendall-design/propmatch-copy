@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Plus, Calendar, MapPin, Video, Clock, Users, ExternalLink, Trash2 } from 'lucide-react';
+import { Plus, Calendar, MapPin, Video, Clock, Users, ExternalLink, Trash2, Mail, Phone, Building } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import GroupEventModal from './GroupEventModal';
 
@@ -26,6 +26,13 @@ export default function GroupEvents({ groupId, currentUser }) {
     queryKey: ['group-events', groupId],
     queryFn: () => base44.entities.GroupEvent.filter({ group_id: groupId }, 'start_datetime'),
   });
+
+  // Fetch profiles so EventCard can show host info
+  const { data: userProfiles = [] } = useQuery({
+    queryKey: ['all-user-profiles'],
+    queryFn: () => base44.entities.UserProfile.list(),
+  });
+  const profileMap = Object.fromEntries(userProfiles.map(p => [p.user_email, p]));
 
   const rsvpMutation = useMutation({
     mutationFn: async (event) => {
@@ -68,7 +75,7 @@ export default function GroupEvents({ groupId, currentUser }) {
               <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px' }}>Upcoming</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {upcoming.map(event => (
-                  <EventCard key={event.id} event={event} currentUser={currentUser}
+                  <EventCard key={event.id} event={event} currentUser={currentUser} hostProfile={profileMap[event.host_email]}
                     onRsvp={() => rsvpMutation.mutate(event)} onDelete={() => deleteMutation.mutate(event.id)} />
                 ))}
               </div>
@@ -79,7 +86,7 @@ export default function GroupEvents({ groupId, currentUser }) {
               <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px' }}>Past Events</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {past.map(event => (
-                  <EventCard key={event.id} event={event} currentUser={currentUser}
+                  <EventCard key={event.id} event={event} currentUser={currentUser} hostProfile={profileMap[event.host_email]}
                     onRsvp={() => rsvpMutation.mutate(event)} onDelete={() => deleteMutation.mutate(event.id)} isPast />
                 ))}
               </div>
@@ -96,12 +103,22 @@ export default function GroupEvents({ groupId, currentUser }) {
   );
 }
 
-function EventCard({ event, currentUser, onRsvp, onDelete, isPast }) {
+function EventCard({ event, currentUser, hostProfile, onRsvp, onDelete, isPast }) {
   const rsvpList = JSON.parse(event.rsvp_list || '[]');
   const isRsvpd = rsvpList.includes(currentUser?.email);
   const isHost = event.host_email === currentUser?.email;
   const color = EVENT_TYPE_COLORS[event.event_type] || '#9ca3af';
   const cohosts = event.cohosts ? event.cohosts.split(',').map(e => e.trim()).filter(Boolean) : [];
+  const isCohost = cohosts.includes(currentUser?.email);
+
+  // Host display info — from profile if available, fallback to event fields
+  const hostName = hostProfile?.full_name || event.host_name || event.host_email || 'Unknown';
+  const hostPhoto = hostProfile?.profile_photo_url;
+  const hostEmail = hostProfile?.contact_email || event.host_email;
+  const hostPhone = hostProfile?.phone;
+  const hostUsername = hostProfile?.username;
+  const hostCompany = hostProfile?.brokerage_name;
+  const hostInitial = hostName[0]?.toUpperCase() || '?';
 
   return (
     <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
@@ -125,11 +142,6 @@ function EventCard({ event, currentUser, onRsvp, onDelete, isPast }) {
               )}
             </div>
             <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 700, color: 'white', margin: 0 }}>{event.title}</h3>
-            {(isHost || cohosts.includes(currentUser?.email)) && (
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0' }}>
-                {isHost ? 'You are hosting' : 'You are a co-host'}
-              </p>
-            )}
           </div>
           {isHost && !isPast && (
             <button onClick={onDelete} style={{ padding: '6px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '6px' }}
@@ -138,6 +150,48 @@ function EventCard({ event, currentUser, onRsvp, onDelete, isPast }) {
               <Trash2 style={{ width: '16px', height: '16px', color: 'rgba(255,255,255,0.3)' }} />
             </button>
           )}
+        </div>
+
+        {/* Host info */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: ACCENT, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111827', fontSize: '14px', fontWeight: 700 }}>
+            {hostPhoto
+              ? <img src={hostPhoto} alt={hostName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : hostInitial}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {isHost || isCohost ? (
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: ACCENT, fontWeight: 500, margin: 0 }}>
+                {isHost ? 'You are hosting' : 'You are a co-host'}
+              </p>
+            ) : (
+              <>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'white', margin: '0 0 2px' }}>
+                  Hosted by {hostName}
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {hostUsername && (
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>@{hostUsername}</span>
+                  )}
+                  {hostCompany && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>
+                      <Building style={{ width: '11px', height: '11px' }} />{hostCompany}
+                    </span>
+                  )}
+                  {hostEmail && (
+                    <a href={`mailto:${hostEmail}`} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, textDecoration: 'none' }}>
+                      <Mail style={{ width: '11px', height: '11px' }} />{hostEmail}
+                    </a>
+                  )}
+                  {hostPhone && (
+                    <a href={`tel:${hostPhone}`} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, textDecoration: 'none' }}>
+                      <Phone style={{ width: '11px', height: '11px' }} />{hostPhone}
+                    </a>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Date / Time */}
@@ -154,7 +208,6 @@ function EventCard({ event, currentUser, onRsvp, onDelete, isPast }) {
           )}
         </div>
 
-        {/* Location */}
         {event.location_type === 'physical' && event.address && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
             <MapPin style={{ width: '14px', height: '14px', color: 'rgba(255,255,255,0.4)' }} />
@@ -175,7 +228,6 @@ function EventCard({ event, currentUser, onRsvp, onDelete, isPast }) {
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 12px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{event.description}</p>
         )}
 
-        {/* Footer */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Users style={{ width: '14px', height: '14px', color: 'rgba(255,255,255,0.4)' }} />
