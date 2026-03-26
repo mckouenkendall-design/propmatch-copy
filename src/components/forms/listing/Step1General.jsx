@@ -124,6 +124,7 @@ export default function ListStep1({ data, update, onNext }) {
     data.property_type &&
     data.size_sqft &&
     data.transaction_type &&
+    data.price &&
     data.city &&
     data.state &&
     data.zip_code
@@ -170,7 +171,7 @@ export default function ListStep1({ data, update, onNext }) {
       {showLease && (
         <>
           <div className="space-y-1.5">
-            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Asking Rate ($ / SF / yr)</Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Asking Rate ($ / SF / yr)<Req /></Label>
             <Input type="number" value={data.price || ''} onChange={e => update({ price: e.target.value })}
               placeholder="e.g. 24.00"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
@@ -222,7 +223,7 @@ export default function ListStep1({ data, update, onNext }) {
       {/* Commercial Sale */}
       {isCommercial && showSalePrice && (
         <div className="space-y-1.5">
-          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($)</Label>
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($)<Req /></Label>
           <Input type="number" value={data.price || ''} onChange={e => update({ price: e.target.value })}
             placeholder="e.g. 1,250,000"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
@@ -233,7 +234,7 @@ export default function ListStep1({ data, update, onNext }) {
       {showRent && (
         <>
           <div className="space-y-1.5">
-            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Monthly Rent ($/mo)</Label>
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Monthly Rent ($/mo)<Req /></Label>
             <Input type="number" value={data.price || ''} onChange={e => update({ price: e.target.value })}
               placeholder="e.g. 2,500"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
@@ -252,7 +253,7 @@ export default function ListStep1({ data, update, onNext }) {
       {/* Residential Sale */}
       {!isCommercial && showSalePrice && (
         <div className="space-y-1.5">
-          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($)</Label>
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($)<Req /></Label>
           <Input type="number" value={data.price || ''} onChange={e => update({ price: e.target.value })}
             placeholder="e.g. 450,000"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
