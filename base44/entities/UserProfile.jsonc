@@ -1,0 +1,140 @@
+{
+  "name": "UserProfile",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user this profile belongs to"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "contact_email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "user_type": {
+      "type": "string"
+    },
+    "brokerage_name": {
+      "type": "string"
+    },
+    "brokerage_address": {
+      "type": "string"
+    },
+    "employing_broker_id": {
+      "type": "string"
+    },
+    "license_number": {
+      "type": "string"
+    },
+    "verification_status": {
+      "type": "string"
+    },
+    "property_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "transaction_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bio": {
+      "type": "string",
+      "description": "Long-form bio text"
+    },
+    "years_experience": {
+      "type": "number"
+    },
+    "specialties": {
+      "type": "string"
+    },
+    "certifications": {
+      "type": "string"
+    },
+    "languages": {
+      "type": "string"
+    },
+    "linkedin": {
+      "type": "string"
+    },
+    "website": {
+      "type": "string"
+    },
+    "instagram": {
+      "type": "string"
+    },
+    "tiktok": {
+      "type": "string"
+    },
+    "facebook": {
+      "type": "string"
+    },
+    "profile_photo_url": {
+      "type": "string"
+    },
+    "selected_plan": {
+      "type": "string"
+    },
+    "subscription_status": {
+      "type": "string",
+      "description": "Current subscription status (e.g. active, paused, cancelled)"
+    },
+    "banked_days": {
+      "type": "number",
+      "description": "Number of banked days remaining from a paused subscription"
+    },
+    "individual_plan_paused_date": {
+      "type": "string",
+      "description": "ISO date when the individual plan was paused"
+    },
+    "cancellation_reason": {
+      "type": "string",
+      "description": "Reason provided by the user for cancelling their subscription"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID for this user"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID for this user"
+    },
+    "email_notifications": {
+      "type": "boolean"
+    },
+    "match_alerts": {
+      "type": "boolean"
+    },
+    "group_notifications": {
+      "type": "boolean"
+    },
+    "message_notifications": {
+      "type": "boolean"
+    },
+    "language": {
+      "type": "string"
+    },
+    "auto_renew": {
+      "type": "boolean"
+    },
+    "billing_cycle": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

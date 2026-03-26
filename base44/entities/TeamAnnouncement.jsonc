@@ -1,0 +1,36 @@
+{
+  "name": "TeamAnnouncement",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string",
+      "description": "Brokerage ID this announcement belongs to"
+    },
+    "title": {
+      "type": "string",
+      "description": "Announcement title"
+    },
+    "content": {
+      "type": "string",
+      "description": "Announcement message content"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Name of the person who posted the announcement"
+    },
+    "author_email": {
+      "type": "string",
+      "description": "Email of the author"
+    },
+    "pinned": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this announcement is pinned to the top"
+    }
+  },
+  "required": [
+    "brokerage_id",
+    "title",
+    "content"
+  ]
+}

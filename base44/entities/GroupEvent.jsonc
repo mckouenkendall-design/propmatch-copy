@@ -1,0 +1,117 @@
+{
+  "name": "GroupEvent",
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string",
+      "description": "ID of the group this event belongs to"
+    },
+    "title": {
+      "type": "string",
+      "description": "Event title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Full event description / agenda"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "networking",
+        "workshop",
+        "open_house",
+        "webinar",
+        "social",
+        "site_tour",
+        "other"
+      ],
+      "default": "networking",
+      "description": "Type of event"
+    },
+    "start_datetime": {
+      "type": "string",
+      "description": "ISO datetime for event start"
+    },
+    "end_datetime": {
+      "type": "string",
+      "description": "ISO datetime for event end"
+    },
+    "timezone": {
+      "type": "string",
+      "description": "Timezone for the event (e.g. America/Detroit)"
+    },
+    "location_type": {
+      "type": "string",
+      "enum": [
+        "physical",
+        "online",
+        "tba"
+      ],
+      "default": "physical"
+    },
+    "address": {
+      "type": "string",
+      "description": "Physical address (if location_type is physical)"
+    },
+    "online_link": {
+      "type": "string",
+      "description": "Meeting URL (if location_type is online)"
+    },
+    "cover_image_url": {
+      "type": "string",
+      "description": "Event banner or cover image URL"
+    },
+    "max_attendees": {
+      "type": "number",
+      "description": "Maximum number of attendees (blank = unlimited)"
+    },
+    "rsvp_required": {
+      "type": "boolean",
+      "default": false
+    },
+    "rsvp_deadline": {
+      "type": "string",
+      "description": "ISO date for RSVP deadline"
+    },
+    "allow_guests": {
+      "type": "boolean",
+      "default": false,
+      "description": "Can attendees bring +1s?"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Contact email for event-specific inquiries"
+    },
+    "cohosts": {
+      "type": "string",
+      "description": "JSON array of co-host user emails"
+    },
+    "rsvp_list": {
+      "type": "string",
+      "description": "JSON array of RSVP'd user emails"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "upcoming",
+        "ongoing",
+        "past",
+        "cancelled"
+      ],
+      "default": "upcoming"
+    },
+    "host_email": {
+      "type": "string",
+      "description": "Email of the event host/creator"
+    },
+    "host_name": {
+      "type": "string",
+      "description": "Display name of the host"
+    }
+  },
+  "required": [
+    "group_id",
+    "title",
+    "start_datetime"
+  ]
+}

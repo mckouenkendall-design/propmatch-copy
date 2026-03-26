@@ -1,0 +1,45 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the recipient"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "match",
+        "group_post",
+        "message",
+        "subscription",
+        "announcement",
+        "event"
+      ],
+      "description": "Notification category"
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "link": {
+      "type": "string",
+      "description": "In-app navigation path"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false
+    },
+    "related_id": {
+      "type": "string",
+      "description": "ID of the related entity record"
+    }
+  },
+  "required": [
+    "user_email",
+    "type",
+    "title"
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "name": "TeamCall",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string",
+      "description": "Brokerage ID this call belongs to"
+    },
+    "title": {
+      "type": "string",
+      "description": "Call title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Call description or agenda"
+    },
+    "meeting_link": {
+      "type": "string",
+      "description": "Video call link (Zoom, Teams, etc.)"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "description": "ISO datetime for when the call is scheduled"
+    },
+    "organizer_name": {
+      "type": "string",
+      "description": "Name of the person organizing the call"
+    },
+    "organizer_email": {
+      "type": "string",
+      "description": "Email of the organizer"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "upcoming",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "upcoming",
+      "description": "Call status"
+    }
+  },
+  "required": [
+    "brokerage_id",
+    "title",
+    "meeting_link",
+    "scheduled_date"
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "name": "Requirement",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Auto-generated requirement title"
+    },
+    "property_type": {
+      "type": "string",
+      "enum": [
+        "residential",
+        "commercial",
+        "industrial",
+        "retail",
+        "office",
+        "land"
+      ],
+      "description": "Type of property needed"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "sale",
+        "lease",
+        "rent"
+      ],
+      "description": "Looking to buy or lease"
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Preferred cities"
+    },
+    "max_price": {
+      "type": "number",
+      "description": "Maximum budget"
+    },
+    "min_price": {
+      "type": "number",
+      "description": "Minimum budget"
+    },
+    "price_period": {
+      "type": "string",
+      "enum": [
+        "purchase",
+        "per_month",
+        "per_sf_per_year"
+      ],
+      "default": "purchase",
+      "description": "How the price range is expressed"
+    },
+    "min_size_sqft": {
+      "type": "number",
+      "description": "Minimum size needed"
+    },
+    "max_size_sqft": {
+      "type": "number",
+      "description": "Maximum size needed"
+    },
+    "min_bedrooms": {
+      "type": "number",
+      "description": "Minimum bedrooms (residential)"
+    },
+    "min_bathrooms": {
+      "type": "number",
+      "description": "Minimum bathrooms (residential)"
+    },
+    "required_amenities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Must-have amenities"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional requirements or notes"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "matched",
+        "closed"
+      ],
+      "default": "active"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "team",
+        "brokerage",
+        "private"
+      ],
+      "default": "public",
+      "description": "Who can see this requirement"
+    },
+    "visibility_groups": {
+      "type": "string",
+      "description": "Group ID(s) for team visibility (comma-separated)"
+    },
+    "brokerage_id": {
+      "type": "string",
+      "description": "Brokerage ID for brokerage-only visibility"
+    },
+    "visibility_recipient_email": {
+      "type": "string",
+      "description": "Recipient email for private invite-only access"
+    }
+  },
+  "required": [
+    "property_type",
+    "transaction_type",
+    "max_price"
+  ]
+}

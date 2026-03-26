@@ -1,0 +1,81 @@
+{
+  "name": "GroupPost",
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string",
+      "description": "ID of the group this post belongs to"
+    },
+    "author_email": {
+      "type": "string",
+      "description": "Email of the post author"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Display name of the post author"
+    },
+    "content": {
+      "type": "string",
+      "description": "Main text content of the post"
+    },
+    "post_type": {
+      "type": "string",
+      "enum": [
+        "text",
+        "poll",
+        "event_share"
+      ],
+      "default": "text",
+      "description": "Type of discussion post"
+    },
+    "media_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of uploaded photo/video URLs"
+    },
+    "file_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of attached file URLs"
+    },
+    "file_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Original file names for attached files"
+    },
+    "poll_question": {
+      "type": "string",
+      "description": "Poll question (if post_type is poll)"
+    },
+    "poll_options": {
+      "type": "string",
+      "description": "JSON array of poll option strings"
+    },
+    "poll_votes": {
+      "type": "string",
+      "description": "JSON object mapping option index to array of voter emails"
+    },
+    "tagged_event_id": {
+      "type": "string",
+      "description": "ID of a tagged group event"
+    },
+    "reaction_counts": {
+      "type": "string",
+      "description": "JSON object of emoji reaction counts"
+    },
+    "comment_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "group_id",
+    "content"
+  ]
+}

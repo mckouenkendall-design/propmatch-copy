@@ -1,0 +1,39 @@
+{
+  "name": "Template",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the template"
+    },
+    "template_type": {
+      "type": "string",
+      "enum": [
+        "listing",
+        "requirement"
+      ],
+      "description": "Type of template: listing or requirement"
+    },
+    "property_category": {
+      "type": "string",
+      "enum": [
+        "commercial",
+        "residential"
+      ],
+      "description": "Property category for display/filtering"
+    },
+    "property_type": {
+      "type": "string",
+      "description": "Specific property type for display"
+    },
+    "data": {
+      "type": "string",
+      "description": "JSON string of the saved form data"
+    }
+  },
+  "required": [
+    "name",
+    "template_type",
+    "data"
+  ]
+}

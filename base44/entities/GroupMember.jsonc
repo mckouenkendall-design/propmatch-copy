@@ -1,0 +1,42 @@
+{
+  "name": "GroupMember",
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string",
+      "description": "ID of the group"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the member"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Display name of the member"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "moderator",
+        "member"
+      ],
+      "default": "member",
+      "description": "Role within the group"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending",
+        "banned"
+      ],
+      "default": "active",
+      "description": "Membership status (pending = awaiting approval for private groups)"
+    }
+  },
+  "required": [
+    "group_id",
+    "user_email"
+  ]
+}

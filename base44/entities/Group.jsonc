@@ -1,0 +1,62 @@
+{
+  "name": "Group",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Group name"
+    },
+    "description": {
+      "type": "string",
+      "description": "About / description of the group"
+    },
+    "cover_image_url": {
+      "type": "string",
+      "description": "URL of the group cover photo"
+    },
+    "group_type": {
+      "type": "string",
+      "enum": [
+        "public",
+        "private"
+      ],
+      "default": "public",
+      "description": "Public groups are open to all; private groups require approval"
+    },
+    "focus_category": {
+      "type": "string",
+      "enum": [
+        "commercial",
+        "residential",
+        "mixed",
+        "general"
+      ],
+      "default": "general",
+      "description": "Primary property category focus of the group"
+    },
+    "location": {
+      "type": "string",
+      "description": "Primary geographic focus (e.g. Detroit Metro, Southeast Michigan)"
+    },
+    "rules": {
+      "type": "string",
+      "description": "Group rules or guidelines"
+    },
+    "member_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Cached count of members"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "archived"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

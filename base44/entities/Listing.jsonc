@@ -1,0 +1,163 @@
+{
+  "name": "Listing",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Property title or address"
+    },
+    "property_category": {
+      "type": "string",
+      "enum": [
+        "commercial",
+        "residential"
+      ]
+    },
+    "property_type": {
+      "type": "string",
+      "enum": [
+        "office",
+        "medical_office",
+        "retail",
+        "industrial_flex",
+        "land",
+        "special_use",
+        "single_family",
+        "condo",
+        "apartment",
+        "multi_family",
+        "multi_family_5",
+        "townhouse",
+        "manufactured",
+        "land_residential"
+      ]
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "sale",
+        "lease",
+        "sublease",
+        "rent"
+      ]
+    },
+    "lease_type": {
+      "type": "string",
+      "enum": [
+        "full_service_gross",
+        "modified_gross",
+        "net_lease",
+        "ground_lease",
+        "percentage_lease"
+      ],
+      "description": "Type of lease structure"
+    },
+    "lease_sub": {
+      "type": "string",
+      "description": "Sub-selection: net lease type or JSON array of Modified Gross expenses"
+    },
+    "utilities_included": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Utilities included in rent (residential)"
+    },
+    "price_period": {
+      "type": "string",
+      "enum": [
+        "total",
+        "per_month",
+        "per_sf_per_year"
+      ],
+      "default": "total"
+    },
+    "address": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "zip_code": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number",
+      "description": "Price \u2014 total for sale, $/mo for rent, $/SF/yr for lease"
+    },
+    "size_sqft": {
+      "type": "number"
+    },
+    "property_details": {
+      "type": "string",
+      "description": "JSON string of property-specific details from step 2"
+    },
+    "description": {
+      "type": "string"
+    },
+    "amenities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending",
+        "closed"
+      ],
+      "default": "active"
+    },
+    "contact_agent_name": {
+      "type": "string"
+    },
+    "contact_agent_email": {
+      "type": "string"
+    },
+    "contact_agent_phone": {
+      "type": "string"
+    },
+    "company_name": {
+      "type": "string",
+      "description": "Brokerage or company name"
+    },
+    "brokerage_id": {
+      "type": "string",
+      "description": "Brokerage ID for matching logic and brokerage-only visibility"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "team",
+        "brokerage",
+        "private"
+      ],
+      "default": "public",
+      "description": "Who can see this listing"
+    },
+    "visibility_groups": {
+      "type": "string",
+      "description": "Networking group(s) for team visibility"
+    },
+    "visibility_recipient_email": {
+      "type": "string",
+      "description": "Recipient email for private invite-only access"
+    },
+    "allow_direct_contact": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether Email/Call buttons are shown on the post"
+    }
+  },
+  "required": [
+    "property_type",
+    "transaction_type",
+    "city"
+  ]
+}

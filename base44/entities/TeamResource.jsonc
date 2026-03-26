@@ -1,0 +1,73 @@
+{
+  "name": "TeamResource",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string",
+      "description": "Brokerage ID this resource belongs to"
+    },
+    "title": {
+      "type": "string",
+      "description": "Resource title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Resource description"
+    },
+    "resource_type": {
+      "type": "string",
+      "enum": [
+        "document",
+        "template",
+        "guide",
+        "form",
+        "presentation",
+        "other"
+      ],
+      "default": "document",
+      "description": "Type of resource"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL to the uploaded file"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original file name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "marketing",
+        "legal",
+        "training",
+        "operations",
+        "sales",
+        "general"
+      ],
+      "default": "general",
+      "description": "Resource category for organization"
+    },
+    "uploaded_by_name": {
+      "type": "string",
+      "description": "Name of the person who uploaded"
+    },
+    "uploaded_by_email": {
+      "type": "string",
+      "description": "Email of uploader"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Search tags for the resource"
+    }
+  },
+  "required": [
+    "brokerage_id",
+    "title",
+    "resource_type",
+    "file_url"
+  ]
+}

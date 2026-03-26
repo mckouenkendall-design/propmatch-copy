@@ -1,0 +1,57 @@
+{
+  "name": "BrokerageRoster",
+  "type": "object",
+  "properties": {
+    "broker_email": {
+      "type": "string",
+      "description": "Email of the managing broker who owns this subscription"
+    },
+    "broker_name": {
+      "type": "string",
+      "description": "Full name of the managing broker"
+    },
+    "brokerage_name": {
+      "type": "string",
+      "description": "Name of the brokerage"
+    },
+    "employing_broker_number": {
+      "type": "string",
+      "description": "Unique broker license/ID number"
+    },
+    "total_seats": {
+      "type": "number",
+      "description": "Total seats purchased in subscription"
+    },
+    "agent_email": {
+      "type": "string",
+      "description": "Email of authorized agent"
+    },
+    "agent_name": {
+      "type": "string",
+      "description": "Name of authorized agent"
+    },
+    "agent_license": {
+      "type": "string",
+      "description": "Agent license number (optional)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active",
+      "description": "Status of this roster entry"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID for this brokerage plan"
+    }
+  },
+  "required": [
+    "broker_email",
+    "employing_broker_number",
+    "total_seats",
+    "agent_email"
+  ]
+}

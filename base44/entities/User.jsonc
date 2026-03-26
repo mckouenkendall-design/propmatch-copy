@@ -1,0 +1,213 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user",
+      "description": "User role in the system"
+    },
+    "user_type": {
+      "type": "string",
+      "enum": [
+        "agent",
+        "principal_broker"
+      ],
+      "description": "Professional role type: agent or principal broker"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Email address visible to other agents for contact purposes"
+    },
+    "username": {
+      "type": "string",
+      "description": "Unique username for the user"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "state": {
+      "type": "string",
+      "description": "State where user is licensed"
+    },
+    "brokerage_name": {
+      "type": "string",
+      "description": "Brokerage firm name"
+    },
+    "brokerage_address": {
+      "type": "string",
+      "description": "Brokerage physical address"
+    },
+    "employing_broker_id": {
+      "type": "string",
+      "description": "Employing broker license number (read-only, set during onboarding)"
+    },
+    "license_number": {
+      "type": "string",
+      "description": "Real estate license number (read-only, set during onboarding)"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Professional bio"
+    },
+    "specialties": {
+      "type": "string",
+      "description": "Professional specialties"
+    },
+    "certifications": {
+      "type": "string",
+      "description": "Professional certifications"
+    },
+    "languages": {
+      "type": "string",
+      "description": "Languages spoken"
+    },
+    "years_experience": {
+      "type": "string",
+      "description": "Years of real estate experience"
+    },
+    "linkedin": {
+      "type": "string",
+      "description": "LinkedIn profile URL"
+    },
+    "website": {
+      "type": "string",
+      "description": "Personal or company website"
+    },
+    "instagram": {
+      "type": "string",
+      "description": "Instagram profile URL"
+    },
+    "tiktok": {
+      "type": "string",
+      "description": "TikTok profile URL"
+    },
+    "facebook": {
+      "type": "string",
+      "description": "Facebook profile URL"
+    },
+    "profile_photo_url": {
+      "type": "string",
+      "description": "Profile photo URL"
+    },
+    "selected_plan": {
+      "type": "string",
+      "enum": [
+        "free",
+        "individual",
+        "brokerage"
+      ],
+      "description": "Current subscription plan"
+    },
+    "brokerage_seats": {
+      "type": "number",
+      "description": "Number of seats for brokerage plan"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID"
+    },
+    "profile_visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "network",
+        "private"
+      ],
+      "default": "public"
+    },
+    "show_email": {
+      "type": "boolean",
+      "default": true
+    },
+    "show_phone": {
+      "type": "boolean",
+      "default": true
+    },
+    "allow_messages": {
+      "type": "boolean",
+      "default": true
+    },
+    "email_notifications": {
+      "type": "boolean",
+      "default": true
+    },
+    "match_alerts": {
+      "type": "boolean",
+      "default": true
+    },
+    "group_notifications": {
+      "type": "boolean",
+      "default": true
+    },
+    "message_notifications": {
+      "type": "boolean",
+      "default": true
+    },
+    "theme": {
+      "type": "string",
+      "enum": [
+        "dark",
+        "light",
+        "auto"
+      ],
+      "default": "dark"
+    },
+    "language": {
+      "type": "string",
+      "default": "en"
+    },
+    "referral_source": {
+      "type": "string",
+      "description": "How they heard about PropMatch"
+    },
+    "theme_preference": {
+      "type": "string",
+      "description": "Theme selection from onboarding"
+    },
+    "property_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Property categories user works in"
+    },
+    "property_categories_other": {
+      "type": "string",
+      "description": "Other property categories specified by user"
+    },
+    "transaction_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Transaction types user handles"
+    },
+    "transaction_types_other": {
+      "type": "string",
+      "description": "Other transaction types specified by user"
+    },
+    "verification_status": {
+      "type": "string",
+      "description": "License verification status"
+    },
+    "broker_sponsored": {
+      "type": "boolean",
+      "description": "Whether user is on a broker's sponsored plan"
+    },
+    "roster_broker_email": {
+      "type": "string",
+      "description": "Email of sponsoring broker if applicable"
+    }
+  },
+  "required": []
+}
