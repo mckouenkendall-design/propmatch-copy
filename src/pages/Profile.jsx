@@ -23,54 +23,42 @@ function formatPhone(raw) {
 }
 
 // ── Circular Crop Modal ──────────────────────────────────────────────────────
-// Design: full image always visible. Area outside the circle is dimmed.
-// Circle shows full brightness. Drag to reposition. Slider to zoom.
+// Single <img> element. SVG overlay darkens everything outside the circle.
+// No two-image alignment issues. Drag to reposition, slider to zoom.
 function CropModal({ imageSrc, onConfirm, onCancel }) {
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null);
+  const CONTAINER = 360;
   const imgRef = useRef(null);
 
-  const [zoom, setZoom] = useState(MIN_ZOOM);
+  const [zoom, setZoom] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ mx: 0, my: 0, px: 0, py: 0 });
-  const [imgLoaded, setImgLoaded] = useState(false);
   const [imgNatural, setImgNatural] = useState({ w: 1, h: 1 });
+  const [imgLoaded, setImgLoaded] = useState(false);
 
-  const CONTAINER = CROP_SIZE + 80;
-
-  // Preload via JS Image — avoids onLoad not firing when browser has cached the src
   useEffect(() => {
     const image = new Image();
     image.onload = () => {
       setImgNatural({ w: image.naturalWidth, h: image.naturalHeight });
       setImgLoaded(true);
-      setZoom(MIN_ZOOM);
+      setZoom(1);
       setPos({ x: 0, y: 0 });
     };
     image.onerror = () => console.error('CropModal: failed to load image');
     image.src = imageSrc;
   }, [imageSrc]);
 
-  // Rendered image size at current zoom
-  const aspect = imgNatural.w / imgNatural.h;
-  // Fit image so its shorter side fills the container at zoom=1
+  // At zoom=1, fit so shorter side fills the container
+  const aspect = imgNatural.w / (imgNatural.h || 1);
   let baseW, baseH;
-  if (aspect >= 1) {
-    baseH = CONTAINER;
-    baseW = CONTAINER * aspect;
-  } else {
-    baseW = CONTAINER;
-    baseH = CONTAINER / aspect;
-  }
+  if (aspect >= 1) { baseH = CONTAINER; baseW = CONTAINER * aspect; }
+  else             { baseW = CONTAINER; baseH = CONTAINER / aspect; }
   const rendW = baseW * zoom;
   const rendH = baseH * zoom;
 
-  // Clamp pos so image always covers the circle
   const clamp = useCallback((px, py, z) => {
     const rw = baseW * z;
     const rh = baseH * z;
-    // Max offset = half the excess beyond container
     const maxX = Math.max(0, (rw - CONTAINER) / 2);
     const maxY = Math.max(0, (rh - CONTAINER) / 2);
     return {
@@ -78,6 +66,10 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
       y: Math.max(-maxY, Math.min(maxY, py)),
     };
   }, [baseW, baseH]);
+
+  // Image top-left in container
+  const imgLeft = (CONTAINER - rendW) / 2 + pos.x;
+  const imgTop  = (CONTAINER - rendH) / 2 + pos.y;
 
   const handleMouseDown = (e) => {
     e.preventDefault();
@@ -87,28 +79,25 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
 
   const handleMouseMove = useCallback((e) => {
     if (!dragging) return;
-    const dx = e.clientX - dragStart.mx;
-    const dy = e.clientY - dragStart.my;
-    setPos(clamp(dragStart.px + dx, dragStart.py + dy, zoom));
+    setPos(clamp(dragStart.px + e.clientX - dragStart.mx, dragStart.py + e.clientY - dragStart.my, zoom));
   }, [dragging, dragStart, zoom, clamp]);
 
   const handleMouseUp = useCallback(() => setDragging(false), []);
 
   useEffect(() => {
-    if (dragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
+    if (!dragging) return;
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
   }, [dragging, handleMouseMove, handleMouseUp]);
 
   const handleZoomChange = (e) => {
-    const newZoom = parseFloat(e.target.value);
-    setZoom(newZoom);
-    setPos(prev => clamp(prev.x, prev.y, newZoom));
+    const z = parseFloat(e.target.value);
+    setZoom(z);
+    setPos(prev => clamp(prev.x, prev.y, z));
   };
 
   const handleConfirm = () => {
@@ -118,105 +107,57 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
     const ctx = canvas.getContext('2d');
     const img = imgRef.current;
     if (!img) return;
-
-    // The crop circle center is at (CONTAINER/2, CONTAINER/2) in container space.
-    // Image center is at (CONTAINER/2 + pos.x, CONTAINER/2 + pos.y).
-    // So top-left of image in container = center - rendW/2 + pos.x, etc.
-    const imgLeft = CONTAINER / 2 + pos.x - rendW / 2;
-    const imgTop = CONTAINER / 2 + pos.y - rendH / 2;
-
-    // Circle top-left in container = (CONTAINER/2 - CROP_SIZE/2)
     const circleLeft = (CONTAINER - CROP_SIZE) / 2;
-    const circleTop = (CONTAINER - CROP_SIZE) / 2;
-
-    // Source rect in image pixels
-    const srcX = ((circleLeft - imgLeft) / rendW) * imgNatural.w;
-    const srcY = ((circleTop - imgTop) / rendH) * imgNatural.h;
-    const srcW = (CROP_SIZE / rendW) * imgNatural.w;
-    const srcH = (CROP_SIZE / rendH) * imgNatural.h;
-
+    const circleTop  = (CONTAINER - CROP_SIZE) / 2;
+    const srcX = (circleLeft - imgLeft) / rendW * imgNatural.w;
+    const srcY = (circleTop  - imgTop)  / rendH * imgNatural.h;
+    const srcW = CROP_SIZE / rendW * imgNatural.w;
+    const srcH = CROP_SIZE / rendH * imgNatural.h;
     ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, CROP_SIZE, CROP_SIZE);
     canvas.toBlob(blob => { if (blob) onConfirm(blob); }, 'image/jpeg', 0.92);
   };
 
-  // Image position in container (centered + offset)
-  const imgLeft = CONTAINER / 2 + pos.x - rendW / 2;
-  const imgTop = CONTAINER / 2 + pos.y - rendH / 2;
-
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(6px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-      <div style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', maxWidth: '420px', width: '100%' }}>
+      <div style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px', padding: '28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', maxWidth: '420px', width: '100%' }}>
+
         <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>
-            Position your photo
-          </h2>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
-            Drag to reposition · Use the slider to zoom
-          </p>
+          <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>Position your photo</h2>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Drag to reposition · Use the slider to zoom</p>
         </div>
 
-        {/* ── Preview area ── */}
+        {/* ── Preview ── */}
         <div
-          ref={containerRef}
-          style={{
-            width: CONTAINER,
-            height: CONTAINER,
-            position: 'relative',
-            cursor: dragging ? 'grabbing' : 'grab',
-            flexShrink: 0,
-            overflow: 'hidden',
-            borderRadius: '8px',
-            userSelect: 'none',
-          }}
+          style={{ width: CONTAINER, height: CONTAINER, position: 'relative', overflow: 'hidden', cursor: dragging ? 'grabbing' : 'grab', borderRadius: '8px', background: '#0a0d10', flexShrink: 0 }}
           onMouseDown={handleMouseDown}
         >
-          {/* Full image — dimmed */}
+          {/* Single image — no alignment issues */}
           {imgLoaded && (
             <img
+              ref={imgRef}
               src={imageSrc}
               draggable={false}
-              style={{
-                position: 'absolute',
-                left: imgLeft,
-                top: imgTop,
-                width: rendW,
-                height: rendH,
-                opacity: 0.35,
-                pointerEvents: 'none',
-              }}
+              style={{ position: 'absolute', left: imgLeft, top: imgTop, width: rendW, height: rendH, pointerEvents: 'none', userSelect: 'none' }}
             />
           )}
 
-          {/* Circular clip — full brightness */}
-          {imgLoaded && (
-            <div style={{
-              position: 'absolute',
-              left: (CONTAINER - CROP_SIZE) / 2,
-              top: (CONTAINER - CROP_SIZE) / 2,
-              width: CROP_SIZE,
-              height: CROP_SIZE,
-              borderRadius: '50%',
-              overflow: 'hidden',
-              border: `2.5px solid ${ACCENT}`,
-              boxShadow: `0 0 0 1px rgba(0,219,197,0.2)`,
-              pointerEvents: 'none',
-            }}>
-              <img
-                ref={imgRef}
-                src={imageSrc}
-                draggable={false}
-                style={{
-                  position: 'absolute',
-                  // Offset relative to circle top-left
-                  left: imgLeft - (CONTAINER - CROP_SIZE) / 2,
-                  top: imgTop - (CONTAINER - CROP_SIZE) / 2,
-                  width: rendW,
-                  height: rendH,
-                  pointerEvents: 'none',
-                }}
-              />
-            </div>
-          )}
+          {/* SVG overlay: semi-transparent mask outside circle + teal border */}
+          <svg
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+            viewBox={`0 0 \${CONTAINER} \${CONTAINER}`}
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <mask id="cropHole">
+                <rect width={CONTAINER} height={CONTAINER} fill="white" />
+                <circle cx={CONTAINER / 2} cy={CONTAINER / 2} r={CROP_SIZE / 2} fill="black" />
+              </mask>
+            </defs>
+            {/* Dark area outside circle */}
+            <rect width={CONTAINER} height={CONTAINER} fill="rgba(0,0,0,0.62)" mask="url(#cropHole)" />
+            {/* Teal circle border */}
+            <circle cx={CONTAINER / 2} cy={CONTAINER / 2} r={CROP_SIZE / 2} fill="none" stroke="#00DBC5" strokeWidth="2.5" />
+          </svg>
 
           {!imgLoaded && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -230,24 +171,14 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>Zoom</span>
           <input
             type="range"
-            min={MIN_ZOOM}
-            max={MAX_ZOOM}
+            min={1}
+            max={4}
             step={0.01}
             value={zoom}
             onChange={handleZoomChange}
-            style={{
-              flex: 1,
-              height: '4px',
-              appearance: 'none',
-              background: `linear-gradient(to right, ${ACCENT} 0%, ${ACCENT} ${((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100}%, rgba(255,255,255,0.15) ${((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100}%, rgba(255,255,255,0.15) 100%)`,
-              borderRadius: '2px',
-              outline: 'none',
-              cursor: 'pointer',
-            }}
+            style={{ flex: 1, height: '4px', appearance: 'none', background: `linear-gradient(to right, \${ACCENT} 0%, \${ACCENT} \${((zoom - 1) / 3) * 100}%, rgba(255,255,255,0.15) \${((zoom - 1) / 3) * 100}%, rgba(255,255,255,0.15) 100%)`, borderRadius: '2px', outline: 'none', cursor: 'pointer' }}
           />
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', flexShrink: 0, minWidth: '28px', textAlign: 'right' }}>
-            {zoom.toFixed(1)}×
-          </span>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', flexShrink: 0, minWidth: '30px', textAlign: 'right' }}>{zoom.toFixed(1)}×</span>
         </div>
 
         {/* ── Actions ── */}
@@ -255,32 +186,17 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
           <button onClick={onCancel} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
             <X style={{ width: '15px', height: '15px' }} /> Cancel
           </button>
-          <button onClick={handleConfirm} disabled={!imgLoaded} style={{ flex: 1, padding: '11px', background: ACCENT, border: 'none', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: '#111827', cursor: imgLoaded ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <button onClick={handleConfirm} disabled={!imgLoaded} style={{ flex: 1, padding: '11px', background: imgLoaded ? ACCENT : 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: imgLoaded ? '#111827' : 'rgba(255,255,255,0.3)', cursor: imgLoaded ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
             <Check style={{ width: '15px', height: '15px' }} /> Use Photo
           </button>
         </div>
-      </div>
 
-      <style>{`
-        input[type=range]::-webkit-slider-thumb {
-          appearance: none;
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: ${ACCENT};
-          cursor: pointer;
-          border: 2px solid #1a1f25;
-          box-shadow: 0 0 0 1px ${ACCENT};
-        }
-        input[type=range]::-moz-range-thumb {
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: ${ACCENT};
-          cursor: pointer;
-          border: 2px solid #1a1f25;
-        }
-      `}</style>
+        <style>{`
+          input[type=range]::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; border-radius: 50%; background: \${ACCENT}; cursor: pointer; border: 2px solid #1a1f25; box-shadow: 0 0 0 1px \${ACCENT}; }
+          input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: \${ACCENT}; cursor: pointer; border: 2px solid #1a1f25; }
+          @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
+      </div>
     </div>
   );
 }
