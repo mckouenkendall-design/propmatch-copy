@@ -8,6 +8,8 @@ import {
   Check, FileText, Loader2, Image, ZoomIn
 } from 'lucide-react';
 import { calculateMatchScore, getScoreColor, getScoreLabel, parseDetails } from '@/utils/matchScore';
+import FloatingMessageCompose from '@/components/messages/FloatingMessageCompose';
+import AgentContactModal from '@/components/shared/AgentContactModal';
 
 const ACCENT   = '#00DBC5';
 const LAVENDER = '#818cf8';
@@ -97,7 +99,7 @@ function PhotoLightbox({ photos, onClose }) {
 // ─── Big Score Circle ─────────────────────────────────────────────────────────
 function BigScoreCircle({ score }) {
   const color = getScoreColor(score), label = getScoreLabel(score);
-  const sz=120, r=48, circ=2*Math.PI*r, dash=(score/100)*circ;
+  const sz=96, r=38, circ=2*Math.PI*r, dash=(score/100)*circ;
   return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
       <div style={{ position:'relative', width:sz, height:sz }}>
@@ -107,7 +109,7 @@ function BigScoreCircle({ score }) {
             strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
         </svg>
         <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-          <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'36px', fontWeight:700, color, lineHeight:1 }}>{score}</span>
+          <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'28px', fontWeight:700, color, lineHeight:1 }}>{score}</span>
           <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.3)', letterSpacing:'0.06em', marginTop:'2px' }}>MATCH</span>
         </div>
       </div>
@@ -519,13 +521,13 @@ function AccordionSection({ section, myColor, theirColor, myLabel, theirLabel, o
             </>
           )}
           {section.listingOnlyRows?.length > 0 && (
-            <div style={{ marginTop:section.rows.length>0?'10px':'2px', padding:'10px 12px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.05)', borderRadius:'8px' }}>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:myColor, margin:'0 0 8px', opacity:0.7 }}>Listing Details</p>
+            <div style={{ marginTop:section.rows.length>0?'10px':'2px', padding:'10px 12px', background:'rgba(255,255,255,0.04)', border:`1px solid ${myColor}20`, borderRadius:'8px' }}>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:myColor, margin:'0 0 8px' }}>Listing Details</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 16px' }}>
                 {section.listingOnlyRows.map((r,i) => r.val ? (
                   <div key={i}>
-                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.25)', margin:'0 0 1px' }}>{r.label}</p>
-                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.6)', margin:0, wordBreak:'break-word' }}>{r.val}</p>
+                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.45)', margin:'0 0 1px' }}>{r.label}</p>
+                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.82)', margin:0, wordBreak:'break-word' }}>{r.val}</p>
                   </div>
                 ) : null)}
               </div>
@@ -646,6 +648,8 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
   const [tab, setTab]           = useState('analysis');
   const [openSections, setOpen] = useState({ core:true });
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
+  const [showCompose, setShowCompose]     = useState(false);
+  const [viewingAgent, setViewingAgent]   = useState(null);
 
   const myIsListing = myPost.postType === 'listing';
   const myColor     = myIsListing ? ACCENT : LAVENDER;
@@ -750,7 +754,12 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
                       {posterPhoto ? <img src={posterPhoto} alt={posterName} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : posterName[0]?.toUpperCase()}
                     </div>
                     <div>
-                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'15px', fontWeight:600, color:'white', margin:0 }}>{posterName}</p>
+                      <p onClick={() => setViewingAgent({ profile: posterProfile, email: posterEmail })}
+                    style={{ fontFamily:"'Inter',sans-serif", fontSize:'15px', fontWeight:600, color:'white', margin:0, cursor:'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.color=ACCENT}
+                    onMouseLeave={e => e.currentTarget.style.color='white'}>
+                    {posterName}
+                  </p>
                       {posterCompany && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>{posterCompany}</p>}
                     </div>
                   </div>
@@ -800,6 +809,24 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
 
       {/* Photo lightbox */}
       {lightboxPhoto && <PhotoLightbox photos={lightboxPhoto} onClose={() => setLightboxPhoto(null)}/>}
+
+      {/* Floating compose */}
+      {showCompose && (
+        <FloatingMessageCompose
+          
+          recipientProfile={posterProfile}
+          recipientEmail={posterEmail}
+          myPost={myPost}
+          matchPost={matchPost}
+          matchResult={matchResult}
+          onClose={() => setShowCompose(false)}
+        />
+      )}
+
+      {/* Agent contact modal */}
+      {viewingAgent && (
+        <AgentContactModal profile={viewingAgent.profile} email={viewingAgent.email} onClose={() => setViewingAgent(null)}/>
+      )}
     </>
   );
 }
