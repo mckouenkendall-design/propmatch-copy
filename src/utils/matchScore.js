@@ -49,11 +49,16 @@ function scoreTx(listingTx, reqTx) {
 
 // Location score — exact city match or partial credit
 function scoreLoc(listingCity, reqCities) {
-  if (!reqCities || reqCities.length === 0) return null;
+  // cities can come from DB as a JSON string — parse it
+  let cities = reqCities;
+  if (typeof cities === 'string') {
+    try { cities = JSON.parse(cities); } catch { cities = [cities]; }
+  }
+  if (!Array.isArray(cities) || cities.length === 0) return null;
   if (!listingCity) return 0;
   const lc = listingCity.toLowerCase().trim();
-  if (reqCities.some(c => c.toLowerCase().trim() === lc)) return 100;
-  return 20; // same region partial credit
+  if (cities.some(c => c.toLowerCase().trim() === lc)) return 100;
+  return 20;
 }
 
 // Amenity / feature overlap
