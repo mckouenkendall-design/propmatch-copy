@@ -1,0 +1,36 @@
+{
+  "name": "Conversation",
+  "type": "object",
+  "properties": {
+    "participant_1": {
+      "type": "string",
+      "description": "Email address of the first agent in the conversation"
+    },
+    "participant_2": {
+      "type": "string",
+      "description": "Email address of the second agent in the conversation"
+    },
+    "last_message": {
+      "type": "string",
+      "description": "Preview of the most recent message sent"
+    },
+    "last_message_time": {
+      "type": "string",
+      "description": "Timestamp of the most recent message"
+    },
+    "unread_by_1": {
+      "type": "number",
+      "default": 0,
+      "description": "Count of unread messages for participant_1"
+    },
+    "unread_by_2": {
+      "type": "number",
+      "default": 0,
+      "description": "Count of unread messages for participant_2"
+    }
+  },
+  "required": [
+    "participant_1",
+    "participant_2"
+  ]
+}

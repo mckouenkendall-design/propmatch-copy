@@ -1,0 +1,47 @@
+{
+  "name": "Message",
+  "type": "object",
+  "properties": {
+    "conversation_id": {
+      "type": "string",
+      "description": "ID of the Conversation this message belongs to"
+    },
+    "sender_email": {
+      "type": "string",
+      "description": "Email of the agent who sent this message"
+    },
+    "content": {
+      "type": "string",
+      "description": "Text body of the message"
+    },
+    "attachment_url": {
+      "type": "string",
+      "description": "Optional URL if a file or image was attached"
+    },
+    "attachment_type": {
+      "type": "string",
+      "description": "Optional type of attachment, e.g. image, pdf, doc"
+    },
+    "sent_at": {
+      "type": "string",
+      "description": "Timestamp of when the message was sent"
+    },
+    "post_id": {
+      "type": "string",
+      "description": "Optional ID of a listing or requirement shared in this message"
+    },
+    "post_type": {
+      "type": "string",
+      "enum": [
+        "listing",
+        "requirement"
+      ],
+      "description": "Optional type of post shared \u2014 either listing or requirement"
+    }
+  },
+  "required": [
+    "conversation_id",
+    "sender_email",
+    "content"
+  ]
+}
