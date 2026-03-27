@@ -42,7 +42,18 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   const [submitError, setSubmitError] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const [formData, setFormData] = useState(initialData || {
+  const parseInitialData = (data) => {
+    if (!data) return null;
+    return {
+      ...data,
+      property_details: typeof data.property_details === 'string'
+        ? (() => { try { return JSON.parse(data.property_details); } catch { return {}; } })()
+        : (data.property_details || {}),
+      mapAreas: data.mapAreas || (() => { try { return JSON.parse(data.area_map_data || '[]'); } catch { return []; } })(),
+    };
+  };
+
+  const [formData, setFormData] = useState(parseInitialData(initialData) || {
     property_category: category,
     title: '',
     property_type: '',
