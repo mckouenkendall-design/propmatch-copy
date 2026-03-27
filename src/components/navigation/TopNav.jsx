@@ -25,7 +25,7 @@ export default function TopNav() {
   const mainNavItems = [
     { label: 'Control Center', path: '/Dashboard' },
     { label: 'My Matches', path: '/Matches' },
-    { label: 'Listings / Requirements', path: '/Inventory' },
+    { label: 'My Posts', path: '/Inventory' },
     { label: 'Fish Tanks', path: '/Groups' },
     { label: 'Messages', path: '/Messages' },
   ];
