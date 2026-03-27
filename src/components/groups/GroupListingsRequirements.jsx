@@ -33,7 +33,7 @@ function DetailRow({ label, value }) {
 }
 
 // ── Full detail modal ─────────────────────────────────────────────────────────
-function PostDetailModal({ post, posterProfile, onClose, onMessage }) {
+function PostDetailModal({ post, posterProfile, onClose, onMessage, onViewAgent }) {
   const isListing = post.postType === 'listing';
   const name    = post.contact_agent_name  || posterProfile?.full_name  || 'Agent';
   const email   = post.contact_agent_email || posterProfile?.contact_email || posterProfile?.user_email;
@@ -168,13 +168,24 @@ function PostDetailModal({ post, posterProfile, onClose, onMessage }) {
                 {photo ? <img src={photo} alt={name} style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : name[0]?.toUpperCase()}
               </div>
               <div>
-                <p style={{ fontFamily:"'Inter', sans-serif", fontSize:'15px', fontWeight:600, color:'white', margin:0 }}>{name}</p>
+                <p onClick={() => onViewAgent && onViewAgent(posterProfile, email)}
+                  style={{ fontFamily:"'Inter', sans-serif", fontSize:'15px', fontWeight:600, color:'white', margin:0, cursor:onViewAgent?'pointer':'default' }}
+                  onMouseEnter={e => { if(onViewAgent) e.currentTarget.style.color=ACCENT; }}
+                  onMouseLeave={e => { e.currentTarget.style.color='white'; }}>
+                  {name}
+                </p>
                 {company && <p style={{ fontFamily:"'Inter', sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>{company}</p>}
               </div>
             </div>
             <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
               {email && <a href={`mailto:${email}`} style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:"'Inter', sans-serif", fontSize:'13px', color:ACCENT, textDecoration:'none', padding:'8px 12px', background:`${ACCENT}08`, borderRadius:'8px', border:`1px solid ${ACCENT}15` }}><Mail style={{width:'14px',height:'14px'}} />{email}</a>}
               {phone && <a href={`tel:${phone}`} style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:"'Inter', sans-serif", fontSize:'13px', color:ACCENT, textDecoration:'none', padding:'8px 12px', background:`${ACCENT}08`, borderRadius:'8px', border:`1px solid ${ACCENT}15` }}><Phone style={{width:'14px',height:'14px'}} />{phone}</a>}
+              {onMessage && email && (
+                <button onClick={() => onMessage(posterProfile, email)}
+                  style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'7px', padding:'8px', background:ACCENT, border:'none', borderRadius:'8px', fontFamily:"'Inter', sans-serif", fontSize:'13px', fontWeight:600, color:'#111827', cursor:'pointer' }}>
+                  <MessageCircle style={{width:'13px',height:'13px'}}/> Send Message
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -514,6 +525,7 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
               setSelectedPost(null);
               setCompose({ recipientProfile, recipientEmail, myPost: null, matchPost: null, matchResult: null });
             }}
+            onViewAgent={(profile, email) => setViewingAgent({ profile, email })}
           />
         );
       })()}
