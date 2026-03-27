@@ -235,7 +235,9 @@ function AgentRow({ profile, rosterEntry, onMessage, onRemove }) {
               : agentListings.slice(0, 5).map(l => (
                 <div key={l.id} style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', marginBottom: '6px' }}>
                   <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'white', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title}</p>
-                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: 0 }}>${(l.price || 0).toLocaleString()}</p>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: 0 }}>
+                    {(() => { const p=parseFloat(l.price); if(!p) return '—'; const f=p%1===0?p.toLocaleString():p.toLocaleString('en-US',{maximumFractionDigits:2}); const u=l.transaction_type==='lease'||l.transaction_type==='sublease'?'/SF/yr':l.transaction_type==='rent'?'/mo':''; return `$${f}${u}`; })()}
+                  </p>
                 </div>
               ))
             }
@@ -249,7 +251,9 @@ function AgentRow({ profile, rosterEntry, onMessage, onRemove }) {
               : agentRequirements.slice(0, 5).map(r => (
                 <div key={r.id} style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', marginBottom: '6px' }}>
                   <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'white', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</p>
-                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>Max ${(r.max_price || 0).toLocaleString()}</p>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                    {(() => { const fmt=(n)=>{const num=parseFloat(n);if(!n||isNaN(num))return null;return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2});}; const u=r.price_period==='per_month'?'/mo':r.price_period==='per_sf_per_year'?'/SF/yr':r.price_period==='annually'?'/yr':(r.transaction_type==='lease'||r.transaction_type==='rent')?'/mo':''; const lo=fmt(r.min_price),hi=fmt(r.max_price); if(lo&&hi)return `$${lo}–$${hi}${u}`; if(hi)return `Up to $${hi}${u}`; if(lo)return `From $${lo}${u}`; return '—'; })()}
+                  </p>
                 </div>
               ))
             }
