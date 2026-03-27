@@ -83,7 +83,7 @@ export default function GroupMembers({ groupId, currentUserRole }) {
                     <Avatar profile={profileMap[member.user_email]} displayName={displayName} />
                     <div>
                       <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: 'white', margin: 0 }}>{displayName}</p>
-                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>{member.user_email}</p>
+                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>{profileMap[member.user_email]?.contact_email || member.user_email}</p>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -116,7 +116,7 @@ export default function GroupMembers({ groupId, currentUserRole }) {
                   <Avatar profile={profileMap[member.user_email]} displayName={displayName} />
                   <div>
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: 'white', margin: 0 }}>{displayName}</p>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>{member.user_email}</p>
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>{profileMap[member.user_email]?.contact_email || member.user_email}</p>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
