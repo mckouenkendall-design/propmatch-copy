@@ -260,7 +260,17 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
                     </h4>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                       <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 600, color: ACCENT }}>
-                        ${(post.price || post.max_price || 0).toLocaleString()}
+                        {(() => {
+                          const isL = !!post.size_sqft;
+                          const fmt = (n) => { const num = parseFloat(n); if (!n||isNaN(num)) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
+                          const u = isL ? (post.transaction_type==='lease'||post.transaction_type==='sublease'?'/SF/yr':post.transaction_type==='rent'?'/mo':'') : (post.price_period==='per_month'?'/mo':post.price_period==='per_sf_per_year'?'/SF/yr':post.price_period==='annually'?'/yr':'');
+                          if (isL) return `$${fmt(post.price)||'0'}${u}`;
+                          const lo=fmt(post.min_price),hi=fmt(post.max_price);
+                          if(lo&&hi) return `$${lo}–$${hi}${u}`;
+                          if(hi) return `Up to $${hi}${u}`;
+                          if(lo) return `From $${lo}${u}`;
+                          return '—';
+                        })()}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: ACCENT, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111827', fontSize: '10px', fontWeight: 700 }}>
