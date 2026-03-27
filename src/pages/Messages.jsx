@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import {
@@ -7,6 +8,7 @@ import {
   FileText, Image, File, ChevronLeft, Building2, ExternalLink
 } from 'lucide-react';
 import StartConversationModal from '@/components/messages/StartConversationModal';
+import AgentContactModal from '@/components/shared/AgentContactModal';
 
 const ACCENT   = '#00DBC5';
 const LAVENDER = '#818cf8';
@@ -164,7 +166,9 @@ function PostDetailModal({ post, postType, onClose }) {
 export default function Messages() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const location = useLocation();
   const [selectedConvoId, setSelectedConvoId] = useState(null);
+  const [viewingAgent, setViewingAgent] = useState(null); // { profile, email }
   const [messageText, setMessageText] = useState('');
   const [activeTab, setActiveTab] = useState('chat');
   const [showNewConvo, setShowNewConvo] = useState(false);
@@ -271,6 +275,13 @@ export default function Messages() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Handle navigation from FloatingMessageCompose
+  useEffect(() => {
+    if (location.state?.openConvoId) {
+      setSelectedConvoId(location.state.openConvoId);
+    }
+  }, [location.state]);
+
   // Mark as read when opening a conversation
   useEffect(() => {
     if (!selectedConvo || !user?.email) return;
@@ -309,7 +320,7 @@ export default function Messages() {
         {/* Header */}
         <div style={{ padding:'20px 16px 12px', borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'14px' }}>
-            <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'20px', fontWeight:400, color:'white', margin:0 }}>Messages</h2>
+            <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'20px', fontWeight:400, color:'white', margin:0 }}>Inbox</h2>
             <button onClick={() => setShowNewConvo(true)}
               style={{ background:ACCENT, border:'none', borderRadius:'8px', padding:'7px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
               <Plus style={{ width:'15px', height:'15px', color:'#111827' }}/>
@@ -358,7 +369,13 @@ export default function Messages() {
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'2px' }}>
-                        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:unread>0?700:500, color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'160px' }}>{name}</span>
+                        <span
+                          onClick={e => { e.stopPropagation(); setViewingAgent({ profile, email: other }); }}
+                          style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:unread>0?700:500, color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'160px', cursor:'pointer' }}
+                          onMouseEnter={e => e.currentTarget.style.color=ACCENT}
+                          onMouseLeave={e => e.currentTarget.style.color='white'}>
+                          {name}
+                        </span>
                         <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', flexShrink:0 }}>{timeAgo(convo.last_message_time)}</span>
                       </div>
                       <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:unread>0?'rgba(255,255,255,0.65)':'rgba(255,255,255,0.35)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
@@ -381,7 +398,12 @@ export default function Messages() {
           <div style={{ padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', gap:'12px', background:'#0E1318', flexShrink:0 }}>
             <Avatar profile={otherProfile} name={otherName} size={38}/>
             <div style={{ flex:1 }}>
-              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:500, color:'white', margin:0 }}>{otherName}</p>
+              <p onClick={() => setViewingAgent({ profile: otherProfile, email: otherEmail })}
+              style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:500, color:'white', margin:0, cursor:'pointer', textDecoration:'underline', textDecorationColor:'rgba(255,255,255,0.2)' }}
+              onMouseEnter={e => e.currentTarget.style.color=ACCENT}
+              onMouseLeave={e => e.currentTarget.style.color='white'}>
+              {otherName}
+            </p>
               {otherProfile?.brokerage_name && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>{otherProfile.brokerage_name}</p>}
             </div>
             {/* Tabs */}
@@ -527,6 +549,9 @@ export default function Messages() {
 
       {viewingPost && (
         <PostDetailModal post={viewingPost.post} postType={viewingPost.postType} onClose={() => setViewingPost(null)}/>
+      )}
+      {viewingAgent && (
+        <AgentContactModal profile={viewingAgent.profile} email={viewingAgent.email} onClose={() => setViewingAgent(null)}/>
       )}
     </div>
   );
