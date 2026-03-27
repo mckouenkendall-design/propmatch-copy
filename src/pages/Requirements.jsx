@@ -198,9 +198,16 @@ export default function Requirements() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Budget up to</span>
                   <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: 700, color: ACCENT }}>
-                    ${(parseFloat(req.max_price) || 0).toLocaleString()}
+                    {(() => {
+                      const fmt = (n) => { const num = parseFloat(n); if (isNaN(num)||!n) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
+                      const u = req.price_period==='per_month' ? '/mo' : req.price_period==='per_sf_per_year' ? '/SF/yr' : req.price_period==='annually' ? '/yr' : req.transaction_type==='rent'||req.transaction_type==='lease' ? '/mo' : '';
+                      const lo = fmt(req.min_price), hi = fmt(req.max_price);
+                      if (lo && hi) return `$${lo}–$${hi}${u}`;
+                      if (hi) return `Up to $${hi}${u}`;
+                      if (lo) return `From $${lo}${u}`;
+                      return '—';
+                    })()}
                   </span>
                 </div>
 
