@@ -33,7 +33,17 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
   const [step, setStep] = useState(1);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const [formData, setFormData] = useState(initialData || {
+  const parseInitialData = (data) => {
+    if (!data) return null;
+    return {
+      ...data,
+      property_details: typeof data.property_details === 'string'
+        ? (() => { try { return JSON.parse(data.property_details); } catch { return {}; } })()
+        : (data.property_details || {}),
+    };
+  };
+
+  const [formData, setFormData] = useState(parseInitialData(initialData) || {
     property_category: category,
     title: '',
     property_type: '',
