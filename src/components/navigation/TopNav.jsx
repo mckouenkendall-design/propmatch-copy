@@ -27,7 +27,7 @@ export default function TopNav() {
     { label: 'My Matches', path: '/Matches' },
     { label: 'My Posts', path: '/Inventory' },
     { label: 'Fish Tanks', path: '/Groups' },
-    { label: 'Messages', path: '/Messages' },
+    { label: 'Inbox', path: '/Messages' },
   ];
 
   const handleLogout = async () => {
