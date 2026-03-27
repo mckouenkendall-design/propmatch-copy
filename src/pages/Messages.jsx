@@ -1,466 +1,532 @@
-import React, { useState } from 'react';
-import { Search, Send, Paperclip, Phone, Video, MoreVertical, Plus } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import {
+  Send, Plus, Paperclip, X, Search, MessageCircle,
+  FileText, Image, File, ChevronLeft, Building2, ExternalLink
+} from 'lucide-react';
 import StartConversationModal from '@/components/messages/StartConversationModal';
 
-const ACCENT = '#00DBC5';
+const ACCENT   = '#00DBC5';
+const LAVENDER = '#818cf8';
 
-export default function Messages() {
-  const [selectedConversation, setSelectedConversation] = useState(null);
-  const [messageText, setMessageText] = useState('');
-  const [showStartConversation, setShowStartConversation] = useState(false);
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days  = Math.floor(diff / 86400000);
+  if (mins < 1)   return 'just now';
+  if (mins < 60)  return `${mins}m`;
+  if (hours < 24) return `${hours}h`;
+  if (days < 7)   return `${days}d`;
+  return new Date(dateStr).toLocaleDateString();
+}
 
-  // Mock conversations
-  const mockConversations = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      lastMessage: 'Looking forward to the showing tomorrow!',
-      time: '2m ago',
-      unread: 2,
-      avatar: 'SJ',
-      context: 'Industrial Property - Detroit'
-    },
-    {
-      id: 2,
-      name: 'Mike Chen',
-      lastMessage: 'Can we schedule a call to discuss the offer?',
-      time: '1h ago',
-      unread: 0,
-      avatar: 'MC',
-      context: 'Office Space - Ann Arbor'
-    },
-    {
-      id: 3,
-      name: 'Emily Rodriguez',
-      lastMessage: 'Thanks for the property details',
-      time: '3h ago',
-      unread: 0,
-      avatar: 'ER',
-      context: 'Retail Space - Grand Rapids'
-    },
-  ];
+function Avatar({ profile, name, size = 40 }) {
+  const initial = (profile?.full_name || name || '?')[0].toUpperCase();
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: ACCENT, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111827', fontSize: size * 0.4, fontWeight: 700 }}>
+      {profile?.profile_photo_url
+        ? <img src={profile.profile_photo_url} alt={initial} style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+        : initial}
+    </div>
+  );
+}
 
-  const mockMessages = selectedConversation ? [
-    {
-      id: 1,
-      sender: 'them',
-      text: 'Hi! I saw your listing for the industrial property in Detroit. Is it still available?',
-      time: '10:30 AM'
-    },
-    {
-      id: 2,
-      sender: 'me',
-      text: 'Yes, it is! Would you like to schedule a showing?',
-      time: '10:32 AM'
-    },
-    {
-      id: 3,
-      sender: 'them',
-      text: 'That would be great. How about tomorrow at 2 PM?',
-      time: '10:35 AM'
-    },
-    {
-      id: 4,
-      sender: 'me',
-      text: 'Tomorrow at 2 PM works perfectly. I\'ll send you the address and details.',
-      time: '10:36 AM'
-    },
-    {
-      id: 5,
-      sender: 'them',
-      text: 'Looking forward to the showing tomorrow!',
-      time: '10:38 AM'
-    },
-  ] : [];
+// ─── Shared Post Card (listing or requirement shared in chat) ─────────────────
+function SharedPostCard({ postId, postType, allListings, allRequirements, onClick }) {
+  const post = postType === 'listing'
+    ? allListings.find(l => l.id === postId)
+    : allRequirements.find(r => r.id === postId);
+
+  if (!post) return null;
+  const isListing = postType === 'listing';
+  const color = isListing ? ACCENT : LAVENDER;
+
+  const price = (() => {
+    const fmt = (n) => { const num = parseFloat(n); if (!n||isNaN(num)) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
+    const tx = post.transaction_type, pp = post.price_period;
+    const u = isListing
+      ? (tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':'')
+      : (pp==='per_month'?'/mo':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
+    if (isListing) { const f=fmt(post.price); return f?`$${f}${u}`:null; }
+    const lo=fmt(post.min_price),hi=fmt(post.max_price);
+    if(lo&&hi) return `$${lo}–$${hi}${u}`;
+    if(hi) return `Up to $${hi}${u}`;
+    if(lo) return `From $${lo}${u}`;
+    return null;
+  })();
 
   return (
-    <div style={{ 
-      maxWidth: '1600px', 
-      margin: '0 auto', 
-      padding: '0', 
-      height: 'calc(100vh - 64px)',
-      display: 'flex',
-      background: '#0E1318'
-    }}>
-      {/* Conversations Sidebar */}
-      <div style={{
-        width: '360px',
-        borderRight: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'rgba(255,255,255,0.02)'
-      }}>
-        {/* Search Header */}
-        <div style={{ padding: '24px 20px 16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h2 style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: '24px',
-              fontWeight: 500,
-              color: 'white',
-              margin: 0
-            }}>
-              Messages
-            </h2>
-            <button
-              onClick={() => setShowStartConversation(true)}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
-                background: ACCENT,
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <Plus style={{ width: '18px', height: '18px', color: '#111827' }} />
+    <div onClick={() => onClick && onClick(post, postType)}
+      style={{ background:`${color}08`, border:`1px solid ${color}25`, borderRadius:'10px', padding:'12px', cursor:'pointer', transition:'all 0.15s', maxWidth:'280px' }}
+      onMouseEnter={e => { e.currentTarget.style.background=`${color}14`; e.currentTarget.style.borderColor=`${color}45`; }}
+      onMouseLeave={e => { e.currentTarget.style.background=`${color}08`; e.currentTarget.style.borderColor=`${color}25`; }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
+        <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:color }}/>
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color }}>{isListing?'Listing':'Requirement'}</span>
+        <ExternalLink style={{ width:'10px', height:'10px', color:'rgba(255,255,255,0.3)', marginLeft:'auto' }}/>
+      </div>
+      <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'13px', fontWeight:500, color:'white', margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{post.title}</p>
+      {price && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:700, color, margin:0 }}>{price}</p>}
+      {(isListing ? post.city : post.cities?.join?.(', ')) && (
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:'2px 0 0' }}>
+          {isListing ? [post.city, post.state].filter(Boolean).join(', ') : (() => { let c=post.cities; if(typeof c==='string'){try{c=JSON.parse(c);}catch{c=[c];}} return Array.isArray(c)?c.join(', '):c; })()}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Post Detail Modal (non-match) ────────────────────────────────────────────
+function PostDetailModal({ post, postType, onClose }) {
+  if (!post) return null;
+  const isListing = postType === 'listing';
+  const color = isListing ? ACCENT : LAVENDER;
+
+  const pd = (() => { if (!post.property_details) return {}; if (typeof post.property_details==='string'){try{return JSON.parse(post.property_details);}catch{return {};}} return post.property_details; })();
+
+  const price = (() => {
+    const fmt = (n) => { const num=parseFloat(n); if(!n||isNaN(num))return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
+    const tx=post.transaction_type,pp=post.price_period;
+    const u=isListing?(tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':''):(pp==='per_month'?'/mo':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
+    if(isListing){const f=fmt(post.price);return f?`$${f}${u}`:null;}
+    const lo=fmt(post.min_price),hi=fmt(post.max_price);
+    if(lo&&hi)return `$${lo}–$${hi}${u}`;
+    if(hi)return `Up to $${hi}${u}`;
+    if(lo)return `From $${lo}${u}`;
+    return null;
+  })();
+
+  const DetailRow = ({ label, value }) => {
+    if (!value) return null;
+    return (
+      <div style={{ display:'flex', justifyContent:'space-between', padding:'7px 0', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)' }}>{label}</span>
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white', fontWeight:500, textAlign:'right', maxWidth:'60%', wordBreak:'break-word' }}>{value}</span>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', backdropFilter:'blur(6px)', zIndex:300, display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'20px', overflowY:'auto' }}
+      onClick={onClose}>
+      <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'18px', width:'100%', maxWidth:'560px', overflow:'hidden', marginBottom:'20px' }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+            <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:color }}/>
+            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color }}>{isListing?'Listing':'Requirement'}</span>
+          </div>
+          <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'5px', cursor:'pointer', display:'flex' }}>
+            <X style={{ width:'15px', height:'15px', color:'rgba(255,255,255,0.5)' }}/>
+          </button>
+        </div>
+        <div style={{ padding:'20px' }}>
+          <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'20px', fontWeight:500, color:'white', margin:'0 0 6px' }}>{post.title}</h2>
+          {price && <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'22px', fontWeight:700, color, marginBottom:'14px' }}>{price}</div>}
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'6px', marginBottom:'16px' }}>
+            {[
+              [post.city, post.state].filter(Boolean).join(', ') || ((() => { let c=post.cities; if(typeof c==='string'){try{c=JSON.parse(c);}catch{c=[c];}} return Array.isArray(c)?c.join(', '):c; })()),
+              post.property_type?.replace(/_/g,' '),
+              post.transaction_type,
+              post.status,
+            ].filter(Boolean).map((v,i) => (
+              <span key={i} style={{ padding:'3px 10px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.6)', textTransform:'capitalize' }}>{v}</span>
+            ))}
+          </div>
+          <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'10px', padding:'12px', marginBottom:'14px' }}>
+            <DetailRow label="Size" value={post.size_sqft ? `${parseFloat(post.size_sqft).toLocaleString()} SF` : ((post.min_size_sqft||post.max_size_sqft) ? `${post.min_size_sqft||0}–${post.max_size_sqft||'∞'} SF` : null)}/>
+            <DetailRow label="Address" value={post.address}/>
+            <DetailRow label="Zip Code" value={post.zip_code}/>
+            <DetailRow label="Lease Type" value={post.lease_type?.replace(/_/g,' ')}/>
+            <DetailRow label="Timeline" value={post.timeline?.replace(/_/g,' ')}/>
+            {Object.entries(pd).slice(0,12).map(([k,v]) => typeof v === 'string' || typeof v === 'number' ? (
+              <DetailRow key={k} label={k.replace(/_/g,' ')} value={String(v)}/>
+            ) : null)}
+          </div>
+          {(post.description || post.notes) && (
+            <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'10px', padding:'12px' }}>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:'rgba(255,255,255,0.3)', margin:'0 0 8px' }}>Notes</p>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.65)', lineHeight:1.7, margin:0 }}>{post.description||post.notes}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Messages Page ───────────────────────────────────────────────────────
+export default function Messages() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [selectedConvoId, setSelectedConvoId] = useState(null);
+  const [messageText, setMessageText] = useState('');
+  const [activeTab, setActiveTab] = useState('chat');
+  const [showNewConvo, setShowNewConvo] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pendingAttachment, setPendingAttachment] = useState(null);
+  const [viewingPost, setViewingPost] = useState(null); // { post, postType }
+  const messagesEndRef = useRef(null);
+  const fileInputRef   = useRef(null);
+
+  // ── Data queries ──────────────────────────────────────────────────────────
+  const { data: conversations = [] } = useQuery({
+    queryKey: ['conversations', user?.email],
+    queryFn: () => base44.entities.Conversation.filter({ participant_1: user?.email })
+      .then(r1 => base44.entities.Conversation.filter({ participant_2: user?.email })
+        .then(r2 => [...r1, ...r2].sort((a,b) => new Date(b.last_message_time) - new Date(a.last_message_time)))),
+    enabled: !!user?.email,
+    refetchInterval: 5000,
+  });
+
+  const { data: messages = [] } = useQuery({
+    queryKey: ['messages', selectedConvoId],
+    queryFn: () => base44.entities.Message.filter({ conversation_id: selectedConvoId })
+      .then(msgs => msgs.sort((a,b) => new Date(a.sent_at) - new Date(b.sent_at))),
+    enabled: !!selectedConvoId,
+    refetchInterval: 3000,
+  });
+
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['all-user-profiles'],
+    queryFn: () => base44.entities.UserProfile.list(),
+  });
+
+  const { data: allListings = [] } = useQuery({
+    queryKey: ['all-listings-messages'],
+    queryFn: () => base44.entities.Listing.list('-created_date', 200),
+  });
+
+  const { data: allRequirements = [] } = useQuery({
+    queryKey: ['all-requirements-messages'],
+    queryFn: () => base44.entities.Requirement.list('-created_date', 200),
+  });
+
+  const profileMap = Object.fromEntries(allProfiles.map(p => [p.user_email, p]));
+
+  // ── Selected conversation helpers ─────────────────────────────────────────
+  const selectedConvo = conversations.find(c => c.id === selectedConvoId);
+  const otherEmail = selectedConvo
+    ? (selectedConvo.participant_1 === user?.email ? selectedConvo.participant_2 : selectedConvo.participant_1)
+    : null;
+  const otherProfile = otherEmail ? profileMap[otherEmail] : null;
+  const otherName = otherProfile?.full_name || otherEmail || 'Agent';
+
+  // ── Posts shared in this conversation ─────────────────────────────────────
+  const sharedPosts = useMemo(() =>
+    messages.filter(m => m.post_id && m.post_type),
+    [messages]);
+
+  // ── Send message ──────────────────────────────────────────────────────────
+  const sendMutation = useMutation({
+    mutationFn: async ({ text, attachment, postId, postType }) => {
+      if (!selectedConvoId) return;
+      await base44.entities.Message.create({
+        conversation_id: selectedConvoId,
+        sender_email: user?.email,
+        content: text || '',
+        attachment_url: attachment?.url || '',
+        attachment_type: attachment?.type || '',
+        sent_at: new Date().toISOString(),
+        post_id: postId || '',
+        post_type: postType || '',
+      });
+      await base44.entities.Conversation.update(selectedConvoId, {
+        last_message: text || (attachment ? `📎 ${attachment.name}` : 'Shared a post'),
+        last_message_time: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      setMessageText('');
+      setPendingAttachment(null);
+      queryClient.invalidateQueries({ queryKey: ['messages', selectedConvoId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations', user?.email] });
+    },
+  });
+
+  const handleSend = () => {
+    if (!messageText.trim() && !pendingAttachment) return;
+    sendMutation.mutate({ text: messageText.trim(), attachment: pendingAttachment });
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const type = file.type.startsWith('image/') ? 'image' : file.type === 'application/pdf' ? 'pdf' : 'file';
+    const url  = URL.createObjectURL(file);
+    setPendingAttachment({ url, type, name: file.name });
+  };
+
+  // Auto scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Mark as read when opening a conversation
+  useEffect(() => {
+    if (!selectedConvo || !user?.email) return;
+    const isP1 = selectedConvo.participant_1 === user?.email;
+    const unreadKey = isP1 ? 'unread_by_1' : 'unread_by_2';
+    if (selectedConvo[unreadKey] > 0) {
+      base44.entities.Conversation.update(selectedConvoId, { [unreadKey]: 0 });
+    }
+  }, [selectedConvoId]);
+
+  const filteredConvos = conversations.filter(c => {
+    const other = c.participant_1 === user?.email ? c.participant_2 : c.participant_1;
+    const profile = profileMap[other];
+    const name = profile?.full_name || other || '';
+    return name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const myUnread = (c) => c.participant_1 === user?.email ? c.unread_by_1 : c.unread_by_2;
+
+  // ── Attachment icon ───────────────────────────────────────────────────────
+  const AttachmentDisplay = ({ url, type, name }) => {
+    if (type === 'image') return <img src={url} alt="attachment" style={{ maxWidth:'200px', maxHeight:'160px', borderRadius:'8px', cursor:'pointer', display:'block', marginTop:'6px' }} onClick={() => window.open(url, '_blank')}/>;
+    return (
+      <a href={url} target="_blank" rel="noreferrer" style={{ display:'flex', alignItems:'center', gap:'6px', padding:'6px 10px', background:'rgba(255,255,255,0.08)', borderRadius:'7px', textDecoration:'none', color:'white', marginTop:'6px', width:'fit-content' }}>
+        {type === 'pdf' ? <FileText style={{ width:'13px', height:'13px', color:ACCENT }}/> : <File style={{ width:'13px', height:'13px', color:ACCENT }}/>}
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', maxWidth:'180px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{name}</span>
+      </a>
+    );
+  };
+
+  return (
+    <div style={{ height:'calc(100vh - 70px)', display:'flex', background:'#0A0E13', overflow:'hidden' }}>
+
+      {/* ── Left Panel — Conversation List ── */}
+      <div style={{ width:'320px', flexShrink:0, borderRight:'1px solid rgba(255,255,255,0.07)', display:'flex', flexDirection:'column', background:'#0E1318' }}>
+        {/* Header */}
+        <div style={{ padding:'20px 16px 12px', borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'14px' }}>
+            <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'20px', fontWeight:400, color:'white', margin:0 }}>Messages</h2>
+            <button onClick={() => setShowNewConvo(true)}
+              style={{ background:ACCENT, border:'none', borderRadius:'8px', padding:'7px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Plus style={{ width:'15px', height:'15px', color:'#111827' }}/>
             </button>
           </div>
-          
-          <div style={{
-            position: 'relative',
-            width: '100%'
-          }}>
-            <Search style={{
-              position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: '16px',
-              height: '16px',
-              color: 'rgba(255,255,255,0.4)'
-            }} />
-            <input
-              type="text"
+          {/* Search */}
+          <div style={{ position:'relative' }}>
+            <Search style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', width:'13px', height:'13px', color:'rgba(255,255,255,0.3)' }}/>
+            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search conversations..."
-              style={{
-                width: '100%',
-                padding: '10px 12px 10px 40px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '8px',
-                color: 'white',
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '14px',
-                outline: 'none'
-              }}
-            />
+              style={{ width:'100%', padding:'8px 8px 8px 30px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white', outline:'none', boxSizing:'border-box' }}/>
           </div>
         </div>
 
-        {/* Conversations List */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {mockConversations.map(conv => (
-            <div
-              key={conv.id}
-              onClick={() => setSelectedConversation(conv)}
-              style={{
-                padding: '16px 20px',
-                borderBottom: '1px solid rgba(255,255,255,0.04)',
-                cursor: 'pointer',
-                background: selectedConversation?.id === conv.id ? 'rgba(0,219,197,0.08)' : 'transparent',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={e => {
-                if (selectedConversation?.id !== conv.id) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                }
-              }}
-              onMouseLeave={e => {
-                if (selectedConversation?.id !== conv.id) {
-                  e.currentTarget.style.background = 'transparent';
-                }
-              }}
-            >
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '50%',
-                  background: ACCENT,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  color: '#111827',
-                  flexShrink: 0
-                }}>
-                  {conv.avatar}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '15px',
-                      fontWeight: 500,
-                      color: 'white'
-                    }}>
-                      {conv.name}
-                    </span>
-                    <span style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '12px',
-                      color: 'rgba(255,255,255,0.4)'
-                    }}>
-                      {conv.time}
-                    </span>
-                  </div>
-
-                  <p style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '13px',
-                    color: conv.unread > 0 ? ACCENT : 'rgba(255,255,255,0.5)',
-                    margin: '0 0 6px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    fontWeight: conv.unread > 0 ? 500 : 400
-                  }}>
-                    {conv.lastMessage}
-                  </p>
-
-                  <span style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '11px',
-                    color: 'rgba(255,255,255,0.3)'
-                  }}>
-                    {conv.context}
-                  </span>
-
-                  {conv.unread > 0 && (
-                    <div style={{
-                      display: 'inline-block',
-                      marginTop: '6px',
-                      padding: '2px 8px',
-                      background: ACCENT,
-                      borderRadius: '10px',
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: '#111827'
-                    }}>
-                      {conv.unread} new
-                    </div>
-                  )}
-                </div>
-              </div>
+        {/* Conversation List */}
+        <div style={{ flex:1, overflowY:'auto' }}>
+          {filteredConvos.length === 0 ? (
+            <div style={{ padding:'40px 20px', textAlign:'center' }}>
+              <MessageCircle style={{ width:'32px', height:'32px', color:`${ACCENT}30`, margin:'0 auto 12px', display:'block' }}/>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.3)', margin:0 }}>No conversations yet</p>
+              <button onClick={() => setShowNewConvo(true)}
+                style={{ marginTop:'12px', padding:'7px 16px', background:`${ACCENT}15`, border:`1px solid ${ACCENT}35`, borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:ACCENT, cursor:'pointer' }}>
+                Start one
+              </button>
             </div>
-          ))}
+          ) : (
+            filteredConvos.map(convo => {
+              const other   = convo.participant_1 === user?.email ? convo.participant_2 : convo.participant_1;
+              const profile = profileMap[other];
+              const name    = profile?.full_name || other || 'Agent';
+              const unread  = myUnread(convo);
+              const isSelected = convo.id === selectedConvoId;
+              return (
+                <div key={convo.id} onClick={() => { setSelectedConvoId(convo.id); setActiveTab('chat'); }}
+                  style={{ padding:'14px 16px', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.04)', background:isSelected?'rgba(0,219,197,0.07)':'transparent', borderLeft:isSelected?`3px solid ${ACCENT}`:'3px solid transparent', transition:'all 0.15s' }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background='rgba(255,255,255,0.04)'; }}
+                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background='transparent'; }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                    <div style={{ position:'relative' }}>
+                      <Avatar profile={profile} name={name} size={40}/>
+                      {unread > 0 && (
+                        <div style={{ position:'absolute', top:'-2px', right:'-2px', width:'16px', height:'16px', borderRadius:'50%', background:ACCENT, display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid #0E1318' }}>
+                          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, color:'#111827' }}>{unread > 9 ? '9+' : unread}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'2px' }}>
+                        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:unread>0?700:500, color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'160px' }}>{name}</span>
+                        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', flexShrink:0 }}>{timeAgo(convo.last_message_time)}</span>
+                      </div>
+                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:unread>0?'rgba(255,255,255,0.65)':'rgba(255,255,255,0.35)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {convo.last_message || 'No messages yet'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {selectedConversation ? (
-          <>
-            {/* Chat Header */}
-            <div style={{
-              padding: '20px 32px',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: 'rgba(255,255,255,0.02)'
-            }}>
-              <div>
-                <h3 style={{
-                  fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  fontSize: '18px',
-                  fontWeight: 500,
-                  color: 'white',
-                  margin: '0 0 4px'
-                }}>
-                  {selectedConversation.name}
-                </h3>
-                <p style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '13px',
-                  color: 'rgba(255,255,255,0.5)',
-                  margin: 0
-                }}>
-                  Connected via: {selectedConversation.context}
-                </p>
-              </div>
+      {/* ── Right Panel — Thread ── */}
+      {selectedConvo ? (
+        <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button style={{
-                  padding: '10px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: 'rgba(255,255,255,0.7)',
-                  cursor: 'pointer'
-                }}>
-                  <Phone style={{ width: '18px', height: '18px' }} />
-                </button>
-                <button style={{
-                  padding: '10px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: 'rgba(255,255,255,0.7)',
-                  cursor: 'pointer'
-                }}>
-                  <Video style={{ width: '18px', height: '18px' }} />
-                </button>
-                <button style={{
-                  padding: '10px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: 'rgba(255,255,255,0.7)',
-                  cursor: 'pointer'
-                }}>
-                  <MoreVertical style={{ width: '18px', height: '18px' }} />
-                </button>
-              </div>
+          {/* Thread header */}
+          <div style={{ padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', gap:'12px', background:'#0E1318', flexShrink:0 }}>
+            <Avatar profile={otherProfile} name={otherName} size={38}/>
+            <div style={{ flex:1 }}>
+              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:500, color:'white', margin:0 }}>{otherName}</p>
+              {otherProfile?.brokerage_name && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>{otherProfile.brokerage_name}</p>}
             </div>
-
-            {/* Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }}>
-              {mockMessages.map(msg => (
-                <div
-                  key={msg.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: msg.sender === 'me' ? 'flex-end' : 'flex-start',
-                    marginBottom: '16px'
-                  }}
-                >
-                  <div style={{
-                    maxWidth: '60%',
-                    padding: '12px 16px',
-                    background: msg.sender === 'me' ? ACCENT : 'rgba(255,255,255,0.06)',
-                    color: msg.sender === 'me' ? '#111827' : 'white',
-                    borderRadius: '12px',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    lineHeight: 1.5
-                  }}>
-                    <p style={{ margin: '0 0 6px' }}>{msg.text}</p>
-                    <span style={{
-                      fontSize: '11px',
-                      opacity: 0.7
-                    }}>
-                      {msg.time}
-                    </span>
-                  </div>
-                </div>
+            {/* Tabs */}
+            <div style={{ display:'flex', background:'rgba(255,255,255,0.05)', borderRadius:'8px', padding:'3px', gap:'2px' }}>
+              {[{k:'chat',l:'Chat'},{k:'posts',l:`Posts${sharedPosts.length>0?` (${sharedPosts.length})`:''}`}].map(t => (
+                <button key={t.k} onClick={() => setActiveTab(t.k)}
+                  style={{ padding:'6px 14px', background:activeTab===t.k?'rgba(255,255,255,0.1)':'transparent', border:'none', borderRadius:'6px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color:activeTab===t.k?'white':'rgba(255,255,255,0.45)', cursor:'pointer', whiteSpace:'nowrap' }}>
+                  {t.l}
+                </button>
               ))}
             </div>
-
-            {/* Message Input */}
-            <div style={{
-              padding: '20px 32px',
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-              background: 'rgba(255,255,255,0.02)'
-            }}>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <button style={{
-                  padding: '10px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: 'rgba(255,255,255,0.7)',
-                  cursor: 'pointer'
-                }}>
-                  <Paperclip style={{ width: '18px', height: '18px' }} />
-                </button>
-
-                <input
-                  type="text"
-                  value={messageText}
-                  onChange={e => setMessageText(e.target.value)}
-                  placeholder="Type a message..."
-                  style={{
-                    flex: 1,
-                    padding: '12px 16px',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '8px',
-                    color: 'white',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    outline: 'none'
-                  }}
-                />
-
-                <button style={{
-                  padding: '12px 20px',
-                  background: ACCENT,
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#111827',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  fontWeight: 500
-                }}>
-                  <Send style={{ width: '16px', height: '16px' }} />
-                  Send
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            gap: '16px'
-          }}>
-            <div style={{
-              width: '80px',
-              height: '80px',
-              borderRadius: '50%',
-              background: 'rgba(0,219,197,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Send style={{ width: '36px', height: '36px', color: ACCENT }} />
-            </div>
-            <h3 style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: '24px',
-              fontWeight: 500,
-              color: 'white',
-              margin: 0
-            }}>
-              Select a conversation
-            </h3>
-            <p style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '15px',
-              color: 'rgba(255,255,255,0.5)',
-              margin: 0
-            }}>
-              Choose a conversation from the sidebar to start messaging
-            </p>
           </div>
-        )}
-      </div>
 
-      {showStartConversation && (
+          {/* ── CHAT TAB ── */}
+          {activeTab === 'chat' && (
+            <>
+              <div style={{ flex:1, overflowY:'auto', padding:'20px' }}>
+                {messages.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'60px 20px' }}>
+                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.3)' }}>No messages yet. Say hello!</p>
+                  </div>
+                ) : (
+                  messages.map((msg, i) => {
+                    const isMe = msg.sender_email === user?.email;
+                    const senderProfile = profileMap[msg.sender_email];
+                    const showAvatar = !isMe && (i === 0 || messages[i-1]?.sender_email !== msg.sender_email);
+                    return (
+                      <div key={msg.id || i} style={{ display:'flex', flexDirection:isMe?'row-reverse':'row', alignItems:'flex-end', gap:'8px', marginBottom:'10px' }}>
+                        {!isMe && (
+                          <div style={{ width:'28px', flexShrink:0 }}>
+                            {showAvatar && <Avatar profile={senderProfile} name={otherName} size={28}/>}
+                          </div>
+                        )}
+                        <div style={{ maxWidth:'65%' }}>
+                          {msg.content && (
+                            <div style={{ padding:'10px 14px', background:isMe?ACCENT:'rgba(255,255,255,0.08)', borderRadius:isMe?'16px 16px 4px 16px':'16px 16px 16px 4px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:isMe?'#111827':'white', lineHeight:1.5, wordBreak:'break-word' }}>
+                              {msg.content}
+                            </div>
+                          )}
+                          {msg.attachment_url && <AttachmentDisplay url={msg.attachment_url} type={msg.attachment_type} name={msg.attachment_url.split('/').pop()}/>}
+                          {msg.post_id && msg.post_type && (
+                            <div style={{ marginTop:'6px' }}>
+                              <SharedPostCard postId={msg.post_id} postType={msg.post_type} allListings={allListings} allRequirements={allRequirements} onClick={(post, type) => setViewingPost({ post, postType: type })}/>
+                            </div>
+                          )}
+                          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.25)', margin:'3px 4px 0', textAlign:isMe?'right':'left' }}>
+                            {timeAgo(msg.sent_at)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef}/>
+              </div>
+
+              {/* Message input */}
+              <div style={{ padding:'14px 20px', borderTop:'1px solid rgba(255,255,255,0.07)', background:'#0E1318', flexShrink:0 }}>
+                {pendingAttachment && (
+                  <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 12px', background:'rgba(255,255,255,0.05)', borderRadius:'8px', marginBottom:'10px' }}>
+                    {pendingAttachment.type === 'image'
+                      ? <Image style={{ width:'14px', height:'14px', color:ACCENT }}/>
+                      : <FileText style={{ width:'14px', height:'14px', color:ACCENT }}/>}
+                    <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.7)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pendingAttachment.name}</span>
+                    <button onClick={() => setPendingAttachment(null)} style={{ background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                      <X style={{ width:'13px', height:'13px', color:'rgba(255,255,255,0.4)' }}/>
+                    </button>
+                  </div>
+                )}
+                <div style={{ display:'flex', alignItems:'flex-end', gap:'8px' }}>
+                  <input ref={fileInputRef} type="file" style={{ display:'none' }} onChange={handleFileChange}/>
+                  <button onClick={() => fileInputRef.current?.click()}
+                    style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'9px', cursor:'pointer', display:'flex', alignItems:'center', flexShrink:0 }}>
+                    <Paperclip style={{ width:'15px', height:'15px', color:'rgba(255,255,255,0.5)' }}/>
+                  </button>
+                  <textarea value={messageText} onChange={e => setMessageText(e.target.value)} onKeyDown={handleKeyDown}
+                    placeholder="Type a message..."
+                    rows={1}
+                    style={{ flex:1, padding:'10px 14px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'white', outline:'none', resize:'none', lineHeight:1.5, maxHeight:'120px', overflowY:'auto' }}/>
+                  <button onClick={handleSend} disabled={!messageText.trim() && !pendingAttachment}
+                    style={{ background:ACCENT, border:'none', borderRadius:'8px', padding:'9px 12px', cursor:'pointer', display:'flex', alignItems:'center', flexShrink:0, opacity:(!messageText.trim()&&!pendingAttachment)?0.4:1 }}>
+                    <Send style={{ width:'15px', height:'15px', color:'#111827' }}/>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ── POSTS TAB ── */}
+          {activeTab === 'posts' && (
+            <div style={{ flex:1, overflowY:'auto', padding:'20px' }}>
+              {sharedPosts.length === 0 ? (
+                <div style={{ textAlign:'center', padding:'60px 20px' }}>
+                  <Building2 style={{ width:'32px', height:'32px', color:`${ACCENT}30`, margin:'0 auto 12px', display:'block' }}/>
+                  <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.3)', margin:0 }}>No posts shared in this conversation yet.</p>
+                </div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+                  {sharedPosts.map((msg, i) => (
+                    <div key={msg.id || i} style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'12px', padding:'14px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'10px' }}>
+                        <Avatar profile={profileMap[msg.sender_email]} name={msg.sender_email} size={22}/>
+                        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>
+                          {profileMap[msg.sender_email]?.full_name || msg.sender_email} · {timeAgo(msg.sent_at)}
+                        </span>
+                      </div>
+                      <SharedPostCard postId={msg.post_id} postType={msg.post_type} allListings={allListings} allRequirements={allRequirements} onClick={(post, type) => setViewingPost({ post, postType: type })}/>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Empty state */
+        <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'16px' }}>
+          <MessageCircle style={{ width:'56px', height:'56px', color:`${ACCENT}20` }}/>
+          <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'22px', fontWeight:300, color:'white', margin:0 }}>Your Messages</h3>
+          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.35)', margin:0, textAlign:'center', maxWidth:'280px' }}>
+            Select a conversation or start a new one to connect with other agents.
+          </p>
+          <button onClick={() => setShowNewConvo(true)}
+            style={{ padding:'10px 24px', background:ACCENT, border:'none', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:600, color:'#111827', cursor:'pointer' }}>
+            New Conversation
+          </button>
+        </div>
+      )}
+
+      {/* Modals */}
+      {showNewConvo && (
         <StartConversationModal
-          onClose={() => setShowStartConversation(false)}
-          onSelectUser={(user) => {
-            // TODO: Create or select conversation with this user
-            console.log('Starting conversation with:', user);
+          currentUser={user}
+          profiles={allProfiles}
+          onClose={() => setShowNewConvo(false)}
+          onCreated={(convoId) => {
+            setShowNewConvo(false);
+            queryClient.invalidateQueries({ queryKey: ['conversations', user?.email] });
+            setSelectedConvoId(convoId);
           }}
         />
+      )}
+
+      {viewingPost && (
+        <PostDetailModal post={viewingPost.post} postType={viewingPost.postType} onClose={() => setViewingPost(null)}/>
       )}
     </div>
   );
