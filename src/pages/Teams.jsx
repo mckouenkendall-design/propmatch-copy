@@ -14,6 +14,95 @@ import { format } from 'date-fns';
 
 const ACCENT = '#00DBC5';
 
+function fmtPrice(post, isListing) {
+  const fmt = (n) => { const num = parseFloat(n); if (!n||isNaN(num)) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
+  const u = isListing
+    ? (post.transaction_type==='lease'||post.transaction_type==='sublease'?'/SF/yr':post.transaction_type==='rent'?'/mo':'')
+    : (post.price_period==='per_month'?'/mo':post.price_period==='per_sf_per_year'?'/SF/yr':post.price_period==='annually'?'/yr':(post.transaction_type==='lease'||post.transaction_type==='rent')?'/mo':'');
+  if (isListing) return `$${fmt(post.price)||'0'}${u}`;
+  const lo=fmt(post.min_price),hi=fmt(post.max_price);
+  if(lo&&hi) return `$${lo}–$${hi}${u}`;
+  if(hi) return `Up to $${hi}${u}`;
+  if(lo) return `From $${lo}${u}`;
+  return null;
+}
+
+function PipelineDetailModal({ post, onClose }) {
+  if (!post) return null;
+  const isListing = post._type === 'listing';
+  const details = (() => { if (!post.property_details) return {}; if (typeof post.property_details === 'string') { try { return JSON.parse(post.property_details); } catch { return {}; } } return post.property_details; })();
+  const priceStr = fmtPrice(post, isListing);
+  const LEASE_LABELS = { full_service_gross:'Full Service Gross', modified_gross:'Modified Gross', net_lease:'Net Lease', ground_lease:'Ground Lease', nnn:'NNN', nn:'NN', n:'N (Single Net)' };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.8)', backdropFilter:'blur(6px)', zIndex:300, display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'20px', overflowY:'auto' }}
+      onClick={onClose}>
+      <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'20px', width:'100%', maxWidth:'640px', overflow:'hidden', marginBottom:'20px' }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ padding:'18px 24px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+            <div style={{ width:'8px', height:'8px', borderRadius:'50%', background: isListing ? ACCENT : '#6366f1' }} />
+            <span style={{ fontFamily:"'Inter', sans-serif", fontSize:'11px', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', color:'rgba(255,255,255,0.4)' }}>{isListing ? 'Listing' : 'Requirement'}</span>
+          </div>
+          <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'6px', cursor:'pointer' }}>
+            <span style={{ color:'rgba(255,255,255,0.6)', fontSize:'16px', lineHeight:1 }}>✕</span>
+          </button>
+        </div>
+        <div style={{ padding:'24px' }}>
+          <h2 style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:'22px', fontWeight:500, color:'white', margin:'0 0 8px' }}>{post.title}</h2>
+          {priceStr && (
+            <div style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'5px 14px', background:`${ACCENT}12`, border:`1px solid ${ACCENT}30`, borderRadius:'8px', marginBottom:'18px' }}>
+              <span style={{ fontFamily:"'Inter', sans-serif", fontSize:'18px', fontWeight:700, color:ACCENT }}>{priceStr}</span>
+            </div>
+          )}
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', marginBottom:'20px' }}>
+            {[post.city && `${post.city}${post.state?', '+post.state:''}`, ...(post.cities||[])].filter(Boolean).map((v,i) => <span key={i} style={{ padding:'4px 10px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', fontFamily:"'Inter', sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.6)' }}>{v}</span>)}
+            {post.property_type && <span style={{ padding:'4px 10px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', fontFamily:"'Inter', sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.6)', textTransform:'capitalize' }}>{post.property_type.replace(/_/g,' ')}</span>}
+            {post.transaction_type && <span style={{ padding:'4px 10px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', fontFamily:"'Inter', sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.6)', textTransform:'capitalize' }}>{post.transaction_type}</span>}
+          </div>
+          <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'12px', padding:'14px', marginBottom:'16px' }}>
+            <p style={{ fontFamily:"'Inter', sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.3)', margin:'0 0 10px' }}>Details</p>
+            {[
+              ['Size', isListing ? (post.size_sqft ? `${parseFloat(post.size_sqft).toLocaleString()} SF` : null) : ((post.min_size_sqft||post.max_size_sqft) ? `${post.min_size_sqft?parseFloat(post.min_size_sqft).toLocaleString():'0'}–${post.max_size_sqft?parseFloat(post.max_size_sqft).toLocaleString():'∞'} SF` : null)],
+              ['Lease Type', post.lease_type ? (LEASE_LABELS[post.lease_type]||post.lease_type) : null],
+              ['Building Class', details.building_class ? `Class ${details.building_class}` : null],
+              ['Bedrooms', details.bedrooms],
+              ['Bathrooms', details.bathrooms],
+              ['Year Built', details.year_built],
+              ['Parking', details.total_parking_spaces ? `${details.total_parking_spaces} spaces` : null],
+              ['Clear Height', details.clear_height ? `${details.clear_height} ft` : null],
+              ['Loading Docks', details.dock_doors],
+              ['Acreage', details.acres ? `${details.acres} acres` : null],
+              ['Timeline', post.timeline?.replace(/_/g,' ')],
+              ['Status', post.status],
+            ].filter(([,v]) => v!=null&&v!=='').map(([label, value]) => (
+              <div key={label} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+                <span style={{ fontFamily:"'Inter', sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)' }}>{label}</span>
+                <span style={{ fontFamily:"'Inter', sans-serif", fontSize:'13px', color:'white' }}>{String(value)}</span>
+              </div>
+            ))}
+          </div>
+          {(post.description||post.notes||details.description||details.intended_use) && (
+            <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'12px', padding:'14px', marginBottom:'16px' }}>
+              <p style={{ fontFamily:"'Inter', sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.3)', margin:'0 0 8px' }}>Description</p>
+              <p style={{ fontFamily:"'Inter', sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.65)', lineHeight:1.7, margin:0 }}>{post.description||post.notes||details.description||details.intended_use}</p>
+            </div>
+          )}
+          <div style={{ background:`${ACCENT}05`, border:`1px solid ${ACCENT}20`, borderRadius:'12px', padding:'14px' }}>
+            <p style={{ fontFamily:"'Inter', sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:'rgba(255,255,255,0.3)', margin:'0 0 10px' }}>Agent</p>
+            <p style={{ fontFamily:"'Inter', sans-serif", fontSize:'15px', fontWeight:600, color:'white', margin:'0 0 2px' }}>{post.contact_agent_name || post.created_by}</p>
+            {post.company_name && <p style={{ fontFamily:"'Inter', sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:'0 0 10px' }}>{post.company_name}</p>}
+            <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+              {post.contact_agent_email && <a href={`mailto:${post.contact_agent_email}`} style={{ fontFamily:"'Inter', sans-serif", fontSize:'13px', color:ACCENT, textDecoration:'none', padding:'7px 12px', background:`${ACCENT}08`, borderRadius:'7px', border:`1px solid ${ACCENT}15` }}>✉ {post.contact_agent_email}</a>}
+              {post.contact_agent_phone && <a href={`tel:${post.contact_agent_phone}`} style={{ fontFamily:"'Inter', sans-serif", fontSize:'13px', color:ACCENT, textDecoration:'none', padding:'7px 12px', background:`${ACCENT}08`, borderRadius:'7px', border:`1px solid ${ACCENT}15` }}>📞 {post.contact_agent_phone}</a>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function formatListingPrice(listing) {
   const price = parseFloat(listing.price);
   if (!price || isNaN(price)) return null;
@@ -47,6 +136,7 @@ export default function Teams() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [pipelineView, setPipelineView] = useState('listings');
+  const [selectedPost, setSelectedPost] = useState(null);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [showCallModal, setShowCallModal] = useState(false);
   const [showResourceModal, setShowResourceModal] = useState(false);
@@ -170,9 +260,10 @@ export default function Teams() {
                   ) : (
                     teamListings.map(listing => (
                       <Card key={listing.id}
+                        onClick={() => setSelectedPost({ ...listing, _type: 'listing' })}
                         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
-                        onMouseEnter={e => e.currentTarget.style.borderColor = ACCENT}
-                        onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}>
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = ACCENT; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
                         <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', background: listing.visibility === 'public' ? 'rgba(0,219,197,0.15)' : 'rgba(255,165,0,0.15)', borderRadius: '4px', fontSize: '11px', fontWeight: 500, color: listing.visibility === 'public' ? ACCENT : '#FFA500' }}>
                           {listing.visibility === 'public' ? <Globe style={{ width: '12px', height: '12px' }} /> : <Lock style={{ width: '12px', height: '12px' }} />}
                           {listing.visibility === 'public' ? 'Public' : 'Brokerage Only'}
@@ -202,9 +293,10 @@ export default function Teams() {
                   ) : (
                     teamRequirements.map(req => (
                       <Card key={req.id}
+                        onClick={() => setSelectedPost({ ...req, _type: 'requirement' })}
                         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
-                        onMouseEnter={e => e.currentTarget.style.borderColor = ACCENT}
-                        onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}>
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = ACCENT; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
                         <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', background: req.visibility === 'public' ? 'rgba(0,219,197,0.15)' : 'rgba(255,165,0,0.15)', borderRadius: '4px', fontSize: '11px', fontWeight: 500, color: req.visibility === 'public' ? ACCENT : '#FFA500' }}>
                           {req.visibility === 'public' ? <Globe style={{ width: '12px', height: '12px' }} /> : <Lock style={{ width: '12px', height: '12px' }} />}
                           {req.visibility === 'public' ? 'Public' : 'Brokerage Only'}
@@ -372,6 +464,7 @@ export default function Teams() {
         )}
       </Tabs>
 
+      {selectedPost && <PipelineDetailModal post={selectedPost} onClose={() => setSelectedPost(null)} />}
       {showAnnouncementModal && <CreateAnnouncementModal onClose={() => setShowAnnouncementModal(false)} />}
       {showCallModal && <CreateCallModal onClose={() => setShowCallModal(false)} />}
       {showResourceModal && <ShareResourceModal onClose={() => setShowResourceModal(false)} />}
