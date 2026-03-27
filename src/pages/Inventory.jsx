@@ -104,12 +104,19 @@ export default function Inventory() {
 
         <div style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', marginBottom: '12px' }}>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 600, color: ACCENT, margin: 0 }}>
-            ${(item.price || item.max_price || 0).toLocaleString()}
-            {type === 'requirement' && item.price_period && (
-              <span style={{ fontSize: '13px', fontWeight: 400, color: 'rgba(255,255,255,0.4)', marginLeft: '6px' }}>
-                {item.price_period === 'per_month' ? '/mo' : item.price_period === 'per_sf_per_year' ? '/SF/yr' : ''}
-              </span>
-            )}
+            {(() => {
+              const isListing = type === 'listing';
+              const fmt = (n) => { const num = parseFloat(n); if (isNaN(num)||!n) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
+              const u = isListing
+                ? (item.transaction_type==='lease'||item.transaction_type==='sublease' ? '/SF/yr' : item.transaction_type==='rent' ? '/mo' : '')
+                : (item.price_period==='per_month' ? '/mo' : item.price_period==='per_sf_per_year' ? '/SF/yr' : item.price_period==='annually' ? '/yr' : '');
+              if (isListing) return `$${fmt(item.price)||'0'}${u}`;
+              const lo = fmt(item.min_price), hi = fmt(item.max_price);
+              if (lo && hi) return `$${lo}–$${hi}${u}`;
+              if (hi) return `Up to $${hi}${u}`;
+              if (lo) return `From $${lo}${u}`;
+              return '—';
+            })()}
           </p>
         </div>
 
