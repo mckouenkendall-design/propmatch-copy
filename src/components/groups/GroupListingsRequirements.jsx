@@ -1,9 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, Search, Sparkles, X, Phone, Mail, User, MapPin, DollarSign } from 'lucide-react';
+import { Building2, Search, Sparkles, X, Phone, Mail, User, MapPin, DollarSign, MessageCircle } from 'lucide-react';
+import { calculateMatchScore, getScoreColor, getScoreLabel } from '@/utils/matchScore';
+import FloatingMessageCompose from '@/components/messages/FloatingMessageCompose';
+import AgentContactModal from '@/components/shared/AgentContactModal';
 
 const ACCENT = '#00DBC5';
+const LAVENDER = '#818cf8';
 
 // ── Price formatter ───────────────────────────────────────────────────────────
 function fmtPostPrice(post) {
@@ -29,7 +33,7 @@ function DetailRow({ label, value }) {
 }
 
 // ── Full detail modal ─────────────────────────────────────────────────────────
-function PostDetailModal({ post, posterProfile, onClose }) {
+function PostDetailModal({ post, posterProfile, onClose, onMessage }) {
   const isListing = post.postType === 'listing';
   const name    = post.contact_agent_name  || posterProfile?.full_name  || 'Agent';
   const email   = post.contact_agent_email || posterProfile?.contact_email || posterProfile?.user_email;
@@ -179,9 +183,100 @@ function PostDetailModal({ post, posterProfile, onClose }) {
   );
 }
 
+// ── Lightweight match modal for Fish Tank context ────────────────────────────
+function GroupMatchModal({ myPost, matchPost, matchResult, posterProfile, onClose, onMessage }) {
+  const isListing = myPost.postType === 'listing';
+  const myColor   = isListing ? ACCENT : LAVENDER;
+  const theirColor = isListing ? LAVENDER : ACCENT;
+  const { totalScore } = matchResult;
+  const scoreColor = getScoreColor(totalScore);
+  const scoreLabel = getScoreLabel(totalScore);
+  const sz=80, r=32, circ=2*Math.PI*r, dash=(totalScore/100)*circ;
+
+  const posterName  = matchPost.contact_agent_name || posterProfile?.full_name || matchPost.created_by || 'Agent';
+  const posterEmail = matchPost.contact_agent_email || posterProfile?.contact_email || posterProfile?.user_email;
+  const posterPhone = matchPost.contact_agent_phone || posterProfile?.phone;
+  const posterCompany = matchPost.company_name || posterProfile?.brokerage_name;
+  const posterPhoto = posterProfile?.profile_photo_url;
+
+  const fmtPrice = (post, isL) => {
+    const fmt = (n) => { const num=parseFloat(n); if(!n||isNaN(num))return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
+    const tx=post.transaction_type, pp=post.price_period;
+    const u=isL?(tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':''):(pp==='per_month'?'/mo':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
+    if(isL){const f=fmt(post.price);return f?`$${f}${u}`:null;}
+    const lo=fmt(post.min_price),hi=fmt(post.max_price);
+    if(lo&&hi)return`$${lo}–$${hi}${u}`;if(hi)return`Up to $${hi}${u}`;if(lo)return`From $${lo}${u}`;return null;
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', backdropFilter:'blur(6px)', zIndex:200, display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'20px', overflowY:'auto' }}
+      onClick={onClose}>
+      <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'20px', width:'100%', maxWidth:'580px', overflow:'hidden', marginBottom:'20px' }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.4)' }}>Match Analysis</span>
+          <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'5px', cursor:'pointer', display:'flex' }}>
+            <X style={{ width:'15px', height:'15px', color:'rgba(255,255,255,0.5)' }}/>
+          </button>
+        </div>
+        <div style={{ padding:'24px' }}>
+          {/* Score */}
+          <div style={{ display:'flex', justifyContent:'center', marginBottom:'24px' }}>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'8px' }}>
+              <div style={{ position:'relative', width:sz, height:sz }}>
+                <svg width={sz} height={sz} style={{transform:'rotate(-90deg)'}}><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="7"/><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={scoreColor} strokeWidth="7" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/></svg>
+                <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+                  <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'24px', fontWeight:700, color:scoreColor, lineHeight:1 }}>{totalScore}</span>
+                  <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', color:'rgba(255,255,255,0.3)', letterSpacing:'0.06em', marginTop:'2px' }}>MATCH</span>
+                </div>
+              </div>
+              {scoreLabel && <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', color:scoreColor, background:`${scoreColor}15`, border:`1px solid ${scoreColor}35`, borderRadius:'5px', padding:'2px 10px' }}>{scoreLabel}</span>}
+            </div>
+          </div>
+          {/* Posts side by side */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'20px' }}>
+            {[{post:myPost,isL:isListing,color:myColor,label:`Your ${isListing?'Listing':'Requirement'}`},{post:matchPost,isL:!isListing,color:theirColor,label:`Their ${isListing?'Requirement':'Listing'}`}].map(({post,isL,color,label},i) => (
+              <div key={i} style={{ background:`${color}08`, border:`1px solid ${color}20`, borderRadius:'10px', padding:'14px' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'6px' }}>
+                  <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:color }}/>
+                  <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color }}>{label}</span>
+                </div>
+                <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'13px', fontWeight:500, color:'white', margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{post.title}</p>
+                {fmtPrice(post,isL) && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:700, color, margin:0 }}>{fmtPrice(post,isL)}</p>}
+              </div>
+            ))}
+          </div>
+          {/* Contact */}
+          <div style={{ background:`${theirColor}06`, border:`1px solid ${theirColor}20`, borderRadius:'12px', padding:'16px' }}>
+            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.3)', margin:'0 0 12px' }}>Agent</p>
+            <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'12px' }}>
+              <div style={{ width:'38px', height:'38px', borderRadius:'50%', background:theirColor, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'15px', fontWeight:700 }}>
+                {posterPhoto?<img src={posterPhoto} alt={posterName} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:posterName[0]?.toUpperCase()}
+              </div>
+              <div>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:600, color:'white', margin:0 }}>{posterName}</p>
+                {posterCompany && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>{posterCompany}</p>}
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
+              {posterEmail && <a href={`mailto:${posterEmail}`} style={{ display:'flex',alignItems:'center',gap:'6px',fontFamily:"'Inter',sans-serif",fontSize:'12px',color:theirColor,textDecoration:'none',padding:'7px 10px',background:`${theirColor}08`,borderRadius:'7px',border:`1px solid ${theirColor}15` }}><Mail style={{width:'12px',height:'12px'}}/>{posterEmail}</a>}
+              {posterPhone && <a href={`tel:${posterPhone}`} style={{ display:'flex',alignItems:'center',gap:'6px',fontFamily:"'Inter',sans-serif",fontSize:'12px',color:theirColor,textDecoration:'none',padding:'7px 10px',background:`${theirColor}08`,borderRadius:'7px',border:`1px solid ${theirColor}15` }}><Phone style={{width:'12px',height:'12px'}}/>{posterPhone}</a>}
+              <button onClick={() => onMessage(posterProfile, posterEmail)} style={{ display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',background:theirColor,border:'none',borderRadius:'7px',fontFamily:"'Inter',sans-serif",fontSize:'12px',fontWeight:600,color:'#111827',cursor:'pointer' }}>
+                <MessageCircle style={{width:'12px',height:'12px'}}/> Send Message
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function GroupListingsRequirements({ groupId, memberEmails, currentUser }) {
   const [tab, setTab] = useState('all');
   const [selectedPost, setSelectedPost] = useState(null);
+  const [compose, setCompose]           = useState(null); // { recipientProfile, recipientEmail, myPost, matchPost, matchResult }
+  const [viewingAgent, setViewingAgent] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -228,26 +323,34 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
   const myRequirements = groupRequirements.filter(r => r.created_by === currentUser?.email);
   const myPosts = [...myListings, ...myRequirements].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
-  const matchedPosts = useMemo(() => {
-    if (!currentUser) return [];
-    const matched = new Set();
-    const result = [];
-    myRequirements.forEach(req => {
-      groupListings.filter(l => l.created_by !== currentUser.email).forEach(listing => {
-        const typeMatch = listing.property_type === req.property_type;
-        const txMatch = listing.transaction_type === req.transaction_type || (req.transaction_type === 'purchase' && listing.transaction_type === 'sale') || (req.transaction_type === 'lease' && listing.transaction_type === 'sublease');
-        if (typeMatch && txMatch && !matched.has(listing.id)) { matched.add(listing.id); result.push(listing); }
+  // Build a map: postId -> best match result against the current user's posts
+  const matchScoreMap = useMemo(() => {
+    if (!currentUser) return {};
+    const map = {};
+    // Check other people's listings against my requirements
+    groupListings.filter(l => l.created_by !== currentUser.email).forEach(listing => {
+      let best = null;
+      myRequirements.forEach(req => {
+        const r = calculateMatchScore(listing, req);
+        if (r.isMatch && (!best || r.totalScore > best.totalScore)) best = { ...r, myPost: req, matchPost: listing };
       });
+      if (best) map[listing.id] = best;
     });
-    myListings.forEach(listing => {
-      groupRequirements.filter(r => r.created_by !== currentUser.email).forEach(req => {
-        const typeMatch = listing.property_type === req.property_type;
-        const txMatch = listing.transaction_type === req.transaction_type || (req.transaction_type === 'purchase' && listing.transaction_type === 'sale') || (req.transaction_type === 'lease' && listing.transaction_type === 'sublease');
-        if (typeMatch && txMatch && !matched.has(req.id)) { matched.add(req.id); result.push(req); }
+    // Check other people's requirements against my listings
+    groupRequirements.filter(r => r.created_by !== currentUser.email).forEach(req => {
+      let best = null;
+      myListings.forEach(listing => {
+        const r = calculateMatchScore(listing, req);
+        if (r.isMatch && (!best || r.totalScore > best.totalScore)) best = { ...r, myPost: listing, matchPost: req };
       });
+      if (best) map[req.id] = best;
     });
-    return result;
+    return map;
   }, [myListings, myRequirements, groupListings, groupRequirements, currentUser]);
+
+  const matchedPosts = useMemo(() =>
+    allPosts.filter(p => p.created_by !== currentUser?.email && matchScoreMap[p.id]),
+    [allPosts, matchScoreMap, currentUser]);
 
   const displayPosts = tab === 'all' ? allPosts : tab === 'my' ? myPosts : matchedPosts;
 
@@ -296,13 +399,18 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
             const posterPhoto = posterProfile?.profile_photo_url;
             const posterInitial = posterName[0]?.toUpperCase() || '?';
 
+            const matchInfo = matchScoreMap[post.id];
+            const scoreColor = matchInfo ? getScoreColor(matchInfo.totalScore) : null;
+            const scoreLabel = matchInfo ? getScoreLabel(matchInfo.totalScore) : null;
+            const isMatch = !!matchInfo;
+
             return (
               <div
                 key={`${post.postType}-${post.id}`}
                 onClick={() => setSelectedPost(post)}
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px', cursor: 'pointer', transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = `${ACCENT}40`; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${isMatch ? `${scoreColor}35` : 'rgba(255,255,255,0.08)'}`, borderRadius: '12px', padding: '16px', cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = `${ACCENT}50`; e.currentTarget.style.boxShadow = `0 0 16px ${ACCENT}12`; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = isMatch ? `${scoreColor}35` : 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                   <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: isListing ? `${ACCENT}15` : 'rgba(255,255,255,0.06)', border: isListing ? `1px solid ${ACCENT}30` : '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -311,35 +419,63 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
                       : <Search style={{ width: '18px', height: '18px', color: 'rgba(255,255,255,0.6)' }} />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: isListing ? ACCENT : '#a78bfa' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: isListing ? ACCENT : LAVENDER }}>
                         {isListing ? 'Listing' : 'Requirement'}
                       </span>
+                      {isMatch && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          {/* Small circle */}
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: scoreColor, flexShrink: 0 }}/>
+                          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 700, color: scoreColor }}>{matchInfo.totalScore}%</span>
+                          {scoreLabel && (
+                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', fontWeight: 600, color: scoreColor, background: `${scoreColor}15`, border: `1px solid ${scoreColor}30`, borderRadius: '4px', padding: '1px 6px' }}>
+                              {scoreLabel}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: 'white', margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {post.title}
                     </h4>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                       <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 600, color: ACCENT }}>
-                        {(() => {
-                          const isL = !!post.size_sqft;
-                          const fmt = (n) => { const num = parseFloat(n); if (!n||isNaN(num)) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
-                          const u = isL ? (post.transaction_type==='lease'||post.transaction_type==='sublease'?'/SF/yr':post.transaction_type==='rent'?'/mo':'') : (post.price_period==='per_month'?'/mo':post.price_period==='per_sf_per_year'?'/SF/yr':post.price_period==='annually'?'/yr':'');
-                          if (isL) return `$${fmt(post.price)||'0'}${u}`;
-                          const lo=fmt(post.min_price),hi=fmt(post.max_price);
-                          if(lo&&hi) return `$${lo}–$${hi}${u}`;
-                          if(hi) return `Up to $${hi}${u}`;
-                          if(lo) return `From $${lo}${u}`;
-                          return '—';
-                        })()}
+                        {fmtPostPrice(post)}
                       </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: ACCENT, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111827', fontSize: '10px', fontWeight: 700 }}>
-                          {posterPhoto
-                            ? <img src={posterPhoto} alt={posterName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            : posterInitial}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {post.created_by !== currentUser?.email && (
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              setCompose({
+                                recipientProfile: posterProfile,
+                                recipientEmail: post.contact_agent_email || posterProfile?.contact_email || post.created_by,
+                                myPost: matchInfo?.myPost,
+                                matchPost: matchInfo?.matchPost,
+                                matchResult: matchInfo,
+                              });
+                            }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', background: `${ACCENT}12`, border: `1px solid ${ACCENT}25`, borderRadius: '6px', cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 600, color: ACCENT }}
+                            onMouseEnter={e => { e.currentTarget.style.background = `${ACCENT}22`; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = `${ACCENT}12`; }}
+                          >
+                            <MessageCircle style={{ width: '11px', height: '11px' }}/> Message
+                          </button>
+                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: ACCENT, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111827', fontSize: '10px', fontWeight: 700 }}>
+                            {posterPhoto ? <img src={posterPhoto} alt={posterName} style={{ width: '100%', height: '100%', objectFit: 'cover' }}/> : posterInitial}
+                          </div>
+                          <span
+                            onClick={e => { e.stopPropagation(); setViewingAgent({ profile: posterProfile, email: post.created_by }); }}
+                            style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.45)', cursor: 'pointer' }}
+                            onMouseEnter={e => e.currentTarget.style.color = ACCENT}
+                            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.45)'}
+                          >
+                            {posterName}
+                          </span>
                         </div>
-                        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>{posterName}</span>
                       </div>
                     </div>
                   </div>
@@ -350,12 +486,51 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
         </div>
       )}
 
-      {selectedPost && (
-        <PostDetailModal
-          post={selectedPost}
-          posterProfile={profileMap[selectedPost.created_by]}
-          onClose={() => setSelectedPost(null)}
+      {selectedPost && (() => {
+        const matchInfo = matchScoreMap[selectedPost.id];
+        if (matchInfo && selectedPost.created_by !== currentUser?.email) {
+          // Dynamic import-style approach — use the MatchModal from Matches page logic
+          // We'll pass to a wrapper that shows the same match analysis
+          return (
+            <GroupMatchModal
+              myPost={{ ...matchInfo.myPost, postType: matchInfo.myPost.size_sqft ? 'listing' : 'requirement' }}
+              matchPost={{ ...matchInfo.matchPost, postType: matchInfo.matchPost.size_sqft ? 'listing' : 'requirement' }}
+              matchResult={matchInfo}
+              posterProfile={profileMap[selectedPost.created_by]}
+              onClose={() => setSelectedPost(null)}
+              onMessage={(recipientProfile, recipientEmail) => {
+                setSelectedPost(null);
+                setCompose({ recipientProfile, recipientEmail, myPost: matchInfo.myPost, matchPost: matchInfo.matchPost, matchResult: matchInfo });
+              }}
+            />
+          );
+        }
+        return (
+          <PostDetailModal
+            post={selectedPost}
+            posterProfile={profileMap[selectedPost.created_by]}
+            onClose={() => setSelectedPost(null)}
+            onMessage={(recipientProfile, recipientEmail) => {
+              setSelectedPost(null);
+              setCompose({ recipientProfile, recipientEmail, myPost: null, matchPost: null, matchResult: null });
+            }}
+          />
+        );
+      })()}
+
+      {compose && (
+        <FloatingMessageCompose
+          recipientProfile={compose.recipientProfile}
+          recipientEmail={compose.recipientEmail}
+          myPost={compose.myPost}
+          matchPost={compose.matchPost}
+          matchResult={compose.matchResult}
+          onClose={() => setCompose(null)}
         />
+      )}
+
+      {viewingAgent && (
+        <AgentContactModal profile={viewingAgent.profile} email={viewingAgent.email} onClose={() => setViewingAgent(null)}/>
       )}
     </div>
   );
