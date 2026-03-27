@@ -119,6 +119,12 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   const next = () => setStep(s => Math.min(s + 1, 3));
   const back = () => step === 1 ? onClose('back') : setStep(s => s - 1);
 
+  const COMMERCIAL_TYPES = ['office','medical_office','retail','industrial_flex','land','special_use'];
+  const RESIDENTIAL_TYPES = ['single_family','condo','apartment','multi_family','multi_family_5','townhouse','manufactured','land_residential'];
+  const cat = formData.property_category || category ||
+    (COMMERCIAL_TYPES.includes(formData.property_type) ? 'commercial' :
+     RESIDENTIAL_TYPES.includes(formData.property_type) ? 'residential' : 'commercial');
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center p-4 overflow-y-auto">
       <div className="w-full max-w-2xl my-8">
@@ -131,22 +137,43 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
                 </Button>
                 <div>
                   <h2 className="text-xl font-bold capitalize" style={{ color: 'white' }}>
-                    {editMode ? 'Edit Requirement' : `${category} Requirement`}
+                    {editMode ? 'Edit Requirement' : `${cat} Requirement`}
                   </h2>
                   <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Step {step} of 3</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => onClose('close')}>
-                <X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
-              </Button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {editMode && (
+                  showDeleteConfirm ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Delete?</span>
+                      <button onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}
+                        style={{ padding: '5px 10px', background: '#ef4444', border: 'none', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 600, color: 'white', cursor: 'pointer' }}>
+                        {deleteMutation.isPending ? '...' : 'Yes'}
+                      </button>
+                      <button onClick={() => setShowDeleteConfirm(false)}
+                        style={{ padding: '5px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <Button variant="ghost" size="icon" onClick={() => setShowDeleteConfirm(true)} title="Delete requirement">
+                      <Trash2 className="w-4 h-4" style={{ color: '#ef4444' }} />
+                    </Button>
+                  )
+                )}
+                <Button variant="ghost" size="icon" onClick={() => onClose('close')}>
+                  <X className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
+                </Button>
+              </div>
             </div>
             <FormProgress currentStep={step} steps={STEPS} />
           </div>
 
           <div className="px-6 py-6">
             {step === 1 && <ReqStep1 data={formData} update={update} onNext={next} />}
-            {step === 2 && (formData.property_category || category) === 'commercial' && <ReqStep2Commercial data={formData} update={update} onNext={next} />}
-            {step === 2 && (formData.property_category || category) === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
+            {step === 2 && cat === 'commercial' && <ReqStep2Commercial data={formData} update={update} onNext={next} />}
+            {step === 2 && cat === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
             {step === 3 && (
               <>
                 <ReqStep3
@@ -156,35 +183,6 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
                   isLoading={saveMutation.isPending}
                   editMode={editMode}
                 />
-
-                {editMode && (
-                  <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                    {showDeleteConfirm ? (
-                      <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '10px', padding: '16px' }}>
-                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: '0 0 12px' }}>
-                          Are you sure? This requirement will be permanently deleted and cannot be recovered.
-                        </p>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          <button onClick={() => setShowDeleteConfirm(false)} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
-                            Cancel
-                          </button>
-                          <button onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending} style={{ flex: 1, padding: '10px', background: '#ef4444', border: 'none', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'white', cursor: 'pointer' }}>
-                            {deleteMutation.isPending ? 'Deleting...' : 'Yes, Delete Requirement'}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#ef4444', cursor: 'pointer' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Trash2 style={{ width: '15px', height: '15px' }} /> Delete Requirement
-                      </button>
-                    )}
-                  </div>
-                )}
 
                 {submitError && (
                   <div className="mt-4 rounded-xl px-4 py-3" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>
