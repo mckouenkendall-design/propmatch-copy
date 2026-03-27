@@ -766,7 +766,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
                   <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
                     {posterEmail && <a href={`mailto:${posterEmail}`} style={{ display:'flex',alignItems:'center',gap:'7px',fontFamily:"'Inter',sans-serif",fontSize:'13px',color:theirColor,textDecoration:'none',padding:'8px 12px',background:`${theirColor}08`,borderRadius:'8px',border:`1px solid ${theirColor}15` }}><Mail style={{width:'13px',height:'13px'}}/>{posterEmail}</a>}
                     {posterPhone && <a href={`tel:${posterPhone}`} style={{ display:'flex',alignItems:'center',gap:'7px',fontFamily:"'Inter',sans-serif",fontSize:'13px',color:theirColor,textDecoration:'none',padding:'8px 12px',background:`${theirColor}08`,borderRadius:'8px',border:`1px solid ${theirColor}15` }}><Phone style={{width:'13px',height:'13px'}}/>{posterPhone}</a>}
-                    <button style={{ display:'flex',alignItems:'center',gap:'7px',padding:'8px 16px',background:theirColor,border:'none',borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:600,color:'#111827',cursor:'pointer' }}>
+                    <button onClick={() => setShowCompose(true)} style={{ display:'flex',alignItems:'center',gap:'7px',padding:'8px 16px',background:theirColor,border:'none',borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:600,color:'#111827',cursor:'pointer' }}>
                       <MessageCircle style={{width:'13px',height:'13px'}}/> Send Message
                     </button>
                   </div>
