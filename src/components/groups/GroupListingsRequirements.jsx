@@ -62,13 +62,20 @@ function PostDetailModal({ post, posterProfile, onClose }) {
           <div style={{ padding: '14px 16px', background: 'rgba(0,219,197,0.06)', border: `1px solid ${ACCENT}25`, borderRadius: '10px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <DollarSign style={{ width: '16px', height: '16px', color: ACCENT }} />
             <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '22px', fontWeight: 500, color: ACCENT }}>
-              ${(post.price || post.max_price || 0).toLocaleString()}
+              {(() => {
+              const isListing = !!post.size_sqft;
+              const fmt = (n) => { const num = parseFloat(n); if (isNaN(num)||!n) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
+              const u = isListing
+                ? (post.transaction_type==='lease'||post.transaction_type==='sublease' ? '/SF/yr' : post.transaction_type==='rent' ? '/mo' : '')
+                : (post.price_period==='per_month' ? '/mo' : post.price_period==='per_sf_per_year' ? '/SF/yr' : post.price_period==='annually' ? '/yr' : '');
+              if (isListing) return `$${fmt(post.price)||'0'}${u}`;
+              const lo = fmt(post.min_price), hi = fmt(post.max_price);
+              if (lo && hi) return `$${lo}–$${hi}${u}`;
+              if (hi) return `Up to $${hi}${u}`;
+              if (lo) return `From $${lo}${u}`;
+              return `$${fmt(post.price)||'0'}${u}`;
+            })()}
             </span>
-            {post.price_period && post.price_period !== 'total' && (
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
-                {post.price_period === 'per_month' ? '/mo' : post.price_period === 'per_sf_per_year' ? '/SF/yr' : ''}
-              </span>
-            )}
           </div>
         )}
 
