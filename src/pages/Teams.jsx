@@ -14,6 +14,35 @@ import { format } from 'date-fns';
 
 const ACCENT = '#00DBC5';
 
+function formatListingPrice(listing) {
+  const price = parseFloat(listing.price);
+  if (!price || isNaN(price)) return null;
+  const fmt = price % 1 === 0 ? price.toLocaleString() : price.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const tx = listing.transaction_type;
+  const unit = tx === 'lease' || tx === 'sublease' ? '/SF/yr' : tx === 'rent' ? '/mo' : '';
+  return `$${fmt}${unit}`;
+}
+
+function formatRequirementPrice(req) {
+  const fmt = (n) => {
+    const num = parseFloat(n);
+    if (!n || isNaN(num)) return null;
+    return num % 1 === 0 ? num.toLocaleString() : num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  };
+  const tx = req.transaction_type;
+  const period = req.price_period;
+  const unit = period === 'per_month' ? '/mo'
+    : period === 'per_sf_per_year' ? '/SF/yr'
+    : period === 'annually' ? '/yr'
+    : (tx === 'lease' || tx === 'rent') ? '/mo'
+    : '';
+  const lo = fmt(req.min_price), hi = fmt(req.max_price);
+  if (lo && hi) return `$${lo}–$${hi}${unit}`;
+  if (hi) return `Up to $${hi}${unit}`;
+  if (lo) return `From $${lo}${unit}`;
+  return null;
+}
+
 export default function Teams() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -23,19 +52,17 @@ export default function Teams() {
   const [showResourceModal, setShowResourceModal] = useState(false);
   const isManagingBroker = user?.role === 'admin' && user?.selected_plan === 'brokerage';
 
-  // Fetch team listings (public + brokerage-only)
   const { data: allListings = [] } = useQuery({
     queryKey: ['allListings'],
     queryFn: () => base44.entities.Listing.list(),
     enabled: !!user?.brokerage_id,
   });
 
-  const teamListings = allListings.filter(listing => 
+  const teamListings = allListings.filter(listing =>
     (listing.visibility === 'public' || listing.visibility === 'brokerage') &&
     listing.brokerage_id === user?.brokerage_id
   );
 
-  // Fetch team requirements (public + brokerage-only)
   const { data: allRequirements = [] } = useQuery({
     queryKey: ['allRequirements'],
     queryFn: () => base44.entities.Requirement.list(),
@@ -47,32 +74,28 @@ export default function Teams() {
     req.brokerage_id === user?.brokerage_id
   );
 
-  // Fetch team announcements
   const { data: announcements = [] } = useQuery({
     queryKey: ['teamAnnouncements', user?.brokerage_id],
     queryFn: () => base44.entities.TeamAnnouncement.filter({ brokerage_id: user?.brokerage_id }),
     enabled: !!user?.brokerage_id,
   });
 
-  // Sort: pinned first, then by created date
   const sortedAnnouncements = [...announcements].sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
     return new Date(b.created_date) - new Date(a.created_date);
   });
 
-  // Fetch team calls
   const { data: calls = [] } = useQuery({
     queryKey: ['teamCalls', user?.brokerage_id],
     queryFn: () => base44.entities.TeamCall.filter({ brokerage_id: user?.brokerage_id }),
     enabled: !!user?.brokerage_id,
   });
 
-  const upcomingCalls = calls.filter(call => call.status === 'upcoming').sort((a, b) => 
-    new Date(a.scheduled_date) - new Date(b.scheduled_date)
-  );
+  const upcomingCalls = calls
+    .filter(call => call.status === 'upcoming')
+    .sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date));
 
-  // Fetch team resources
   const { data: resources = [] } = useQuery({
     queryKey: ['teamResources', user?.brokerage_id],
     queryFn: () => base44.entities.TeamResource.filter({ brokerage_id: user?.brokerage_id }),
@@ -123,7 +146,7 @@ export default function Teams() {
           )}
         </TabsList>
 
-        {/* Team Pipeline */}
+        {/* Brokerage Pipeline */}
         <TabsContent value="pipeline">
           <div style={{ marginBottom: '24px' }}>
             <Tabs value={pipelineView} onValueChange={setPipelineView}>
@@ -146,7 +169,10 @@ export default function Teams() {
                     </Card>
                   ) : (
                     teamListings.map(listing => (
-                      <Card key={listing.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }} onMouseEnter={e => e.currentTarget.style.borderColor = ACCENT} onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}>
+                      <Card key={listing.id}
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = ACCENT}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}>
                         <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', background: listing.visibility === 'public' ? 'rgba(0,219,197,0.15)' : 'rgba(255,165,0,0.15)', borderRadius: '4px', fontSize: '11px', fontWeight: 500, color: listing.visibility === 'public' ? ACCENT : '#FFA500' }}>
                           {listing.visibility === 'public' ? <Globe style={{ width: '12px', height: '12px' }} /> : <Lock style={{ width: '12px', height: '12px' }} />}
                           {listing.visibility === 'public' ? 'Public' : 'Brokerage Only'}
@@ -156,7 +182,7 @@ export default function Teams() {
                         </CardHeader>
                         <CardContent>
                           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '8px' }}>{listing.city}, {listing.state}</p>
-                          <p style={{ color: ACCENT, fontSize: '16px', fontWeight: 500 }}>${listing.price?.toLocaleString()}</p>
+                          <p style={{ color: ACCENT, fontSize: '16px', fontWeight: 500 }}>{formatListingPrice(listing)}</p>
                           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '8px' }}>Posted by: {listing.contact_agent_name}</p>
                         </CardContent>
                       </Card>
@@ -175,7 +201,10 @@ export default function Teams() {
                     </Card>
                   ) : (
                     teamRequirements.map(req => (
-                      <Card key={req.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }} onMouseEnter={e => e.currentTarget.style.borderColor = ACCENT} onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}>
+                      <Card key={req.id}
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = ACCENT}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}>
                         <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', background: req.visibility === 'public' ? 'rgba(0,219,197,0.15)' : 'rgba(255,165,0,0.15)', borderRadius: '4px', fontSize: '11px', fontWeight: 500, color: req.visibility === 'public' ? ACCENT : '#FFA500' }}>
                           {req.visibility === 'public' ? <Globe style={{ width: '12px', height: '12px' }} /> : <Lock style={{ width: '12px', height: '12px' }} />}
                           {req.visibility === 'public' ? 'Public' : 'Brokerage Only'}
@@ -185,7 +214,7 @@ export default function Teams() {
                         </CardHeader>
                         <CardContent>
                           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '8px' }}>{req.cities?.join(', ')}</p>
-                          <p style={{ color: ACCENT, fontSize: '16px', fontWeight: 500 }}>Up to ${req.max_price?.toLocaleString()}</p>
+                          <p style={{ color: ACCENT, fontSize: '16px', fontWeight: 500 }}>{formatRequirementPrice(req)}</p>
                           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '8px' }}>Posted by: {req.created_by}</p>
                         </CardContent>
                       </Card>
@@ -197,7 +226,7 @@ export default function Teams() {
           </div>
         </TabsContent>
 
-        {/* Team Announcements */}
+        {/* Announcements */}
         <TabsContent value="announcements">
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
             <Button onClick={() => setShowAnnouncementModal(true)} style={{ background: ACCENT, color: '#111827', gap: '8px' }}>
@@ -205,7 +234,6 @@ export default function Teams() {
               Post Announcement
             </Button>
           </div>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {sortedAnnouncements.length === 0 ? (
               <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -238,7 +266,7 @@ export default function Teams() {
           </div>
         </TabsContent>
 
-        {/* Team Calls */}
+        {/* Calls */}
         <TabsContent value="calls">
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
             <Button onClick={() => setShowCallModal(true)} style={{ background: ACCENT, color: '#111827', gap: '8px' }}>
@@ -246,7 +274,6 @@ export default function Teams() {
               Schedule Call
             </Button>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '16px' }}>
             {upcomingCalls.length === 0 ? (
               <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', gridColumn: '1 / -1' }}>
@@ -267,17 +294,9 @@ export default function Teams() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {call.description && (
-                      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '12px' }}>{call.description}</p>
-                    )}
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginBottom: '12px' }}>
-                      Organized by: {call.organizer_name}
-                    </p>
-                    <Button
-                      onClick={() => window.open(call.meeting_link, '_blank')}
-                      variant="outline"
-                      style={{ borderColor: ACCENT, color: ACCENT, width: '100%', gap: '8px' }}
-                    >
+                    {call.description && <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '12px' }}>{call.description}</p>}
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginBottom: '12px' }}>Organized by: {call.organizer_name}</p>
+                    <Button onClick={() => window.open(call.meeting_link, '_blank')} variant="outline" style={{ borderColor: ACCENT, color: ACCENT, width: '100%', gap: '8px' }}>
                       <ExternalLink style={{ width: '14px', height: '14px' }} />
                       Join Meeting
                     </Button>
@@ -288,7 +307,7 @@ export default function Teams() {
           </div>
         </TabsContent>
 
-        {/* Resource Library */}
+        {/* Resources */}
         <TabsContent value="resources">
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
             <Button onClick={() => setShowResourceModal(true)} style={{ background: ACCENT, color: '#111827', gap: '8px' }}>
@@ -296,7 +315,6 @@ export default function Teams() {
               Share Resource
             </Button>
           </div>
-
           {Object.keys(groupedResources).length === 0 ? (
             <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <CardContent style={{ padding: '48px', textAlign: 'center' }}>
@@ -318,25 +336,14 @@ export default function Teams() {
                             <FileText style={{ width: '20px', height: '20px', color: ACCENT, flexShrink: 0, marginTop: '2px' }} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <CardTitle style={{ color: 'white', fontSize: '14px', marginBottom: '4px' }}>{resource.title}</CardTitle>
-                              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                {resource.resource_type}
-                              </p>
+                              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{resource.resource_type}</p>
                             </div>
                           </div>
                         </CardHeader>
                         <CardContent>
-                          {resource.description && (
-                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '8px' }}>{resource.description}</p>
-                          )}
-                          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '12px' }}>
-                            Shared by {resource.uploaded_by_name}
-                          </p>
-                          <Button
-                            onClick={() => window.open(resource.file_url, '_blank')}
-                            variant="outline"
-                            size="sm"
-                            style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', width: '100%', gap: '6px' }}
-                          >
+                          {resource.description && <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '8px' }}>{resource.description}</p>}
+                          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '12px' }}>Shared by {resource.uploaded_by_name}</p>
+                          <Button onClick={() => window.open(resource.file_url, '_blank')} variant="outline" size="sm" style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', width: '100%', gap: '6px' }}>
                             <Download style={{ width: '14px', height: '14px' }} />
                             Download
                           </Button>
@@ -350,13 +357,10 @@ export default function Teams() {
           )}
         </TabsContent>
 
-        {/* Admin Dashboard Tab */}
         {isManagingBroker && (
           <TabsContent value="admin">
             <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <CardHeader>
-                <CardTitle style={{ color: 'white' }}>Admin Dashboard</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle style={{ color: 'white' }}>Admin Dashboard</CardTitle></CardHeader>
               <CardContent>
                 <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '16px' }}>Access your broker admin tools</p>
                 <Button onClick={() => navigate('/BrokerDashboard')} style={{ background: ACCENT, color: '#111827' }}>
