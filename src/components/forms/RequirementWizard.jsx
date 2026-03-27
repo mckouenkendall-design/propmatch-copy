@@ -132,9 +132,13 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
 
   const COMMERCIAL_TYPES = ['office','medical_office','retail','industrial_flex','land','special_use'];
   const RESIDENTIAL_TYPES = ['single_family','condo','apartment','multi_family','multi_family_5','townhouse','manufactured','land_residential'];
-  const cat = formData.property_category || category ||
-    (COMMERCIAL_TYPES.includes(formData.property_type) ? 'commercial' :
-     RESIDENTIAL_TYPES.includes(formData.property_type) ? 'residential' : 'commercial');
+
+  // Always derive from property_type first — it's the most reliable source
+  const cat = formData.property_type
+    ? (COMMERCIAL_TYPES.includes(formData.property_type) ? 'commercial'
+      : RESIDENTIAL_TYPES.includes(formData.property_type) ? 'residential'
+      : 'commercial')
+    : (formData.property_category || category || 'commercial');
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center p-4 overflow-y-auto">
