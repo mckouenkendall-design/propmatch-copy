@@ -1,25 +1,25 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import {
   Building2, Search, TrendingUp, X, Mail, Phone, MessageCircle,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Check, FileText, Image, Loader2, MapPin, Ruler, DollarSign,
-  Layers, Star, Zap, Users, BarChart2, Home, Clock
+  Check, FileText, Loader2, Image, ZoomIn
 } from 'lucide-react';
 import { calculateMatchScore, getScoreColor, getScoreLabel, parseDetails } from '@/utils/matchScore';
 
-const ACCENT   = '#00DBC5'; // tiffany — listing color
-const LAVENDER = '#818cf8'; // lavender — requirement color
+const ACCENT   = '#00DBC5';
+const LAVENDER = '#818cf8';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmtN = (n, dec = 2) => {
+const fmtN = (n) => {
   const num = parseFloat(n);
   if (!n || isNaN(num)) return null;
-  return num % 1 === 0 ? num.toLocaleString() : num.toLocaleString('en-US', { maximumFractionDigits: dec });
+  return num % 1 === 0 ? num.toLocaleString() : num.toLocaleString('en-US', { maximumFractionDigits: 2 });
 };
-const fmtMoney = (v) => v >= 1000000 ? `$${(v/1e6).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v/1000)}K` : `$${Math.round(v).toLocaleString()}`;
+const fmtMoney = (v) =>
+  v >= 1000000 ? `$${(v/1e6).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v/1000)}K` : `$${Math.round(v).toLocaleString()}`;
 
 const PT = { office:'General Office', medical_office:'Medical Office', retail:'Retail', industrial_flex:'Industrial / Flex', land:'Land', special_use:'Special Use', single_family:'Single Family', condo:'Condo', apartment:'Apartment', multi_family:'Multi-Family (2–4)', multi_family_5:'Multi-Family (5+)', townhouse:'Townhouse', manufactured:'Manufactured / Mobile', land_residential:'Residential Land' };
 const TX = { lease:'Lease', sublease:'Sublease', sale:'Sale', rent:'Rent', purchase:'Purchase' };
@@ -30,452 +30,469 @@ function priceStr(post, isListing) {
   const u = isListing
     ? (tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':'')
     : (pp==='per_month'?'/mo':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
-  if (isListing) { const f=fmtN(post.price); return f?`$${f}${u}`:null; }
-  const lo=fmtN(post.min_price), hi=fmtN(post.max_price);
-  if (lo&&hi) return `$${lo}–$${hi}${u}`;
+  if (isListing) { const f = fmtN(post.price); return f ? `$${f}${u}` : null; }
+  const lo = fmtN(post.min_price), hi = fmtN(post.max_price);
+  if (lo && hi) return `$${lo}–$${hi}${u}`;
   if (hi) return `Up to $${hi}${u}`;
   if (lo) return `From $${lo}${u}`;
   return null;
 }
 
-// ─── Parse highlighted text from AI ──────────────────────────────────────────
-// AI uses {{L:value}} for listing values and {{R:value}} for requirement values
-function parseHighlightedText(text) {
-  if (!text) return [];
+// ─── Parse AI highlighted text ────────────────────────────────────────────────
+function HighlightedText({ text }) {
+  if (!text) return null;
   const parts = [];
   const regex = /\{\{([LR]):([^}]+)\}\}/g;
   let last = 0, match;
   while ((match = regex.exec(text)) !== null) {
-    if (match.index > last) parts.push({ type: 'text', text: text.slice(last, match.index) });
-    parts.push({ type: 'highlight', side: match[1], text: match[2] });
+    if (match.index > last) parts.push({ type:'text', text:text.slice(last, match.index) });
+    parts.push({ type:'highlight', side:match[1], text:match[2] });
     last = regex.lastIndex;
   }
-  if (last < text.length) parts.push({ type: 'text', text: text.slice(last) });
-  return parts;
-}
-
-function HighlightedText({ text }) {
-  const parts = parseHighlightedText(text);
+  if (last < text.length) parts.push({ type:'text', text:text.slice(last) });
   return (
     <span>
-      {parts.map((p, i) =>
+      {parts.map((p,i) =>
         p.type === 'text' ? <span key={i}>{p.text}</span> :
-        <span key={i} style={{ color: p.side === 'L' ? ACCENT : LAVENDER, fontWeight: 600 }}>{p.text}</span>
+        <span key={i} style={{ color:p.side==='L'?ACCENT:LAVENDER, fontWeight:600 }}>{p.text}</span>
       )}
     </span>
+  );
+}
+
+// ─── Photo Lightbox ───────────────────────────────────────────────────────────
+function PhotoLightbox({ photos, onClose }) {
+  const [idx, setIdx] = useState(0);
+  const list = Array.isArray(photos) ? photos : [photos].filter(Boolean);
+  if (!list.length) return null;
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.95)', zIndex:400, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}
+      onClick={onClose}>
+      <div style={{ position:'relative', maxWidth:'90vw', maxHeight:'80vh' }} onClick={e => e.stopPropagation()}>
+        <img src={list[idx]} alt={`Photo ${idx+1}`} style={{ maxWidth:'90vw', maxHeight:'80vh', objectFit:'contain', borderRadius:'8px' }}/>
+        {list.length > 1 && (
+          <>
+            <button onClick={() => setIdx(i => (i-1+list.length)%list.length)}
+              style={{ position:'absolute', left:'-50px', top:'50%', transform:'translateY(-50%)', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:'50%', width:'40px', height:'40px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <ChevronLeft style={{ width:'18px', height:'18px', color:'white' }}/>
+            </button>
+            <button onClick={() => setIdx(i => (i+1)%list.length)}
+              style={{ position:'absolute', right:'-50px', top:'50%', transform:'translateY(-50%)', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:'50%', width:'40px', height:'40px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <ChevronRight style={{ width:'18px', height:'18px', color:'white' }}/>
+            </button>
+          </>
+        )}
+        <div style={{ position:'absolute', bottom:'-36px', left:'50%', transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.5)' }}>
+          {list.length > 1 ? `${idx+1} / ${list.length}` : ''}
+        </div>
+      </div>
+      <button onClick={onClose} style={{ position:'absolute', top:'20px', right:'20px', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:'8px', padding:'8px', cursor:'pointer' }}>
+        <X style={{ width:'18px', height:'18px', color:'white' }}/>
+      </button>
+    </div>
   );
 }
 
 // ─── Big Score Circle ─────────────────────────────────────────────────────────
 function BigScoreCircle({ score }) {
   const color = getScoreColor(score), label = getScoreLabel(score);
-  const sz = 110, r = 44, circ = 2*Math.PI*r, dash = (score/100)*circ;
+  const sz=120, r=48, circ=2*Math.PI*r, dash=(score/100)*circ;
   return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'8px' }}>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
       <div style={{ position:'relative', width:sz, height:sz }}>
         <svg width={sz} height={sz} style={{ transform:'rotate(-90deg)' }}>
-          <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="8"/>
-          <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth="8" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
+          <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="9"/>
+          <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth="9"
+            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
         </svg>
         <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-          <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:700, color, lineHeight:1 }}>{score}</span>
+          <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'36px', fontWeight:700, color, lineHeight:1 }}>{score}</span>
           <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.3)', letterSpacing:'0.06em', marginTop:'2px' }}>MATCH</span>
         </div>
       </div>
-      {label && <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color, background:`${color}15`, border:`1px solid ${color}35`, borderRadius:'6px', padding:'3px 10px' }}>{label}</span>}
+      {label && (
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color, background:`${color}15`, border:`1px solid ${color}35`, borderRadius:'6px', padding:'4px 14px' }}>
+          {label}
+        </span>
+      )}
     </div>
   );
 }
 
-// ─── Range Bar — dot = listing value, lavender band = requirement range ────────
+// ─── Range Bar ────────────────────────────────────────────────────────────────
 function RangeBar({ value, min, max, label, score }) {
   if (value == null || (min == null && max == null)) return null;
-  const dotColor = ACCENT; // listing dot always tiffany
-  const bandColor = LAVENDER; // requirement range always lavender
-  const lo = min ?? value * 0.6, hi = max ?? value * 1.4;
-  const pad = (hi - lo) * 0.3, barMin = Math.max(0, lo - pad), barMax = hi + pad, range = barMax - barMin;
+  const lo = min != null ? parseFloat(min) : null;
+  const hi = max != null ? parseFloat(max) : null;
+  const v  = parseFloat(value);
+
+  const refLo  = lo ?? v * 0.6;
+  const refHi  = hi ?? v * 1.4;
+  const pad    = (refHi - refLo) * 0.3;
+  const barMin = Math.max(0, refLo - pad);
+  const barMax = refHi + pad;
+  const range  = barMax - barMin;
   if (range === 0) return null;
-  const vP  = Math.max(3, Math.min(97, ((value - barMin) / range) * 100));
-  const loP = Math.max(0, Math.min(100, ((lo - barMin) / range) * 100));
-  const hiP = Math.max(0, Math.min(100, ((hi - barMin) / range) * 100));
+
+  const vP  = Math.max(3, Math.min(97, ((v - barMin) / range) * 100));
+  const loP = lo != null ? Math.max(0, Math.min(100, ((refLo - barMin) / range) * 100)) : null;
+  const hiP = hi != null ? Math.max(0, Math.min(100, ((refHi - barMin) / range) * 100)) : null;
   const scoreColor = getScoreColor(score);
 
   return (
-    <div style={{ marginBottom:'20px' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
-        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.5)', fontWeight:500 }}>{label}</span>
-        <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:700, color:dotColor }}>{fmtMoney(value)}</span>
-          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, color:scoreColor, background:`${scoreColor}12`, border:`1px solid ${scoreColor}30`, borderRadius:'4px', padding:'1px 5px' }}>{score}%</span>
+    <div style={{ marginBottom:'24px' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.6)', fontWeight:500 }}>{label}</span>
+        <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:700, color:ACCENT }}>{fmtMoney(v)}</span>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, color:scoreColor, background:`${scoreColor}12`, border:`1px solid ${scoreColor}30`, borderRadius:'4px', padding:'2px 6px' }}>{score}%</span>
         </div>
       </div>
       <div style={{ position:'relative', height:'44px' }}>
         <div style={{ position:'absolute', top:'18px', left:0, right:0, height:'8px', background:'rgba(255,255,255,0.06)', borderRadius:'4px' }}>
-          {/* Requirement range band — lavender */}
-          <div style={{ position:'absolute', left:`${loP}%`, width:`${hiP-loP}%`, height:'100%', background:`${bandColor}20`, borderRadius:'4px', border:`1px solid ${bandColor}40` }}/>
-          {/* Listing value dot — tiffany */}
-          <div style={{ position:'absolute', left:`${vP}%`, top:'-6px', transform:'translateX(-50%)', width:'20px', height:'20px', borderRadius:'50%', background:dotColor, border:'3px solid #0E1318', boxShadow:`0 0 10px ${dotColor}60`, zIndex:2 }}/>
+          {loP != null && hiP != null && (
+            <div style={{ position:'absolute', left:`${loP}%`, width:`${hiP-loP}%`, height:'100%', background:`${LAVENDER}22`, borderRadius:'4px', border:`1px solid ${LAVENDER}45` }}/>
+          )}
+          <div style={{ position:'absolute', left:`${vP}%`, top:'-6px', transform:'translateX(-50%)', width:'20px', height:'20px', borderRadius:'50%', background:ACCENT, border:'3px solid #0E1318', boxShadow:`0 0 12px ${ACCENT}70`, zIndex:2 }}/>
         </div>
-        <div style={{ position:'absolute', top:'32px', left:0, right:0 }}>
-          {min != null && <span style={{ position:'absolute', left:`${loP}%`, transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'9px', color:`${bandColor}80`, whiteSpace:'nowrap' }}>{fmtMoney(lo)}</span>}
-          {max != null && <span style={{ position:'absolute', left:`${hiP}%`, transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'9px', color:`${bandColor}80`, whiteSpace:'nowrap' }}>{fmtMoney(hi)}</span>}
-        </div>
+        {lo != null && loP != null && (
+          <span style={{ position:'absolute', top:'32px', left:`${loP}%`, transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'10px', color:`${LAVENDER}70`, whiteSpace:'nowrap' }}>
+            {fmtMoney(refLo)}
+          </span>
+        )}
+        {hi != null && hiP != null && (
+          <span style={{ position:'absolute', top:'32px', left:`${hiP}%`, transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'10px', color:`${LAVENDER}70`, whiteSpace:'nowrap' }}>
+            {fmtMoney(refHi)}
+          </span>
+        )}
       </div>
-      <div style={{ display:'flex', alignItems:'center', gap:'12px', marginTop:'4px' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'16px', marginTop:'6px' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'4px' }}>
-          <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:dotColor }}/>
-          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.3)' }}>Your listing value</span>
+          <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:ACCENT }}/>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>Your listing value</span>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'4px' }}>
-          <div style={{ width:'14px', height:'6px', borderRadius:'2px', background:`${bandColor}30`, border:`1px solid ${bandColor}40` }}/>
-          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.3)' }}>Their required range</span>
+          <div style={{ width:'14px', height:'6px', borderRadius:'2px', background:`${LAVENDER}25`, border:`1px solid ${LAVENDER}45` }}/>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>Their required range</span>
         </div>
       </div>
     </div>
   );
 }
 
-// Build all applicable range bars for a match
+// ─── Build range bars ─────────────────────────────────────────────────────────
 function buildRangeBars(listing, requirement, breakdown) {
   const ld = parseDetails(listing), rd = parseDetails(requirement);
-  const getScore = (keyword) => breakdown?.find(b => b.category?.toLowerCase().includes(keyword.toLowerCase()))?.score ?? 70;
-  const bars = [];
-  const add = (label, value, min, max, scoreKeyword) => {
-    if (value && (min || max)) bars.push({ label, value: parseFloat(value), min: min ? parseFloat(min) : null, max: max ? parseFloat(max) : null, score: getScore(scoreKeyword) });
+
+  // Get score from breakdown by category name — no default, use actual score
+  const getScore = (keyword) => {
+    const found = breakdown?.find(b => b.category?.toLowerCase().includes(keyword.toLowerCase()));
+    if (found) return found.score;
+    // Calculate inline: if value is within range return 100, else degrade
+    return null;
   };
 
-  // Price (always try to show as monthly for comparability)
-  const price = parseFloat(listing.price);
-  const size  = parseFloat(listing.size_sqft);
-  if (price && size && (listing.transaction_type === 'lease' || listing.transaction_type === 'sublease')) {
-    const monthly = (price * size) / 12;
-    // if req is per month
-    if (requirement.price_period === 'per_month') {
-      add('Monthly Total', monthly, requirement.min_price, requirement.max_price, 'price');
-    } else if (requirement.price_period === 'per_sf_per_year') {
-      add('Rate ($/SF/yr)', price, requirement.min_price, requirement.max_price, 'price');
-    } else {
-      add('Monthly Total', monthly, requirement.min_price, requirement.max_price, 'price');
+  const bars = [];
+  const add = (label, value, min, max, scoreKeyword) => {
+    if (!value || (!min && !max)) return;
+    const v  = parseFloat(value);
+    const lo = min ? parseFloat(min) : null;
+    const hi = max ? parseFloat(max) : null;
+    // Calculate score: 100 if in range, degrade if outside
+    let score = getScore(scoreKeyword);
+    if (score === null) {
+      if (lo != null && hi != null) {
+        if (v >= lo && v <= hi) score = 100;
+        else if (v < lo) score = Math.max(0, Math.round(100 - ((lo - v) / lo) * 100));
+        else score = Math.max(0, Math.round(100 - ((v - hi) / hi) * 150));
+      } else if (lo != null) {
+        score = v >= lo ? 100 : Math.max(0, Math.round(100 - ((lo - v) / lo) * 100));
+      } else if (hi != null) {
+        score = v <= hi ? 100 : Math.max(0, Math.round(100 - ((v - hi) / hi) * 150));
+      } else {
+        score = 100;
+      }
     }
-  } else if (price) {
-    add('Price', price, requirement.min_price, requirement.max_price, 'price');
+    bars.push({ label, value: v, min: lo, max: hi, score });
+  };
+
+  const price  = parseFloat(listing.price);
+  const size   = parseFloat(listing.size_sqft);
+  const tx     = listing.transaction_type;
+  const isLease = tx === 'lease' || tx === 'sublease';
+
+  // ── Price ──────────────────────────────────────────────────────────────────
+  if (price) {
+    if (isLease && size) {
+      const monthly = (price * size) / 12;
+      if (requirement.price_period === 'per_sf_per_year') {
+        add('Rate ($/SF/yr)', price, requirement.min_price, requirement.max_price, 'price');
+      } else {
+        add('Monthly Total', monthly, requirement.min_price, requirement.max_price, 'price');
+      }
+    } else {
+      add('Price', price, requirement.min_price, requirement.max_price, 'price');
+    }
   }
 
-  // Size
-  if (listing.size_sqft) add('Size (SF)', listing.size_sqft, requirement.min_size_sqft, requirement.max_size_sqft, 'size');
+  // ── Size ───────────────────────────────────────────────────────────────────
+  if (size) add('Size (SF)', size, requirement.min_size_sqft, requirement.max_size_sqft, 'size');
 
   const pt = listing.property_type;
 
-  // Office
+  // ── Office ─────────────────────────────────────────────────────────────────
   if (pt === 'office') {
-    if (ld.offices)     add('Private Offices',    ld.offices,     rd.min_offices,     rd.max_offices,     'details');
-    if (ld.conf_rooms)  add('Conference Rooms',   ld.conf_rooms,  rd.min_conf_rooms,  rd.max_conf_rooms,  'details');
-    if (ld.total_parking_spaces) add('Parking Spaces', ld.total_parking_spaces, rd.min_total_parking_spaces, rd.max_parking, 'details');
+    if (ld.offices)              add('Private Offices',    ld.offices,    rd.min_offices,              rd.max_offices,              'details');
+    if (ld.conf_rooms)           add('Conference Rooms',   ld.conf_rooms, rd.min_conf_rooms,           rd.max_conf_rooms,           'details');
+    if (ld.total_parking_spaces) add('Parking Spaces',     ld.total_parking_spaces, rd.min_total_parking_spaces, rd.max_parking,   'details');
   }
-  // Medical
+  // ── Medical ────────────────────────────────────────────────────────────────
   if (pt === 'medical_office') {
-    if (ld.exam_rooms)       add('Exam Rooms',         ld.exam_rooms,       rd.min_exam_rooms, null, 'details');
-    if (ld.waiting_capacity) add('Waiting Capacity',   ld.waiting_capacity, rd.min_waiting_capacity, null, 'details');
+    if (ld.exam_rooms)       add('Exam Rooms',       ld.exam_rooms,       rd.min_exam_rooms,       null, 'details');
+    if (ld.procedure_rooms)  add('Procedure Rooms',  ld.procedure_rooms,  rd.min_procedure_rooms,  null, 'details');
+    if (ld.waiting_capacity) add('Waiting Capacity', ld.waiting_capacity, rd.min_waiting_capacity, null, 'details');
+    if (ld.lab_sf)           add('Lab Space (SF)',   ld.lab_sf,           rd.min_lab_sf,           null, 'details');
   }
-  // Retail
+  // ── Retail ─────────────────────────────────────────────────────────────────
   if (pt === 'retail') {
     if (ld.traffic_count) add('Traffic Count (/day)', ld.traffic_count, rd.min_traffic_count, null, 'details');
-    if (ld.frontage)      add('Street Frontage (ft)', ld.frontage,      rd.min_frontage,     null, 'details');
+    if (ld.frontage)      add('Street Frontage (ft)',  ld.frontage,      rd.min_frontage,      null, 'details');
+    if (ld.ceiling_height) add('Ceiling Height (ft)',  ld.ceiling_height, rd.min_ceiling_height, null, 'details');
+    if (ld.total_parking_spaces) add('Parking Spaces', ld.total_parking_spaces, rd.min_total_parking_spaces, null, 'details');
   }
-  // Industrial
+  // ── Industrial ─────────────────────────────────────────────────────────────
   if (pt === 'industrial_flex') {
-    if (ld.dock_doors)   add('Loading Docks',     ld.dock_doors,   rd.min_dock_doors,   null, 'details');
-    if (ld.clear_height) add('Clear Height (ft)', ld.clear_height, rd.min_clear_height, null, 'details');
-    if (ld.floor_load)   add('Floor Load (lbs/SF)', ld.floor_load, rd.min_floor_load,   null, 'details');
+    if (ld.dock_doors)   add('Loading Docks',      ld.dock_doors,   rd.min_dock_doors,   null, 'details');
+    if (ld.drive_in_doors) add('Drive-In Doors',   ld.drive_in_doors, rd.min_drive_in_doors, null, 'details');
+    if (ld.clear_height) add('Clear Height (ft)',  ld.clear_height, rd.min_clear_height, null, 'details');
+    if (ld.floor_load)   add('Floor Load (lbs/SF)',ld.floor_load,   rd.min_floor_load,   null, 'details');
+    if (ld.truck_court_depth) add('Truck Court (ft)', ld.truck_court_depth, rd.min_truck_court_depth, null, 'details');
   }
-  // Residential
+  // ── Residential ────────────────────────────────────────────────────────────
   if (['single_family','condo','apartment','townhouse','manufactured'].includes(pt)) {
-    if (ld.bedrooms)   add('Bedrooms',   ld.bedrooms,   rd.min_bedrooms,   rd.max_bedrooms,  'details');
-    if (ld.bathrooms)  add('Bathrooms',  ld.bathrooms,  rd.min_bathrooms,  rd.max_bathrooms, 'details');
+    if (ld.bedrooms)  add('Bedrooms',   ld.bedrooms,  rd.min_bedrooms,  rd.max_bedrooms,  'details');
+    if (ld.bathrooms) add('Bathrooms',  ld.bathrooms, rd.min_bathrooms, rd.max_bathrooms, 'details');
     if (ld.hoa && rd.max_hoa) add('HOA ($/mo)', ld.hoa, 0, rd.max_hoa, 'details');
+    if (ld.year_built && rd.min_year_built) add('Year Built', ld.year_built, rd.min_year_built, null, 'details');
   }
-  // Multi-family
+  // ── Multi-family ───────────────────────────────────────────────────────────
   if (pt === 'multi_family' || pt === 'multi_family_5') {
-    if (ld.cap_rate)       add('Cap Rate (%)',    ld.cap_rate,       rd.min_cap_rate, null, 'details');
-    if (ld.occupancy_pct)  add('Occupancy (%)',   ld.occupancy_pct,  rd.min_occupancy, null, 'details');
-    if (ld.noi && rd.min_noi) add('NOI ($)', ld.noi, rd.min_noi, null, 'details');
+    if (ld.cap_rate      && rd.min_cap_rate)  add('Cap Rate (%)',  ld.cap_rate,      rd.min_cap_rate,  null, 'details');
+    if (ld.occupancy_pct && rd.min_occupancy) add('Occupancy (%)', ld.occupancy_pct, rd.min_occupancy, null, 'details');
+    if (ld.noi           && rd.min_noi)       add('NOI ($)',       ld.noi,           rd.min_noi,       null, 'details');
+    if (pt === 'multi_family_5' && ld.grm && rd.max_grm) add('GRM', ld.grm, null, rd.max_grm, 'details');
+    if (ld.total_units) add('Total Units', ld.total_units, rd.min_units, rd.max_units, 'details');
+  }
+  // ── Land ───────────────────────────────────────────────────────────────────
+  if (pt === 'land' || pt === 'land_residential') {
+    if (ld.acres)         add('Acreage',         ld.acres,         rd.min_acres,         rd.max_acres,         'details');
+    if (ld.road_frontage) add('Road Frontage (ft)', ld.road_frontage, rd.min_road_frontage, rd.max_road_frontage, 'details');
+    if (ld.traffic_count) add('Traffic Count (/day)', ld.traffic_count, rd.min_traffic_count, null, 'details');
   }
 
   return bars;
 }
 
-// ─── Post Block (top quadrants) ───────────────────────────────────────────────
-function PostBlock({ post, isListing, label, color }) {
+// ─── Post Block ───────────────────────────────────────────────────────────────
+function PostBlock({ post, isListing, label, color, onViewPhotos }) {
   const pd  = parseDetails(post);
   const price = priceStr(post, isListing);
-  const listingPrice = parseFloat(post.price);
-  const listingSize  = parseFloat(post.size_sqft);
-  const showCalc = isListing && (post.transaction_type === 'lease' || post.transaction_type === 'sublease') && listingPrice && listingSize;
-  const monthly  = showCalc ? Math.round((listingPrice * listingSize) / 12) : null;
-  const annual   = showCalc ? Math.round(listingPrice * listingSize) : null;
-  const photoUrl   = pd?.photo_url;
+  const lPrice = parseFloat(post.price);
+  const lSize  = parseFloat(post.size_sqft);
+  const showCalc = isListing && (post.transaction_type==='lease'||post.transaction_type==='sublease') && lPrice && lSize;
+  const monthly = showCalc ? Math.round((lPrice * lSize) / 12) : null;
+  const annual  = showCalc ? Math.round(lPrice * lSize) : null;
   const brochureUrl = pd?.brochure_url;
+  const photoUrl    = pd?.photo_url;
 
   const chips = [
-    isListing
-      ? [post.city, post.state, post.zip_code].filter(Boolean).join(', ')
-      : post.cities?.join(', '),
-    isListing
-      ? (post.size_sqft ? `${parseFloat(post.size_sqft).toLocaleString()} SF` : null)
-      : ((post.min_size_sqft || post.max_size_sqft) ? `${fmtN(post.min_size_sqft)||'0'}–${fmtN(post.max_size_sqft)||'∞'} SF` : null),
+    isListing ? [post.city, post.state].filter(Boolean).join(', ') : post.cities?.join(', '),
+    isListing ? (lSize ? `${lSize.toLocaleString()} SF` : null) : ((post.min_size_sqft||post.max_size_sqft) ? `${fmtN(post.min_size_sqft)||'0'}–${fmtN(post.max_size_sqft)||'∞'} SF` : null),
     TX[post.transaction_type] || post.transaction_type,
     PT[post.property_type] || post.property_type,
   ].filter(Boolean);
 
   return (
-    <div style={{ background:`${color}08`, border:`1px solid ${color}22`, borderRadius:'12px', padding:'18px', height:'100%', boxSizing:'border-box', display:'flex', flexDirection:'column', gap:'10px' }}>
-      {/* Label */}
-      <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+    <div style={{ background:`${color}08`, border:`1px solid ${color}20`, borderRadius:'14px', padding:'20px', flex:1 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'10px' }}>
         <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:color }}/>
         <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color }}>{label}</span>
       </div>
 
-      {/* Photo thumbnail if available */}
-      {isListing && photoUrl && (
-        <img src={photoUrl} alt="Listing" style={{ width:'100%', height:'120px', objectFit:'cover', borderRadius:'8px', border:`1px solid rgba(255,255,255,0.08)` }}/>
+      <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'17px', fontWeight:500, color:'white', margin:'0 0 6px', lineHeight:1.3 }}>{post.title}</h3>
+
+      {price && <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'20px', fontWeight:700, color, marginBottom:'4px' }}>{price}</div>}
+      {showCalc && (
+        <div style={{ display:'flex', gap:'10px', marginBottom:'8px' }}>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.45)' }}>${monthly?.toLocaleString()}/mo</span>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.25)' }}>·</span>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.45)' }}>${annual?.toLocaleString()}/yr total</span>
+        </div>
       )}
 
-      {/* Title */}
-      <div>
-        <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:500, color:'white', margin:'0 0 4px', lineHeight:1.3 }}>{post.title}</h3>
-
-        {/* Price */}
-        {price && (
-          <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'18px', fontWeight:700, color, marginBottom:'2px' }}>{price}</div>
-        )}
-
-        {/* Calculated monthly/annual for lease listings */}
-        {showCalc && (
-          <div style={{ display:'flex', gap:'10px', marginBottom:'4px' }}>
-            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.45)' }}>${monthly?.toLocaleString()}/mo</span>
-            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)' }}>·</span>
-            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.45)' }}>${annual?.toLocaleString()}/yr total</span>
-          </div>
-        )}
-      </div>
-
-      {/* Chips */}
-      <div style={{ display:'flex', flexWrap:'wrap', gap:'5px' }}>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:'5px', marginBottom:'10px' }}>
         {chips.map((c,i) => (
           <span key={i} style={{ padding:'2px 8px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'5px', fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.55)', textTransform:'capitalize' }}>{c}</span>
         ))}
       </div>
 
-      {/* Description snippet */}
       {(post.description || post.notes) && (
-        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', lineHeight:1.6, margin:0, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', lineHeight:1.6, margin:'0 0 10px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
           {post.description || post.notes}
         </p>
       )}
 
-      {/* Brochure link */}
-      {isListing && brochureUrl && (
-        <a href={brochureUrl} target="_blank" rel="noreferrer"
-          style={{ display:'flex', alignItems:'center', gap:'6px', padding:'6px 10px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.6)', textDecoration:'none', width:'fit-content' }}>
-          <FileText style={{ width:'12px', height:'12px' }}/> View Brochure (PDF)
-        </a>
+      {/* Photo + Brochure buttons */}
+      {isListing && (photoUrl || brochureUrl) && (
+        <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', marginTop:'6px' }}>
+          {photoUrl && (
+            <button onClick={() => onViewPhotos && onViewPhotos(photoUrl)}
+              style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 12px', background:'rgba(255,255,255,0.07)', border:'2px solid rgba(255,255,255,0.2)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color:'rgba(255,255,255,0.75)', cursor:'pointer', transition:'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.35)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.2)'; }}>
+              <Image style={{ width:'13px', height:'13px' }}/> View Photos
+            </button>
+          )}
+          {brochureUrl && (
+            <a href={brochureUrl} target="_blank" rel="noreferrer"
+              style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 12px', background:'rgba(255,255,255,0.07)', border:'2px solid rgba(255,255,255,0.2)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color:'rgba(255,255,255,0.75)', cursor:'pointer', textDecoration:'none', transition:'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.35)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.2)'; }}>
+              <FileText style={{ width:'13px', height:'13px' }}/> View Brochure
+            </a>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
-// ─── Full Specs Accordion ─────────────────────────────────────────────────────
-const SECTION_ICONS = { core: MapPin, lease: FileText, details: Layers, amenities: Star, notes: Search };
+// ─── Full Specs (same accordion logic as before, abbreviated here) ─────────────
+const SectionIcons = { core:'MapPin', lease:'FileText', details:'Layers', amenities:'Star', notes:'Search' };
 
 function buildSpecSections(listing, requirement, myIsListing) {
   const ld = parseDetails(listing), rd = parseDetails(requirement);
-  const row = (lLabel, lVal, rLabel, rVal) => ({ lLabel, lVal: lVal||null, rLabel: rLabel||null, rVal: rVal||null });
-  const listingOnly = (label, val) => ({ listingOnly: true, label, val: val||null });
+  const row = (lLabel, lVal, rLabel, rVal) => ({ lLabel, lVal:lVal||null, rLabel:rLabel||null, rVal:rVal||null });
+  const lo  = (label, val) => ({ listingOnly:true, label, val:val||null });
   const sections = [];
 
-  // ── Core ────────────────────────────────────────────────────────────────────
   const coreRows = [
     row('Property Type', PT[listing.property_type]||listing.property_type, 'Property Type', PT[requirement.property_type]||requirement.property_type),
     row('Transaction', TX[listing.transaction_type]||listing.transaction_type, 'Transaction', TX[requirement.transaction_type]||requirement.transaction_type),
-    row('Price', priceStr(listing, true), 'Budget', priceStr(requirement, false)),
+    row('Price', priceStr(listing,true), 'Budget', priceStr(requirement,false)),
     row('Size', listing.size_sqft?`${parseFloat(listing.size_sqft).toLocaleString()} SF`:null, 'Size Range', (requirement.min_size_sqft||requirement.max_size_sqft)?`${fmtN(requirement.min_size_sqft)||'0'}–${fmtN(requirement.max_size_sqft)||'∞'} SF`:null),
-    row('Location', [listing.city,listing.state].filter(Boolean).join(', ')||null, 'Preferred Areas', requirement.cities?.join(', ')||null),
+    row('Location', [listing.city,listing.state].filter(Boolean).join(', ')||null, 'Preferred Areas', (() => { let c = requirement.cities; if (typeof c==='string') { try { c=JSON.parse(c); } catch { c=[c]; } } return Array.isArray(c)?c.join(', '):c||null; })()),
     row('Status', listing.status||'Active', 'Status', requirement.status||'Active'),
   ].filter(r=>r.lVal||r.rVal);
+  const coreLO = [lo('Address', listing.address), lo('Zip Code', listing.zip_code)].filter(r=>r.val);
+  if (coreRows.length||coreLO.length) sections.push({ key:'core', title:'Core Details', rows:coreRows, listingOnlyRows:coreLO });
 
-  const coreListingOnly = [
-    listingOnly('Address', listing.address),
-    listingOnly('Zip Code', listing.zip_code),
-  ].filter(r=>r.val);
-
-  if (coreRows.length || coreListingOnly.length) {
-    sections.push({ key:'core', title:'Core Details', Icon: MapPin, rows: coreRows, listingOnlyRows: coreListingOnly });
+  // Lease
+  if (listing.transaction_type==='lease'||listing.transaction_type==='sublease') {
+    const leaseLO = [lo('Lease Type', LL[listing.lease_type]||listing.lease_type)].filter(r=>r.val);
+    if (leaseLO.length) sections.push({ key:'lease', title:'Lease Terms', rows:[], listingOnlyRows:leaseLO });
   }
 
-  // ── Lease Terms ──────────────────────────────────────────────────────────────
-  if (listing.transaction_type === 'lease' || listing.transaction_type === 'sublease') {
-    const leaseListingOnly = [
-      listingOnly('Lease Type', LL[listing.lease_type]||listing.lease_type),
-    ].filter(r=>r.val);
-    if (leaseListingOnly.length) {
-      sections.push({ key:'lease', title:'Lease Terms', Icon: FileText, rows: [], listingOnlyRows: leaseListingOnly });
-    }
-  }
-
-  // ── Property Details ─────────────────────────────────────────────────────────
-  const detailRows = [], detailListingOnly = [];
+  // Details by property type
+  const detailRows=[], detailLO=[];
   const pt = listing.property_type;
-
-  if (pt === 'office') {
-    detailRows.push(row('Private Offices',   ld.offices?String(ld.offices):null,      'Min. Private Offices',   rd.min_offices?`Min ${rd.min_offices}${rd.max_offices?`–${rd.max_offices}`:''}`:null));
-    detailRows.push(row('Conference Rooms',  ld.conf_rooms?String(ld.conf_rooms):null, 'Min. Conference Rooms',  rd.min_conf_rooms?`Min ${rd.min_conf_rooms}`:null));
-    detailRows.push(row('In-Suite Restrooms',ld.in_suite_restrooms?`${ld.in_suite_restrooms} pair(s)`:'Shared','Restrooms Required', rd.insuit_restrooms?`Required (min ${rd.min_restrooms||1})`:null));
-    detailRows.push(row('Layout',            ld.layout?.replace(/_/g,' ')||null,       'Layout Preference',      rd.layout&&rd.layout!=='any'?rd.layout.replace(/_/g,' '):null));
-    detailRows.push(row('Ceiling Height',    ld.ceiling_height||null,                  'Min. Ceiling Height',    rd.min_ceiling_height?`Min ${rd.min_ceiling_height} ft`:null));
-    detailRows.push(row('Building Class',    ld.building_class?`Class ${ld.building_class}`:null, 'Acceptable Classes', rd.building_classes?.length?`Class ${rd.building_classes.join('/')}`:null));
-    detailRows.push(row('Total Parking',     ld.total_parking_spaces?String(ld.total_parking_spaces):null, 'Min. Parking',     rd.min_total_parking_spaces?`Min ${rd.min_total_parking_spaces}`:null));
-    detailRows.push(row('Floor Preference',  null, 'Floor Preference', rd.floor_pref&&rd.floor_pref!=='any'?rd.floor_pref.replace(/_/g,' '):null));
-    detailListingOnly.push(listingOnly('Suite Number', ld.suite_number));
-    detailListingOnly.push(listingOnly('IT Infrastructure', ld.it_infrastructure));
-    detailListingOnly.push(listingOnly('Zoning', ld.zoning));
-    detailListingOnly.push(listingOnly('Parking Ratio', ld.parking_ratio));
+  if (pt==='office') {
+    detailRows.push(row('Private Offices', ld.offices?String(ld.offices):null, 'Min. Private Offices', rd.min_offices?`Min ${rd.min_offices}`:null));
+    detailRows.push(row('Conference Rooms', ld.conf_rooms?String(ld.conf_rooms):null, 'Min. Conference Rooms', rd.min_conf_rooms?`Min ${rd.min_conf_rooms}`:null));
+    detailRows.push(row('In-Suite Restrooms', ld.in_suite_restrooms?`${ld.in_suite_restrooms} pair(s)`:'Shared', 'Restrooms Required', rd.insuit_restrooms?`Required (min ${rd.min_restrooms||1})`:null));
+    detailRows.push(row('Layout', ld.layout?.replace(/_/g,' ')||null, 'Layout Preference', rd.layout&&rd.layout!=='any'?rd.layout.replace(/_/g,' '):null));
+    detailRows.push(row('Ceiling Height', ld.ceiling_height||null, 'Min. Ceiling Height', rd.min_ceiling_height?`Min ${rd.min_ceiling_height} ft`:null));
+    detailRows.push(row('Building Class', ld.building_class?`Class ${ld.building_class}`:null, 'Acceptable Classes', rd.building_classes?.length?`Class ${rd.building_classes.join('/')}`:null));
+    detailRows.push(row('Total Parking', ld.total_parking_spaces?String(ld.total_parking_spaces):null, 'Min. Parking', rd.min_total_parking_spaces?`Min ${rd.min_total_parking_spaces}`:null));
+    detailRows.push(row('Floor Preference', null, 'Floor Preference', rd.floor_pref&&rd.floor_pref!=='any'?rd.floor_pref.replace(/_/g,' '):null));
+    detailLO.push(lo('Suite Number', ld.suite_number)); detailLO.push(lo('IT Infrastructure', ld.it_infrastructure)); detailLO.push(lo('Zoning', ld.zoning)); detailLO.push(lo('Parking Ratio', ld.parking_ratio));
   }
-  if (pt === 'medical_office') {
-    detailRows.push(row('Exam Rooms',        ld.exam_rooms?String(ld.exam_rooms):null,             'Min. Exam Rooms',       rd.min_exam_rooms?`Min ${rd.min_exam_rooms}`:null));
-    detailRows.push(row('Procedure Rooms',   ld.procedure_rooms?String(ld.procedure_rooms):null,   'Min. Procedure Rooms',  rd.min_procedure_rooms?`Min ${rd.min_procedure_rooms}`:null));
-    detailRows.push(row('Lab Space',         ld.lab_sf?`${ld.lab_sf} SF`:null,                     'Min. Lab Space',        rd.min_lab_sf?`Min ${rd.min_lab_sf} SF`:null));
-    detailRows.push(row('Waiting Capacity',  ld.waiting_capacity?String(ld.waiting_capacity):null, 'Min. Waiting Capacity', rd.min_waiting_capacity?`Min ${rd.min_waiting_capacity}`:null));
-    detailRows.push(row('Building Class',    ld.building_class?`Class ${ld.building_class}`:null,  'Acceptable Classes',    rd.building_classes?.length?`Class ${rd.building_classes.join('/')}`:null));
-    detailRows.push(row('Total Parking',     ld.total_parking_spaces?String(ld.total_parking_spaces):null,'Min. Parking', rd.min_total_parking_spaces?`Min ${rd.min_total_parking_spaces}`:null));
-    detailListingOnly.push(listingOnly('Suite Number', ld.suite_number));
-    detailListingOnly.push(listingOnly('Zoning', ld.zoning));
+  if (pt==='medical_office') {
+    detailRows.push(row('Exam Rooms', ld.exam_rooms?String(ld.exam_rooms):null, 'Min. Exam Rooms', rd.min_exam_rooms?`Min ${rd.min_exam_rooms}`:null));
+    detailRows.push(row('Procedure Rooms', ld.procedure_rooms?String(ld.procedure_rooms):null, 'Min. Procedure Rooms', rd.min_procedure_rooms?`Min ${rd.min_procedure_rooms}`:null));
+    detailRows.push(row('Lab Space', ld.lab_sf?`${ld.lab_sf} SF`:null, 'Min. Lab Space', rd.min_lab_sf?`Min ${rd.min_lab_sf} SF`:null));
+    detailRows.push(row('Waiting Capacity', ld.waiting_capacity?String(ld.waiting_capacity):null, 'Min. Waiting Capacity', rd.min_waiting_capacity?`Min ${rd.min_waiting_capacity}`:null));
+    detailRows.push(row('Building Class', ld.building_class?`Class ${ld.building_class}`:null, 'Acceptable Classes', rd.building_classes?.length?`Class ${rd.building_classes.join('/')}`:null));
+    detailLO.push(lo('Suite Number', ld.suite_number)); detailLO.push(lo('Zoning', ld.zoning));
   }
-  if (pt === 'retail') {
-    detailRows.push(row('Sales Floor',       ld.sales_floor_sf?`${ld.sales_floor_sf} SF`:null,     'Min. Sales Floor',      rd.min_sales_floor_sf?`Min ${rd.min_sales_floor_sf} SF`:null));
-    detailRows.push(row('Street Frontage',   ld.frontage?`${ld.frontage} ft`:null,                 'Min. Frontage',         rd.min_frontage?`Min ${rd.min_frontage} ft`:null));
-    detailRows.push(row('Traffic Count',     ld.traffic_count?`${parseInt(ld.traffic_count).toLocaleString()}/day`:null,'Min. Traffic', rd.min_traffic_count?`Min ${parseInt(rd.min_traffic_count).toLocaleString()}/day`:null));
-    detailRows.push(row('Location Type',     ld.location_type?.replace(/_/g,' ')||null,            'Location Type',         rd.location_type?.replace(/_/g,' ')||null));
-    detailRows.push(row('Foot Traffic',      ld.foot_traffic||null,                                'Foot Traffic',          rd.foot_traffic_pref||null));
-    detailRows.push(row('Building Class',    ld.building_class?`Class ${ld.building_class}`:null,  'Acceptable Classes',    rd.building_classes?.length?`Class ${rd.building_classes.join('/')}`:null));
-    detailRows.push(row('Total Parking',     ld.total_parking_spaces?String(ld.total_parking_spaces):null,'Min. Parking', rd.min_total_parking_spaces?`Min ${rd.min_total_parking_spaces}`:null));
-    detailListingOnly.push(listingOnly('Suite Number', ld.suite_number));
-    detailListingOnly.push(listingOnly('Signage Rights', ld.signage_rights));
-    detailListingOnly.push(listingOnly('Zoning', ld.zoning));
+  if (pt==='retail') {
+    detailRows.push(row('Sales Floor', ld.sales_floor_sf?`${ld.sales_floor_sf} SF`:null, 'Min. Sales Floor', rd.min_sales_floor_sf?`Min ${rd.min_sales_floor_sf} SF`:null));
+    detailRows.push(row('Street Frontage', ld.frontage?`${ld.frontage} ft`:null, 'Min. Frontage', rd.min_frontage?`Min ${rd.min_frontage} ft`:null));
+    detailRows.push(row('Traffic Count', ld.traffic_count?`${parseInt(ld.traffic_count).toLocaleString()}/day`:null, 'Min. Traffic', rd.min_traffic_count?`Min ${parseInt(rd.min_traffic_count).toLocaleString()}/day`:null));
+    detailRows.push(row('Location Type', ld.location_type?.replace(/_/g,' ')||null, 'Location Type', rd.location_type?.replace(/_/g,' ')||null));
+    detailRows.push(row('Building Class', ld.building_class?`Class ${ld.building_class}`:null, 'Acceptable Classes', rd.building_classes?.length?`Class ${rd.building_classes.join('/')}`:null));
+    detailLO.push(lo('Suite Number', ld.suite_number)); detailLO.push(lo('Signage Rights', ld.signage_rights)); detailLO.push(lo('Zoning', ld.zoning));
   }
-  if (pt === 'industrial_flex') {
-    detailRows.push(row('Loading Docks',     ld.dock_doors?String(ld.dock_doors):null,             'Min. Loading Docks',    rd.min_dock_doors?`Min ${rd.min_dock_doors}`:null));
-    detailRows.push(row('Drive-In Doors',    ld.drive_in_doors?String(ld.drive_in_doors):null,     'Min. Drive-In Doors',   rd.min_drive_in_doors?`Min ${rd.min_drive_in_doors}`:null));
-    detailRows.push(row('Clear Height',      ld.clear_height?`${ld.clear_height} ft`:null,         'Min. Clear Height',     rd.min_clear_height?`Min ${rd.min_clear_height} ft`:null));
-    detailRows.push(row('Floor Load',        ld.floor_load?`${ld.floor_load} lbs/SF`:null,         'Min. Floor Load',       rd.min_floor_load?`Min ${rd.min_floor_load} lbs/SF`:null));
-    detailRows.push(row('Power Amperage',    ld.power_amps||null,                                  'Min. Amperage',         rd.min_power_amps||null));
-    detailRows.push(row('3-Phase Power',     ld.three_phase?'Available':null,                      '3-Phase Required',      rd.three_phase_required?'Required':null));
-    detailRows.push(row('Rail Access',       ld.rail_access?'Yes':null,                            'Rail Access',           rd.rail_access_required?'Required':null));
-    detailRows.push(row('Cross-Dock',        ld.cross_dock?'Capable':null,                         'Cross-Dock',            rd.cross_dock_required?'Required':null));
-    detailRows.push(row('Fenced Yard',       ld.fenced_yard?'Yes':null,                            'Fenced Yard',           rd.fenced_yard_required?'Required':null));
-    detailListingOnly.push(listingOnly('Crane System', ld.crane_system));
-    detailListingOnly.push(listingOnly('Hook Height', ld.hook_height?`${ld.hook_height} ft`:null));
-    detailListingOnly.push(listingOnly('Office %', ld.office_pct?`${ld.office_pct}%`:null));
-    detailListingOnly.push(listingOnly('Truck Court Depth', ld.truck_court_depth?`${ld.truck_court_depth} ft`:null));
-    detailListingOnly.push(listingOnly('Zoning', ld.zoning));
+  if (pt==='industrial_flex') {
+    detailRows.push(row('Loading Docks', ld.dock_doors?String(ld.dock_doors):null, 'Min. Loading Docks', rd.min_dock_doors?`Min ${rd.min_dock_doors}`:null));
+    detailRows.push(row('Drive-In Doors', ld.drive_in_doors?String(ld.drive_in_doors):null, 'Min. Drive-In Doors', rd.min_drive_in_doors?`Min ${rd.min_drive_in_doors}`:null));
+    detailRows.push(row('Clear Height', ld.clear_height?`${ld.clear_height} ft`:null, 'Min. Clear Height', rd.min_clear_height?`Min ${rd.min_clear_height} ft`:null));
+    detailRows.push(row('Floor Load', ld.floor_load?`${ld.floor_load} lbs/SF`:null, 'Min. Floor Load', rd.min_floor_load?`Min ${rd.min_floor_load} lbs/SF`:null));
+    detailRows.push(row('Power Amperage', ld.power_amps||null, 'Min. Amperage', rd.min_power_amps||null));
+    detailRows.push(row('3-Phase Power', ld.three_phase?'Available':null, '3-Phase Required', rd.three_phase_required?'Required':null));
+    detailRows.push(row('Rail Access', ld.rail_access?'Yes':null, 'Rail Access', rd.rail_access_required?'Required':null));
+    detailLO.push(lo('Crane System', ld.crane_system)); detailLO.push(lo('Hook Height', ld.hook_height?`${ld.hook_height} ft`:null)); detailLO.push(lo('Zoning', ld.zoning));
   }
-  if (['single_family','condo','apartment','townhouse','manufactured'].includes(pt)) {
-    detailRows.push(row('Bedrooms',    ld.bedrooms?String(ld.bedrooms):null,  'Bedrooms',     (rd.min_bedrooms||rd.max_bedrooms)?`${rd.min_bedrooms||1}–${rd.max_bedrooms||'any'}`:null));
-    detailRows.push(row('Bathrooms',   ld.bathrooms?String(ld.bathrooms):null,'Bathrooms',    (rd.min_bathrooms||rd.max_bathrooms)?`${rd.min_bathrooms||1}–${rd.max_bathrooms||'any'}`:null));
-    detailRows.push(row('Year Built',  ld.year_built?String(ld.year_built):null,'Min. Year Built',rd.min_year_built?`After ${rd.min_year_built}`:null));
-    detailRows.push(row('HOA',         ld.hoa?`$${parseFloat(ld.hoa).toLocaleString()}/mo`:null,'Max HOA',rd.max_hoa?`Max $${parseFloat(rd.max_hoa).toLocaleString()}/mo`:null));
-    if (pt === 'single_family') {
-      detailRows.push(row('Lot Size',  ld.lot_sqft?`${parseInt(ld.lot_sqft).toLocaleString()} SF`:null,'Min. Lot Size',rd.min_lot_sqft?`Min ${parseInt(rd.min_lot_sqft).toLocaleString()} SF`:null));
-      detailRows.push(row('Garage',    ld.garage?`${ld.garage} car`:null,'Min. Garage',rd.min_garage?`Min ${rd.min_garage} car`:null));
-      detailRows.push(row('Stories',   ld.stories?.replace(/_/g,' ')||null,'Stories',rd.stories&&rd.stories!=='any'?rd.stories.replace(/_/g,' '):null));
-      detailRows.push(row('Basement',  ld.basement?.replace(/_/g,' ')||null,'Basement',rd.basement&&rd.basement!=='not_needed'?rd.basement:null));
-      detailListingOnly.push(listingOnly('School District', ld.school_district));
-      detailListingOnly.push(listingOnly('Roof Age', ld.roof_age?`${ld.roof_age} years`:null));
-      detailListingOnly.push(listingOnly('Heating', ld.heating?.replace(/_/g,' ')));
-      detailListingOnly.push(listingOnly('Cooling', ld.cooling?.replace(/_/g,' ')));
+  if (['single_family','condo','apartment','townhouse'].includes(pt)) {
+    detailRows.push(row('Bedrooms', ld.bedrooms?String(ld.bedrooms):null, 'Bedrooms', (rd.min_bedrooms||rd.max_bedrooms)?`${rd.min_bedrooms||1}–${rd.max_bedrooms||'any'}`:null));
+    detailRows.push(row('Bathrooms', ld.bathrooms?String(ld.bathrooms):null, 'Bathrooms', (rd.min_bathrooms||rd.max_bathrooms)?`${rd.min_bathrooms||1}–${rd.max_bathrooms||'any'}`:null));
+    detailRows.push(row('Year Built', ld.year_built?String(ld.year_built):null, 'Min. Year Built', rd.min_year_built?`After ${rd.min_year_built}`:null));
+    detailRows.push(row('HOA', ld.hoa?`$${parseFloat(ld.hoa).toLocaleString()}/mo`:null, 'Max HOA', rd.max_hoa?`Max $${parseFloat(rd.max_hoa).toLocaleString()}/mo`:null));
+    if (pt==='single_family') {
+      detailRows.push(row('Lot Size', ld.lot_sqft?`${parseInt(ld.lot_sqft).toLocaleString()} SF`:null, 'Min. Lot Size', rd.min_lot_sqft?`Min ${parseInt(rd.min_lot_sqft).toLocaleString()} SF`:null));
+      detailRows.push(row('Garage', ld.garage?`${ld.garage} car`:null, 'Min. Garage', rd.min_garage?`Min ${rd.min_garage} car`:null));
+      detailRows.push(row('Stories', ld.stories?.replace(/_/g,' ')||null, 'Stories', rd.stories&&rd.stories!=='any'?rd.stories.replace(/_/g,' '):null));
+      detailLO.push(lo('School District', ld.school_district)); detailLO.push(lo('Heating', ld.heating?.replace(/_/g,' '))); detailLO.push(lo('Cooling', ld.cooling?.replace(/_/g,' ')));
     }
-    if (pt === 'condo') {
-      detailRows.push(row('View',        ld.view||null,'View Preference',rd.view_pref&&rd.view_pref!=='any'?rd.view_pref:null));
-      detailRows.push(row('Parking',     ld.parking?.replace(/_/g,' ')||null,'Parking',rd.parking&&rd.parking!=='not_needed'?rd.parking:null));
-      detailRows.push(row('Pet Policy',  ld.pet_policy?.replace(/_/g,' ')||null,'Pet Policy',rd.pet_policy&&rd.pet_policy!=='not_needed'?rd.pet_policy:null));
-      detailRows.push(row('In-Unit Laundry', ld.in_unit_laundry?'Yes':null,'In-Unit Laundry',(rd.must_haves||[]).includes('in_unit_laundry')?'Required':null));
-      detailListingOnly.push(listingOnly('Unit Number', ld.unit_number));
-      detailListingOnly.push(listingOnly('Floor', ld.floor_num?`Floor ${ld.floor_num}`:null));
-      detailListingOnly.push(listingOnly('Total Floors', ld.total_floors?String(ld.total_floors):null));
+    if (pt==='condo') {
+      detailRows.push(row('View', ld.view||null, 'View Preference', rd.view_pref&&rd.view_pref!=='any'?rd.view_pref:null));
+      detailRows.push(row('Pet Policy', ld.pet_policy?.replace(/_/g,' ')||null, 'Pet Policy', rd.pet_policy&&rd.pet_policy!=='not_needed'?rd.pet_policy:null));
+      detailLO.push(lo('Unit Number', ld.unit_number)); detailLO.push(lo('Floor', ld.floor_num?`Floor ${ld.floor_num}`:null));
     }
-    if (pt === 'apartment') {
-      detailRows.push(row('Laundry',    ld.laundry?.replace(/_/g,' ')||null,'Laundry',rd.laundry&&rd.laundry!=='any'?rd.laundry.replace(/_/g,' '):null));
-      detailRows.push(row('Parking',    ld.parking?.replace(/_/g,' ')||null,'Parking',rd.parking&&rd.parking!=='not_needed'?rd.parking:null));
-      detailRows.push(row('Pet Policy', ld.pet_policy?.replace(/_/g,' ')||null,'Pet Policy',rd.pet_policy&&rd.pet_policy!=='not_needed'?rd.pet_policy:null));
-      detailRows.push(row('Furnished',  ld.furnished||null,'Furnished',rd.furnished&&rd.furnished!=='any'?rd.furnished:null));
-      detailListingOnly.push(listingOnly('Floor', ld.floor_num?`Floor ${ld.floor_num}`:null));
-      detailListingOnly.push(listingOnly('Lease Term', ld.lease_term?`${ld.lease_term} months`:null));
+    if (pt==='apartment') {
+      detailRows.push(row('Laundry', ld.laundry?.replace(/_/g,' ')||null, 'Laundry', rd.laundry&&rd.laundry!=='any'?rd.laundry.replace(/_/g,' '):null));
+      detailRows.push(row('Pet Policy', ld.pet_policy?.replace(/_/g,' ')||null, 'Pet Policy', rd.pet_policy&&rd.pet_policy!=='not_needed'?rd.pet_policy:null));
+      detailLO.push(lo('Floor', ld.floor_num?`Floor ${ld.floor_num}`:null));
     }
   }
-  if (pt === 'multi_family' || pt === 'multi_family_5') {
-    detailRows.push(row('Total Units',      ld.total_units?String(ld.total_units):null,'Unit Count',(rd.min_units||rd.max_units)?`${rd.min_units||1}–${rd.max_units||'any'}`:null));
-    detailRows.push(row('Year Built',       ld.year_built?String(ld.year_built):null,'Min. Year Built',rd.min_year_built?`After ${rd.min_year_built}`:null));
-    detailRows.push(row('Cap Rate',         ld.cap_rate?`${ld.cap_rate}%`:null,'Min. Cap Rate',rd.min_cap_rate?`Min ${rd.min_cap_rate}%`:null));
-    detailRows.push(row('Occupancy',        ld.occupancy_pct?`${ld.occupancy_pct}%`:null,'Min. Occupancy',rd.min_occupancy?`Min ${rd.min_occupancy}%`:null));
-    if (pt === 'multi_family_5') {
-      detailRows.push(row('NOI (Annual)',   ld.noi?`$${parseInt(ld.noi).toLocaleString()}`:null,'Min. NOI',rd.min_noi?`Min $${parseInt(rd.min_noi).toLocaleString()}`:null));
-      detailRows.push(row('GRM',           ld.grm?String(ld.grm):null,'Max GRM',rd.max_grm?`Max ${rd.max_grm}`:null));
-      detailListingOnly.push(listingOnly('# of Buildings', ld.num_buildings?String(ld.num_buildings):null));
-      detailListingOnly.push(listingOnly('Total Building SF', ld.total_building_sf?`${parseInt(ld.total_building_sf).toLocaleString()} SF`:null));
-    }
-    detailListingOnly.push(listingOnly('Gross Monthly Rent', ld.gross_monthly_rent?`$${parseInt(ld.gross_monthly_rent).toLocaleString()}/mo`:null));
-    detailListingOnly.push(listingOnly('Laundry', ld.laundry?.replace(/_/g,' ')));
-    detailListingOnly.push(listingOnly('Utility Metering', ld.utility_metering?.replace(/_/g,' ')));
+  if (pt==='multi_family'||pt==='multi_family_5') {
+    detailRows.push(row('Total Units', ld.total_units?String(ld.total_units):null, 'Unit Count', (rd.min_units||rd.max_units)?`${rd.min_units||1}–${rd.max_units||'any'}`:null));
+    detailRows.push(row('Cap Rate', ld.cap_rate?`${ld.cap_rate}%`:null, 'Min. Cap Rate', rd.min_cap_rate?`Min ${rd.min_cap_rate}%`:null));
+    detailRows.push(row('Occupancy', ld.occupancy_pct?`${ld.occupancy_pct}%`:null, 'Min. Occupancy', rd.min_occupancy?`Min ${rd.min_occupancy}%`:null));
+    if (pt==='multi_family_5') { detailRows.push(row('NOI', ld.noi?`$${parseInt(ld.noi).toLocaleString()}`:null, 'Min. NOI', rd.min_noi?`Min $${parseInt(rd.min_noi).toLocaleString()}`:null)); }
+    detailLO.push(lo('Gross Monthly Rent', ld.gross_monthly_rent?`$${parseInt(ld.gross_monthly_rent).toLocaleString()}/mo`:null));
+  }
+  const fd = detailRows.filter(r=>r.lVal||r.rVal), flo = detailLO.filter(r=>r.val);
+  if (fd.length||flo.length) sections.push({ key:'details', title:'Property Details', rows:fd, listingOnlyRows:flo });
+
+  // Amenities
+  const lA=[...(ld.building_amenities||[]),...(ld.amenities||[]),...(ld.features||[]),...(ld.medical_features||[]),...(ld.retail_features||[])];
+  const rA=[...(rd.building_amenities_required||[]),...(rd.must_haves||[])];
+  if (lA.length||rA.length) {
+    const all=[...new Set([...lA,...rA])];
+    const ar=all.map(a=>row(a.replace(/_/g,' '),lA.includes(a)?'Included':null,a.replace(/_/g,' '),rA.includes(a)?'Required':null)).filter(r=>r.lVal||r.rVal);
+    if (ar.length) sections.push({ key:'amenities', title:'Amenities & Features', rows:ar, listingOnlyRows:[] });
   }
 
-  const filteredDetails = detailRows.filter(r => r.lVal || r.rVal);
-  const filteredListingOnly = detailListingOnly.filter(r => r.val);
-  if (filteredDetails.length || filteredListingOnly.length) {
-    sections.push({ key:'details', title:'Property Details', Icon: Layers, rows: filteredDetails, listingOnlyRows: filteredListingOnly });
-  }
-
-  // ── Amenities ────────────────────────────────────────────────────────────────
-  const listingAmens = [...(ld.building_amenities||[]),...(ld.amenities||[]),...(ld.medical_features||[]),...(ld.retail_features||[]),...(ld.features||[])];
-  const reqAmens     = [...(rd.building_amenities_required||[]),...(rd.must_haves||[])];
-  if (listingAmens.length || reqAmens.length) {
-    const allA = [...new Set([...listingAmens,...reqAmens])];
-    const amenRows = allA
-      .map(a => row(a.replace(/_/g,' '), listingAmens.includes(a)?'Included':null, a.replace(/_/g,' '), reqAmens.includes(a)?'Required':null))
-      .filter(r => r.lVal || r.rVal);
-    if (amenRows.length) sections.push({ key:'amenities', title:'Amenities & Features', Icon: Star, rows: amenRows, listingOnlyRows: [] });
-  }
-
-  // ── Notes ────────────────────────────────────────────────────────────────────
-  const lDesc = listing.description || ld.description;
-  const rDesc = requirement.notes || rd.intended_use;
-  if (lDesc || rDesc) {
-    sections.push({ key:'notes', title:'Notes & Description', Icon: Search, rows: [
-      ...(lDesc?[row('Listing Description', lDesc, null, null)]:[]),
-      ...(rDesc?[row(null, null, 'Requirement Notes', rDesc)]:[]),
-    ].filter(r=>r.lVal||r.rVal), listingOnlyRows: [] });
-  }
+  // Notes
+  const lD=listing.description||ld.description, rD=requirement.notes||rd.intended_use;
+  if (lD||rD) sections.push({ key:'notes', title:'Notes', rows:[...(lD?[row('Listing Description',lD,null,null)]:[]),...(rD?[row(null,null,'Requirement Notes',rD)]:[])].filter(r=>r.lVal||r.rVal), listingOnlyRows:[] });
 
   return sections;
 }
 
-function AccordionSection({ section, myIsListing, myColor, theirColor, open, onToggle }) {
-  const { Icon } = section;
-  const myLabel    = myIsListing ? 'Your Listing' : 'Your Requirement';
-  const theirLabel = myIsListing ? 'Their Requirement' : 'Their Listing';
-
+function AccordionSection({ section, myColor, theirColor, myLabel, theirLabel, open, onToggle }) {
   return (
     <div style={{ border:'1px solid rgba(255,255,255,0.07)', borderRadius:'10px', overflow:'hidden', marginBottom:'8px' }}>
       <button type="button" onClick={onToggle}
-        style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', background:open?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.03)', border:'none', cursor:'pointer' }}>
+        style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', background:open?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.03)', border:'none', cursor:'pointer', textAlign:'left' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-          <Icon style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.4)' }}/>
           <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:600, color:'rgba(255,255,255,0.85)' }}>{section.title}</span>
-          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.3)' }}>
-            {section.rows.length + (section.listingOnlyRows?.length||0)} fields
-          </span>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.28)' }}>{section.rows.length+(section.listingOnlyRows?.length||0)} fields</span>
         </div>
         {open ? <ChevronUp style={{width:'14px',height:'14px',color:'rgba(255,255,255,0.35)'}}/> : <ChevronDown style={{width:'14px',height:'14px',color:'rgba(255,255,255,0.35)'}}/>}
       </button>
-
       {open && (
         <div style={{ padding:'0 16px 14px' }}>
           {section.rows.length > 0 && (
@@ -484,38 +501,31 @@ function AccordionSection({ section, myIsListing, myColor, theirColor, open, onT
                 <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:myColor }}>{myLabel}</span>
                 <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:theirColor }}>{theirLabel}</span>
               </div>
-              {section.rows.map((row, i) => {
-                const bothFilled = row.lVal && row.rVal;
-                return (
-                  <div key={i} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', padding:'7px 0', borderBottom:i<section.rows.length-1?'1px solid rgba(255,255,255,0.04)':'none', alignItems:'start' }}>
+              {section.rows.map((row,i) => (
+                <div key={i} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', padding:'7px 0', borderBottom:i<section.rows.length-1?'1px solid rgba(255,255,255,0.04)':'none', alignItems:'start' }}>
+                  <div>
+                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)', margin:'0 0 2px', textTransform:'capitalize' }}>{row.lLabel}</p>
+                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:row.lVal?'white':'rgba(255,255,255,0.18)', margin:0, lineHeight:1.5, wordBreak:'break-word' }}>{row.lVal||'—'}</p>
+                  </div>
+                  <div style={{ display:'flex', alignItems:'flex-start', gap:'5px' }}>
+                    {row.lVal&&row.rVal&&<Check style={{width:'11px',height:'11px',color:ACCENT,flexShrink:0,marginTop:'14px'}}/>}
                     <div>
-                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.3)', margin:'0 0 2px', textTransform:'capitalize' }}>{row.lLabel}</p>
-                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:row.lVal?'white':'rgba(255,255,255,0.18)', margin:0, lineHeight:1.5, wordBreak:'break-word' }}>{row.lVal||'—'}</p>
-                    </div>
-                    <div style={{ display:'flex', alignItems:'flex-start', gap:'5px' }}>
-                      {bothFilled && <Check style={{ width:'11px', height:'11px', color:ACCENT, flexShrink:0, marginTop:'13px' }}/>}
-                      <div>
-                        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.3)', margin:'0 0 2px', textTransform:'capitalize' }}>{row.rLabel||row.lLabel}</p>
-                        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:row.rVal?'white':'rgba(255,255,255,0.18)', margin:0, lineHeight:1.5, wordBreak:'break-word' }}>{row.rVal||'—'}</p>
-                      </div>
+                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)', margin:'0 0 2px', textTransform:'capitalize' }}>{row.rLabel||row.lLabel}</p>
+                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:row.rVal?'white':'rgba(255,255,255,0.18)', margin:0, lineHeight:1.5, wordBreak:'break-word' }}>{row.rVal||'—'}</p>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </>
           )}
-
-          {/* Listing-only block */}
           {section.listingOnlyRows?.length > 0 && (
-            <div style={{ marginTop: section.rows.length > 0 ? '12px' : '4px', padding:'10px 12px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.05)', borderRadius:'8px' }}>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:myColor, margin:'0 0 8px', opacity:0.7 }}>
-                Listing Details
-              </p>
+            <div style={{ marginTop:section.rows.length>0?'10px':'2px', padding:'10px 12px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.05)', borderRadius:'8px' }}>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:myColor, margin:'0 0 8px', opacity:0.7 }}>Listing Details</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 16px' }}>
-                {section.listingOnlyRows.map((row, i) => row.val ? (
+                {section.listingOnlyRows.map((r,i) => r.val ? (
                   <div key={i}>
-                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)', margin:'0 0 1px', textTransform:'capitalize' }}>{row.label}</p>
-                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.65)', margin:0, wordBreak:'break-word' }}>{row.val}</p>
+                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.25)', margin:'0 0 1px' }}>{r.label}</p>
+                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.6)', margin:0, wordBreak:'break-word' }}>{r.val}</p>
                   </div>
                 ) : null)}
               </div>
@@ -527,126 +537,105 @@ function AccordionSection({ section, myIsListing, myColor, theirColor, open, onT
   );
 }
 
-// ─── AI Breakdown Tab ─────────────────────────────────────────────────────────
-function AIBreakdown({ listing, requirement, matchResult, myIsListing }) {
-  const [text, setText]       = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
+// ─── AI Breakdown ─────────────────────────────────────────────────────────────
+function AIBreakdown({ listing, requirement, matchResult }) {
+  const [text, setText]     = useState(null);
+  const [loading, setLoad]  = useState(false);
+  const [error, setError]   = useState(null);
 
-  const buildPrompt = useCallback(() => {
+  const prompt = useMemo(() => {
     const { totalScore, breakdown } = matchResult;
     const lPrice  = priceStr(listing, true);
     const rPrice  = priceStr(requirement, false);
     const lSize   = listing.size_sqft ? `${parseFloat(listing.size_sqft).toLocaleString()} SF` : 'unknown size';
-    const rSize   = (requirement.min_size_sqft || requirement.max_size_sqft)
-      ? `${fmtN(requirement.min_size_sqft)||'0'}–${fmtN(requirement.max_size_sqft)||'∞'} SF`
-      : 'no size preference';
-    const lLoc    = [listing.city, listing.state].filter(Boolean).join(', ') || 'unknown location';
-    const rLoc    = Array.isArray(requirement.cities) ? requirement.cities.join(', ') : (requirement.cities || 'any location');
-    const propType = PT[listing.property_type] || listing.property_type;
-    const tx      = TX[listing.transaction_type] || listing.transaction_type;
+    const rSize   = (requirement.min_size_sqft||requirement.max_size_sqft)
+      ? `${fmtN(requirement.min_size_sqft)||'0'}–${fmtN(requirement.max_size_sqft)||'∞'} SF` : 'no size preference';
+    let cities = requirement.cities;
+    if (typeof cities === 'string') { try { cities = JSON.parse(cities); } catch { cities = [cities]; } }
+    const rLoc = Array.isArray(cities) ? cities.join(', ') : 'any location';
+    const lLoc = [listing.city, listing.state].filter(Boolean).join(', ') || 'unknown location';
+    const bStr = breakdown.map(b => `${b.category}: ${b.score}%`).join(', ');
 
-    const breakdownStr = breakdown.map(b => `${b.category}: ${b.score}%`).join(', ');
+    return `You are a sharp commercial real estate analyst. Write a 4–6 sentence deal breakdown.
 
-    return `You are a sharp, analytical commercial real estate assistant. Write a 4–6 sentence deal breakdown for this match.
-
-LISTING:
-- Type: ${propType} for ${tx}
-- Location: ${lLoc}
-- Price: ${lPrice}
-- Size: ${lSize}
-- Agent: ${listing.contact_agent_name || 'unknown'}
-
-REQUIREMENT:
-- Looking for: ${propType} — ${tx}
-- Preferred areas: ${rLoc}
-- Budget: ${rPrice}
-- Size range: ${rSize}
-- Representing: ${requirement.contact_agent_name || 'unknown'}
-
-MATCH SCORE: ${totalScore}% (${getScoreLabel(totalScore) || 'no label'})
-BREAKDOWN: ${breakdownStr}
+LISTING: ${PT[listing.property_type]||listing.property_type} for ${TX[listing.transaction_type]||listing.transaction_type} in ${lLoc} · Price: ${lPrice} · Size: ${lSize}
+REQUIREMENT: Seeking ${PT[requirement.property_type]||requirement.property_type} in ${rLoc} · Budget: ${rPrice} · Size: ${rSize}
+MATCH SCORE: ${totalScore}% (${getScoreLabel(totalScore)||'no label'})
+SCORE BREAKDOWN: ${bStr}
 
 Rules:
-1. Be concise, specific, and analytical. Reference actual numbers.
-2. When you mention a listing-specific value (price, size, location of the listing, lease type, etc.), wrap it like: {{L:value}}
-3. When you mention a requirement-specific value (budget, preferred area, size requirement, etc.), wrap it like: {{R:value}}
-4. Highlight the strongest matches and any potential deal-breakers.
-5. End with one sentence on what the next step should be.
-6. Write in second person as if talking to the listing agent about their listing.
-7. Do NOT use markdown, bullets, or headers. Plain prose only.`;
+1. Be concise and analytical. Reference actual numbers.
+2. Wrap listing-specific values like this: {{L:value}} — they render in teal/tiffany
+3. Wrap requirement-specific values like this: {{R:value}} — they render in lavender
+4. Highlight the strongest alignment and any gaps.
+5. End with what the next step should be.
+6. Write in second person to the listing agent.
+7. Plain prose only — no markdown, bullets, or headers.`;
   }, [listing, requirement, matchResult]);
 
-  const load = async () => {
-    if (text || loading) return;
-    setLoading(true);
-    setError(null);
+  const run = useCallback(async () => {
+    setLoad(true); setError(null);
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: buildPrompt() }],
+          max_tokens: 800,
+          messages: [{ role: 'user', content: prompt }],
         }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `HTTP ${res.status}`);
+      }
       const data = await res.json();
-      const raw  = data.content?.map(c => c.text||'').join('');
+      const raw  = data.content?.map(c => c.type==='text'?c.text:'').join('').trim();
       setText(raw || 'No breakdown generated.');
-    } catch {
-      setError('Unable to generate breakdown. Please try again.');
+    } catch (e) {
+      setError(e.message || 'Failed to generate breakdown.');
     } finally {
-      setLoading(false);
+      setLoad(false);
     }
-  };
+  }, [prompt]);
 
-  // Auto-load when mounted
-  React.useEffect(() => { load(); }, []);
+  useEffect(() => { run(); }, []);
 
   if (loading) return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', gap:'16px', padding:'40px' }}>
-      <Loader2 style={{ width:'32px', height:'32px', color:ACCENT, animation:'spin 1s linear infinite' }}/>
-      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.45)', margin:0 }}>Analyzing this match…</p>
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'60px 40px', gap:'16px' }}>
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <Loader2 style={{ width:'28px', height:'28px', color:ACCENT, animation:'spin 1s linear infinite' }}/>
+      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.4)', margin:0 }}>Analyzing this match…</p>
     </div>
   );
 
   if (error) return (
-    <div style={{ padding:'32px', textAlign:'center' }}>
-      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.4)', margin:'0 0 16px' }}>{error}</p>
-      <button onClick={load} style={{ padding:'8px 20px', background:ACCENT, border:'none', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:600, color:'#111827', cursor:'pointer' }}>
-        Retry
+    <div style={{ padding:'40px', textAlign:'center' }}>
+      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.45)', margin:'0 0 16px', lineHeight:1.6 }}>{error}</p>
+      <button onClick={run} style={{ padding:'8px 20px', background:ACCENT, border:'none', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:600, color:'#111827', cursor:'pointer' }}>
+        Try Again
       </button>
     </div>
   );
 
   return (
-    <div style={{ padding:'28px', height:'100%', overflowY:'auto' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'20px' }}>
-        <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:ACCENT }}/>
-        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.4)' }}>AI Match Analysis</span>
-      </div>
-
-      {/* Legend */}
-      <div style={{ display:'flex', gap:'16px', marginBottom:'20px' }}>
+    <div style={{ padding:'0' }}>
+      <div style={{ display:'flex', gap:'16px', marginBottom:'16px' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'5px' }}>
-          <div style={{ width:'10px', height:'10px', borderRadius:'3px', background:`${ACCENT}30`, border:`1px solid ${ACCENT}60` }}/>
+          <div style={{ width:'10px', height:'6px', borderRadius:'2px', background:`${ACCENT}30`, border:`1px solid ${ACCENT}60` }}/>
           <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)' }}>Listing value</span>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'5px' }}>
-          <div style={{ width:'10px', height:'10px', borderRadius:'3px', background:`${LAVENDER}30`, border:`1px solid ${LAVENDER}60` }}/>
+          <div style={{ width:'10px', height:'6px', borderRadius:'2px', background:`${LAVENDER}30`, border:`1px solid ${LAVENDER}60` }}/>
           <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)' }}>Requirement value</span>
         </div>
       </div>
-
-      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'15px', color:'rgba(255,255,255,0.8)', lineHeight:1.8, margin:0 }}>
+      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'15px', color:'rgba(255,255,255,0.82)', lineHeight:1.85, margin:'0 0 20px' }}>
         <HighlightedText text={text}/>
       </p>
-
-      <button onClick={() => { setText(null); load(); }}
-        style={{ marginTop:'24px', display:'flex', alignItems:'center', gap:'6px', padding:'7px 14px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', cursor:'pointer' }}>
-        <Loader2 style={{ width:'12px', height:'12px' }}/> Regenerate
+      <button onClick={() => { setText(null); run(); }}
+        style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 14px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', cursor:'pointer' }}>
+        <Loader2 style={{ width:'11px', height:'11px' }}/> Regenerate
       </button>
     </div>
   );
@@ -655,13 +644,14 @@ Rules:
 // ─── Full Match Modal ─────────────────────────────────────────────────────────
 function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex, totalMatches, onPrev, onNext, onClose }) {
   const [tab, setTab]           = useState('analysis');
-  const [openSections, setOpen] = useState({ core: true });
+  const [openSections, setOpen] = useState({ core:true });
+  const [lightboxPhoto, setLightboxPhoto] = useState(null);
 
-  const myIsListing  = myPost.postType === 'listing';
-  const myColor      = myIsListing ? ACCENT : LAVENDER;
-  const theirColor   = myIsListing ? LAVENDER : ACCENT;
-  const listing      = myIsListing ? myPost : matchPost;
-  const requirement  = myIsListing ? matchPost : myPost;
+  const myIsListing = myPost.postType === 'listing';
+  const myColor     = myIsListing ? ACCENT : LAVENDER;
+  const theirColor  = myIsListing ? LAVENDER : ACCENT;
+  const listing     = myIsListing ? myPost : matchPost;
+  const requirement = myIsListing ? matchPost : myPost;
 
   const { totalScore, breakdown, rangeData } = matchResult;
 
@@ -671,139 +661,146 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
   const posterCompany = matchPost.company_name        || posterProfile?.brokerage_name;
   const posterPhoto   = posterProfile?.profile_photo_url;
 
-  const rangeBars = useMemo(() => buildRangeBars(listing, requirement, breakdown), [listing, requirement, breakdown]);
+  const rangeBars   = useMemo(() => buildRangeBars(listing, requirement, breakdown), [listing, requirement, breakdown]);
   const specSections = useMemo(() => buildSpecSections(listing, requirement, myIsListing), [listing, requirement, myIsListing]);
 
-  const tabs = [
-    { key: 'analysis',  label: 'Match Analysis' },
-    { key: 'specs',     label: 'Full Specs' },
-    { key: 'breakdown', label: 'Breakdown' },
+  const myLabel    = myIsListing ? 'Your Listing' : 'Your Requirement';
+  const theirLabel = myIsListing ? 'Their Requirement' : 'Their Listing';
+
+  const TABS = [
+    { key:'analysis',  label:'Match Analysis' },
+    { key:'specs',     label:'Full Specs' },
+    { key:'breakdown', label:'Breakdown' },
   ];
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.88)', backdropFilter:'blur(8px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }}
-      onClick={onClose}>
-      <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'20px', width:'95vw', height:'92vh', maxWidth:'1200px', display:'flex', flexDirection:'column', overflow:'hidden' }}
-        onClick={e => e.stopPropagation()}>
+    <>
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.88)', backdropFilter:'blur(8px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }}
+        onClick={onClose}>
+        <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'20px', width:'95vw', height:'92vh', maxWidth:'1100px', display:'flex', flexDirection:'column', overflow:'hidden' }}
+          onClick={e => e.stopPropagation()}>
 
-        {/* ── Top bar ── */}
-        <div style={{ padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-            {totalMatches > 1 && (
-              <div style={{ display:'flex', alignItems:'center', gap:'4px' }}>
-                <button onClick={onPrev} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', padding:'5px 7px', cursor:'pointer', display:'flex' }}>
-                  <ChevronLeft style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.6)' }}/>
-                </button>
-                <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', minWidth:'40px', textAlign:'center' }}>{matchIndex+1} / {totalMatches}</span>
-                <button onClick={onNext} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', padding:'5px 7px', cursor:'pointer', display:'flex' }}>
-                  <ChevronRight style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.6)' }}/>
+          {/* Fixed header — tabs + nav + close */}
+          <div style={{ padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+              {totalMatches > 1 && (
+                <div style={{ display:'flex', alignItems:'center', gap:'4px' }}>
+                  <button onClick={onPrev} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', padding:'5px 7px', cursor:'pointer', display:'flex' }}>
+                    <ChevronLeft style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.6)' }}/>
+                  </button>
+                  <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', minWidth:'40px', textAlign:'center' }}>{matchIndex+1} / {totalMatches}</span>
+                  <button onClick={onNext} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', padding:'5px 7px', cursor:'pointer', display:'flex' }}>
+                    <ChevronRight style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.6)' }}/>
+                  </button>
+                </div>
+              )}
+              <div style={{ display:'flex', background:'rgba(255,255,255,0.05)', borderRadius:'8px', padding:'3px', gap:'2px' }}>
+                {TABS.map(t => (
+                  <button key={t.key} onClick={() => setTab(t.key)}
+                    style={{ padding:'7px 16px', background:tab===t.key?'rgba(255,255,255,0.1)':'transparent', border:'none', borderRadius:'6px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color:tab===t.key?'white':'rgba(255,255,255,0.4)', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'6px', cursor:'pointer', display:'flex', flexShrink:0 }}>
+              <X style={{ width:'16px', height:'16px', color:'rgba(255,255,255,0.5)' }}/>
+            </button>
+          </div>
+
+          {/* Scrollable body */}
+          <div style={{ flex:1, overflowY:'auto' }}>
+
+            {/* ── MATCH ANALYSIS ── */}
+            {tab === 'analysis' && (
+              <div style={{ padding:'28px 32px' }}>
+
+                {/* Score centered at top */}
+                <div style={{ display:'flex', justifyContent:'center', marginBottom:'32px' }}>
+                  <BigScoreCircle score={totalScore}/>
+                </div>
+
+                {/* Your post + Their match side by side */}
+                <div style={{ display:'flex', gap:'16px', marginBottom:'36px' }}>
+                  <PostBlock post={myPost} isListing={myIsListing} label={myLabel} color={myColor}
+                    onViewPhotos={setLightboxPhoto}/>
+                  <PostBlock post={matchPost} isListing={!myIsListing} label={theirLabel} color={theirColor}
+                    onViewPhotos={setLightboxPhoto}/>
+                </div>
+
+                {/* Range bars stacked */}
+                {rangeBars.length > 0 && (
+                  <div style={{ marginBottom:'32px' }}>
+                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.3)', margin:'0 0 20px' }}>
+                      How Your Listing Fits Their Requirements
+                    </p>
+                    {rangeBars.map((bar, i) => (
+                      <RangeBar key={i} value={bar.value} min={bar.min} max={bar.max} label={bar.label} score={bar.score}/>
+                    ))}
+                  </div>
+                )}
+
+                {/* Contact */}
+                <div style={{ background:`${theirColor}06`, border:`1px solid ${theirColor}20`, borderRadius:'14px', padding:'20px' }}>
+                  <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.3)', margin:'0 0 14px' }}>
+                    {myIsListing ? 'Representing Agent' : 'Listing Agent'}
+                  </p>
+                  <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'14px' }}>
+                    <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:theirColor, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'18px', fontWeight:700 }}>
+                      {posterPhoto ? <img src={posterPhoto} alt={posterName} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : posterName[0]?.toUpperCase()}
+                    </div>
+                    <div>
+                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'15px', fontWeight:600, color:'white', margin:0 }}>{posterName}</p>
+                      {posterCompany && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>{posterCompany}</p>}
+                    </div>
+                  </div>
+                  <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
+                    {posterEmail && <a href={`mailto:${posterEmail}`} style={{ display:'flex',alignItems:'center',gap:'7px',fontFamily:"'Inter',sans-serif",fontSize:'13px',color:theirColor,textDecoration:'none',padding:'8px 12px',background:`${theirColor}08`,borderRadius:'8px',border:`1px solid ${theirColor}15` }}><Mail style={{width:'13px',height:'13px'}}/>{posterEmail}</a>}
+                    {posterPhone && <a href={`tel:${posterPhone}`} style={{ display:'flex',alignItems:'center',gap:'7px',fontFamily:"'Inter',sans-serif",fontSize:'13px',color:theirColor,textDecoration:'none',padding:'8px 12px',background:`${theirColor}08`,borderRadius:'8px',border:`1px solid ${theirColor}15` }}><Phone style={{width:'13px',height:'13px'}}/>{posterPhone}</a>}
+                    <button style={{ display:'flex',alignItems:'center',gap:'7px',padding:'8px 16px',background:theirColor,border:'none',borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:600,color:'#111827',cursor:'pointer' }}>
+                      <MessageCircle style={{width:'13px',height:'13px'}}/> Send Message
+                    </button>
+                  </div>
+                </div>
+
+                <button onClick={() => setTab('specs')}
+                  style={{ width:'100%', marginTop:'16px', padding:'10px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.35)', cursor:'pointer' }}>
+                  View complete field-by-field specs →
                 </button>
               </div>
             )}
-            {/* Tab switcher */}
-            <div style={{ display:'flex', background:'rgba(255,255,255,0.05)', borderRadius:'8px', padding:'3px', gap:'2px' }}>
-              {tabs.map(t => (
-                <button key={t.key} onClick={() => setTab(t.key)}
-                  style={{ padding:'7px 16px', background:tab===t.key?'rgba(255,255,255,0.1)':'transparent', border:'none', borderRadius:'6px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color:tab===t.key?'white':'rgba(255,255,255,0.4)', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
+
+            {/* ── FULL SPECS ── */}
+            {tab === 'specs' && (
+              <div style={{ padding:'20px 28px' }}>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.3)', margin:'0 0 16px', lineHeight:1.6 }}>
+                  Left: <span style={{color:myColor,fontWeight:600}}>{myLabel}</span> · Right: <span style={{color:theirColor,fontWeight:600}}>{theirLabel}</span>
+                </p>
+                {specSections.map(s => (
+                  <AccordionSection key={s.key} section={s} myColor={myColor} theirColor={theirColor} myLabel={myLabel} theirLabel={theirLabel}
+                    open={!!openSections[s.key]} onToggle={() => setOpen(p => ({...p,[s.key]:!p[s.key]}))}/>
+                ))}
+                <div style={{height:'20px'}}/>
+              </div>
+            )}
+
+            {/* ── AI BREAKDOWN ── */}
+            {tab === 'breakdown' && (
+              <div style={{ padding:'28px 32px' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'20px' }}>
+                  <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:ACCENT }}/>
+                  <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.4)' }}>AI Match Breakdown</span>
+                </div>
+                <AIBreakdown listing={listing} requirement={requirement} matchResult={matchResult}/>
+              </div>
+            )}
           </div>
-          <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'6px', cursor:'pointer', display:'flex', flexShrink:0 }}>
-            <X style={{ width:'16px', height:'16px', color:'rgba(255,255,255,0.5)' }}/>
-          </button>
         </div>
-
-        {/* ── MATCH ANALYSIS — 2×2 quadrants, no dividing lines ── */}
-        {tab === 'analysis' && (
-          <div style={{ flex:1, overflow:'hidden', display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'1fr 1fr' }}>
-
-            {/* Q1 top-left: Your post */}
-            <div style={{ padding:'22px', overflowY:'auto', borderRight:'1px solid rgba(255,255,255,0.05)', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-              <PostBlock post={myPost} isListing={myIsListing} label={`Your ${myIsListing?'Listing':'Requirement'}`} color={myColor}/>
-            </div>
-
-            {/* Q2 top-right: Their match */}
-            <div style={{ padding:'22px', overflowY:'auto', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-              <PostBlock post={matchPost} isListing={!myIsListing} label={`Their ${myIsListing?'Requirement':'Listing'}`} color={theirColor}/>
-            </div>
-
-            {/* Q3 bottom-left: Range bars */}
-            <div style={{ padding:'22px', overflowY:'auto', borderRight:'1px solid rgba(255,255,255,0.05)' }}>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.3)', margin:'0 0 18px' }}>
-                How Your Listing Fits Their Requirements
-              </p>
-              {rangeBars.length > 0 ? (
-                rangeBars.map((bar, i) => (
-                  <RangeBar key={i} value={bar.value} min={bar.min} max={bar.max} label={bar.label} score={bar.score}/>
-                ))
-              ) : (
-                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.3)', lineHeight:1.6 }}>
-                  No numeric range fields to visualize for this property type combination.
-                </p>
-              )}
-            </div>
-
-            {/* Q4 bottom-right: Big score + contact */}
-            <div style={{ padding:'22px', overflowY:'auto', display:'flex', flexDirection:'column', gap:'20px' }}>
-              <div style={{ display:'flex', justifyContent:'center' }}>
-                <BigScoreCircle score={totalScore}/>
-              </div>
-
-              {/* Contact */}
-              <div style={{ background:`${theirColor}06`, border:`1px solid ${theirColor}20`, borderRadius:'12px', padding:'16px', flex:1 }}>
-                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.3)', margin:'0 0 12px' }}>
-                  {myIsListing ? 'Representing Agent' : 'Listing Agent'}
-                </p>
-                <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'12px' }}>
-                  <div style={{ width:'40px',height:'40px',borderRadius:'50%',background:theirColor,flexShrink:0,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',color:'#111827',fontSize:'16px',fontWeight:700 }}>
-                    {posterPhoto ? <img src={posterPhoto} alt={posterName} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : posterName[0]?.toUpperCase()}
-                  </div>
-                  <div>
-                    <p style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',fontWeight:600,color:'white',margin:0 }}>{posterName}</p>
-                    {posterCompany && <p style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:0 }}>{posterCompany}</p>}
-                  </div>
-                </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
-                  {posterEmail && <a href={`mailto:${posterEmail}`} style={{ display:'flex',alignItems:'center',gap:'8px',fontFamily:"'Inter',sans-serif",fontSize:'12px',color:theirColor,textDecoration:'none',padding:'7px 10px',background:`${theirColor}08`,borderRadius:'7px',border:`1px solid ${theirColor}15` }}><Mail style={{width:'12px',height:'12px',flexShrink:0}}/>{posterEmail}</a>}
-                  {posterPhone && <a href={`tel:${posterPhone}`} style={{ display:'flex',alignItems:'center',gap:'8px',fontFamily:"'Inter',sans-serif",fontSize:'12px',color:theirColor,textDecoration:'none',padding:'7px 10px',background:`${theirColor}08`,borderRadius:'7px',border:`1px solid ${theirColor}15` }}><Phone style={{width:'12px',height:'12px',flexShrink:0}}/>{posterPhone}</a>}
-                  <button style={{ display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',padding:'8px',background:theirColor,border:'none',borderRadius:'7px',fontFamily:"'Inter',sans-serif",fontSize:'12px',fontWeight:600,color:'#111827',cursor:'pointer' }}>
-                    <MessageCircle style={{width:'12px',height:'12px'}}/> Send Message
-                  </button>
-                </div>
-              </div>
-
-              <button onClick={() => setTab('specs')}
-                style={{ padding:'8px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.35)',cursor:'pointer' }}>
-                View complete field-by-field specs →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── FULL SPECS ── */}
-        {tab === 'specs' && (
-          <div style={{ flex:1, overflowY:'auto', padding:'20px 24px' }}>
-            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.3)', margin:'0 0 16px', lineHeight:1.6 }}>
-              Left is <span style={{color:myColor,fontWeight:600}}>your {myIsListing?'listing':'requirement'}</span> · Right is <span style={{color:theirColor,fontWeight:600}}>their {myIsListing?'requirement':'listing'}</span> · <Check style={{width:'11px',height:'11px',color:ACCENT,display:'inline',verticalAlign:'middle'}}/> means both sides filled the same field · "Listing Details" block shows listing-only fields
-            </p>
-            {specSections.map(s => (
-              <AccordionSection key={s.key} section={s} myIsListing={myIsListing} myColor={myColor} theirColor={theirColor}
-                open={!!openSections[s.key]} onToggle={() => setOpen(prev => ({...prev, [s.key]: !prev[s.key]}))}/>
-            ))}
-            <div style={{height:'20px'}}/>
-          </div>
-        )}
-
-        {/* ── AI BREAKDOWN ── */}
-        {tab === 'breakdown' && (
-          <div style={{ flex:1, overflow:'hidden' }}>
-            <AIBreakdown listing={listing} requirement={requirement} matchResult={matchResult} myIsListing={myIsListing}/>
-          </div>
-        )}
       </div>
-    </div>
+
+      {/* Photo lightbox */}
+      {lightboxPhoto && <PhotoLightbox photos={lightboxPhoto} onClose={() => setLightboxPhoto(null)}/>}
+    </>
   );
 }
 
@@ -823,7 +820,6 @@ function MatchGroupCard({ myPost, matches, onOpen }) {
       onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor=`${myColor}35`;}}
       onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.08)';}}>
 
-      {/* Your post */}
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'12px', marginBottom:'14px' }}>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'3px' }}>
@@ -843,7 +839,6 @@ function MatchGroupCard({ myPost, matches, onOpen }) {
 
       <div style={{ height:'1px',background:'rgba(255,255,255,0.06)',margin:'0 0 14px' }}/>
 
-      {/* Their match preview */}
       <div style={{ marginBottom:'14px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'8px' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'5px' }}>
@@ -858,7 +853,6 @@ function MatchGroupCard({ myPost, matches, onOpen }) {
             </div>
           )}
         </div>
-
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
           <div style={{ position:'relative',width:sz,height:sz,flexShrink:0 }}>
             <svg width={sz} height={sz} style={{transform:'rotate(-90deg)'}}><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="4"/><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={scoreColor} strokeWidth="4" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/></svg>
@@ -866,7 +860,7 @@ function MatchGroupCard({ myPost, matches, onOpen }) {
               <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'11px',fontWeight:700,color:scoreColor }}>{best.totalScore}</span>
             </div>
           </div>
-          <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ flex:1,minWidth:0 }}>
             <p style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',fontWeight:500,color:'white',margin:'0 0 2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{matchPost.title}</p>
             <div style={{ display:'flex',alignItems:'center',gap:'6px' }}>
               <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)' }}>{priceStr(matchPost,!myIsListing)}</span>
@@ -917,11 +911,7 @@ export default function Matches() {
     const group=groups.find(g=>g.myPost.id===myPost.id);
     setModalState({myPost,matches:group?.matches||[matchResult],matchIndex});
   };
-  const navigate=(dir)=>{
-    if(!modalState)return;
-    const t=modalState.matches.length;
-    setModalState(s=>({...s,matchIndex:(s.matchIndex+dir+t)%t}));
-  };
+  const navigate=(dir)=>{ if(!modalState)return; const t=modalState.matches.length; setModalState(s=>({...s,matchIndex:(s.matchIndex+dir+t)%t})); };
 
   return (
     <div style={{ maxWidth:'860px',margin:'0 auto',padding:'48px 32px' }}>
