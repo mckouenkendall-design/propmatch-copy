@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Megaphone, Video, FolderOpen, Building2, Plus, Globe, Lock, Calendar, ExternalLink, Pin, FileText, Download } from 'lucide-react';
+import { Users, Megaphone, Video, FolderOpen, Building2, Plus, Globe, Lock, Calendar, ExternalLink, Pin, FileText, Download, Mail, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CreateAnnouncementModal from '@/components/teams/CreateAnnouncementModal';
 import CreateCallModal from '@/components/teams/CreateCallModal';
@@ -93,8 +93,8 @@ function PipelineDetailModal({ post, onClose }) {
             <p style={{ fontFamily:"'Inter', sans-serif", fontSize:'15px', fontWeight:600, color:'white', margin:'0 0 2px' }}>{post.contact_agent_name || post.created_by}</p>
             {post.company_name && <p style={{ fontFamily:"'Inter', sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:'0 0 10px' }}>{post.company_name}</p>}
             <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
-              {post.contact_agent_email && <a href={`mailto:${post.contact_agent_email}`} style={{ fontFamily:"'Inter', sans-serif", fontSize:'13px', color:ACCENT, textDecoration:'none', padding:'7px 12px', background:`${ACCENT}08`, borderRadius:'7px', border:`1px solid ${ACCENT}15` }}>✉ {post.contact_agent_email}</a>}
-              {post.contact_agent_phone && <a href={`tel:${post.contact_agent_phone}`} style={{ fontFamily:"'Inter', sans-serif", fontSize:'13px', color:ACCENT, textDecoration:'none', padding:'7px 12px', background:`${ACCENT}08`, borderRadius:'7px', border:`1px solid ${ACCENT}15` }}>📞 {post.contact_agent_phone}</a>}
+              {post.contact_agent_email && <a href={`mailto:${post.contact_agent_email}`} style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:"'Inter', sans-serif", fontSize:'13px', color:ACCENT, textDecoration:'none', padding:'7px 12px', background:`${ACCENT}08`, borderRadius:'7px', border:`1px solid ${ACCENT}15` }}><Mail style={{width:'13px',height:'13px',flexShrink:0}} />{post.contact_agent_email}</a>}
+              {post.contact_agent_phone && <a href={`tel:${post.contact_agent_phone}`} style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:"'Inter', sans-serif", fontSize:'13px', color:ACCENT, textDecoration:'none', padding:'7px 12px', background:`${ACCENT}08`, borderRadius:'7px', border:`1px solid ${ACCENT}15` }}><Phone style={{width:'13px',height:'13px',flexShrink:0}} />{post.contact_agent_phone}</a>}
             </div>
           </div>
         </div>
