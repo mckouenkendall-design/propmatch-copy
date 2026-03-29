@@ -578,30 +578,16 @@ Rules:
   const run = useCallback(async () => {
     setLoad(true); setError(null);
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 800,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error?.message || `HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      const raw  = data.content?.map(c => c.type==='text'?c.text:'').join('').trim();
-      setText(raw || 'No breakdown generated.');
+      const result = await base44.functions.generateAIText({ prompt, maxTokens: 800 });
+      setText(result?.text?.trim() || 'No breakdown generated.');
     } catch (e) {
-      setError(e.message || 'Failed to generate breakdown.');
+      setError('Unable to generate breakdown. Please try again.');
     } finally {
       setLoad(false);
     }
   }, [prompt]);
 
-  useEffect(() => { run(); }, []);
+  useEffect(() => { run(); }, [run]);
 
   if (loading) return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'60px 40px', gap:'16px' }}>
