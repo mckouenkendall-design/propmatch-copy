@@ -192,6 +192,16 @@ export default function Profile() {
     mutationFn: async (data) => {
       const email = user?.email;
       if (!email) throw new Error('No user email');
+
+      // Username uniqueness check
+      if (data.username) {
+        const allProfiles = await base44.entities.UserProfile.list();
+        const conflict = allProfiles.find(
+          p => p.username && p.username.toLowerCase() === data.username.toLowerCase() && p.user_email !== email
+        );
+        if (conflict) throw new Error('USERNAME_TAKEN');
+      }
+
       const existing = await base44.entities.UserProfile.filter({ user_email: email });
       const profileData = {
         user_email: email,
@@ -243,7 +253,11 @@ export default function Profile() {
     },
     onError: (error) => {
       console.error('Save failed:', error);
-      toast({ title: 'Save failed — please try again', variant: 'destructive' });
+      if (error.message === 'USERNAME_TAKEN') {
+        toast({ title: 'Username already taken', description: 'Please choose a different username.', variant: 'destructive' });
+      } else {
+        toast({ title: 'Save failed — please try again', variant: 'destructive' });
+      }
     },
   });
 
