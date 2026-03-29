@@ -1,5 +1,4 @@
-import Anthropic from 'npm:@anthropic-ai/sdk';
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
 Deno.serve(async (req) => {
   try {
@@ -10,25 +9,16 @@ Deno.serve(async (req) => {
     }
 
     const { prompt, maxTokens = 500 } = await req.json();
-
     if (!prompt) {
       return Response.json({ error: 'prompt is required' }, { status: 400 });
     }
 
-    const client = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') });
-
-    const message = await client.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }],
+    const aiResponse = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      add_context_from_internet: false,
     });
 
-    const text = message.content
-      .filter((block) => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
-
-    return Response.json({ text });
+    return Response.json({ text: aiResponse });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
