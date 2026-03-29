@@ -558,9 +558,19 @@ function AIBreakdown({ listing, requirement, matchResult, onStartConversation })
     const lLoc = [listing.city, listing.state].filter(Boolean).join(', ') || 'unknown location';
     const bStr = breakdown.map(b => `${b.category}: ${b.score}%`).join(', ');
 
+    const listingPrice = parseFloat(listing.price);
+    const listingSize  = parseFloat(listing.size_sqft);
+    const isLease = listing.transaction_type === 'lease' || listing.transaction_type === 'sublease';
+    const monthlyCalc = isLease && listingPrice && listingSize
+      ? `$${Math.round((listingPrice * listingSize) / 12).toLocaleString()}/mo`
+      : null;
+    const annualCalc = isLease && listingPrice && listingSize
+      ? `$${Math.round(listingPrice * listingSize).toLocaleString()}/yr`
+      : null;
+
     return `You are a sharp commercial real estate analyst. Write a 4–6 sentence deal breakdown.
 
-LISTING: ${PT[listing.property_type]||listing.property_type} for ${TX[listing.transaction_type]||listing.transaction_type} in ${lLoc} · Price: ${lPrice} · Size: ${lSize}
+LISTING: ${PT[listing.property_type]||listing.property_type} for ${TX[listing.transaction_type]||listing.transaction_type} in ${lLoc} · Rate: ${lPrice} · Size: ${lSize}${monthlyCalc ? ` · Monthly total: ${monthlyCalc}` : ''}${annualCalc ? ` · Annual total: ${annualCalc}` : ''}
 REQUIREMENT: Seeking ${PT[requirement.property_type]||requirement.property_type} in ${rLoc} · Budget: ${rPrice} · Size: ${rSize}
 MATCH SCORE: ${totalScore}% (${getScoreLabel(totalScore)||'no label'})
 SCORE BREAKDOWN: ${bStr}
@@ -570,10 +580,10 @@ Rules:
 2. Wrap listing-specific values like this: {{L:value}} — they render in teal/tiffany
 3. Wrap requirement-specific values like this: {{R:value}} — they render in lavender
 4. Highlight the strongest alignment and any gaps.
-5. End with what the next step should be.
+5. End with a clear, natural call to action explaining specifically why these two agents should connect based on this match.
 6. Write in second person to the listing agent.
-7. End your final sentence with a clear, natural call to action explaining specifically why these two agents should connect based on this match — make it feel genuine, not generic.
-8. Plain prose only. No markdown, bullets, headers, em dashes, or hyphens used as dashes. Always write numbers as digits, never spell them out.`;
+7. Plain prose only. No markdown, bullets, headers, or em dashes.
+8. Use ONLY the numbers provided above — never calculate or estimate. Always include $ before monetary amounts. Use "to" between range values.`;
   }, [listing, requirement, matchResult]);
 
   const run = useCallback(async () => {
@@ -581,7 +591,7 @@ Rules:
     try {
       const response = await base44.functions.invoke('generateAIText', { prompt, maxTokens: 800 });
       const result = response.data;
-      setText((result?.text?.trim() || 'No breakdown generated.').replace(/—/g, ',').replace(/–/g, ',').replace(/ - /g, ', '));
+      setText((result?.text?.trim() || 'No breakdown generated.').replace(/—/g, ',').replace(/ - /g, ', '));
     } catch (e) {
       setError('Unable to generate breakdown. Please try again.');
     } finally {
