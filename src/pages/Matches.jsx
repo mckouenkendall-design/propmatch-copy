@@ -572,7 +572,7 @@ Rules:
 4. Highlight the strongest alignment and any gaps.
 5. End with what the next step should be.
 6. Write in second person to the listing agent.
-7. Plain prose only — no markdown, bullets, or headers.`;
+7. Plain prose only. No markdown, bullets, headers, em dashes, or hyphens used as dashes.`;
   }, [listing, requirement, matchResult]);
 
   const run = useCallback(async () => {
@@ -580,7 +580,7 @@ Rules:
     try {
       const response = await base44.functions.invoke('generateAIText', { prompt, maxTokens: 800 });
       const result = response.data;
-      setText(result?.text?.trim() || 'No breakdown generated.');
+      setText((result?.text?.trim() || 'No breakdown generated.').replace(/—/g, ',').replace(/–/g, ',').replace(/ - /g, ', '));
     } catch (e) {
       setError('Unable to generate breakdown. Please try again.');
     } finally {
@@ -780,16 +780,14 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
               </div>
             )}
 
-            {/* ── AI BREAKDOWN ── */}
-            {tab === 'breakdown' && (
-              <div style={{ padding:'28px 32px' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'20px' }}>
-                  <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:ACCENT }}/>
-                  <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.4)' }}>AI Match Breakdown</span>
-                </div>
-                <AIBreakdown listing={listing} requirement={requirement} matchResult={matchResult}/>
+            {/* AI Breakdown — always mounted so it pre-generates, hidden until tab active */}
+            <div style={{ display: tab === 'breakdown' ? 'block' : 'none', padding:'28px 32px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'20px' }}>
+                <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:ACCENT }}/>
+                <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.4)' }}>AI Match Breakdown</span>
               </div>
-            )}
+              <AIBreakdown listing={listing} requirement={requirement} matchResult={matchResult}/>
+            </div>
           </div>
         </div>
       </div>
