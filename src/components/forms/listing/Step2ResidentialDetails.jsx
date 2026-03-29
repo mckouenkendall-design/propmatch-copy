@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
 import { ArrowRight, X } from 'lucide-react';
 
+const ACCENT = '#00DBC5';
+
 function Field({ label, hint, children }) {
   return (
     <div className="space-y-1.5">
@@ -15,20 +17,12 @@ function Field({ label, hint, children }) {
     </div>
   );
 }
-
 function Num({ field, placeholder, details, setDetail, step }) {
   return (
-    <input
-      type="number"
-      step={step || 1}
-      value={details[field] || ''}
-      onChange={e => setDetail(field, e.target.value)}
-      placeholder={placeholder}
-      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-    />
+    <input type="number" step={step || 1} value={details[field] || ''} onChange={e => setDetail(field, e.target.value)} placeholder={placeholder}
+      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
   );
 }
-
 function SectionTitle({ children }) {
   return (
     <div className="pt-2">
@@ -36,19 +30,15 @@ function SectionTitle({ children }) {
     </div>
   );
 }
-
 function CollapsiblePanel({ title, summary, children }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
+      <button type="button" onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
         style={{ background: 'rgba(255,255,255,0.05)' }}
         onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-      >
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
         <div>
           <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>{title}</p>
           {!open && <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{summary}</p>}
@@ -59,43 +49,30 @@ function CollapsiblePanel({ title, summary, children }) {
     </div>
   );
 }
-
 function Toggle({ label, value, onChange }) {
   return (
     <div className="flex items-center justify-between py-2">
       <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</span>
-      <button
-        type="button"
-        onClick={() => onChange(!value)}
+      <button type="button" onClick={() => onChange(!value)}
         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-        style={{ backgroundColor: value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)' }}
-      >
-        <span
-          className="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
-          style={{ transform: value ? 'translateX(22px)' : 'translateX(2px)' }}
-        />
+        style={{ backgroundColor: value ? ACCENT : 'rgba(255,255,255,0.2)' }}>
+        <span className="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+          style={{ transform: value ? 'translateX(22px)' : 'translateX(2px)' }} />
       </button>
     </div>
   );
 }
-
 function TagsInput({ value = [], onChange, placeholder }) {
   const [input, setInput] = useState('');
   const handleKey = (e) => {
-    if (e.key === 'Enter' && input.trim()) {
-      e.preventDefault();
-      if (!value.includes(input.trim())) onChange([...value, input.trim()]);
-      setInput('');
-    }
+    if (e.key === 'Enter' && input.trim()) { e.preventDefault(); if (!value.includes(input.trim())) onChange([...value, input.trim()]); setInput(''); }
   };
-  const remove = (tag) => onChange(value.filter(t => t !== tag));
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5">
         {value.map(tag => (
-          <span key={tag} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
-            {tag}
-            <button type="button" onClick={() => remove(tag)}><X className="w-3 h-3" /></button>
+          <span key={tag} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: ACCENT }}>
+            {tag}<button type="button" onClick={() => onChange(value.filter(t => t !== tag))}><X className="w-3 h-3" /></button>
           </span>
         ))}
       </div>
@@ -103,7 +80,6 @@ function TagsInput({ value = [], onChange, placeholder }) {
     </div>
   );
 }
-
 function BedsAndBaths({ details, setDetail }) {
   return (
     <div className="grid grid-cols-2 gap-4">
@@ -113,21 +89,162 @@ function BedsAndBaths({ details, setDetail }) {
   );
 }
 
-// ── Single Family ─────────────────────────────────────────────────────────────
-const ARCH_STYLES = ['Colonial', 'Ranch', 'Cape Cod', 'Craftsman', 'Modern', 'Tudor', 'Split Level', 'Contemporary', 'Victorian', 'Mediterranean'];
+// ── SALE TYPE SELECTOR (Residential) ─────────────────────────────────────────
+function ResidentialSaleTypeSelector({ value, onChange }) {
+  const opts = [
+    { val: 'personal_residence', icon: '🏠', label: 'Personal Residence', desc: 'Buyer will live in this property' },
+    { val: 'investment', icon: '📈', label: 'Investment / Rental', desc: 'Buyer purchasing as a rental or income property' },
+  ];
+  return (
+    <div className="space-y-3">
+      <SectionTitle>Sale Type</SectionTitle>
+      <div className="grid grid-cols-2 gap-3">
+        {opts.map(opt => (
+          <button key={opt.val} type="button" onClick={() => onChange(opt.val)}
+            style={{ padding: '16px', borderRadius: '12px', border: `2px solid ${value === opt.val ? ACCENT : 'rgba(255,255,255,0.15)'}`, background: value === opt.val ? `${ACCENT}12` : 'rgba(255,255,255,0.04)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
+            <div style={{ fontSize: '22px', marginBottom: '8px' }}>{opt.icon}</div>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: value === opt.val ? ACCENT : 'white', margin: '0 0 4px' }}>{opt.label}</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>{opt.desc}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── SALE INVESTMENT COMPONENTS ────────────────────────────────────────────────
+
+// Shared rental income section used by condo, townhouse, apartment as investment
+function RentalIncomeSection({ details, setDetail }) {
+  return (
+    <>
+      <SectionTitle>Rental Income</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Current Monthly Rent ($)" hint="Enter market rent if currently vacant">
+          <Num field="monthly_rent" placeholder="e.g. 1800" details={details} setDetail={setDetail} />
+        </Field>
+        <Field label="Annual Gross Rent ($)">
+          <Num field="annual_gross_rent" placeholder="e.g. 21600" details={details} setDetail={setDetail} />
+        </Field>
+        <Field label="HOA ($/mo)">
+          <Num field="hoa" placeholder="e.g. 350" details={details} setDetail={setDetail} />
+        </Field>
+      </div>
+      <ToggleGroup label="Rental Status" value={details.rental_status || ''} onChange={v => setDetail('rental_status', v)}
+        options={[{ value: 'occupied', label: 'Currently Occupied' }, { value: 'vacant', label: 'Vacant' }]} />
+      {details.rental_status === 'occupied' && (
+        <Field label="Lease Term Remaining (months)">
+          <Num field="lease_remaining" placeholder="e.g. 8" details={details} setDetail={setDetail} />
+        </Field>
+      )}
+      <ToggleGroup label="Condition" value={details.condition || ''} onChange={v => setDetail('condition', v)}
+        options={[{ value: 'turnkey', label: 'Turnkey' }, { value: 'light_value_add', label: 'Light Value-Add' }, { value: 'heavy_value_add', label: 'Heavy Value-Add' }]} />
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="Property Management in Place" value={!!details.managed} onChange={v => setDetail('managed', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="HOA Allows Rentals" value={!!details.hoa_allows_rentals} onChange={v => setDetail('hoa_allows_rentals', v)} />
+      </div>
+    </>
+  );
+}
+
+function CondoSaleInvestment({ details, setDetail }) {
+  return (
+    <>
+      <RentalIncomeSection details={details} setDetail={setDetail} />
+      <SectionTitle>Unit Details</SectionTitle>
+      <BedsAndBaths details={details} setDetail={setDetail} />
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Floor #"><Num field="floor_num" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
+        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2012" details={details} setDetail={setDetail} /></Field>
+        <Field label="Unit Number" hint="Optional"><Input value={details.unit_number || ''} onChange={e => setDetail('unit_number', e.target.value)} placeholder="e.g. Unit 804" /></Field>
+      </div>
+      <ToggleGroup label="Parking" value={details.parking || ''} onChange={v => setDetail('parking', v)}
+        options={[{ value: 'assigned', label: 'Assigned' }, { value: 'garage', label: 'Garage' }, { value: 'none', label: 'None' }]} />
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="In-Unit Laundry" value={!!details.in_unit_laundry} onChange={v => setDetail('in_unit_laundry', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Balcony / Terrace" value={!!details.balcony} onChange={v => setDetail('balcony', v)} />
+      </div>
+      <Field label="HOA Includes">
+        <TagsInput value={details.hoa_includes || []} onChange={v => setDetail('hoa_includes', v)} placeholder="e.g. Water, Trash, Building Insurance (press Enter)" />
+      </Field>
+    </>
+  );
+}
+
+function TownhouseSaleInvestment({ details, setDetail }) {
+  return (
+    <>
+      <RentalIncomeSection details={details} setDetail={setDetail} />
+      <SectionTitle>Property Details</SectionTitle>
+      <BedsAndBaths details={details} setDetail={setDetail} />
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Garage Spaces"><Num field="garage" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2010" details={details} setDetail={setDetail} /></Field>
+        <Field label="HOA Includes">
+          <TagsInput value={details.hoa_includes || []} onChange={v => setDetail('hoa_includes', v)} placeholder="e.g. Exterior Maintenance, Snow Removal (press Enter)" />
+        </Field>
+      </div>
+      <ToggleGroup label="Stories" value={details.stories || ''} onChange={v => setDetail('stories', v)}
+        options={[{ value: 'two', label: '2 Story' }, { value: 'three', label: '3 Story' }, { value: 'other', label: 'Other' }]} />
+      <ToggleGroup label="Position in Building" value={details.position || ''} onChange={v => setDetail('position', v)}
+        options={[{ value: 'end', label: 'End Unit' }, { value: 'middle', label: 'Middle Unit' }, { value: 'corner', label: 'Corner' }]} />
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="Private Patio / Yard" value={!!details.patio} onChange={v => setDetail('patio', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="In-Unit Laundry" value={!!details.in_unit_laundry} onChange={v => setDetail('in_unit_laundry', v)} />
+      </div>
+    </>
+  );
+}
+
+function ManufacturedSaleInvestment({ details, setDetail }) {
+  return (
+    <>
+      <SectionTitle>Rental Income</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Current Monthly Rent ($)" hint="Enter market rent if vacant">
+          <Num field="monthly_rent" placeholder="e.g. 900" details={details} setDetail={setDetail} />
+        </Field>
+        <Field label="Annual Gross Rent ($)">
+          <Num field="annual_gross_rent" placeholder="e.g. 10800" details={details} setDetail={setDetail} />
+        </Field>
+      </div>
+      <ToggleGroup label="Rental Status" value={details.rental_status || ''} onChange={v => setDetail('rental_status', v)}
+        options={[{ value: 'occupied', label: 'Currently Occupied' }, { value: 'vacant', label: 'Vacant' }]} />
+      <ToggleGroup label="Condition" value={details.condition || ''} onChange={v => setDetail('condition', v)}
+        options={[{ value: 'turnkey', label: 'Turnkey' }, { value: 'light_value_add', label: 'Light Value-Add' }, { value: 'heavy_value_add', label: 'Heavy Value-Add' }]} />
+
+      <SectionTitle>Land & Property Details</SectionTitle>
+      <ToggleGroup label="Land Ownership" value={details.land_ownership || ''} onChange={v => setDetail('land_ownership', v)}
+        options={[{ value: 'owned', label: 'Land Owned' }, { value: 'leased', label: 'Leased Lot' }]} />
+      {details.land_ownership === 'leased' && (
+        <Field label="Monthly Lot Rent ($)">
+          <Num field="lot_rent" placeholder="e.g. 450" details={details} setDetail={setDetail} />
+        </Field>
+      )}
+      <BedsAndBaths details={details} setDetail={setDetail} />
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2005" details={details} setDetail={setDetail} /></Field>
+        <Field label="Size (sqft)"><Num field="size_sqft" placeholder="e.g. 1200" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="HUD Tag / Title Present" value={!!details.hud_tag} onChange={v => setDetail('hud_tag', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Property Management in Place" value={!!details.managed} onChange={v => setDetail('managed', v)} />
+      </div>
+    </>
+  );
+}
+
+// ── EXISTING LEASE COMPONENTS (unchanged) ────────────────────────────────────
+const ARCH_STYLES = ['Colonial','Ranch','Cape Cod','Craftsman','Modern','Tudor','Split Level','Contemporary','Victorian','Mediterranean'];
 const SF_FEATURES = [
-  { key: 'pool',        label: 'Pool' },
-  { key: 'hot_tub',     label: 'Hot Tub / Spa' },
-  { key: 'deck',        label: 'Deck / Patio' },
-  { key: 'fence',       label: 'Fenced Yard' },
-  { key: 'fireplace',   label: 'Fireplace' },
-  { key: 'ac',          label: 'Central A/C' },
-  { key: 'generator',   label: 'Generator' },
-  { key: 'solar',       label: 'Solar Panels' },
-  { key: 'sprinklers',  label: 'Irrigation / Sprinklers' },
-  { key: 'mudroom',     label: 'Mudroom' },
-  { key: 'bonus_room',  label: 'Bonus Room / Loft' },
-  { key: 'home_office', label: 'Dedicated Home Office' },
+  { key: 'pool', label: 'Pool' }, { key: 'hot_tub', label: 'Hot Tub / Spa' }, { key: 'deck', label: 'Deck / Patio' },
+  { key: 'fence', label: 'Fenced Yard' }, { key: 'fireplace', label: 'Fireplace' }, { key: 'ac', label: 'Central A/C' },
+  { key: 'generator', label: 'Generator' }, { key: 'solar', label: 'Solar Panels' }, { key: 'sprinklers', label: 'Irrigation / Sprinklers' },
+  { key: 'mudroom', label: 'Mudroom' }, { key: 'bonus_room', label: 'Bonus Room / Loft' }, { key: 'home_office', label: 'Dedicated Home Office' },
 ];
 
 function SingleFamilyDetails({ details, setDetail }) {
@@ -135,7 +252,6 @@ function SingleFamilyDetails({ details, setDetail }) {
   const features = details.features || [];
   const toggleFeature = (key) => setDetail('features', features.includes(key) ? features.filter(k => k !== key) : [...features, key]);
   const [featuresOpen, setFeaturesOpen] = useState(false);
-
   return (
     <>
       <SectionTitle>Basic Specs</SectionTitle>
@@ -147,7 +263,6 @@ function SingleFamilyDetails({ details, setDetail }) {
         <Field label="Roof Age (years)"><Num field="roof_age" placeholder="e.g. 5" details={details} setDetail={setDetail} /></Field>
         <Field label="HOA ($/mo)" hint="Leave blank if no HOA"><Num field="hoa" placeholder="e.g. 150" details={details} setDetail={setDetail} /></Field>
       </div>
-
       <SectionTitle>Style & Layout</SectionTitle>
       <ToggleGroup label="Stories" value={details.stories || ''} onChange={v => setDetail('stories', v)}
         options={[{ value: 'one', label: '1 Story' }, { value: 'two', label: '2 Story' }, { value: 'split', label: 'Split Level' }, { value: 'three_plus', label: '3+' }]} />
@@ -158,15 +273,10 @@ function SingleFamilyDetails({ details, setDetail }) {
           {ARCH_STYLES.map(s => (
             <button key={s} type="button" onClick={() => setDetail('arch_style', s)}
               className="px-3 py-1.5 rounded-lg border-2 text-xs font-medium transition-all"
-              style={{
-                borderColor: details.arch_style === s ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
-                backgroundColor: details.arch_style === s ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
-                color: details.arch_style === s ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)',
-              }}>{s}</button>
+              style={{ borderColor: details.arch_style === s ? ACCENT : 'rgba(255,255,255,0.2)', backgroundColor: details.arch_style === s ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)', color: details.arch_style === s ? ACCENT : 'rgba(255,255,255,0.7)' }}>{s}</button>
           ))}
         </div>
       </Field>
-
       <SectionTitle>Systems</SectionTitle>
       <ToggleGroup label="Heating" value={details.heating || ''} onChange={v => setDetail('heating', v)}
         options={[{ value: 'forced_air', label: 'Forced Air' }, { value: 'radiant', label: 'Radiant' }, { value: 'heat_pump', label: 'Heat Pump' }, { value: 'baseboard', label: 'Baseboard' }]} />
@@ -174,7 +284,6 @@ function SingleFamilyDetails({ details, setDetail }) {
         options={[{ value: 'central', label: 'Central A/C' }, { value: 'mini_split', label: 'Mini-Split' }, { value: 'window', label: 'Window Units' }, { value: 'none', label: 'None' }]} />
       <ToggleGroup label="Flooring" value={details.flooring || ''} onChange={v => setDetail('flooring', v)}
         options={[{ value: 'hardwood', label: 'Hardwood' }, { value: 'carpet', label: 'Carpet' }, { value: 'tile', label: 'Tile' }, { value: 'mixed', label: 'Mixed' }]} />
-
       <SectionTitle>Features & Amenities</SectionTitle>
       <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <button type="button" onClick={() => setFeaturesOpen(o => !o)}
@@ -182,7 +291,7 @@ function SingleFamilyDetails({ details, setDetail }) {
           style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.9)' }}
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
           onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
-          <span>Property Features {features.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>{features.length} selected</span>}</span>
+          <span>Property Features {features.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: ACCENT }}>{features.length} selected</span>}</span>
           <span className="text-lg leading-none" style={{ color: 'rgba(255,255,255,0.5)' }}>{featuresOpen ? '−' : '+'}</span>
         </button>
         {featuresOpen && (
@@ -196,7 +305,6 @@ function SingleFamilyDetails({ details, setDetail }) {
           </div>
         )}
       </div>
-
       <SectionTitle>Additional Info</SectionTitle>
       <Field label="Appliances Included">
         <TagsInput value={details.appliances || []} onChange={v => setDetail('appliances', v)} placeholder="e.g. Refrigerator, Washer/Dryer (press Enter)" />
@@ -208,17 +316,10 @@ function SingleFamilyDetails({ details, setDetail }) {
   );
 }
 
-// ── Condo ────────────────────────────────────────────────────────────────────
 const CONDO_AMENITIES = [
-  { key: 'gym',          label: 'Fitness Center' },
-  { key: 'pool',         label: 'Pool' },
-  { key: 'rooftop',      label: 'Rooftop Deck' },
-  { key: 'doorman',      label: 'Doorman / Concierge' },
-  { key: 'lounge',       label: 'Resident Lounge' },
-  { key: 'business_ctr', label: 'Business Center' },
-  { key: 'bike_storage', label: 'Bike Storage' },
-  { key: 'ev_charging',  label: 'EV Charging' },
-  { key: 'dog_wash',     label: 'Dog Wash Station' },
+  { key: 'gym', label: 'Fitness Center' }, { key: 'pool', label: 'Pool' }, { key: 'rooftop', label: 'Rooftop Deck' },
+  { key: 'doorman', label: 'Doorman / Concierge' }, { key: 'lounge', label: 'Resident Lounge' }, { key: 'business_ctr', label: 'Business Center' },
+  { key: 'bike_storage', label: 'Bike Storage' }, { key: 'ev_charging', label: 'EV Charging' }, { key: 'dog_wash', label: 'Dog Wash Station' },
   { key: 'package_room', label: 'Package Room' },
 ];
 
@@ -226,25 +327,17 @@ function CondoDetails({ details, setDetail }) {
   const amenities = details.amenities || [];
   const toggleAmenity = (key) => setDetail('amenities', amenities.includes(key) ? amenities.filter(k => k !== key) : [...amenities, key]);
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
-
   return (
     <>
       <SectionTitle>Unit Details</SectionTitle>
       <BedsAndBaths details={details} setDetail={setDetail} />
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Unit Number" hint="Optional">
-          <Input
-            value={details.unit_number || ''}
-            onChange={e => setDetail('unit_number', e.target.value)}
-            placeholder="e.g. Unit 804"
-          />
-        </Field>
+        <Field label="Unit Number" hint="Optional"><Input value={details.unit_number || ''} onChange={e => setDetail('unit_number', e.target.value)} placeholder="e.g. Unit 804" /></Field>
         <Field label="Floor #"><Num field="floor_num" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
         <Field label="Total Floors in Building"><Num field="total_floors" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
         <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2015" details={details} setDetail={setDetail} /></Field>
         <Field label="HOA ($/mo)"><Num field="hoa" placeholder="e.g. 450" details={details} setDetail={setDetail} /></Field>
       </div>
-
       <SectionTitle>Parking & Storage</SectionTitle>
       <ToggleGroup label="Parking" value={details.parking || ''} onChange={v => setDetail('parking', v)}
         options={[{ value: 'assigned', label: 'Assigned' }, { value: 'covered', label: 'Covered' }, { value: 'garage', label: 'Garage' }, { value: 'none', label: 'None' }]} />
@@ -255,7 +348,6 @@ function CondoDetails({ details, setDetail }) {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="In-Unit Laundry" value={!!details.in_unit_laundry} onChange={() => setDetail('in_unit_laundry', !details.in_unit_laundry)} />
       </div>
-
       <SectionTitle>Building & Policies</SectionTitle>
       <ToggleGroup label="View" value={details.view || ''} onChange={v => setDetail('view', v)}
         options={[{ value: 'city', label: 'City' }, { value: 'water', label: 'Water' }, { value: 'park', label: 'Park/Green' }, { value: 'courtyard', label: 'Courtyard' }]} />
@@ -263,7 +355,6 @@ function CondoDetails({ details, setDetail }) {
         options={[{ value: 'allowed', label: 'Allowed' }, { value: 'restricted', label: 'Restricted' }, { value: 'none', label: 'No Pets' }]} />
       <ToggleGroup label="Furnished" value={details.furnished || ''} onChange={v => setDetail('furnished', v)}
         options={[{ value: 'furnished', label: 'Furnished' }, { value: 'unfurnished', label: 'Unfurnished' }, { value: 'negotiable', label: 'Negotiable' }]} />
-
       <SectionTitle>Building Amenities</SectionTitle>
       <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <button type="button" onClick={() => setAmenitiesOpen(o => !o)}
@@ -271,7 +362,7 @@ function CondoDetails({ details, setDetail }) {
           style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.9)' }}
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
           onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
-          <span>Amenities {amenities.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>{amenities.length} selected</span>}</span>
+          <span>Amenities {amenities.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: ACCENT }}>{amenities.length} selected</span>}</span>
           <span className="text-lg leading-none" style={{ color: 'rgba(255,255,255,0.5)' }}>{amenitiesOpen ? '−' : '+'}</span>
         </button>
         {amenitiesOpen && (
@@ -285,7 +376,6 @@ function CondoDetails({ details, setDetail }) {
           </div>
         )}
       </div>
-
       <SectionTitle>HOA Details</SectionTitle>
       <Field label="HOA Includes">
         <TagsInput value={details.hoa_includes || []} onChange={v => setDetail('hoa_includes', v)} placeholder="e.g. Water, Trash, Building Insurance (press Enter)" />
@@ -294,18 +384,11 @@ function CondoDetails({ details, setDetail }) {
   );
 }
 
-// ── Apartment ─────────────────────────────────────────────────────────────────
 const APT_AMENITIES = [
-  { key: 'gym',           label: 'Fitness Center' },
-  { key: 'pool',          label: 'Pool' },
-  { key: 'rooftop',       label: 'Rooftop Deck' },
-  { key: 'doorman',       label: 'Doorman / Concierge' },
-  { key: 'package_room',  label: 'Package Room' },
-  { key: 'bike_storage',  label: 'Bike Storage' },
-  { key: 'ev_charging',   label: 'EV Charging' },
-  { key: 'coworking',     label: 'Co-Working Space' },
-  { key: 'dog_park',      label: 'Dog Park / Pet Area' },
-  { key: 'game_room',     label: 'Game Room / Lounge' },
+  { key: 'gym', label: 'Fitness Center' }, { key: 'pool', label: 'Pool' }, { key: 'rooftop', label: 'Rooftop Deck' },
+  { key: 'doorman', label: 'Doorman / Concierge' }, { key: 'package_room', label: 'Package Room' }, { key: 'bike_storage', label: 'Bike Storage' },
+  { key: 'ev_charging', label: 'EV Charging' }, { key: 'coworking', label: 'Co-Working Space' }, { key: 'dog_park', label: 'Dog Park / Pet Area' },
+  { key: 'game_room', label: 'Game Room / Lounge' },
 ];
 
 function ApartmentDetails({ details, setDetail }) {
@@ -314,36 +397,24 @@ function ApartmentDetails({ details, setDetail }) {
   const utilities = details.utilities_included || [];
   const toggleUtility = (key) => setDetail('utilities_included', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
-  const UTILITIES = ['Water', 'Sewer', 'Trash', 'Gas', 'Electric', 'Internet'];
-
+  const UTILITIES = ['Water','Sewer','Trash','Gas','Electric','Internet'];
   return (
     <>
       <SectionTitle>Unit Details</SectionTitle>
       <BedsAndBaths details={details} setDetail={setDetail} />
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Unit Number" hint="Optional">
-          <Input
-            value={details.unit_number || ''}
-            onChange={e => setDetail('unit_number', e.target.value)}
-            placeholder="e.g. Apt 3B"
-          />
-        </Field>
+        <Field label="Unit Number" hint="Optional"><Input value={details.unit_number || ''} onChange={e => setDetail('unit_number', e.target.value)} placeholder="e.g. Apt 3B" /></Field>
         <Field label="Floor #"><Num field="floor_num" placeholder="e.g. 3" details={details} setDetail={setDetail} /></Field>
         <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2018" details={details} setDetail={setDetail} /></Field>
         <Field label="Lease Term (months)"><Num field="lease_term" placeholder="e.g. 12" details={details} setDetail={setDetail} /></Field>
       </div>
-
       <SectionTitle>Utilities & Systems</SectionTitle>
       <Field label="Utilities Included in Rent">
         <div className="flex flex-wrap gap-2">
           {UTILITIES.map(u => (
             <button key={u} type="button" onClick={() => toggleUtility(u)}
               className="px-3 py-1.5 rounded-lg border-2 text-xs font-medium transition-all"
-              style={{
-                borderColor: utilities.includes(u) ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
-                backgroundColor: utilities.includes(u) ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
-                color: utilities.includes(u) ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)',
-              }}>{u}</button>
+              style={{ borderColor: utilities.includes(u) ? ACCENT : 'rgba(255,255,255,0.2)', backgroundColor: utilities.includes(u) ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)', color: utilities.includes(u) ? ACCENT : 'rgba(255,255,255,0.7)' }}>{u}</button>
           ))}
         </div>
       </Field>
@@ -351,7 +422,6 @@ function ApartmentDetails({ details, setDetail }) {
         options={[{ value: 'forced_air', label: 'Forced Air' }, { value: 'radiant', label: 'Radiant' }, { value: 'baseboard', label: 'Baseboard' }]} />
       <ToggleGroup label="Cooling" value={details.cooling || ''} onChange={v => setDetail('cooling', v)}
         options={[{ value: 'central', label: 'Central A/C' }, { value: 'mini_split', label: 'Mini-Split' }, { value: 'window', label: 'Window Units' }, { value: 'none', label: 'None' }]} />
-
       <SectionTitle>Laundry, Parking & Policies</SectionTitle>
       <ToggleGroup label="Laundry" value={details.laundry || ''} onChange={v => setDetail('laundry', v)}
         options={[{ value: 'in_unit', label: 'In-Unit' }, { value: 'in_building', label: 'In Building' }, { value: 'none', label: 'None' }]} />
@@ -361,7 +431,6 @@ function ApartmentDetails({ details, setDetail }) {
         options={[{ value: 'allowed', label: 'Allowed' }, { value: 'restricted', label: 'Restricted' }, { value: 'none', label: 'No Pets' }]} />
       <ToggleGroup label="Furnished" value={details.furnished || ''} onChange={v => setDetail('furnished', v)}
         options={[{ value: 'furnished', label: 'Furnished' }, { value: 'unfurnished', label: 'Unfurnished' }]} />
-
       <SectionTitle>Building Amenities</SectionTitle>
       <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <button type="button" onClick={() => setAmenitiesOpen(o => !o)}
@@ -369,7 +438,7 @@ function ApartmentDetails({ details, setDetail }) {
           style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.9)' }}
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
           onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
-          <span>Amenities {amenities.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>{amenities.length} selected</span>}</span>
+          <span>Amenities {amenities.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: ACCENT }}>{amenities.length} selected</span>}</span>
           <span className="text-lg leading-none" style={{ color: 'rgba(255,255,255,0.5)' }}>{amenitiesOpen ? '−' : '+'}</span>
         </button>
         {amenitiesOpen && (
@@ -387,7 +456,6 @@ function ApartmentDetails({ details, setDetail }) {
   );
 }
 
-// ── Multi-Family (2–4 Units) ──────────────────────────────────────────────────
 function MultiFamily24Details({ details, setDetail }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   return (
@@ -401,7 +469,6 @@ function MultiFamily24Details({ details, setDetail }) {
         <Field label="2BR Units"><Num field="units_2br" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
         <Field label="3BR+ Units"><Num field="units_3br" placeholder="e.g. 0" details={details} setDetail={setDetail} /></Field>
       </div>
-
       <SectionTitle>Financial Details</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Gross Monthly Rent ($)"><Num field="gross_monthly_rent" placeholder="e.g. 4800" details={details} setDetail={setDetail} /></Field>
@@ -409,7 +476,6 @@ function MultiFamily24Details({ details, setDetail }) {
         <Field label="Cap Rate (%)"><Num field="cap_rate" placeholder="e.g. 6.5" step="0.1" details={details} setDetail={setDetail} /></Field>
         <Field label="Current Occupancy (%)"><Num field="occupancy_pct" placeholder="e.g. 100" details={details} setDetail={setDetail} /></Field>
       </div>
-
       <SectionTitle>Property Details</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Lot Size (sqft)"><Num field="lot_sqft" placeholder="e.g. 8000" details={details} setDetail={setDetail} /></Field>
@@ -426,7 +492,6 @@ function MultiFamily24Details({ details, setDetail }) {
   );
 }
 
-// ── Multi-Family (5+ Units) ───────────────────────────────────────────────────
 function MultiFamily5PlusDetails({ details, setDetail }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   return (
@@ -442,7 +507,6 @@ function MultiFamily5PlusDetails({ details, setDetail }) {
         <Field label="2BR Units"><Num field="units_2br" placeholder="e.g. 10" details={details} setDetail={setDetail} /></Field>
         <Field label="3BR+ Units"><Num field="units_3br" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
       </div>
-
       <SectionTitle>Financial Details</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Gross Monthly Rent ($)"><Num field="gross_monthly_rent" placeholder="e.g. 32000" details={details} setDetail={setDetail} /></Field>
@@ -452,7 +516,6 @@ function MultiFamily5PlusDetails({ details, setDetail }) {
         <Field label="Annual Operating Expenses ($)"><Num field="annual_expenses" placeholder="e.g. 85000" details={details} setDetail={setDetail} /></Field>
         <Field label="Current Occupancy (%)"><Num field="occupancy_pct" placeholder="e.g. 92" details={details} setDetail={setDetail} /></Field>
       </div>
-
       <SectionTitle>Operations</SectionTitle>
       <ToggleGroup label="Utility Metering" value={details.utility_metering || ''} onChange={v => setDetail('utility_metering', v)}
         options={[{ value: 'individual', label: 'Individual' }, { value: 'master', label: 'Master Metered' }, { value: 'mixed', label: 'Mixed' }]} />
@@ -470,12 +533,8 @@ function MultiFamily5PlusDetails({ details, setDetail }) {
   );
 }
 
-// ── Townhouse ─────────────────────────────────────────────────────────────────
 function TownhouseDetails({ details, setDetail }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
-  const features = details.features || [];
-  const toggleFeature = (key) => setDetail('features', features.includes(key) ? features.filter(k => k !== key) : [...features, key]);
-
   return (
     <>
       <SectionTitle>Basic Specs</SectionTitle>
@@ -485,7 +544,6 @@ function TownhouseDetails({ details, setDetail }) {
         <Field label="Garage Spaces"><Num field="garage" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
         <Field label="HOA ($/mo)"><Num field="hoa" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
       </div>
-
       <SectionTitle>Layout & Features</SectionTitle>
       <ToggleGroup label="Stories" value={details.stories || ''} onChange={v => setDetail('stories', v)}
         options={[{ value: 'two', label: '2 Story' }, { value: 'three', label: '3 Story' }, { value: 'other', label: 'Other' }]} />
@@ -502,7 +560,6 @@ function TownhouseDetails({ details, setDetail }) {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="In-Unit Laundry" value={!!details.in_unit_laundry} onChange={() => toggleBool('in_unit_laundry')} />
       </div>
-
       <SectionTitle>HOA Details</SectionTitle>
       <Field label="HOA Includes">
         <TagsInput value={details.hoa_includes || []} onChange={v => setDetail('hoa_includes', v)} placeholder="e.g. Exterior Maintenance, Snow Removal (press Enter)" />
@@ -511,7 +568,6 @@ function TownhouseDetails({ details, setDetail }) {
   );
 }
 
-// ── Manufactured / Mobile Home ────────────────────────────────────────────────
 function ManufacturedDetails({ details, setDetail }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   return (
@@ -519,29 +575,17 @@ function ManufacturedDetails({ details, setDetail }) {
       <SectionTitle>Basic Specs</SectionTitle>
       <BedsAndBaths details={details} setDetail={setDetail} />
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Space Number / Lot Number" hint="If applicable">
-          <Input
-            value={details.space_number || ''}
-            onChange={e => setDetail('space_number', e.target.value)}
-            placeholder="e.g. Space 42"
-          />
-        </Field>
+        <Field label="Space Number / Lot Number" hint="If applicable"><Input value={details.space_number || ''} onChange={e => setDetail('space_number', e.target.value)} placeholder="e.g. Space 42" /></Field>
         <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2005" details={details} setDetail={setDetail} /></Field>
         <Field label="Size (sqft)"><Num field="size_sqft" placeholder="e.g. 1200" details={details} setDetail={setDetail} /></Field>
       </div>
-
       <SectionTitle>Land & Lot</SectionTitle>
       <ToggleGroup label="Land Ownership" value={details.land_ownership || ''} onChange={v => setDetail('land_ownership', v)}
         options={[{ value: 'owned', label: 'Land Owned' }, { value: 'leased', label: 'Leased Lot' }]} />
-      {details.land_ownership === 'leased' && (
-        <Field label="Lot Rent ($/mo)"><Num field="lot_rent" placeholder="e.g. 500" details={details} setDetail={setDetail} /></Field>
-      )}
-      <Field label="Community / Park Name">
-        <Input value={details.community_name || ''} onChange={e => setDetail('community_name', e.target.value)} placeholder="e.g. Sunrise Mobile Estates" />
-      </Field>
+      {details.land_ownership === 'leased' && <Field label="Lot Rent ($/mo)"><Num field="lot_rent" placeholder="e.g. 500" details={details} setDetail={setDetail} /></Field>}
+      <Field label="Community / Park Name"><Input value={details.community_name || ''} onChange={e => setDetail('community_name', e.target.value)} placeholder="e.g. Sunrise Mobile Estates" /></Field>
       <ToggleGroup label="Age Restriction" value={details.age_restriction || ''} onChange={v => setDetail('age_restriction', v)}
         options={[{ value: '55_plus', label: '55+ Community' }, { value: 'all_ages', label: 'All Ages' }]} />
-
       <SectionTitle>Structure & Utilities</SectionTitle>
       <ToggleGroup label="Foundation Type" value={details.foundation || ''} onChange={v => setDetail('foundation', v)}
         options={[{ value: 'permanent', label: 'Permanent' }, { value: 'pier', label: 'Pier & Beam' }, { value: 'slab', label: 'Slab' }]} />
@@ -564,142 +608,69 @@ function ManufacturedDetails({ details, setDetail }) {
   );
 }
 
-// ── Land (Residential) ────────────────────────────────────────────────────────
 function ResidentialLandDetails({ details, setDetail }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   const utilities = details.utilities_at_site || [];
   const toggleUtility = (key) => setDetail('utilities_at_site', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
   const topography = details.topography_tags || [];
   const toggleTopo = (key) => setDetail('topography_tags', topography.includes(key) ? topography.filter(t => t !== key) : [...topography, key]);
-
-  const selectCls = "w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2";
   const selectStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
-  const optionStyle = { background: '#0E1318', color: 'rgba(255,255,255,0.85)' };
-
+  const optStyle = { background: '#0E1318', color: 'rgba(255,255,255,0.85)' };
+  const Sel = ({ field, opts, placeholder }) => (
+    <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={selectStyle}
+      value={details[field] || ''} onChange={e => setDetail(field, e.target.value)}>
+      <option value="" style={optStyle}>{placeholder}</option>
+      {opts.map(o => <option key={o} value={o} style={optStyle}>{o}</option>)}
+    </select>
+  );
   return (
     <>
-      {/* Property Access & Road Quality — collapsible */}
-      <CollapsiblePanel
-        title="Property Access & Road Quality"
-        summary={[details.road_surface, details.access_type].filter(Boolean).join(' · ') || 'Tap to configure'}
-      >
+      <CollapsiblePanel title="Property Access & Road Quality" summary={[details.road_surface, details.access_type].filter(Boolean).join(' · ') || 'Tap to configure'}>
         <div className="grid grid-cols-2 gap-4 mb-3">
-          <Field label="Road Surface">
-            <select className={selectCls} style={selectStyle} value={details.road_surface || ''} onChange={e => setDetail('road_surface', e.target.value)}>
-              <option value="" style={optionStyle}>Select surface</option>
-              {['Paved/Asphalt', 'Concrete', 'Gravel', 'Dirt/Unimproved'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
-            </select>
-          </Field>
-          <Field label="Access Type">
-            <select className={selectCls} style={selectStyle} value={details.access_type || ''} onChange={e => setDetail('access_type', e.target.value)}>
-              <option value="" style={optionStyle}>Select access type</option>
-              {['Direct Frontage', 'Easement/Deeded', 'Shared Drive', 'Private Road'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
-            </select>
-          </Field>
+          <Field label="Road Surface"><Sel field="road_surface" opts={['Paved/Asphalt','Concrete','Gravel','Dirt/Unimproved']} placeholder="Select surface" /></Field>
+          <Field label="Access Type"><Sel field="access_type" opts={['Direct Frontage','Easement/Deeded','Shared Drive','Private Road']} placeholder="Select access type" /></Field>
         </div>
-        <div className="divide-y divide-gray-50">
-          <Toggle
-            label={`Road Maintenance: ${details.road_maintenance === 'private' ? 'Privately Maintained' : 'Publicly Maintained'}`}
-            value={details.road_maintenance === 'private'}
-            onChange={v => setDetail('road_maintenance', v ? 'private' : 'public')}
-          />
-        </div>
+        <Toggle label={`Road Maintenance: ${details.road_maintenance === 'private' ? 'Privately Maintained' : 'Publicly Maintained'}`} value={details.road_maintenance === 'private'} onChange={v => setDetail('road_maintenance', v ? 'private' : 'public')} />
       </CollapsiblePanel>
-
-      {/* Location Setting & Environment — collapsible */}
-      <CollapsiblePanel
-        title="Location Setting & Environment"
-        summary={[details.location_setting, details.neighborhood_type].filter(Boolean).join(' · ') || 'Tap to configure'}
-      >
+      <CollapsiblePanel title="Location Setting & Environment" summary={[details.location_setting, details.neighborhood_type].filter(Boolean).join(' · ') || 'Tap to configure'}>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Location Setting">
-            <select className={selectCls} style={selectStyle} value={details.location_setting || ''} onChange={e => setDetail('location_setting', e.target.value)}>
-              <option value="" style={optionStyle}>Select setting</option>
-              {['Platted Subdivision', 'Cul-de-Sac', 'Corner Lot', 'Lakefront / Waterfront', 'Rural / Country', 'Wooded / Private'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
-            </select>
-          </Field>
-          <Field label="Neighborhood Type">
-            <select className={selectCls} style={selectStyle} value={details.neighborhood_type || ''} onChange={e => setDetail('neighborhood_type', e.target.value)}>
-              <option value="" style={optionStyle}>Select type</option>
-              {['Established Neighborhood', 'New Development', 'Rural/Acreage', 'Waterfront Community', 'Gated Community'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
-            </select>
-          </Field>
+          <Field label="Location Setting"><Sel field="location_setting" opts={['Platted Subdivision','Cul-de-Sac','Corner Lot','Lakefront / Waterfront','Rural / Country','Wooded / Private']} placeholder="Select setting" /></Field>
+          <Field label="Neighborhood Type"><Sel field="neighborhood_type" opts={['Established Neighborhood','New Development','Rural/Acreage','Waterfront Community','Gated Community']} placeholder="Select type" /></Field>
         </div>
       </CollapsiblePanel>
-
-      {/* Primary Land Dimensions */}
       <SectionTitle>Primary Land Dimensions</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Total Acreage"><Num field="acres" placeholder="e.g. 0.5" step="0.01" details={details} setDetail={setDetail} /></Field>
-        <Field label="Lot Dimensions (ft × ft)">
-          <Input value={details.lot_dimensions || ''} onChange={e => setDetail('lot_dimensions', e.target.value)} placeholder="e.g. 80 x 120" />
-        </Field>
+        <Field label="Lot Dimensions (ft × ft)"><Input value={details.lot_dimensions || ''} onChange={e => setDetail('lot_dimensions', e.target.value)} placeholder="e.g. 80 x 120" /></Field>
         <Field label="Gross Square Feet"><Num field="gross_sqft" placeholder="e.g. 9600" details={details} setDetail={setDetail} /></Field>
         <Field label="Road Frontage (ft)"><Num field="road_frontage" placeholder="e.g. 80" details={details} setDetail={setDetail} /></Field>
       </div>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Subdividable" value={!!details.subdividable} onChange={v => setDetail('subdividable', v)} />
       </div>
-
-      {/* Zoning & Development Status */}
       <SectionTitle>Zoning & Development Status</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Current Zoning">
-          <Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. R-1, R-2" />
-        </Field>
-        <Field label="Entitlements">
-          <select className={selectCls} style={selectStyle} value={details.entitlements || ''} onChange={e => setDetail('entitlements', e.target.value)}>
-            <option value="" style={optionStyle}>Select status</option>
-            {['Raw Land', 'Perc Tested', 'Site Plan Approved', 'Shovel Ready'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
-          </select>
-        </Field>
+        <Field label="Current Zoning"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. R-1, R-2" /></Field>
+        <Field label="Entitlements"><Sel field="entitlements" opts={['Raw Land','Perc Tested','Site Plan Approved','Shovel Ready']} placeholder="Select status" /></Field>
         <Field label="Buildable Area (sqft)"><Num field="buildable_area" placeholder="e.g. 7500" details={details} setDetail={setDetail} /></Field>
       </div>
       <Field label="Permitted Uses">
         <TagsInput value={details.permitted_uses || []} onChange={v => setDetail('permitted_uses', v)} placeholder="e.g. Single Family, ADU, Barn (press Enter)" />
       </Field>
-
-      {/* Utilities & Infrastructure */}
       <SectionTitle>Utilities & Infrastructure</SectionTitle>
       <Field label="Utilities at Lot Line">
         <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-          {[
-            { key: 'municipal_water', label: 'Municipal Water' },
-            { key: 'sanitary_sewer',  label: 'Sanitary Sewer' },
-            { key: 'electric',        label: 'Electric' },
-            { key: 'natural_gas',     label: 'Natural Gas' },
-            { key: 'fiber_internet',  label: 'Fiber / Internet' },
-          ].map((u, idx) => (
-            <React.Fragment key={u.key}>
-              <Toggle label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
-              {idx < 4 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
-            </React.Fragment>
+          {[{key:'municipal_water',label:'Municipal Water'},{key:'sanitary_sewer',label:'Sanitary Sewer'},{key:'electric',label:'Electric'},{key:'natural_gas',label:'Natural Gas'},{key:'fiber_internet',label:'Fiber / Internet'}].map((u, idx) => (
+            <React.Fragment key={u.key}><Toggle label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />{idx < 4 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}</React.Fragment>
           ))}
         </div>
       </Field>
-      <Field label="Perc Test Status">
-        <select className={selectCls} style={selectStyle} value={details.perc_test || ''} onChange={e => setDetail('perc_test', e.target.value)}>
-          <option value="" style={optionStyle}>Select status</option>
-          {['Completed', 'Needs Testing', 'Not Required (Municipal Sewer)'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
-        </select>
-      </Field>
-
-      {/* Physical Site Characteristics */}
+      <Field label="Perc Test Status"><Sel field="perc_test" opts={['Completed','Needs Testing','Not Required (Municipal Sewer)']} placeholder="Select status" /></Field>
       <SectionTitle>Physical Site Characteristics</SectionTitle>
       <Field label="Topography (select all that apply)">
         <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-          {[
-            { key: 'level',    label: 'Level / Flat' },
-            { key: 'wooded',   label: 'Wooded' },
-            { key: 'cleared',  label: 'Cleared' },
-            { key: 'wetlands', label: 'Wetlands / Marsh' },
-            { key: 'sloped',   label: 'Sloped' },
-            { key: 'rolling',  label: 'Rolling' },
-          ].map((t, idx) => (
-            <React.Fragment key={t.key}>
-              <Toggle label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />
-              {idx < 5 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
-            </React.Fragment>
+          {[{key:'level',label:'Level / Flat'},{key:'wooded',label:'Wooded'},{key:'cleared',label:'Cleared'},{key:'wetlands',label:'Wetlands / Marsh'},{key:'sloped',label:'Sloped'},{key:'rolling',label:'Rolling'}].map((t, idx) => (
+            <React.Fragment key={t.key}><Toggle label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />{idx < 5 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}</React.Fragment>
           ))}
         </div>
       </Field>
@@ -710,18 +681,12 @@ function ResidentialLandDetails({ details, setDetail }) {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Subdivision Potential" value={!!details.subdivision_potential} onChange={v => setDetail('subdivision_potential', v)} />
       </div>
-
-      {/* Property Details & Media */}
-      <SectionTitle>Property Details & Media</SectionTitle>
+      <SectionTitle>Property Details</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Annual Property Tax ($)"><Num field="annual_tax" placeholder="e.g. 2400" details={details} setDetail={setDetail} /></Field>
-        <Field label="Parcel Number">
-          <Input value={details.parcel_number || ''} onChange={e => setDetail('parcel_number', e.target.value)} placeholder="e.g. 12-34-567-890" />
-        </Field>
+        <Field label="Parcel Number"><Input value={details.parcel_number || ''} onChange={e => setDetail('parcel_number', e.target.value)} placeholder="e.g. 12-34-567-890" /></Field>
         <Field label="HOA ($/yr)" hint="If in a subdivision"><Num field="hoa_annual" placeholder="e.g. 800" details={details} setDetail={setDetail} /></Field>
-        <Field label="School District">
-          <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" />
-        </Field>
+        <Field label="School District"><Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" /></Field>
       </div>
       <Field label="Description">
         <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the lot, its highlights, and development potential…" rows={4} />
@@ -733,25 +698,67 @@ function ResidentialLandDetails({ details, setDetail }) {
   );
 }
 
-// ── Main Export ───────────────────────────────────────────────────────────────
+// ── MAIN EXPORT ──────────────────────────────────────────────────────────────
 export default function ListStep2Residential({ data, update, onNext }) {
-  const details = data.property_details || {};
+  const details   = data.property_details || {};
   const setDetail = (key, val) => update({ property_details: { ...details, [key]: val } });
-  const type = data.property_type;
+  const type      = data.property_type;
+  const isSale    = data.transaction_type === 'sale';
+
+  // Which types need the sale type selector
+  const needsSelector = isSale && ['condo', 'apartment', 'townhouse', 'manufactured'].includes(type);
+
+  // Multi-family always investment when sale (no selector needed)
+  const alwaysInvestment = isSale && ['multi_family', 'multi_family_5'].includes(type);
+
+  // SFR and land never show investment fields
+  const alwaysResidence = ['single_family', 'land_residential'].includes(type);
+
+  // Determine effective sale type
+  const saleType = details.sale_type || null;
+  const showResidence = !isSale || alwaysResidence || saleType === 'personal_residence';
+  const showInvestment = isSale && (alwaysInvestment || saleType === 'investment');
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-gray-500 -mt-2">Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong>.</p>
-      {type === 'single_family'    && <SingleFamilyDetails     details={details} setDetail={setDetail} />}
-      {type === 'condo'            && <CondoDetails            details={details} setDetail={setDetail} />}
-      {type === 'apartment'        && <ApartmentDetails        details={details} setDetail={setDetail} />}
-      {type === 'multi_family'     && <MultiFamily24Details    details={details} setDetail={setDetail} />}
-      {type === 'multi_family_5'   && <MultiFamily5PlusDetails details={details} setDetail={setDetail} />}
-      {type === 'townhouse'        && <TownhouseDetails        details={details} setDetail={setDetail} />}
-      {type === 'manufactured'     && <ManufacturedDetails     details={details} setDetail={setDetail} />}
-      {type === 'land_residential' && <ResidentialLandDetails  details={details} setDetail={setDetail} />}
+      <p className="text-sm text-gray-500 -mt-2">
+        Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong>.
+      </p>
+
+      {/* Sale type selector — only for ambiguous residential types */}
+      {needsSelector && (
+        <ResidentialSaleTypeSelector value={saleType} onChange={v => setDetail('sale_type', v)} />
+      )}
+
+      {/* Existing lease/residence content */}
+      {showResidence && (
+        <>
+          {type === 'single_family'    && <SingleFamilyDetails     details={details} setDetail={setDetail} />}
+          {type === 'condo'            && <CondoDetails            details={details} setDetail={setDetail} />}
+          {type === 'apartment'        && <ApartmentDetails        details={details} setDetail={setDetail} />}
+          {type === 'multi_family'     && <MultiFamily24Details    details={details} setDetail={setDetail} />}
+          {type === 'multi_family_5'   && <MultiFamily5PlusDetails details={details} setDetail={setDetail} />}
+          {type === 'townhouse'        && <TownhouseDetails        details={details} setDetail={setDetail} />}
+          {type === 'manufactured'     && <ManufacturedDetails     details={details} setDetail={setDetail} />}
+          {type === 'land_residential' && <ResidentialLandDetails  details={details} setDetail={setDetail} />}
+        </>
+      )}
+
+      {/* Investment sale content */}
+      {showInvestment && (
+        <>
+          {type === 'condo'          && <CondoSaleInvestment       details={details} setDetail={setDetail} />}
+          {type === 'apartment'      && <CondoSaleInvestment       details={details} setDetail={setDetail} />}
+          {type === 'townhouse'      && <TownhouseSaleInvestment   details={details} setDetail={setDetail} />}
+          {type === 'manufactured'   && <ManufacturedSaleInvestment details={details} setDetail={setDetail} />}
+          {/* Multi-family already has investment fields built in */}
+          {type === 'multi_family'   && <MultiFamily24Details      details={details} setDetail={setDetail} />}
+          {type === 'multi_family_5' && <MultiFamily5PlusDetails   details={details} setDetail={setDetail} />}
+        </>
+      )}
+
       <div className="flex justify-end pt-2">
-        <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
+        <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: ACCENT }}>
           Next <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
