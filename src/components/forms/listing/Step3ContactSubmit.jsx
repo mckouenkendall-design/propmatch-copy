@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Check, Loader2, ChevronDown } from 'lucide-react';
+import { Check, Loader2, ChevronDown, Bookmark } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import SaveTemplateModal from '@/components/templates/SaveTemplateModal';
 
 const ACCENT = '#00DBC5';
 
@@ -27,17 +28,18 @@ function SectionTitle({ children }) {
 }
 
 const VISIBILITY_OPTIONS = [
-  { value: 'public', label: 'Public', desc: 'Visible to all users on PropMatch' },
-  { value: 'team', label: 'Fishtank(s)', desc: 'Only members of selected networking groups' },
-  { value: 'brokerage', label: 'Brokerage Only', desc: 'Only users sharing your Brokerage ID' },
-  { value: 'private', label: 'Private (Invite Only)', desc: 'Direct access link sent to a specific person' },
+  { value: 'public',    label: 'Public',               desc: 'Visible to all users on PropMatch' },
+  { value: 'team',      label: 'Fishtank(s)',           desc: 'Only members of selected networking groups' },
+  { value: 'brokerage', label: 'Brokerage Only',        desc: 'Only users sharing your Brokerage ID' },
+  { value: 'private',   label: 'Private (Invite Only)', desc: 'Direct access link sent to a specific person' },
 ];
 
 export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoading, editMode }) {
-  const [termsAccepted, setTermsAccepted] = useState(true);
+  const [termsAccepted, setTermsAccepted]           = useState(true);
   const [groupsDropdownOpen, setGroupsDropdownOpen] = useState(false);
-  const [groupSearchInput, setGroupSearchInput] = useState('');
-  const [currentUserEmail, setCurrentUserEmail] = useState(null);
+  const [groupSearchInput, setGroupSearchInput]     = useState('');
+  const [currentUserEmail, setCurrentUserEmail]     = useState(null);
+  const [showSaveTemplate, setShowSaveTemplate]     = useState(false);
 
   useEffect(() => {
     async function prefill() {
@@ -45,10 +47,10 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
       if (!user) return;
       setCurrentUserEmail(user.email);
       const patch = {};
-      if (!data.contact_agent_name && user.full_name) patch.contact_agent_name = user.full_name;
-      if (!data.contact_agent_email && user.email) patch.contact_agent_email = user.email;
-      if (!data.contact_agent_phone && user.phone) patch.contact_agent_phone = user.phone;
-      if (!data.company_name && user.brokerage_name) patch.company_name = user.brokerage_name;
+      if (!data.contact_agent_name  && user.full_name)      patch.contact_agent_name  = user.full_name;
+      if (!data.contact_agent_email && user.email)          patch.contact_agent_email = user.email;
+      if (!data.contact_agent_phone && user.phone)          patch.contact_agent_phone = user.phone;
+      if (!data.company_name        && user.brokerage_name) patch.company_name        = user.brokerage_name;
       if (Object.keys(patch).length > 0) update(patch);
     }
     prefill();
@@ -67,7 +69,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
     enabled: !!currentUserEmail,
   });
 
-  const visibility = data.visibility || 'public';
+  const visibility     = data.visibility || 'public';
   const filteredGroups = userGroups.filter(g => g.name.toLowerCase().includes(groupSearchInput.toLowerCase()));
 
   const handleGroupSelect = (groupName) => {
@@ -86,6 +88,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
 
   return (
     <div className="space-y-6" onClick={e => e.stopPropagation()}>
+
       <SectionTitle>Contact Information</SectionTitle>
       <div className="grid grid-cols-1 gap-4">
         <div className="grid grid-cols-2 gap-4">
@@ -110,20 +113,11 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
       <Field label="Who can see this post?">
         <div className="space-y-2">
           {VISIBILITY_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => update({ visibility: opt.value })}
+            <button key={opt.value} type="button" onClick={() => update({ visibility: opt.value })}
               className="w-full flex items-start gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all"
-              style={{
-                borderColor: visibility === opt.value ? ACCENT : 'rgba(255,255,255,0.2)',
-                backgroundColor: visibility === opt.value ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
-              }}
-            >
-              <div
-                className="mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-                style={{ borderColor: visibility === opt.value ? ACCENT : 'rgba(255,255,255,0.3)' }}
-              >
+              style={{ borderColor: visibility === opt.value ? ACCENT : 'rgba(255,255,255,0.2)', backgroundColor: visibility === opt.value ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)' }}>
+              <div className="mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                style={{ borderColor: visibility === opt.value ? ACCENT : 'rgba(255,255,255,0.3)' }}>
                 {visibility === opt.value && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ACCENT }} />}
               </div>
               <div>
@@ -152,8 +146,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
                     className="w-full px-4 py-2.5 text-left text-sm"
                     style={{ color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.1)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     {group.name}
                   </button>
                 ))}
@@ -172,13 +165,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
       {/* Terms + Submit */}
       <div className="pt-2 space-y-4">
         <label className="flex items-start gap-3 cursor-pointer" onClick={() => !editMode && setTermsAccepted(!termsAccepted)}>
-          <div style={{
-            marginTop: '2px', width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
-            border: `2px solid ${termsAccepted ? ACCENT : 'rgba(255,255,255,0.25)'}`,
-            background: termsAccepted ? ACCENT : 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s',
-            cursor: editMode ? 'default' : 'pointer',
-          }}>
+          <div style={{ marginTop: '2px', width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0, border: `2px solid ${termsAccepted ? ACCENT : 'rgba(255,255,255,0.25)'}`, background: termsAccepted ? ACCENT : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: editMode ? 'default' : 'pointer' }}>
             {termsAccepted && (
               <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="2 7 5.5 10.5 12 3.5" />
@@ -187,34 +174,31 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
           </div>
           <span className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>
             By posting, I confirm the information provided is accurate and agree to the{' '}
-            <a
-              href="/Terms"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={e => e.stopPropagation()}
-              style={{ color: ACCENT, textDecoration: 'underline', textUnderlineOffset: '2px' }}
-            >
+            <a href="/Terms" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: ACCENT, textDecoration: 'underline', textUnderlineOffset: '2px' }}>
               PropMatch Terms of Service
             </a>
             . I understand that other PropMatch users may contact me directly via email, phone, or in-app messaging based on this post.
           </span>
         </label>
 
-        <div className="flex justify-end">
-          <Button
-            onClick={onSubmit}
-            disabled={isLoading || !termsAccepted}
-            className="gap-2 px-6"
-            style={{
-              backgroundColor: (termsAccepted && !isLoading) ? ACCENT : 'rgba(255,255,255,0.3)',
-              color: 'white',
-            }}
-          >
+        <div className="flex items-center justify-between">
+          <Button type="button" variant="outline" onClick={() => setShowSaveTemplate(true)} className="gap-2"
+            style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)' }}>
+            <Bookmark className="w-4 h-4" />
+            Save as Template
+          </Button>
+
+          <Button onClick={onSubmit} disabled={isLoading || !termsAccepted} className="gap-2 px-6"
+            style={{ backgroundColor: (termsAccepted && !isLoading) ? ACCENT : 'rgba(255,255,255,0.3)', color: 'white' }}>
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             {editMode ? 'Save Changes' : 'Post Listing'}
           </Button>
         </div>
       </div>
+
+      {showSaveTemplate && (
+        <SaveTemplateModal formData={data} templateType="listing" onClose={() => setShowSaveTemplate(false)} />
+      )}
     </div>
   );
 }
