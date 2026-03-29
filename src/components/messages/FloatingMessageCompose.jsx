@@ -103,7 +103,7 @@ Do not use em dashes, hyphens as dashes, or any special punctuation. Always writ
     try {
       const response = await base44.functions.invoke('generateAIText', { prompt: buildPrompt(), maxTokens: 300 });
       const result = response.data;
-      if (result?.text) setText(result.text.trim().replace(/—/g, ',').replace(/–/g, ',').replace(/ - /g, ', '));
+      if (result?.text) setText(result.text.trim().replace(/—/g, ',').replace(/ - /g, ', '));
     } catch {
       // silently fail — user can type their own message
     } finally {
