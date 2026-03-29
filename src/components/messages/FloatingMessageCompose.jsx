@@ -103,18 +103,8 @@ Keep it natural, conversational, and under 100 words total.`;
     if (!isMatchContext) return;
     setAiLoad(true);
     try {
-      const res  = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 300,
-          messages: [{ role: 'user', content: buildPrompt() }],
-        }),
-      });
-      const data = await res.json();
-      const raw  = data.content?.map(c => c.type==='text'?c.text:'').join('').trim();
-      if (raw) setText(raw);
+      const result = await base44.functions.generateAIText({ prompt: buildPrompt(), maxTokens: 300 });
+      if (result?.text) setText(result.text.trim());
     } catch {
       // silently fail — user can type their own message
     } finally {
@@ -187,7 +177,7 @@ Keep it natural, conversational, and under 100 words total.`;
       onClick={onClose}
     >
       <div
-        style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'18px', width:'100%', maxWidth:'480px', overflow:'hidden', boxShadow:'0 32px 80px rgba(0,0,0,0.6)' }}
+        style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'18px', width:'100%', maxWidth:'680px', overflow:'hidden', boxShadow:'0 32px 80px rgba(0,0,0,0.6)' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -231,7 +221,7 @@ Keep it natural, conversational, and under 100 words total.`;
             value={text}
             onChange={e => setText(e.target.value)}
             placeholder={aiLoading ? '' : isMatchContext ? 'Generating your intro message…' : 'Type a message…'}
-            rows={6}
+            rows={10}
             style={{ width:'100%', padding:'12px 14px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'white', outline:'none', resize:'none', lineHeight:1.6, boxSizing:'border-box', opacity: aiLoading ? 0.5 : 1 }}
           />
 
