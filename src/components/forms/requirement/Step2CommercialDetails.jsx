@@ -1,1010 +1,659 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
 import { ArrowRight, X } from 'lucide-react';
 
-function Field({ label, children, hint }) {
-  return <div className="space-y-1.5"><Label style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</Label>{children}{hint && <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{hint}</p>}</div>;
-}
+const ACCENT = '#818cf8'; // lavender — requirement color
 
-function Num({ field, placeholder, details, setDetail, step }) {
+function Field({ label, hint, children }) {
   return (
-    <input
-      type="number"
-      step={step || 1}
-      value={details[field] || ''}
-      onChange={e => setDetail(field, e.target.value)}
-      placeholder={placeholder}
-      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-    />
-  );
-}
-
-function SectionTitle({ children }) {
-  return (
-    <div className="pt-2">
-      <h3 className="text-sm font-semibold uppercase tracking-wide pb-2" style={{ color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{children}</h3>
+    <div className="space-y-1.5">
+      <Label style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</Label>
+      {hint && <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{hint}</p>}
+      {children}
     </div>
   );
 }
-
+function Num({ field, placeholder, details, setDetail, step }) {
+  return (
+    <input type="number" step={step || 1} value={details[field] || ''} onChange={e => setDetail(field, e.target.value)}
+      placeholder={placeholder}
+      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+  );
+}
+function SectionTitle({ children }) {
+  return (
+    <div className="pt-2">
+      <h3 className="text-sm font-semibold uppercase tracking-wide pb-2"
+        style={{ color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{children}</h3>
+    </div>
+  );
+}
 function Toggle({ label, value, onChange }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{label}</span>
-      <button
-        type="button"
-        onClick={() => onChange(!value)}
+      <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</span>
+      <button type="button" onClick={() => onChange(!value)}
         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-        style={{ backgroundColor: value ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)' }}
-      >
-        <span
-          className="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
-          style={{ transform: value ? 'translateX(22px)' : 'translateX(2px)' }}
-        />
+        style={{ backgroundColor: value ? ACCENT : 'rgba(255,255,255,0.2)' }}>
+        <span className="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+          style={{ transform: value ? 'translateX(22px)' : 'translateX(2px)' }} />
       </button>
     </div>
   );
 }
-
 function Chip({ label, selected, onClick }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all"
-      style={{
-        borderColor: selected ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.2)',
-        backgroundColor: selected ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)',
-        color: selected ? 'var(--tiffany-blue)' : 'rgba(255,255,255,0.7)',
-      }}
-    >
+    <button type="button" onClick={onClick} className="px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all"
+      style={{ borderColor: selected ? ACCENT : 'rgba(255,255,255,0.2)', backgroundColor: selected ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.05)', color: selected ? ACCENT : 'rgba(255,255,255,0.7)' }}>
       {label}
     </button>
   );
 }
-
 function TagsInput({ value = [], onChange, placeholder }) {
   const [input, setInput] = React.useState('');
   const handleKey = (e) => {
-    if (e.key === 'Enter' && input.trim()) {
-      e.preventDefault();
-      if (!value.includes(input.trim())) onChange([...value, input.trim()]);
-      setInput('');
-    }
+    if (e.key === 'Enter' && input.trim()) { e.preventDefault(); if (!value.includes(input.trim())) onChange([...value, input.trim()]); setInput(''); }
   };
-  const remove = (tag) => onChange(value.filter(t => t !== tag));
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5">
         {value.map(tag => (
-          <span key={tag} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
-            {tag}
-            <button type="button" onClick={() => remove(tag)}><X className="w-3 h-3" /></button>
+          <span key={tag} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: ACCENT }}>
+            {tag}<button type="button" onClick={() => onChange(value.filter(t => t !== tag))}><X className="w-3 h-3" /></button>
           </span>
         ))}
       </div>
-      <Input
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        onKeyDown={handleKey}
-        placeholder={placeholder || "e.g., Ground Floor Only, Corner Unit (press Enter to add)"}
-      />
+      <Input value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} placeholder={placeholder || 'Press Enter to add'} />
     </div>
   );
 }
-
-const BUILDING_CLASSES = ['A', 'B', 'C'];
-
-function BuildingClassSelector({ details, setDetail }) {
-  const buildingClasses = details.building_classes || [];
-  const toggleClass = (c) => setDetail('building_classes', buildingClasses.includes(c) ? buildingClasses.filter(x => x !== c) : [...buildingClasses, c]);
+// Minimum-only number field (for investment requirements)
+function MinField({ label, field, placeholder, hint, details, setDetail, step }) {
   return (
-    <Field label="Building Class (select all acceptable)">
-      <div className="flex gap-3">
-        {BUILDING_CLASSES.map(c => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => toggleClass(c)}
-            className="px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all"
-            style={{
-              borderColor: buildingClasses.includes(c) ? 'var(--tiffany-blue)' : '#e5e7eb',
-              backgroundColor: buildingClasses.includes(c) ? '#e6f7f5' : 'white',
-              color: buildingClasses.includes(c) ? '#3A8A82' : '#6b7280',
-            }}
-          >
-            Class {c}
-          </button>
-        ))}
+    <Field label={label} hint={hint}>
+      <div className="flex items-center gap-2">
+        <span className="text-xs whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.5)' }}>Min</span>
+        <Num field={field} placeholder={placeholder} details={details} setDetail={setDetail} step={step} />
       </div>
     </Field>
   );
 }
 
-// ── Building Amenities (Office & Medical Office) ──────────────────────────────
-const BUILDING_AMENITIES = [
-  { value: 'on_site_management',   label: 'On-Site Management' },
-  { value: 'security_247',         label: '24/7 Security / Controlled Access' },
-  { value: 'concierge',            label: 'Concierge Services' },
-  { value: 'janitorial_common',    label: 'Janitorial (Common Areas)' },
-  { value: 'mail_room',            label: 'Mail Room / Package Handling' },
-  { value: 'shared_loading_dock',  label: 'Shared Loading Dock' },
-  { value: 'lobby_reception',      label: 'Lobby / Reception Area' },
-  { value: 'shared_conference',    label: 'Shared Conference Rooms' },
-  { value: 'tenant_lounge',        label: 'Tenant Lounge / Break Room' },
-  { value: 'fitness_center',       label: 'Fitness Center / Gym' },
-  { value: 'outdoor_space',        label: 'Outdoor Space / Patio / Terrace' },
-  { value: 'fiber_optic',          label: 'Fiber Optic Connectivity' },
-  { value: 'multi_isp',            label: 'Multiple Internet Providers' },
-  { value: 'backup_generator',     label: 'Backup Generator' },
-  { value: 'ada_building',         label: 'ADA Compliant Building' },
-  { value: 'elevators',            label: 'Elevators' },
-  { value: 'covered_parking',      label: 'Covered / Garage Parking' },
-  { value: 'ev_charging',          label: 'EV Charging Stations' },
-  { value: 'bicycle_storage',      label: 'Bicycle Storage' },
-  { value: 'energy_efficient',     label: 'Energy Efficient Building' },
-  { value: 'leed_certified',       label: 'LEED Certified / Green Building' },
-];
-
-function BuildingAmenitiesSection({ details, setDetail, label = "Required Building Amenities" }) {
-  const [open, setOpen] = React.useState(false);
-  const amenities = details.building_amenities_required || [];
-  const toggle = (val) =>
-    setDetail('building_amenities_required', amenities.includes(val) ? amenities.filter(a => a !== val) : [...amenities, val]);
-  const selected = amenities.length;
-
+// ── SALE TYPE SELECTOR ───────────────────────────────────────────────────────
+function SaleTypeSelector({ value, onChange }) {
+  const opts = [
+    { val: 'owner_user', icon: '🏢', label: 'Owner / User', desc: 'Will occupy and operate from this property' },
+    { val: 'investment', icon: '📈', label: 'Investment', desc: 'Purchasing for income and returns' },
+  ];
   return (
-    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
-        style={{ background: 'rgba(255,255,255,0.05)' }}
-        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-      >
-        <div>
-          <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</p>
-          {!open && <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{selected > 0 ? `${selected} required` : 'Select must-have building features'}</p>}
-        </div>
-        <span className="text-lg leading-none ml-2" style={{ color: 'rgba(255,255,255,0.5)' }}>{open ? '−' : '+'}</span>
-      </button>
-      {open && (
-        <div className="px-4 py-3">
-          <div className="flex flex-wrap gap-2">
-            {BUILDING_AMENITIES.map(a => (
-              <Chip key={a.value} label={a.label} selected={amenities.includes(a.value)} onClick={() => toggle(a.value)} />
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="space-y-3">
+      <SectionTitle>Sale Type Looking For</SectionTitle>
+      <div className="grid grid-cols-2 gap-3">
+        {opts.map(opt => (
+          <button key={opt.val} type="button" onClick={() => onChange(opt.val)}
+            style={{ padding: '16px', borderRadius: '12px', border: `2px solid ${value === opt.val ? ACCENT : 'rgba(255,255,255,0.15)'}`, background: value === opt.val ? `${ACCENT}12` : 'rgba(255,255,255,0.04)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
+            <div style={{ fontSize: '22px', marginBottom: '8px' }}>{opt.icon}</div>
+            <p style={{ fontSize: '14px', fontWeight: 600, color: value === opt.val ? ACCENT : 'white', margin: '0 0 4px' }}>{opt.label}</p>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>{opt.desc}</p>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
-// ── Office Requirement ────────────────────────────────────────────────────────
-const OFFICE_FEATURES = [
-  { key: 'reception',      label: 'Reception Area' },
-  { key: 'kitchenette',    label: 'Kitchenette' },
-  { key: 'server_room',    label: 'Server Room' },
-  { key: 'file_storage',   label: 'File / Storage Room' },
-  { key: 'natural_light',  label: 'Natural Light' },
-  { key: 'access_247',     label: '24/7 Access' },
-];
+// ── SALE INVESTMENT REQUIREMENT COMPONENTS ───────────────────────────────────
+// All financial fields are MINIMUMS — buyer must see at least this threshold to match
 
-function OfficeDetails({ details, setDetail }) {
-  const toggleBool = (key) => setDetail(key, !details[key]);
-
+function OfficeRequirementSaleInvestment({ details, setDetail }) {
+  const classes = details.building_class_pref || [];
+  const toggleClass = (v) => setDetail('building_class_pref', classes.includes(v) ? classes.filter(c => c !== v) : [...classes, v]);
   return (
     <>
-      {/* Intended Use */}
-      <SectionTitle>Intended Use & Profile</SectionTitle>
-      <Field label="Intended Use / Tenant Profile *">
-        <Textarea
-          value={details.intended_use || ''}
-          onChange={e => setDetail('intended_use', e.target.value)}
-          placeholder="e.g., Professional services firm needing private offices and conference rooms."
-          rows={3}
-        />
-      </Field>
-
-      {/* Office & Meeting Rooms */}
-      <SectionTitle>Office & Meeting Space</SectionTitle>
+      <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
+      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Private Offices"><Num field="min_offices" placeholder="e.g. 5" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max. Private Offices"><Num field="max_offices" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Conference Rooms"><Num field="min_conf_rooms" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max. Conference Rooms"><Num field="max_conf_rooms" placeholder="e.g. 4" details={details} setDetail={setDetail} /></Field>
+        <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 100000" hint="Net Operating Income" details={details} setDetail={setDetail} />
+        <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 6.0" step="0.1" hint="Class A: 4–6% · Class B: 6–8%" details={details} setDetail={setDetail} />
+        <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 85" details={details} setDetail={setDetail} />
+        <MinField label="Min WALT (years)" field="min_walt" placeholder="e.g. 3" step="0.1" hint="Weighted Average Lease Term" details={details} setDetail={setDetail} />
+        <MinField label="Min Net Rentable Area (SF)" field="min_nra_sf" placeholder="e.g. 15000" details={details} setDetail={setDetail} />
       </div>
-
-      {/* Restrooms */}
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="In-Suite Restrooms Required?" value={!!details.insuit_restrooms} onChange={() => toggleBool('insuit_restrooms')} />
-      </div>
-      {details.insuit_restrooms && (
-        <Field label="Min. Restroom Count">
-          <Num field="min_restrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
-        </Field>
-      )}
-
-      {/* Layout & Floor */}
-      <SectionTitle>Layout & Floor</SectionTitle>
-      <ToggleGroup label="Layout Type" value={details.layout || ''} onChange={v => setDetail('layout', v)}
-        options={[{ value: 'open', label: 'Open Plan' }, { value: 'private', label: 'Private' }, { value: 'hybrid', label: 'Hybrid' }, { value: 'any', label: 'No Preference' }]} />
-      <ToggleGroup label="Floor Preference" value={details.floor_pref || ''} onChange={v => setDetail('floor_pref', v)}
-        options={[{ value: 'ground', label: 'Ground Floor' }, { value: 'upper', label: 'Upper Floor' }, { value: 'any', label: 'No Preference' }]} />
-
-      {/* Ceiling Height */}
-      <SectionTitle>Ceiling Height</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Ceiling Height (ft)"><Num field="min_ceiling_height" placeholder="e.g. 9" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max. Ceiling Height (ft)"><Num field="max_ceiling_height" placeholder="e.g. 14" details={details} setDetail={setDetail} /></Field>
-      </div>
-
-      {/* In-Suite / Space Must-Haves */}
-      <SectionTitle>In-Suite / Space Must-Have Features</SectionTitle>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        {OFFICE_FEATURES.map((f, idx) => (
-          <React.Fragment key={f.key}>
-            <Toggle label={f.label} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
-            {idx < OFFICE_FEATURES.length - 1 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
-          </React.Fragment>
-        ))}
-      </div>
-      <Field label="Other In-Suite Must-Have">
-        <Input
-          value={details.other_feature || ''}
-          onChange={e => setDetail('other_feature', e.target.value)}
-          placeholder="e.g., Dedicated server closet with cooling"
-        />
-      </Field>
-
-      {/* Building Amenities */}
-      <SectionTitle>Building Amenities</SectionTitle>
-      <BuildingAmenitiesSection details={details} setDetail={setDetail} />
-
-      {/* Parking */}
-      <SectionTitle>Parking</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Parking Ratio" hint="Spaces per 1,000 SF">
-          <Input value={details.min_parking_ratio || ''} onChange={e => setDetail('min_parking_ratio', e.target.value)} placeholder="e.g. 3/1,000 SF" />
-        </Field>
-        <Field label="Min. Total Parking Spaces">
-          <Num field="min_total_parking_spaces" placeholder="e.g. 20" details={details} setDetail={setDetail} />
-        </Field>
-        <Field label="Max. Parking Spaces">
-          <Num field="max_parking" placeholder="e.g. 60" details={details} setDetail={setDetail} />
-        </Field>
-      </div>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Dedicated Parking Required?" value={!!details.dedicated_parking_required} onChange={() => toggleBool('dedicated_parking_required')} />
-      </div>
-
-      {/* General Preferences */}
-      <SectionTitle>General Preferences & Search Filters</SectionTitle>
-      <BuildingClassSelector details={details} setDetail={setDetail} />
-      <Field label="Tags">
-        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
-      </Field>
-    </>
-  );
-}
-
-// ── Medical Office Requirement ────────────────────────────────────────────────
-const PRACTICE_TYPES = [
-  'General Practice', 'Dental', 'Cardiology', 'Orthopedic',
-  'Dermatology', 'Pediatrics', 'Physical Therapy', 'Urgent Care', 'Other Specialty',
-];
-
-const MEDICAL_FEATURES = [
-  { key: 'xray',          label: 'X-Ray Shielding Required' },
-  { key: 'medical_gas',   label: 'Medical Gas Lines Required' },
-  { key: 'sterilization', label: 'Sterilization Area Required' },
-  { key: 'ada',           label: 'ADA Compliant Required' },
-  { key: 'hipaa',         label: 'HIPAA Compliant Layout Required' },
-];
-
-function MedicalOfficeReqDetails({ details, setDetail }) {
-  const toggleBool = (key) => setDetail(key, !details[key]);
-
-  return (
-    <>
-      {/* Intended Use */}
-      <SectionTitle>Intended Use & Practice Profile</SectionTitle>
-      <Field label="Intended Use / Tenant Profile *">
-        <div className="flex flex-wrap gap-2 mb-2">
-          {PRACTICE_TYPES.map(pt => (
-            <Chip
-              key={pt}
-              label={pt}
-              selected={details.intended_use === pt}
-              onClick={() => setDetail('intended_use', pt)}
-            />
-          ))}
-        </div>
-      </Field>
-      {details.intended_use === 'Other Specialty' && (
-        <Field label="Specify Practice Type">
-          <Input
-            value={details.intended_use_other || ''}
-            onChange={e => setDetail('intended_use_other', e.target.value)}
-            placeholder="e.g., Oncology, Ophthalmology"
-          />
-        </Field>
-      )}
-
-      {/* Exam & Procedure Capacity */}
-      <SectionTitle>Exam & Procedure Capacity</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Exam Rooms"><Num field="min_exam_rooms" placeholder="e.g. 6" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Procedure Rooms"><Num field="min_procedure_rooms" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Lab Space (SF)"><Num field="min_lab_sf" placeholder="e.g. 300" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Waiting Room Capacity"><Num field="min_waiting_capacity" placeholder="e.g. 15" details={details} setDetail={setDetail} /></Field>
-      </div>
-
-      {/* In-Suite / Practice-Specific Must-Haves */}
-      <SectionTitle>In-Suite / Practice-Specific Must-Haves</SectionTitle>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        {MEDICAL_FEATURES.map((f, idx) => (
-          <React.Fragment key={f.key}>
-            <Toggle label={f.label} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
-            {idx < MEDICAL_FEATURES.length && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
-          </React.Fragment>
-        ))}
-        <Toggle label="Medical Waste Disposal Required?" value={!!details.waste_disposal_required} onChange={() => toggleBool('waste_disposal_required')} />
-      </div>
-
-      {/* Building Amenities */}
-      <SectionTitle>Building Amenities</SectionTitle>
-      <BuildingAmenitiesSection details={details} setDetail={setDetail} />
-
-      {/* General Preferences */}
-      <SectionTitle>Parking & General Preferences</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Parking Ratio" hint="Spaces per 1,000 SF">
-          <Input value={details.min_parking_ratio || ''} onChange={e => setDetail('min_parking_ratio', e.target.value)} placeholder="e.g. 5/1,000 SF" />
-        </Field>
-        <Field label="Min. Total Parking Spaces">
-          <Num field="min_total_parking_spaces" placeholder="e.g. 20" details={details} setDetail={setDetail} />
-        </Field>
-        <Field label="Zoning Preference">
-          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. O-1 Medical" />
-        </Field>
-      </div>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Dedicated Parking Required?" value={!!details.dedicated_parking_required} onChange={() => toggleBool('dedicated_parking_required')} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Valet Parking Required?" value={!!details.valet_parking_required} onChange={() => toggleBool('valet_parking_required')} />
-      </div>
-      <BuildingClassSelector details={details} setDetail={setDetail} />
-      <Field label="Tags" hint="Press Enter to add specific needs">
-        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
-      </Field>
-    </>
-  );
-}
-
-// ── Retail Requirement ─────────────────────────────────────────────────────────
-const RETAIL_SPECIAL_FEATURES = [
-  { key: 'drive_thru',        label: 'Drive-Thru Window' },
-  { key: 'grease_trap',       label: 'Grease Trap' },
-  { key: 'venting_hood',      label: 'Venting / Hood' },
-  { key: 'cold_storage',      label: 'Cold Storage / Walk-in Freezer' },
-  { key: 'outdoor_seating',   label: 'Outdoor Seating / Patio' },
-  { key: 'capped_utilities',  label: 'Capped / Stubbed Utilities' },
-  { key: 'showroom',          label: 'Dedicated Showroom' },
-  { key: 'fitting_rooms',     label: 'Fitting Rooms' },
-  { key: 'high_end_lighting', label: 'High-End Lighting' },
-  { key: 'rear_loading',      label: 'Rear Loading / Alley Access' },
-  { key: 'vault',             label: 'Secure Vault / Safe Room' },
-  { key: 'medical_flooring',  label: 'Medical Grade Flooring' },
-  { key: 'auto_bay',          label: 'Auto Bay / Garage Doors' },
-];
-
-function RetailDetails({ details, setDetail }) {
-  const [featuresOpen, setFeaturesOpen] = useState(false);
-  const features = details.retail_features || [];
-  const toggleFeature = (key) =>
-    setDetail('retail_features', features.includes(key) ? features.filter(k => k !== key) : [...features, key]);
-
-  const hasRestrooms = !!details.in_suite_restrooms;
-
-  return (
-    <>
-      {/* Primary Specs */}
-      <SectionTitle>Primary Retail Specs</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Total SF"><Num field="min_total_sf" placeholder="e.g. 1500" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max. Total SF"><Num field="max_total_sf" placeholder="e.g. 4000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Sales Floor SF"><Num field="min_sales_floor_sf" placeholder="e.g. 1000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Street Frontage (ft)"><Num field="min_frontage" placeholder="e.g. 30" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Ceiling Height (ft)"><Num field="min_ceiling_height" placeholder="e.g. 10" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Traffic Count (vehicles/day)"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
-      </div>
-
-      <Field label="Signage Preference">
-        <select
-          className="w-full rounded-md px-3 py-2 text-sm focus:outline-none"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-          value={details.signage_pref || ''}
-          onChange={e => setDetail('signage_pref', e.target.value)}
-        >
-          <option value="" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>No preference</option>
-          {['Building', 'Pylon / Monument', 'Electronic', 'Window'].map(s => (
-            <option key={s} value={s} style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>{s}</option>
-          ))}
-        </select>
-      </Field>
-
-      <ToggleGroup label="Location Type" value={details.location_type || ''} onChange={v => setDetail('location_type', v)}
-        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'corner', label: 'Corner' }]} />
-
-      <ToggleGroup
-        label="Foot Traffic Preference"
-        value={details.foot_traffic_pref || ''}
-        onChange={v => setDetail('foot_traffic_pref', v)}
-        options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'any', label: 'Any' }]}
-      />
-
-      {/* Collapsible Required Features */}
-      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <button
-          type="button"
-          onClick={() => setFeaturesOpen(o => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors"
-          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.9)' }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-        >
-          <span>Required Features {features.length > 0 && <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>{features.length} selected</span>}</span>
-          <span className="text-lg leading-none" style={{ color: 'rgba(255,255,255,0.5)' }}>{featuresOpen ? '−' : '+'}</span>
-        </button>
-        {featuresOpen && (
-          <div className="px-4 py-3">
-            {RETAIL_SPECIAL_FEATURES.map((f, idx) => (
-              <React.Fragment key={f.key}>
-                <Toggle label={f.label} value={features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
-                {idx < RETAIL_SPECIAL_FEATURES.length && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
-              </React.Fragment>
-            ))}
-            <Toggle label="Other" value={details.feature_other !== undefined} onChange={v => setDetail('feature_other', v ? '' : undefined)} />
-            {details.feature_other !== undefined && (
-              <div className="pb-2 pt-1">
-                <Input
-                  value={details.feature_other || ''}
-                  onChange={e => setDetail('feature_other', e.target.value)}
-                  placeholder="Describe the required feature…"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ADA & Restrooms */}
-      <div className="rounded-xl px-4 py-2" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="ADA Compliant Required" value={!!details.ada_required} onChange={v => setDetail('ada_required', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="In-Suite Restrooms Required" value={hasRestrooms} onChange={v => setDetail('in_suite_restrooms', v ? 1 : 0)} />
-        {hasRestrooms && (
-          <div className="pb-2 pt-1">
-            <Field label="Min. Restroom Pairs">
-              <Num field="in_suite_restrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
-            </Field>
-          </div>
-        )}
-      </div>
-
-      {/* Co-Tenancy */}
-      <SectionTitle>Co-Tenancy Preferences</SectionTitle>
-      <div className="grid grid-cols-1 gap-4">
-        <Field label="Preferred Co-Tenancy" hint="Press Enter to add">
-          <TagsInput value={details.preferred_co_tenancy || []} onChange={v => setDetail('preferred_co_tenancy', v)} placeholder="e.g., Grocery store, National clothing brand (press Enter)" />
-        </Field>
-        <Field label="Undesirable Co-Tenancy" hint="Press Enter to add">
-          <TagsInput value={details.undesirable_co_tenancy || []} onChange={v => setDetail('undesirable_co_tenancy', v)} placeholder="e.g., Direct competitor, Liquor store (press Enter)" />
-        </Field>
-      </div>
-
-      {/* General Preferences */}
-      <SectionTitle>Parking & General Preferences</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Total Parking Spaces">
-          <Num field="min_total_parking_spaces" placeholder="e.g. 10" details={details} setDetail={setDetail} />
-        </Field>
-        <Field label="Zoning Preference">
-          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. C-2" />
-        </Field>
-      </div>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Shared Parking Access Required" value={!!details.shared_parking_access_required} onChange={v => setDetail('shared_parking_access_required', v)} />
-      </div>
-
-      <BuildingClassSelector details={details} setDetail={setDetail} />
-
-      <Field label="Tags" hint="Press Enter to add each tag">
-        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
-      </Field>
-    </>
-  );
-}
-
-// ── Industrial/Flex Requirement ───────────────────────────────────────────────
-const AMPERAGE_OPTIONS = ['200A', '400A', '600A', '800A', '1000A', '1200A', '1600A', '2000A+'];
-
-const REQUIRED_SYSTEMS = [
-  { key: 'esfr',           label: 'ESFR Sprinklers' },
-  { key: 'hvac_warehouse', label: 'Warehouse HVAC (Conditioned)' },
-  { key: 'led_lighting',   label: 'LED Warehouse Lighting' },
-  { key: 'skylights',      label: 'Skylights' },
-];
-
-function IndustrialFlexReqDetails({ details, setDetail }) {
-  const toggleBool = (key) => setDetail(key, !details[key]);
-  const systems = details.required_systems || [];
-  const toggleSystem = (key) => setDetail('required_systems', systems.includes(key) ? systems.filter(s => s !== key) : [...systems, key]);
-  const buildingClasses = details.building_classes || [];
-  const toggleClass = (c) => setDetail('building_classes', buildingClasses.includes(c) ? buildingClasses.filter(x => x !== c) : [...buildingClasses, c]);
-
-  return (
-    <>
-      {/* Intended Use */}
-      <SectionTitle>Intended Use & Profile</SectionTitle>
-      <Field label="Intended Use / Tenant Profile *">
-        <Textarea
-          value={details.intended_use || ''}
-          onChange={e => setDetail('intended_use', e.target.value)}
-          placeholder="e.g., Third-party logistics (3PL) requiring heavy power and 5 docks."
-          rows={3}
-        />
-      </Field>
-
-      {/* Loading & Space */}
-      <SectionTitle>Loading & Space Requirements</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Loading Docks"><Num field="min_dock_doors" placeholder="e.g. 4" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Drive-In Doors"><Num field="min_drive_in_doors" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Clear Height (ft)"><Num field="min_clear_height" placeholder="e.g. 24" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Truck Court Depth (ft)"><Num field="min_truck_court_depth" placeholder="e.g. 120" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Showroom SF"><Num field="min_showroom_sf" placeholder="e.g. 1000" details={details} setDetail={setDetail} /></Field>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Office % Min">
-          <Input type="number" value={details.office_pct_min || ''} onChange={e => setDetail('office_pct_min', e.target.value)} placeholder="e.g. 10" />
-        </Field>
-        <Field label="Office % Max">
-          <Input type="number" value={details.office_pct_max || ''} onChange={e => setDetail('office_pct_max', e.target.value)} placeholder="e.g. 30" />
-        </Field>
-      </div>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Cross-Dock Required" value={!!details.cross_dock_required} onChange={() => toggleBool('cross_dock_required')} />
-      </div>
-
-      {/* Power & Infrastructure */}
-      <SectionTitle>Power & Infrastructure Needs</SectionTitle>
-      <Field label="Min. Amperage">
-        <select
-          className="w-full rounded-md px-3 py-2 text-sm focus:outline-none"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-          value={details.min_power_amps || ''}
-          onChange={e => setDetail('min_power_amps', e.target.value)}
-        >
-          <option value="" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>No preference</option>
-          {AMPERAGE_OPTIONS.map(a => <option key={a} value={a} style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>{a}</option>)}
-        </select>
-      </Field>
-
-      <ToggleGroup
-        label="Required Power Voltage"
-        value={details.required_power_voltage || ''}
-        onChange={v => setDetail('required_power_voltage', v)}
-        options={[{ value: '240v', label: '240V' }, { value: '480v', label: '480V' }, { value: 'any', label: 'No Preference' }]}
-      />
-
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="3-Phase Power Required" value={!!details.three_phase_required} onChange={() => toggleBool('three_phase_required')} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Substation On-Site Required" value={!!details.substation_on_site_required} onChange={() => toggleBool('substation_on_site_required')} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Crane Capacity (Tons)"><Num field="min_crane_tons" placeholder="e.g. 10" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Hook Height (ft)"><Num field="min_hook_height" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Floor Load (lbs/sqft)"><Num field="min_floor_load" placeholder="e.g. 600" details={details} setDetail={setDetail} /></Field>
-      </div>
-
-      {/* Systems & Exterior */}
-      <SectionTitle>Systems & Exterior Features</SectionTitle>
-      <Field label="Required Systems">
-        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-          {REQUIRED_SYSTEMS.map((s, idx) => (
-            <React.Fragment key={s.key}>
-              <Toggle label={s.label} value={systems.includes(s.key)} onChange={() => toggleSystem(s.key)} />
-              {idx < REQUIRED_SYSTEMS.length - 1 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
-            </React.Fragment>
-          ))}
-        </div>
-      </Field>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Rail Access Required" value={!!details.rail_access_required} onChange={() => toggleBool('rail_access_required')} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Fenced / Secured Yard Required" value={!!details.fenced_yard_required} onChange={() => toggleBool('fenced_yard_required')} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Outside Storage Required" value={!!details.outside_storage_required} onChange={() => toggleBool('outside_storage_required')} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Dock Levelers Required" value={!!details.dock_levelers_required} onChange={() => toggleBool('dock_levelers_required')} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Gated Access Required" value={!!details.gated_access_required} onChange={() => toggleBool('gated_access_required')} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Security Cameras Required" value={!!details.security_cameras_required} onChange={() => toggleBool('security_cameras_required')} />
-      </div>
-
-      {/* General Preferences */}
-      <SectionTitle>General Preferences & Search Filters</SectionTitle>
-      <Field label="Tags" hint="Press Enter to add specific needs">
-        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} />
-      </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Parking Spaces"><Num field="min_parking" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
-        <Field label="Zoning Preference">
-          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g. Must be zoned M-1" />
-        </Field>
-      </div>
+      <SectionTitle>Asset Preferences</SectionTitle>
       <Field label="Building Class (select all acceptable)">
-        <div className="flex gap-3">
-          {BUILDING_CLASSES.map(c => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => toggleClass(c)}
-              className="px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all"
-              style={{
-                borderColor: buildingClasses.includes(c) ? 'var(--tiffany-blue)' : '#e5e7eb',
-                backgroundColor: buildingClasses.includes(c) ? '#e6f7f5' : 'white',
-                color: buildingClasses.includes(c) ? '#3A8A82' : '#6b7280',
-              }}
-            >
-              Class {c}
-            </button>
-          ))}
-        </div>
-      </Field>
-    </>
-  );
-}
-
-// ── Land Requirement ──────────────────────────────────────────────────────────
-const LOCATION_SETTINGS = [
-  { key: 'highway_frontage', label: 'Highway Frontage' },
-  { key: 'main_road',        label: 'Main Road' },
-  { key: 'industrial_park',  label: 'Industrial Park' },
-  { key: 'suburban',         label: 'Suburban' },
-  { key: 'rural',            label: 'Rural' },
-];
-
-const ENTITLEMENTS_OPTIONS = [
-  { key: 'raw',               label: 'Raw Land' },
-  { key: 'shovel_ready',      label: 'Shovel Ready' },
-  { key: 'site_plan_approved',label: 'Site Plan Approved' },
-];
-
-function LandDetails({ details, setDetail }) {
-  const toggleBool = (key) => setDetail(key, !details[key]);
-  const utilities = details.utilities_required || [];
-  const toggleUtility = (key) => setDetail('utilities_required', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
-  const locationSettings = details.location_settings || [];
-  const toggleLocationSetting = (key) => setDetail('location_settings', locationSettings.includes(key) ? locationSettings.filter(l => l !== key) : [...locationSettings, key]);
-  const entitlements = details.entitlements_preferred || [];
-  const toggleEntitlement = (key) => setDetail('entitlements_preferred', entitlements.includes(key) ? entitlements.filter(e => e !== key) : [...entitlements, key]);
-  const siteChars = details.site_characteristics || [];
-  const toggleSiteChar = (key) => setDetail('site_characteristics', siteChars.includes(key) ? siteChars.filter(s => s !== key) : [...siteChars, key]);
-
-  return (
-    <>
-      <SectionTitle>Intended Use & Profile</SectionTitle>
-      <Field label="Intended Use / Tenant Profile *">
-        <Textarea
-          value={details.intended_use || ''}
-          onChange={e => setDetail('intended_use', e.target.value)}
-          placeholder="e.g., Retail pad site for a fast-food drive-thru requiring high traffic count and visibility."
-          rows={3}
-        />
-      </Field>
-
-      <SectionTitle>Size Requirements</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Acreage"><Num field="min_acres" placeholder="e.g. 2.5" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max. Acreage"><Num field="max_acres" placeholder="e.g. 10" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Total SF"><Num field="min_sqft" placeholder="e.g. 10000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max. Total SF"><Num field="max_sqft" placeholder="e.g. 50000" details={details} setDetail={setDetail} /></Field>
-      </div>
-
-      <SectionTitle>Access & Visibility</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Road Frontage (ft)"><Num field="min_road_frontage" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max. Road Frontage (ft)"><Num field="max_road_frontage" placeholder="e.g. 600" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Traffic Count (Cars/Day)"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Build SF">
-          <Num field="min_build_sf" placeholder="e.g. 20000" details={details} setDetail={setDetail} />
-          <p className="text-xs text-gray-400 mt-1">Ensures the lot legally supports the client's building size</p>
-        </Field>
-      </div>
-
-      <Field label="Road Surface Required">
-        <select
-          className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-          value={details.road_surface_required || ''}
-          onChange={e => setDetail('road_surface_required', e.target.value)}
-        >
-          <option value="" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>No Preference</option>
-          <option value="paved" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>Paved/Asphalt Only</option>
-          <option value="gravel" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>Gravel OK</option>
-          <option value="no_preference" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>No Preference</option>
-        </select>
-      </Field>
-
-      <Field label="Location Setting Preference (select all that apply)">
-        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-          {LOCATION_SETTINGS.map((s, idx) => (
-            <React.Fragment key={s.key}>
-              <Toggle label={s.label} value={locationSettings.includes(s.key)} onChange={() => toggleLocationSetting(s.key)} />
-              {idx < LOCATION_SETTINGS.length - 1 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
-            </React.Fragment>
-          ))}
-        </div>
-      </Field>
-
-      <SectionTitle>Zoning & Development</SectionTitle>
-      <Field label="Zoning Required">
-        <Input value={details.zoning_required || ''} onChange={e => setDetail('zoning_required', e.target.value)} placeholder="e.g., Must allow for Heavy Industrial M-2" />
-      </Field>
-
-      <SectionTitle>Utilities Required</SectionTitle>
-      <p className="text-xs -mt-3" style={{ color: 'rgba(255,255,255,0.5)' }}>Must be at Site / Curb</p>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        {[
-          { key: 'municipal_water', label: 'Municipal Water' },
-          { key: 'sanitary_sewer',  label: 'Sanitary Sewer' },
-          { key: 'electric_3phase', label: 'Electric (3-Phase)' },
-          { key: 'natural_gas',     label: 'Natural Gas' },
-          { key: 'fiber_internet',  label: 'Fiber / Internet' },
-        ].map((u, idx) => (
-          <React.Fragment key={u.key}>
-            <Toggle label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />
-            {idx < 5 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
-          </React.Fragment>
-        ))}
-        <Toggle label="Perc Test Required" value={!!details.perc_test_required} onChange={() => toggleBool('perc_test_required')} />
-      </div>
-
-      <SectionTitle>Site Characteristic Preferences</SectionTitle>
-      <p className="text-xs -mt-3" style={{ color: 'rgba(255,255,255,0.5)' }}>Required State</p>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        {[
-          { key: 'level',           label: 'Level / Flat' },
-          { key: 'cleared',         label: 'Cleared' },
-          { key: 'wooded',          label: 'Wooded' },
-          { key: 'build_to_suit',   label: 'Build-to-Suit Only' },
-        ].map((s, idx) => (
-          <React.Fragment key={s.key}>
-            <Toggle label={s.label} value={siteChars.includes(s.key)} onChange={() => toggleSiteChar(s.key)} />
-            {idx < 3 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
-          </React.Fragment>
-        ))}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Other" value={!!details.site_char_other_enabled} onChange={v => setDetail('site_char_other_enabled', v)} />
-        {details.site_char_other_enabled && (
-          <div className="py-2">
-            <Input value={details.site_char_other || ''} onChange={e => setDetail('site_char_other', e.target.value)} placeholder="Describe specific land requirement…" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
-          </div>
-        )}
-      </div>
-
-      <SectionTitle>Development Readiness</SectionTitle>
-      <Field label="Entitlements Preferred (select all acceptable)">
         <div className="flex flex-wrap gap-2">
-          {ENTITLEMENTS_OPTIONS.map(e => (
-            <Chip key={e.key} label={e.label} selected={entitlements.includes(e.key)} onClick={() => toggleEntitlement(e.key)} />
+          {[{v:'A',l:'Class A'},{v:'B',l:'Class B'},{v:'C',l:'Class C'}].map(o => (
+            <Chip key={o.v} label={o.l} selected={classes.includes(o.v)} onClick={() => toggleClass(o.v)} />
           ))}
         </div>
       </Field>
+      <ToggleGroup label="Lease Type Preference" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
+        options={[{ value: 'nnn', label: 'NNN' }, { value: 'mg', label: 'Modified Gross' }, { value: 'fsg', label: 'Full Service' }, { value: 'any', label: 'Any' }]} />
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Survey Available Required" value={!!details.survey_required} onChange={() => toggleBool('survey_required')} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Environmental Phase 1 Required" value={!!details.phase1_required} onChange={() => toggleBool('phase1_required')} />
+        <Toggle label="Open to Value-Add Opportunities" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
       </div>
-
-      <SectionTitle>General Search Details</SectionTitle>
-      <Field label="Tags">
-        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} placeholder="e.g., corner lot, opportunity zone, rail access (press ENTER to add)" />
+      <Field label="Notes / Investment Strategy">
+        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
+          placeholder="e.g. Targeting 6.5%+ cap, prefer stabilized assets, open to light value-add with strong tenancy…" rows={3} />
       </Field>
     </>
   );
 }
 
-// ── Special Use Requirement ───────────────────────────────────────────────────
-const SPECIAL_INFRA_REQ = [
-  { key: 'commercial_kitchen', label: 'Commercial Kitchen' },
-  { key: 'stage_platform',     label: 'Stage / Platform' },
-  { key: 'gymnasium',          label: 'Gymnasium' },
-  { key: 'assembly_hall',      label: 'Large Assembly Hall' },
-  { key: 'sound_acoustic',     label: 'Sound / Acoustic Treatment' },
-  { key: 'commercial_laundry', label: 'Commercial Laundry' },
-  { key: 'elevator_access',    label: 'Elevator Access' },
-];
-
-const SPECIAL_USE_BUILDING_AMENITIES = [
-  { value: 'on_site_management',   label: 'On-Site Management' },
-  { value: 'security_247',         label: '24/7 Security / Controlled Access' },
-  { value: 'janitorial_common',    label: 'Janitorial (Common Areas)' },
-  { value: 'outdoor_space',        label: 'Outdoor Space / Patio / Terrace' },
-  { value: 'fiber_optic',          label: 'Fiber Optic Connectivity' },
-  { value: 'backup_generator',     label: 'Backup Generator' },
-  { value: 'ada_building',         label: 'ADA Compliant Building' },
-  { value: 'elevators',            label: 'Elevators' },
-  { value: 'covered_parking',      label: 'Covered / Garage Parking' },
-  { value: 'ev_charging',          label: 'EV Charging Stations' },
-  { value: 'energy_efficient',     label: 'Energy Efficient Building' },
-  { value: 'leed_certified',       label: 'LEED Certified / Green Building' },
-];
-
-function SpecialUseReqDetails({ details, setDetail }) {
-  const toggleBool = (key) => setDetail(key, !details[key]);
-  const [amenitiesOpen, setAmenitiesOpen] = React.useState(false);
-  const buildingAmenities = details.building_amenities_required || [];
-  const toggleAmenity = (val) =>
-    setDetail('building_amenities_required', buildingAmenities.includes(val) ? buildingAmenities.filter(a => a !== val) : [...buildingAmenities, val]);
-
+function MOBRequirementSaleInvestment({ details, setDetail }) {
   return (
     <>
-      <SectionTitle>Intended Use & Profile</SectionTitle>
-      <Field label="Intended Use / Tenant Profile *">
-        <Textarea
-          value={details.intended_use || ''}
-          onChange={e => setDetail('intended_use', e.target.value)}
-          placeholder="e.g., Religious organization seeking a sanctuary with a commercial kitchen and parking for 200+ vehicles."
-          rows={3}
-        />
-      </Field>
-
-      <SectionTitle>Size Requirements</SectionTitle>
+      <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
+      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Total SF"><Num field="min_total_sf" placeholder="e.g. 5000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max. Total SF"><Num field="max_total_sf" placeholder="e.g. 30000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min. Seating Capacity" hint="Sanctuaries, theaters, stadiums">
-          <Num field="min_seating_capacity" placeholder="e.g. 200" details={details} setDetail={setDetail} />
-        </Field>
-        <Field label="Max. Seating Capacity">
-          <Num field="max_seating_capacity" placeholder="e.g. 1000" details={details} setDetail={setDetail} />
-        </Field>
-        <Field label="Min. Bed / Room Count" hint="Hotels or Assisted Living">
-          <Num field="min_bed_room_count" placeholder="e.g. 20" details={details} setDetail={setDetail} />
-        </Field>
-        <Field label="Max. Bed / Room Count">
-          <Num field="max_bed_room_count" placeholder="e.g. 100" details={details} setDetail={setDetail} />
-        </Field>
+        <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 150000" details={details} setDetail={setDetail} />
+        <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 5.5" step="0.1" hint="MOB avg: ~6.3% Q1 2026" details={details} setDetail={setDetail} />
+        <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 90" details={details} setDetail={setDetail} />
+        <MinField label="Min WALT (years)" field="min_walt" placeholder="e.g. 5" step="0.1" hint="Medical tenants sign 7–15 yr leases" details={details} setDetail={setDetail} />
+        <MinField label="Min Total SF" field="min_sf" placeholder="e.g. 10000" details={details} setDetail={setDetail} />
+        <MinField label="Min Annual Rent Escalations (%)" field="min_rent_escalations" placeholder="e.g. 2.0" step="0.1" details={details} setDetail={setDetail} />
       </div>
-
-      <SectionTitle>Required Specialty Features</SectionTitle>
+      <SectionTitle>Property Preferences</SectionTitle>
+      <ToggleGroup label="Campus Location Preference" value={details.campus_pref || ''} onChange={v => setDetail('campus_pref', v)}
+        options={[{ value: 'on_campus', label: 'On-Campus' }, { value: 'adjacent', label: 'Adjacent' }, { value: 'off_campus', label: 'Off-Campus' }, { value: 'any', label: 'Any' }]} />
+      <ToggleGroup label="Lease Structure Preference" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
+        options={[{ value: 'nnn', label: 'NNN' }, { value: 'gross', label: 'Gross' }, { value: 'any', label: 'Any' }]} />
+      <ToggleGroup label="Tenancy" value={details.tenancy_pref || ''} onChange={v => setDetail('tenancy_pref', v)}
+        options={[{ value: 'single', label: 'Single Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'any', label: 'Any' }]} />
+      <Field label="Preferred Tenant Specialties" hint="Press Enter to add each">
+        <TagsInput value={details.preferred_specialties || []} onChange={v => setDetail('preferred_specialties', v)} placeholder="e.g. Primary Care, Cardiology (press Enter)" />
+      </Field>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        {SPECIAL_INFRA_REQ.map((f, idx) => (
-          <React.Fragment key={f.key}>
-            <Toggle label={f.key === 'commercial_kitchen' ? 'Commercial Kitchen Required' : f.label + ' Required'} value={!!details[f.key + '_required']} onChange={() => toggleBool(f.key + '_required')} />
-            {idx < SPECIAL_INFRA_REQ.length && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}
-          </React.Fragment>
-        ))}
-        <Toggle label="ADA Compliant Required" value={!!details.ada_required} onChange={() => toggleBool('ada_required')} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Other" value={!!details.other_feature_enabled} onChange={v => setDetail('other_feature_enabled', v)} />
+        <Toggle label="Open to Value-Add Opportunities" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
       </div>
-      {details.other_feature_enabled && (
-        <Field label="Describe Required Feature">
-          <Input value={details.other_feature || ''} onChange={e => setDetail('other_feature', e.target.value)} placeholder="e.g., Baptismal pool, Indoor track, Recording studio" />
-        </Field>
-      )}
-
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Structural Modifications Required">
-          <Input value={details.structural_modifications_required || ''} onChange={e => setDetail('structural_modifications_required', e.target.value)} placeholder="e.g., Reinforced floors, soundproofing" />
-        </Field>
-        <Field label="HVAC / Environmental Systems Required">
-          <Input value={details.hvac_systems_required || ''} onChange={e => setDetail('hvac_systems_required', e.target.value)} placeholder="e.g., High-capacity HVAC, air filtration" />
-        </Field>
-      </div>
-
-      {/* Building Amenities */}
-      <SectionTitle>Building Amenities</SectionTitle>
-      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <button
-          type="button"
-          onClick={() => setAmenitiesOpen(o => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
-          style={{ background: 'rgba(255,255,255,0.05)' }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-        >
-          <div>
-            <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>Required Building Amenities</p>
-            {!amenitiesOpen && <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{buildingAmenities.length > 0 ? `${buildingAmenities.length} required` : 'Select must-have building features'}</p>}
-          </div>
-          <span className="text-lg leading-none ml-2" style={{ color: 'rgba(255,255,255,0.5)' }}>{amenitiesOpen ? '−' : '+'}</span>
-        </button>
-        {amenitiesOpen && (
-          <div className="px-4 py-3">
-            <div className="flex flex-wrap gap-2">
-              {SPECIAL_USE_BUILDING_AMENITIES.map(a => (
-                <Chip key={a.value} label={a.label} selected={buildingAmenities.includes(a.value)} onClick={() => toggleAmenity(a.value)} />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <SectionTitle>General Preferences</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min. Parking Spaces"><Num field="min_parking" placeholder="e.g. 50" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max. Parking Spaces"><Num field="max_parking" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
-        <Field label="Zoning Preference">
-          <Input value={details.zoning_pref || ''} onChange={e => setDetail('zoning_pref', e.target.value)} placeholder="e.g., Must allow for School use" />
-        </Field>
-        <Field label="Licensing Required">
-          <Input value={details.licensing_required || ''} onChange={e => setDetail('licensing_required', e.target.value)} placeholder="e.g., State-approved daycare license" />
-        </Field>
-      </div>
-
-      <Field label="Building Class (select all acceptable)">
-        <div className="flex gap-3">
-          {['A', 'B', 'C'].map(c => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => {
-                const classes = details.building_classes || [];
-                setDetail('building_classes', classes.includes(c) ? classes.filter(x => x !== c) : [...classes, c]);
-              }}
-              className="px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all"
-              style={{
-                borderColor: (details.building_classes || []).includes(c) ? 'var(--tiffany-blue)' : '#e5e7eb',
-                backgroundColor: (details.building_classes || []).includes(c) ? '#e6f7f5' : 'white',
-                color: (details.building_classes || []).includes(c) ? '#3A8A82' : '#6b7280',
-              }}
-            >
-              Class {c}
-            </button>
-          ))}
-        </div>
-      </Field>
-
-      <Field label="Tags">
-        <TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} placeholder="e.g., soundproof, ground floor (press ENTER to add)" />
+      <Field label="Notes / Investment Strategy">
+        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
+          placeholder="e.g. Targeting NNN leased MOBs near hospital systems, 7+ yr WALT preferred…" rows={3} />
       </Field>
     </>
   );
 }
 
+function RetailRequirementSaleInvestment({ details, setDetail }) {
+  return (
+    <>
+      <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
+      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
+      <div className="grid grid-cols-2 gap-4">
+        <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 120000" details={details} setDetail={setDetail} />
+        <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 5.5" step="0.1" hint="Well-located: 5.5–7.5%" details={details} setDetail={setDetail} />
+        <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 90" details={details} setDetail={setDetail} />
+        <MinField label="Min GLA (SF)" field="min_gla_sf" placeholder="e.g. 20000" details={details} setDetail={setDetail} />
+        <MinField label="Min Avg Lease Term Remaining (yrs)" field="min_avg_lease_remaining" placeholder="e.g. 3" step="0.1" details={details} setDetail={setDetail} />
+      </div>
+      <SectionTitle>Asset Preferences</SectionTitle>
+      <ToggleGroup label="Lease Type Preference" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
+        options={[{ value: 'nnn', label: 'NNN' }, { value: 'mg', label: 'Modified Gross' }, { value: 'any', label: 'Any' }]} />
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="Grocery-Anchored Required" value={!!details.grocery_anchored_req} onChange={v => setDetail('grocery_anchored_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Open to Value-Add / Repositioning" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
+      </div>
+      <Field label="Preferred Anchor Tenants">
+        <TagsInput value={details.preferred_anchors || []} onChange={v => setDetail('preferred_anchors', v)} placeholder="e.g. Walgreens, Dollar General (press Enter)" />
+      </Field>
+      <Field label="Notes / Investment Strategy">
+        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
+          placeholder="e.g. Targeting grocery-anchored centers, NNN leases, 6%+ cap, stable metro markets…" rows={3} />
+      </Field>
+    </>
+  );
+}
+
+function IndustrialFlexRequirementSaleInvestment({ details, setDetail }) {
+  return (
+    <>
+      <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
+      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
+      <div className="grid grid-cols-2 gap-4">
+        <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 200000" hint="Leave blank if targeting owner-occupied" details={details} setDetail={setDetail} />
+        <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 5.5" step="0.1" hint="Industrial: 5–9.5% by type/market" details={details} setDetail={setDetail} />
+        <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 85" details={details} setDetail={setDetail} />
+        <MinField label="Min WALT (years)" field="min_walt" placeholder="e.g. 2" step="0.1" details={details} setDetail={setDetail} />
+        <MinField label="Min Total SF" field="min_sf" placeholder="e.g. 40000" details={details} setDetail={setDetail} />
+        <MinField label="Min Clear Height (ft)" field="min_clear_height" placeholder="e.g. 24" details={details} setDetail={setDetail} />
+        <MinField label="Min Dock-High Doors" field="min_dock_doors" placeholder="e.g. 4" details={details} setDetail={setDetail} />
+        <MinField label="Min Land / Lot (acres)" field="min_acres" placeholder="e.g. 2" step="0.1" details={details} setDetail={setDetail} />
+      </div>
+      <SectionTitle>Asset Preferences</SectionTitle>
+      <ToggleGroup label="Tenancy Preference" value={details.tenancy_pref || ''} onChange={v => setDetail('tenancy_pref', v)}
+        options={[{ value: 'single', label: 'Single Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'any', label: 'Any' }]} />
+      <ToggleGroup label="Lease Type Preference" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
+        options={[{ value: 'nnn', label: 'NNN' }, { value: 'mg', label: 'Modified Gross' }, { value: 'any', label: 'Any' }]} />
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="3-Phase Power Required" value={!!details.three_phase_req} onChange={v => setDetail('three_phase_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Open to Value-Add Opportunities" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
+      </div>
+      <Field label="Notes / Investment Strategy">
+        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
+          placeholder="e.g. Targeting Class A/B NNN industrial, 5.5%+ cap, 24 ft+ clear height, strong logistics corridor…" rows={3} />
+      </Field>
+    </>
+  );
+}
+
+const SPECIAL_SALE_REQ_TYPES = [
+  { value: 'self_storage', label: 'Self-Storage' },
+  { value: 'hotel', label: 'Hotel / Motel' },
+  { value: 'gas_station', label: 'Gas Station / C-Store' },
+  { value: 'car_wash', label: 'Car Wash' },
+  { value: 'church_school', label: 'Church / School / Civic' },
+  { value: 'any', label: 'Open to Any Special Use' },
+];
+
+function SpecialUseRequirementSaleInvestment({ details, setDetail }) {
+  const subType = details.sale_sub_type || '';
+  return (
+    <>
+      <SectionTitle>Special Use Type Sought</SectionTitle>
+      <Field label="What type of special use investment are you targeting?">
+        <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+          value={subType} onChange={e => setDetail('sale_sub_type', e.target.value)}>
+          <option value="" style={{ background: '#0E1318' }}>Select type</option>
+          {SPECIAL_SALE_REQ_TYPES.map(t => <option key={t.value} value={t.value} style={{ background: '#0E1318' }}>{t.label}</option>)}
+        </select>
+      </Field>
+
+      {/* Self-Storage criteria */}
+      {subType === 'self_storage' && (
+        <>
+          <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement.</p>
+          <div className="grid grid-cols-2 gap-4">
+            <MinField label="Min Units / Spaces" field="min_units" placeholder="e.g. 150" details={details} setDetail={setDetail} />
+            <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 85" details={details} setDetail={setDetail} />
+            <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 120000" details={details} setDetail={setDetail} />
+            <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 6.5" step="0.1" details={details} setDetail={setDetail} />
+          </div>
+          <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+            <Toggle label="Climate-Controlled Units Required" value={!!details.climate_req} onChange={v => setDetail('climate_req', v)} />
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+            <Toggle label="Open to Value-Add Opportunities" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
+          </div>
+        </>
+      )}
+
+      {/* Hotel criteria */}
+      {subType === 'hotel' && (
+        <>
+          <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement.</p>
+          <div className="grid grid-cols-2 gap-4">
+            <MinField label="Min Rooms" field="min_rooms" placeholder="e.g. 60" details={details} setDetail={setDetail} />
+            <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 65" details={details} setDetail={setDetail} />
+            <MinField label="Min RevPAR ($)" field="min_revpar" placeholder="e.g. 80" hint="Revenue Per Available Room" details={details} setDetail={setDetail} />
+            <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 500000" details={details} setDetail={setDetail} />
+            <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 7.5" step="0.1" details={details} setDetail={setDetail} />
+          </div>
+          <ToggleGroup label="Brand Preference" value={details.hotel_brand_pref || ''} onChange={v => setDetail('hotel_brand_pref', v)}
+            options={[{ value: 'branded', label: 'Branded / Flagged' }, { value: 'independent', label: 'Independent' }, { value: 'any', label: 'Any' }]} />
+        </>
+      )}
+
+      {/* Gas station criteria */}
+      {subType === 'gas_station' && (
+        <>
+          <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement.</p>
+          <div className="grid grid-cols-2 gap-4">
+            <MinField label="Min Monthly Fuel Volume (gallons)" field="min_fuel_gallons" placeholder="e.g. 80000" details={details} setDetail={setDetail} />
+            <MinField label="Min C-Store Revenue / Year ($)" field="min_cstore_revenue" placeholder="e.g. 200000" details={details} setDetail={setDetail} />
+            <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 100000" details={details} setDetail={setDetail} />
+            <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 6.5" step="0.1" details={details} setDetail={setDetail} />
+          </div>
+          <ToggleGroup label="Property Ownership Preference" value={details.ownership_pref || ''} onChange={v => setDetail('ownership_pref', v)}
+            options={[{ value: 'fee_simple', label: 'Fee Simple Only' }, { value: 'land_lease', label: 'Land Lease OK' }, { value: 'any', label: 'Any' }]} />
+        </>
+      )}
+
+      {/* Car wash criteria */}
+      {subType === 'car_wash' && (
+        <>
+          <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement.</p>
+          <div className="grid grid-cols-2 gap-4">
+            <MinField label="Min Active Memberships" field="min_memberships" placeholder="e.g. 500" details={details} setDetail={setDetail} />
+            <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 300000" details={details} setDetail={setDetail} />
+            <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 6.0" step="0.1" details={details} setDetail={setDetail} />
+          </div>
+          <ToggleGroup label="Car Wash Type Preference" value={details.carwash_type_pref || ''} onChange={v => setDetail('carwash_type_pref', v)}
+            options={[{ value: 'express', label: 'Express / Tunnel' }, { value: 'full_service', label: 'Full Service' }, { value: 'any', label: 'Any' }]} />
+        </>
+      )}
+
+      {/* Church / School criteria */}
+      {subType === 'church_school' && (
+        <>
+          <SectionTitle>Property Criteria</SectionTitle>
+          <div className="grid grid-cols-2 gap-4">
+            <MinField label="Min Seating / Capacity" field="min_seating" placeholder="e.g. 200" details={details} setDetail={setDetail} />
+            <MinField label="Min Total SF" field="min_sf" placeholder="e.g. 8000" details={details} setDetail={setDetail} />
+            <MinField label="Min Acreage" field="min_acres" placeholder="e.g. 1.0" step="0.1" details={details} setDetail={setDetail} />
+            <MinField label="Min Parking Spaces" field="min_parking" placeholder="e.g. 100" details={details} setDetail={setDetail} />
+          </div>
+        </>
+      )}
+
+      {/* Any / Generic special use criteria */}
+      {subType === 'any' && (
+        <>
+          <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement.</p>
+          <div className="grid grid-cols-2 gap-4">
+            <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 150000" details={details} setDetail={setDetail} />
+            <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 6.5" step="0.1" details={details} setDetail={setDetail} />
+          </div>
+        </>
+      )}
+
+      <Field label="Notes / Acquisition Criteria">
+        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
+          placeholder="Describe your ideal acquisition — target returns, market type, size, value-add appetite…" rows={3} />
+      </Field>
+    </>
+  );
+}
+
+// ── EXISTING LEASE REQUIREMENT COMPONENTS (unchanged) ────────────────────────
+function OfficeRequirement({ details, setDetail }) {
+  const classes = details.building_class_pref || [];
+  const toggleClass = (v) => setDetail('building_class_pref', classes.includes(v) ? classes.filter(c => c !== v) : [...classes, v]);
+  return (
+    <>
+      <SectionTitle>Space Requirements</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min SF"><Num field="min_sf" placeholder="e.g. 2000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max SF"><Num field="max_sf" placeholder="e.g. 5000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Offices Needed"><Num field="offices_needed" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
+        <Field label="Conference Rooms Needed"><Num field="conf_rooms_needed" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <ToggleGroup label="Layout Preference" value={details.layout_pref || ''} onChange={v => setDetail('layout_pref', v)}
+        options={[{ value: 'open_plan', label: 'Open Plan' }, { value: 'partitioned', label: 'Partitioned' }, { value: 'mixed', label: 'Mixed' }, { value: 'flexible', label: 'Flexible' }]} />
+      <SectionTitle>Building & Lease Preferences</SectionTitle>
+      <Field label="Building Class (select all acceptable)">
+        <div className="flex flex-wrap gap-2">
+          {[{v:'A',l:'Class A'},{v:'B',l:'Class B'},{v:'C',l:'Class C'}].map(o => (
+            <Chip key={o.v} label={o.l} selected={classes.includes(o.v)} onClick={() => toggleClass(o.v)} />
+          ))}
+        </div>
+      </Field>
+      <ToggleGroup label="Lease Type" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
+        options={[{ value: 'nnn', label: 'NNN' }, { value: 'mg', label: 'Modified Gross' }, { value: 'fsg', label: 'Full Service' }, { value: 'any', label: 'Any' }]} />
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="Dedicated Parking Required" value={!!details.dedicated_parking_req} onChange={v => setDetail('dedicated_parking_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="In-Suite Restrooms Required" value={!!details.in_suite_restrooms_req} onChange={v => setDetail('in_suite_restrooms_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Server Room / IT Infrastructure Required" value={!!details.server_room_req} onChange={v => setDetail('server_room_req', v)} />
+      </div>
+      <Field label="Additional Requirements">
+        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
+          placeholder="Any other must-haves for your office space…" rows={2} />
+      </Field>
+    </>
+  );
+}
+
+function MedicalOfficeRequirement({ details, setDetail }) {
+  return (
+    <>
+      <SectionTitle>Clinical Space Requirements</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min SF"><Num field="min_sf" placeholder="e.g. 1500" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max SF"><Num field="max_sf" placeholder="e.g. 4000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Exam Rooms Needed"><Num field="exam_rooms_needed" placeholder="e.g. 6" details={details} setDetail={setDetail} /></Field>
+        <Field label="Procedure Rooms Needed"><Num field="procedure_rooms_needed" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Waiting Room Capacity"><Num field="waiting_capacity_needed" placeholder="e.g. 15" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Parking Ratio" hint="Spaces per 1,000 SF">
+          <Input value={details.min_parking_ratio || ''} onChange={e => setDetail('min_parking_ratio', e.target.value)} placeholder="e.g. 4/1,000 SF" />
+        </Field>
+      </div>
+      <SectionTitle>Clinical Infrastructure</SectionTitle>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="X-Ray / Shielding Required" value={!!details.xray_req} onChange={v => setDetail('xray_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Medical Gas Lines Required" value={!!details.medical_gas_req} onChange={v => setDetail('medical_gas_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="ADA Compliant Required" value={!!details.ada_req} onChange={v => setDetail('ada_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Lab Space Required" value={!!details.lab_req} onChange={v => setDetail('lab_req', v)} />
+      </div>
+      <ToggleGroup label="Campus Location" value={details.campus_pref || ''} onChange={v => setDetail('campus_pref', v)}
+        options={[{ value: 'on_campus', label: 'On-Campus' }, { value: 'adjacent', label: 'Adjacent' }, { value: 'off_campus', label: 'Off-Campus' }, { value: 'any', label: 'Any' }]} />
+      <Field label="Specialty / Practice Type">
+        <Input value={details.specialty || ''} onChange={e => setDetail('specialty', e.target.value)} placeholder="e.g. Orthopedics, Primary Care, Dental" />
+      </Field>
+      <Field label="Additional Requirements">
+        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
+          placeholder="Any other must-haves for your practice space…" rows={2} />
+      </Field>
+    </>
+  );
+}
+
+function RetailRequirement({ details, setDetail }) {
+  return (
+    <>
+      <SectionTitle>Space Requirements</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min SF"><Num field="min_sf" placeholder="e.g. 1000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max SF"><Num field="max_sf" placeholder="e.g. 3000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Street Frontage (ft)"><Num field="min_frontage" placeholder="e.g. 25" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Traffic Count (vehicles/day)"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <ToggleGroup label="Location Type" value={details.location_type_pref || ''} onChange={v => setDetail('location_type_pref', v)}
+        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'any', label: 'Any' }]} />
+      <ToggleGroup label="Foot Traffic" value={details.foot_traffic_pref || ''} onChange={v => setDetail('foot_traffic_pref', v)}
+        options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium+' }, { value: 'any', label: 'Any' }]} />
+      <SectionTitle>Special Requirements</SectionTitle>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="Drive-Thru Required" value={!!details.drive_thru_req} onChange={v => setDetail('drive_thru_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Hood / Venting Required" value={!!details.hood_req} onChange={v => setDetail('hood_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Grease Trap Required" value={!!details.grease_trap_req} onChange={v => setDetail('grease_trap_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Outdoor Seating Required" value={!!details.outdoor_seating_req} onChange={v => setDetail('outdoor_seating_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Signage (Building / Pylon) Required" value={!!details.signage_req} onChange={v => setDetail('signage_req', v)} />
+      </div>
+      <Field label="Business Type / Concept">
+        <Input value={details.business_type || ''} onChange={e => setDetail('business_type', e.target.value)} placeholder="e.g. QSR restaurant, boutique retail, medical spa" />
+      </Field>
+      <Field label="Additional Requirements">
+        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
+          placeholder="Any other must-haves…" rows={2} />
+      </Field>
+    </>
+  );
+}
+
+function IndustrialFlexRequirement({ details, setDetail }) {
+  return (
+    <>
+      <SectionTitle>Space Requirements</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min SF"><Num field="min_sf" placeholder="e.g. 10000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max SF"><Num field="max_sf" placeholder="e.g. 50000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Clear Height (ft)"><Num field="min_clear_height" placeholder="e.g. 18" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Dock-High Doors"><Num field="min_dock_doors" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Drive-In Doors"><Num field="min_drive_in_doors" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Truck Court Depth (ft)"><Num field="min_truck_court" placeholder="e.g. 100" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Land / Lot (acres)"><Num field="min_acres" placeholder="e.g. 1.0" step="0.1" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <SectionTitle>Power & Yard</SectionTitle>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="3-Phase Power Required" value={!!details.three_phase_req} onChange={v => setDetail('three_phase_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Fenced / Secured Yard Required" value={!!details.fenced_yard_req} onChange={v => setDetail('fenced_yard_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Crane System Required" value={!!details.crane_req} onChange={v => setDetail('crane_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Outside Storage Permitted Required" value={!!details.outside_storage_req} onChange={v => setDetail('outside_storage_req', v)} />
+      </div>
+      {details.crane_req && (
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Min Crane Capacity (tons)"><Num field="min_crane_tons" placeholder="e.g. 5" details={details} setDetail={setDetail} /></Field>
+        </div>
+      )}
+      <Field label="Intended Use">
+        <Input value={details.intended_use || ''} onChange={e => setDetail('intended_use', e.target.value)} placeholder="e.g. Distribution, Manufacturing, Flex Office/Warehouse" />
+      </Field>
+      <Field label="Additional Requirements">
+        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)} placeholder="Any other must-haves…" rows={2} />
+      </Field>
+    </>
+  );
+}
+
+function LandRequirement({ details, setDetail }) {
+  const toggleBool = (key) => setDetail(key, !details[key]);
+  const utilities = details.utilities_req || [];
+  const toggleUtility = (key) => setDetail('utilities_req', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
+  const topography = details.topography_req || [];
+  const toggleTopo = (key) => setDetail('topography_req', topography.includes(key) ? topography.filter(t => t !== key) : [...topography, key]);
+  return (
+    <>
+      <SectionTitle>Size Requirements</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min Acreage"><Num field="min_acres" placeholder="e.g. 2.0" step="0.1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max Acreage"><Num field="max_acres" placeholder="e.g. 10.0" step="0.1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Road Frontage (ft)"><Num field="min_frontage" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <ToggleGroup label="Entitlements Needed" value={details.entitlements_needed || ''} onChange={v => setDetail('entitlements_needed', v)}
+        options={[{ value: 'raw', label: 'Raw OK' }, { value: 'shovel_ready', label: 'Shovel Ready' }, { value: 'approved', label: 'Approved Plan' }]} />
+      <SectionTitle>Utilities Required at Site</SectionTitle>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        {[{key:'municipal_water',label:'Municipal Water'},{key:'sanitary_sewer',label:'Sanitary Sewer'},{key:'electric',label:'Electric'},{key:'natural_gas',label:'Natural Gas'},{key:'fiber_internet',label:'Fiber / Internet'}].map((u, idx) => (
+          <React.Fragment key={u.key}><Toggle label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />{idx < 4 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}</React.Fragment>
+        ))}
+      </div>
+      <SectionTitle>Site Characteristics</SectionTitle>
+      <Field label="Topography Preferred">
+        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+          {[{key:'level',label:'Level / Flat'},{key:'wooded',label:'Wooded'},{key:'cleared',label:'Cleared'}].map((t, idx) => (
+            <React.Fragment key={t.key}><Toggle label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />{idx < 2 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}</React.Fragment>
+          ))}
+        </div>
+      </Field>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="Perc Test Completed Required" value={!!details.perc_test_req} onChange={() => toggleBool('perc_test_req')} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="No Wetlands / No Flood Zone" value={!!details.no_wetlands_req} onChange={() => toggleBool('no_wetlands_req')} />
+      </div>
+      <Field label="Zoning Acceptable">
+        <TagsInput value={details.zoning_acceptable || []} onChange={v => setDetail('zoning_acceptable', v)} placeholder="e.g. B-2, M-1, any commercial (press Enter)" />
+      </Field>
+      <Field label="Intended Use / Development Plan">
+        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
+          placeholder="e.g. Strip mall, industrial park, self-storage facility…" rows={2} />
+      </Field>
+    </>
+  );
+}
+
+const SPECIAL_USE_REQ_TYPES = [
+  'Religious/Church','Educational/School','Hospitality/Hotel','Event Center/Banquet',
+  'Sports/Recreation','Automotive/Specialty','Any Special Use',
+];
+
+function SpecialUseRequirement({ details, setDetail }) {
+  const infra = details.required_infra || [];
+  const toggleInfra = (key) => setDetail('required_infra', infra.includes(key) ? infra.filter(k => k !== key) : [...infra, key]);
+  const selectStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
+  return (
+    <>
+      <SectionTitle>Use & Space Requirements</SectionTitle>
+      <Field label="Target Use Type">
+        <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={selectStyle}
+          value={details.target_use || ''} onChange={e => setDetail('target_use', e.target.value)}>
+          <option value="" style={{ background: '#0E1318' }}>Select target use</option>
+          {SPECIAL_USE_REQ_TYPES.map(t => <option key={t} value={t} style={{ background: '#0E1318' }}>{t}</option>)}
+        </select>
+      </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min SF"><Num field="min_sf" placeholder="e.g. 5000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Max SF"><Num field="max_sf" placeholder="e.g. 25000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Seating / Capacity"><Num field="min_seating" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Acreage"><Num field="min_acres" placeholder="e.g. 1.0" step="0.1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Parking"><Num field="min_parking" placeholder="e.g. 80" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <SectionTitle>Required Infrastructure</SectionTitle>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        {[{key:'commercial_kitchen',label:'Commercial Kitchen'},{key:'stage',label:'Stage / Platform'},{key:'gymnasium',label:'Gymnasium'},{key:'large_assembly',label:'Large Assembly Hall'},{key:'ada',label:'ADA Compliant'}].map((f, idx) => (
+          <React.Fragment key={f.key}><Toggle label={f.label} value={infra.includes(f.key)} onChange={() => toggleInfra(f.key)} />{idx < 4 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}</React.Fragment>
+        ))}
+      </div>
+      <Field label="Zoning Requirements">
+        <Input value={details.zoning_req || ''} onChange={e => setDetail('zoning_req', e.target.value)} placeholder="e.g. Must allow assembly use, P-1 acceptable" />
+      </Field>
+      <Field label="Additional Requirements">
+        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
+          placeholder="Describe must-have features, intended use, conversion potential needed…" rows={2} />
+      </Field>
+    </>
+  );
+}
+
+// ── MAIN EXPORT ──────────────────────────────────────────────────────────────
 export default function ReqStep2Commercial({ data, update, onNext }) {
-  const details = data.property_details || {};
+  const details   = data.property_details || {};
   const setDetail = (key, val) => update({ property_details: { ...details, [key]: val } });
-  const type = data.property_type;
-  const typeName = type?.replace(/_/g, ' ');
+  const type      = data.property_type;
+  const isSale    = data.transaction_type === 'sale';
+
+  // Default to investment for commercial sale (land: no default — force pick)
+  const saleTypeDefault = type === 'land' ? null : 'investment';
+  const saleType = details.sale_type || saleTypeDefault;
+
+  const showLease      = !isSale || saleType === 'owner_user';
+  const showInvestment = isSale && saleType === 'investment';
 
   return (
     <div className="space-y-6">
-      <p className="text-sm -mt-2" style={{ color: 'rgba(255,255,255,0.6)' }}>Specific needs for a <strong className="capitalize">{typeName}</strong> space.</p>
-      {type === 'office'          && <OfficeDetails              details={details} setDetail={setDetail} />}
-      {type === 'medical_office' && <MedicalOfficeReqDetails     details={details} setDetail={setDetail} />}
-      {type === 'retail' && <RetailDetails details={details} setDetail={setDetail} />}
-      {type === 'industrial_flex' && <IndustrialFlexReqDetails details={details} setDetail={setDetail} />}
-      {type === 'land' && <LandDetails details={details} setDetail={setDetail} />}
-      {type === 'special_use' && <SpecialUseReqDetails details={details} setDetail={setDetail} />}
+      <p className="text-sm -mt-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
+        Tell us what you need in a <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong>{isSale ? ' purchase' : ' space'}.
+      </p>
+
+      {isSale && (
+        <SaleTypeSelector value={saleType} onChange={v => setDetail('sale_type', v)} />
+      )}
+
+      {showLease && (
+        <>
+          {type === 'office'          && <OfficeRequirement        details={details} setDetail={setDetail} />}
+          {type === 'medical_office'  && <MedicalOfficeRequirement details={details} setDetail={setDetail} />}
+          {type === 'retail'          && <RetailRequirement        details={details} setDetail={setDetail} />}
+          {type === 'industrial_flex' && <IndustrialFlexRequirement details={details} setDetail={setDetail} />}
+          {type === 'land'            && <LandRequirement          details={details} setDetail={setDetail} />}
+          {type === 'special_use'     && <SpecialUseRequirement    details={details} setDetail={setDetail} />}
+        </>
+      )}
+
+      {showInvestment && (
+        <>
+          {type === 'office'          && <OfficeRequirementSaleInvestment          details={details} setDetail={setDetail} />}
+          {type === 'medical_office'  && <MOBRequirementSaleInvestment             details={details} setDetail={setDetail} />}
+          {type === 'retail'          && <RetailRequirementSaleInvestment          details={details} setDetail={setDetail} />}
+          {type === 'industrial_flex' && <IndustrialFlexRequirementSaleInvestment  details={details} setDetail={setDetail} />}
+          {type === 'land'            && <LandRequirement                          details={details} setDetail={setDetail} />}
+          {type === 'special_use'     && <SpecialUseRequirementSaleInvestment      details={details} setDetail={setDetail} />}
+        </>
+      )}
+
       <div className="flex justify-end pt-2">
-        <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
+        <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: ACCENT }}>
           Next <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
