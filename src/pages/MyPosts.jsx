@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Building2, Search, Plus, Trash2, Loader2 } from 'lucide-react';
+import { Building2, Search, Plus, Trash2, Loader2, FileText } from 'lucide-react';
 import DealPost from '../components/dashboard/DealPost';
 import CreatePostModal from '../components/dashboard/CreatePostModal';
+
+const ACCENT = '#00DBC5';
 
 export default function MyPosts() {
   const [filter, setFilter] = useState('all');
@@ -15,17 +15,17 @@ export default function MyPosts() {
 
   const { data: listings = [], isLoading: loadingListings } = useQuery({
     queryKey: ['my-listings'],
-    queryFn: () => base44.entities.Listing.list('-created_date')
+    queryFn: () => base44.entities.Listing.list('-created_date'),
   });
 
   const { data: requirements = [], isLoading: loadingRequirements } = useQuery({
     queryKey: ['my-requirements'],
-    queryFn: () => base44.entities.Requirement.list('-created_date')
+    queryFn: () => base44.entities.Requirement.list('-created_date'),
   });
 
   const allPosts = [
     ...listings.map(l => ({ ...l, postType: 'listing' })),
-    ...requirements.map(r => ({ ...r, postType: 'requirement' }))
+    ...requirements.map(r => ({ ...r, postType: 'requirement' })),
   ].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   const filteredPosts = filter === 'all' ? allPosts
@@ -52,65 +52,115 @@ export default function MyPosts() {
 
   const isLoading = loadingListings || loadingRequirements;
 
+  const tabs = [
+    { key: 'all',          label: 'All',          count: allPosts.length },
+    { key: 'listings',     label: 'Listings',     count: listings.length,     icon: Building2 },
+    { key: 'requirements', label: 'Requirements', count: requirements.length, icon: Search },
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+    <div style={{ maxWidth: '860px', margin: '0 auto', padding: '48px 24px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '32px', gap: '16px', flexWrap: 'wrap' }}>
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">My Posts</h1>
-          <p className="text-gray-500 mt-1">Manage your listings and requirements</p>
+          <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '28px', fontWeight: 400, color: 'white', margin: '0 0 6px' }}>
+            My Posts
+          </h1>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+            Manage your active listings and requirements
+          </p>
         </div>
-        <Button
+        <button
           onClick={() => setShowCreateModal(true)}
-          className="text-white gap-2"
-          style={{ backgroundColor: 'var(--tiffany-blue)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: ACCENT, border: 'none', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: '#111827', cursor: 'pointer', flexShrink: 0 }}
         >
-          <Plus className="w-4 h-4" />
+          <Plus style={{ width: '16px', height: '16px' }} />
           New Post
-        </Button>
+        </button>
       </div>
 
-      <Tabs value={filter} onValueChange={setFilter}>
-        <TabsList className="grid grid-cols-3 bg-gray-100 w-full">
-          <TabsTrigger value="all">All ({allPosts.length})</TabsTrigger>
-          <TabsTrigger value="listings">
-            <Building2 className="w-4 h-4 mr-1.5" />
-            Listings ({listings.length})
-          </TabsTrigger>
-          <TabsTrigger value="requirements">
-            <Search className="w-4 h-4 mr-1.5" />
-            Requirements ({requirements.length})
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* Filter Tabs */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+        {tabs.map(tab => {
+          const isActive = filter === tab.key;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 16px', borderRadius: '8px',
+                background: isActive ? ACCENT : 'rgba(255,255,255,0.06)',
+                border: isActive ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
+                color: isActive ? '#111827' : 'rgba(255,255,255,0.6)',
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}
+            >
+              {Icon && <Icon style={{ width: '14px', height: '14px' }} />}
+              {tab.label}
+              <span style={{
+                padding: '1px 7px', borderRadius: '99px', fontSize: '11px',
+                background: isActive ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)',
+                color: isActive ? '#111827' : 'rgba(255,255,255,0.5)',
+              }}>
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
+      {/* Content */}
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+          <Loader2 style={{ width: '32px', height: '32px', color: ACCENT, animation: 'spin 1s linear infinite' }} />
         </div>
       ) : filteredPosts.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl shadow-sm">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#e6f7f5' }}>
-            <Plus className="w-8 h-8" style={{ color: 'var(--tiffany-blue)' }} />
+        <div style={{ textAlign: 'center', padding: '64px 24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: `${ACCENT}15`, border: `1px solid ${ACCENT}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <FileText style={{ width: '28px', height: '28px', color: ACCENT }} />
           </div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-1">No posts yet</h3>
-          <p className="text-gray-400 mb-4 text-sm">Create your first listing or requirement to get started.</p>
-          <Button onClick={() => setShowCreateModal(true)} className="text-white" style={{ backgroundColor: 'var(--tiffany-blue)' }}>
+          <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '18px', fontWeight: 400, color: 'white', margin: '0 0 8px' }}>
+            No posts yet
+          </h3>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: '0 0 24px' }}>
+            Create your first listing or requirement to start getting matched.
+          </p>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            style={{ padding: '10px 24px', background: ACCENT, border: 'none', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: '#111827', cursor: 'pointer' }}
+          >
             Create a Post
-          </Button>
+          </button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredPosts.map(post => (
-            <div key={`${post.postType}-${post.id}`} className="relative group">
+            <div key={`${post.postType}-${post.id}`} style={{ position: 'relative' }}
+              onMouseEnter={e => { const btn = e.currentTarget.querySelector('[data-delete]'); if (btn) btn.style.opacity = '1'; }}
+              onMouseLeave={e => { const btn = e.currentTarget.querySelector('[data-delete]'); if (btn) btn.style.opacity = '0'; }}
+            >
               <DealPost post={post} />
               <button
+                data-delete
                 onClick={() => handleDelete(post)}
                 disabled={deletingId === post.id}
-                className="absolute top-4 right-4 p-2 rounded-lg bg-white shadow border border-gray-100 text-gray-400 hover:text-red-500 hover:border-red-200 transition-all opacity-0 group-hover:opacity-100"
+                style={{
+                  position: 'absolute', top: '14px', right: '14px',
+                  padding: '7px', background: 'rgba(14,19,24,0.9)', backdropFilter: 'blur(4px)',
+                  border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px',
+                  cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  opacity: 0, transition: 'all 0.15s', color: 'rgba(255,255,255,0.5)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
               >
                 {deletingId === post.id
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : <Trash2 className="w-4 h-4" />
+                  ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
+                  : <Trash2 style={{ width: '15px', height: '15px' }} />
                 }
               </button>
             </div>
@@ -130,6 +180,8 @@ export default function MyPosts() {
           }}
         />
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
