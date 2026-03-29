@@ -540,7 +540,7 @@ function AccordionSection({ section, myColor, theirColor, myLabel, theirLabel, o
 }
 
 // ─── AI Breakdown ─────────────────────────────────────────────────────────────
-function AIBreakdown({ listing, requirement, matchResult }) {
+function AIBreakdown({ listing, requirement, matchResult, onStartConversation }) {
   const [text, setText]     = useState(null);
   const [loading, setLoad]  = useState(false);
   const [error, setError]   = useState(null);
@@ -572,7 +572,8 @@ Rules:
 4. Highlight the strongest alignment and any gaps.
 5. End with what the next step should be.
 6. Write in second person to the listing agent.
-7. Plain prose only. No markdown, bullets, headers, em dashes, or hyphens used as dashes.`;
+7. End your final sentence with a clear, natural call to action explaining specifically why these two agents should connect based on this match — make it feel genuine, not generic.
+8. Plain prose only. No markdown, bullets, headers, em dashes, or hyphens used as dashes. Always write numbers as digits, never spell them out.`;
   }, [listing, requirement, matchResult]);
 
   const run = useCallback(async () => {
@@ -622,10 +623,18 @@ Rules:
       <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'15px', color:'rgba(255,255,255,0.82)', lineHeight:1.85, margin:'0 0 20px' }}>
         <HighlightedText text={text}/>
       </p>
-      <button onClick={() => { setText(null); run(); }}
-        style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 14px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', cursor:'pointer' }}>
-        <Loader2 style={{ width:'11px', height:'11px' }}/> Regenerate
-      </button>
+      <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+        {onStartConversation && (
+          <button onClick={onStartConversation}
+            style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 16px', background:ACCENT, border:'none', borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:600, color:'#111827', cursor:'pointer' }}>
+            Start Conversation
+          </button>
+        )}
+        <button onClick={() => { setText(null); run(); }}
+          style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 14px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', cursor:'pointer' }}>
+          <Loader2 style={{ width:'11px', height:'11px' }}/> Regenerate
+        </button>
+      </div>
     </div>
   );
 }
@@ -786,7 +795,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
                 <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:ACCENT }}/>
                 <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.4)' }}>AI Match Breakdown</span>
               </div>
-              <AIBreakdown listing={listing} requirement={requirement} matchResult={matchResult}/>
+              <AIBreakdown listing={listing} requirement={requirement} matchResult={matchResult} onStartConversation={() => setShowCompose(true)}/>
             </div>
           </div>
         </div>
