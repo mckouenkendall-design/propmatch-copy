@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Bell, Lock, Shield, Moon, Globe, CreditCard,
   AlertTriangle, CheckCircle, ChevronRight, LogOut,
-  Receipt, Download, ExternalLink
+  Receipt, Download,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import RoleChangeModal from '@/components/settings/RoleChangeModal';
@@ -60,7 +60,6 @@ function CancelReasonModal({ onSubmit, onBack }) {
   const [selected, setSelected] = useState('');
   const [other, setOther] = useState('');
   const canSubmit = selected && (selected !== 'Other' || other.trim());
-
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
       <div style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', maxWidth: '480px', width: '100%', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -68,40 +67,18 @@ function CancelReasonModal({ onSubmit, onBack }) {
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 20px' }}>Your feedback helps us improve PropMatch.</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
           {CANCEL_REASONS.map(reason => (
-            <button
-              key={reason}
-              onClick={() => setSelected(reason)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 16px', borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
-                background: selected === reason ? 'rgba(0,219,197,0.08)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${selected === reason ? ACCENT : 'rgba(255,255,255,0.1)'}`,
-                fontFamily: "'Inter', sans-serif", fontSize: '14px',
-                color: selected === reason ? ACCENT : 'white',
-                transition: 'all 0.15s',
-              }}
-            >
+            <button key={reason} onClick={() => setSelected(reason)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '8px', cursor: 'pointer', textAlign: 'left', background: selected === reason ? 'rgba(0,219,197,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${selected === reason ? ACCENT : 'rgba(255,255,255,0.1)'}`, fontFamily: "'Inter', sans-serif", fontSize: '14px', color: selected === reason ? ACCENT : 'white', transition: 'all 0.15s' }}>
               {reason}
               {selected === reason && <CheckCircle style={{ width: '16px', height: '16px', color: ACCENT, flexShrink: 0 }} />}
             </button>
           ))}
         </div>
         {selected === 'Other' && (
-          <textarea
-            value={other}
-            onChange={e => setOther(e.target.value)}
-            placeholder="Tell us more..."
-            rows={3}
-            style={{ width: '100%', boxSizing: 'border-box', padding: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'white', outline: 'none', resize: 'vertical', marginBottom: '16px' }}
-          />
+          <textarea value={other} onChange={e => setOther(e.target.value)} placeholder="Tell us more..." rows={3} style={{ width: '100%', boxSizing: 'border-box', padding: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'white', outline: 'none', resize: 'vertical', marginBottom: '16px' }} />
         )}
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
           <button onClick={onBack} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>Go Back</button>
-          <button
-            onClick={() => canSubmit && onSubmit(selected === 'Other' ? other : selected)}
-            disabled={!canSubmit}
-            style={{ flex: 1, padding: '12px', background: canSubmit ? '#ef4444' : 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: canSubmit ? 'white' : 'rgba(255,255,255,0.3)', cursor: canSubmit ? 'pointer' : 'not-allowed' }}
-          >
+          <button onClick={() => canSubmit && onSubmit(selected === 'Other' ? other : selected)} disabled={!canSubmit} style={{ flex: 1, padding: '12px', background: canSubmit ? '#ef4444' : 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: canSubmit ? 'white' : 'rgba(255,255,255,0.3)', cursor: canSubmit ? 'pointer' : 'not-allowed' }}>
             Cancel Subscription
           </button>
         </div>
@@ -112,31 +89,23 @@ function CancelReasonModal({ onSubmit, onBack }) {
 
 export default function Settings() {
   const { user, refreshUser } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const { theme, setTheme }   = useTheme();
+  const { toast }             = useToast();
+  const navigate              = useNavigate();
 
-  // Notification prefs
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [matchAlerts, setMatchAlerts] = useState(true);
-  const [groupNotifications, setGroupNotifications] = useState(true);
+  const [emailNotifications, setEmailNotifications]     = useState(true);
+  const [matchAlerts, setMatchAlerts]                   = useState(true);
+  const [groupNotifications, setGroupNotifications]     = useState(true);
   const [messageNotifications, setMessageNotifications] = useState(true);
-
-  // Subscription
-  const [isAnnual, setIsAnnual] = useState(false);
-  const [autoRenew, setAutoRenew] = useState(true);
+  const [isAnnual, setIsAnnual]         = useState(false);
+  const [autoRenew, setAutoRenew]       = useState(true);
   const [showCancelStep1, setShowCancelStep1] = useState(false);
   const [showCancelStep2, setShowCancelStep2] = useState(false);
-  const [cancelDone, setCancelDone] = useState(false);
-
-  // Role change
-  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [cancelDone, setCancelDone]     = useState(false);
+  const [showRoleModal, setShowRoleModal]     = useState(false);
   const [showPaymentScreen, setShowPaymentScreen] = useState(false);
+  const [language, setLanguage]         = useState('en');
 
-  // Language
-  const [language, setLanguage] = useState('en');
-
-  // Sync from user
   useEffect(() => {
     if (user) {
       setEmailNotifications(user.email_notifications !== false);
@@ -149,17 +118,16 @@ export default function Settings() {
     }
   }, [user]);
 
-  const isBroker = user?.user_type === 'principal_broker';
+  const isBroker          = user?.user_type === 'principal_broker';
   const isBrokerSponsored = user?.selected_plan === 'broker_sponsored';
-  const isPaidPlan = user?.selected_plan && user.selected_plan !== 'free';
+  const isPaidPlan        = user?.selected_plan && user.selected_plan !== 'free';
 
-  // Fetch invoices
   const { data: invoiceData, isLoading: loadingInvoices } = useQuery({
     queryKey: ['invoices', user?.email],
     queryFn: () => base44.functions.invoke('getInvoices', {}),
     enabled: !!user?.stripe_customer_id,
   });
-  const invoices = invoiceData?.invoices || [];
+  const invoices = invoiceData?.data?.invoices || invoiceData?.invoices || [];
 
   const getProfile = async () => {
     const all = await base44.entities.UserProfile.list();
@@ -178,7 +146,7 @@ export default function Settings() {
       });
       await refreshUser();
       toast({ title: 'Notification preferences saved' });
-    } catch (e) {
+    } catch {
       toast({ title: 'Failed to save', variant: 'destructive' });
     }
   };
@@ -190,8 +158,23 @@ export default function Settings() {
       await base44.entities.UserProfile.update(profile.id, { language });
       await refreshUser();
       toast({ title: 'Preferences saved' });
-    } catch (e) {
+    } catch {
       toast({ title: 'Failed to save', variant: 'destructive' });
+    }
+  };
+
+  const saveBillingCycle = async (annual) => {
+    try {
+      const profile = await getProfile();
+      if (!profile) return;
+      await base44.entities.UserProfile.update(profile.id, {
+        billing_cycle: annual ? 'annual' : 'monthly',
+      });
+      setIsAnnual(annual);
+      await refreshUser();
+      toast({ title: `Switched to ${annual ? 'annual' : 'monthly'} billing. Takes effect at next renewal.` });
+    } catch {
+      toast({ title: 'Failed to update billing cycle', variant: 'destructive' });
     }
   };
 
@@ -203,7 +186,7 @@ export default function Settings() {
       setAutoRenew(val);
       await refreshUser();
       toast({ title: `Auto-renew ${val ? 'enabled' : 'disabled'}` });
-    } catch (e) {
+    } catch {
       toast({ title: 'Failed to save', variant: 'destructive' });
     }
   };
@@ -221,7 +204,7 @@ export default function Settings() {
       setShowCancelStep2(false);
       setCancelDone(true);
       toast({ title: 'Subscription cancelled', description: 'You have access until the end of your current period.' });
-    } catch (e) {
+    } catch {
       toast({ title: 'Failed to cancel', variant: 'destructive' });
     }
   };
@@ -240,14 +223,12 @@ export default function Settings() {
       await refreshUser();
       setShowPaymentScreen(false);
       toast({ title: 'Role updated — you are now a Principal Broker' });
-    } catch (e) {
+    } catch {
       toast({ title: 'Error updating role', variant: 'destructive' });
     }
   };
 
-  const handleLogout = async () => {
-    await base44.auth.logout('/Landing');
-  };
+  const handleLogout = async () => { await base44.auth.logout('/Landing'); };
 
   const planLabel = () => {
     if (!user?.selected_plan || user.selected_plan === 'free') return 'Free';
@@ -267,13 +248,10 @@ export default function Settings() {
     return 'Free';
   };
 
-  const formatAmount = (amount, currency) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: (currency || 'usd').toUpperCase() }).format(amount / 100);
-  };
-
-  const formatDate = (unix) => {
-    return new Date(unix * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
+  const formatAmount = (amount, currency) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: (currency || 'usd').toUpperCase() }).format(amount / 100);
+  const formatDate = (unix) =>
+    new Date(unix * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   if (showPaymentScreen) {
     return (
@@ -295,12 +273,8 @@ export default function Settings() {
   };
 
   const rowStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '16px',
-    background: 'rgba(255,255,255,0.02)',
-    borderRadius: '8px',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px',
   };
 
   return (
@@ -326,39 +300,31 @@ export default function Settings() {
 
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '28px', fontWeight: 400, color: 'white', margin: '0 0 6px' }}>Settings</h1>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-          Manage your account settings and preferences
-        </p>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>Manage your account settings and preferences</p>
       </div>
 
       <Tabs defaultValue="subscription" style={{ width: '100%' }}>
         <TabsList style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px', flexWrap: 'wrap', height: 'auto', gap: '4px' }}>
           {[
-            { value: 'subscription', icon: CreditCard, label: 'Subscription' },
-            { value: 'billing', icon: Receipt, label: 'Billing History' },
-            { value: 'notifications', icon: Bell, label: 'Notifications' },
-            { value: 'preferences', icon: Globe, label: 'Preferences' },
-            { value: 'security', icon: Lock, label: 'Security' },
+            { value: 'subscription',  icon: CreditCard, label: 'Subscription' },
+            { value: 'billing',       icon: Receipt,    label: 'Billing History' },
+            { value: 'notifications', icon: Bell,       label: 'Notifications' },
+            { value: 'preferences',   icon: Globe,      label: 'Preferences' },
+            { value: 'security',      icon: Lock,       label: 'Security' },
           ].map(tab => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
+            <TabsTrigger key={tab.value} value={tab.value}
               style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif" }}
-              className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]"
-            >
+              className="data-[state=active]:bg-[rgba(0,219,197,0.15)] data-[state=active]:text-[#00DBC5]">
               <tab.icon style={{ width: '16px', height: '16px', marginRight: '8px' }} />
               {tab.label}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {/* ── SUBSCRIPTION TAB ── */}
+        {/* SUBSCRIPTION */}
         <TabsContent value="subscription">
           <div style={sectionStyle}>
-            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.4)', margin: '0 0 16px' }}>
-              Current Plan
-            </h3>
-
+            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.4)', margin: '0 0 16px' }}>Current Plan</h3>
             {isBrokerSponsored ? (
               <div style={{ background: 'rgba(0,219,197,0.06)', border: `1px solid ${ACCENT}30`, borderRadius: '10px', padding: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
@@ -368,9 +334,7 @@ export default function Settings() {
                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: '0 0 8px' }}>
                   Your subscription is covered by <strong style={{ color: ACCENT }}>{user?.brokerage_name || 'your brokerage'}</strong>. Full access at no cost to you.
                 </p>
-                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>
-                  Contact your broker to make changes.
-                </p>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>Contact your broker to make changes.</p>
               </div>
             ) : (
               <div>
@@ -395,13 +359,7 @@ export default function Settings() {
                         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: '0 0 4px' }}>Annual Billing</p>
                         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Save up to 25% by paying annually</p>
                       </div>
-                      <Switch
-                        checked={isAnnual}
-                        onCheckedChange={(val) => {
-                          setIsAnnual(val);
-                          toast({ title: `Switched to ${val ? 'annual' : 'monthly'} billing. Takes effect at next renewal.` });
-                        }}
-                      />
+                      <Switch checked={isAnnual} onCheckedChange={saveBillingCycle} />
                     </div>
                     <div style={{ ...rowStyle, marginBottom: '10px' }}>
                       <div>
@@ -416,13 +374,8 @@ export default function Settings() {
                 {isBroker && (
                   <div style={{ background: 'rgba(0,219,197,0.04)', border: '1px solid rgba(0,219,197,0.15)', borderRadius: '10px', padding: '16px', marginBottom: '10px' }}>
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: '0 0 8px' }}>Manage Seats & Roster</p>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 12px' }}>
-                      Add or remove agents from your brokerage plan in the Brokerage Admin dashboard.
-                    </p>
-                    <button
-                      onClick={() => navigate('/BrokerDashboard')}
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: ACCENT, border: 'none', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500, color: '#111827', cursor: 'pointer' }}
-                    >
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 12px' }}>Add or remove agents from your brokerage plan in the Brokerage Admin dashboard.</p>
+                    <button onClick={() => navigate('/BrokerDashboard')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: ACCENT, border: 'none', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500, color: '#111827', cursor: 'pointer' }}>
                       Go to Brokerage Admin <ChevronRight style={{ width: '14px', height: '14px' }} />
                     </button>
                   </div>
@@ -431,68 +384,51 @@ export default function Settings() {
                 {!isPaidPlan && (
                   <div style={{ background: 'rgba(0,219,197,0.04)', border: '1px solid rgba(0,219,197,0.15)', borderRadius: '10px', padding: '16px', marginBottom: '10px' }}>
                     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: '0 0 8px' }}>Upgrade to unlock full access</p>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 12px' }}>
-                      Get unlimited listings, contact matched agents, and join groups.
-                    </p>
-                    <button
-                      onClick={() => navigate('/Onboarding')}
-                      style={{ padding: '8px 16px', background: ACCENT, border: 'none', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500, color: '#111827', cursor: 'pointer' }}
-                    >
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 12px' }}>Get unlimited listings, contact matched agents, and join groups.</p>
+                    <button onClick={() => navigate('/Onboarding')} style={{ padding: '8px 16px', background: ACCENT, border: 'none', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500, color: '#111827', cursor: 'pointer' }}>
                       View Plans →
                     </button>
                   </div>
                 )}
 
                 {isPaidPlan && !cancelDone && (
-                  <button
-                    onClick={() => setShowCancelStep1(true)}
+                  <button onClick={() => setShowCancelStep1(true)}
                     style={{ marginTop: '8px', background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '10px 20px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#ef4444', cursor: 'pointer' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     Cancel Subscription
                   </button>
                 )}
 
                 {cancelDone && (
                   <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '16px', marginTop: '8px' }}>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#ef4444', margin: 0 }}>
-                      Subscription cancelled. You'll have access until the end of your billing period.
-                    </p>
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#ef4444', margin: 0 }}>Subscription cancelled. You'll have access until the end of your billing period.</p>
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* Sign out — lives at bottom of subscription tab */}
           <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <button
-              onClick={handleLogout}
+            <button onClick={handleLogout}
               style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', transition: 'all 0.2s' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; e.currentTarget.style.color = '#ef4444'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
-            >
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}>
               <LogOut style={{ width: '16px', height: '16px' }} />
               Sign Out
             </button>
           </div>
         </TabsContent>
 
-        {/* ── BILLING HISTORY TAB ── */}
+        {/* BILLING HISTORY */}
         <TabsContent value="billing">
           <div style={sectionStyle}>
-            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>
-              Payment History
-            </h3>
-
+            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Payment History</h3>
             {!user?.stripe_customer_id ? (
               <div style={{ textAlign: 'center', padding: '48px 24px' }}>
                 <Receipt style={{ width: '40px', height: '40px', color: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'white', margin: '0 0 8px' }}>No billing history yet</p>
-                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
-                  Your invoices will appear here once you subscribe to a paid plan.
-                </p>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Your invoices will appear here once you subscribe to a paid plan.</p>
               </div>
             ) : loadingInvoices ? (
               <div style={{ textAlign: 'center', padding: '48px' }}>
@@ -505,7 +441,6 @@ export default function Settings() {
               </div>
             ) : (
               <div>
-                {/* Header row */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px 80px', gap: '16px', padding: '8px 16px', marginBottom: '8px' }}>
                   {['Description', 'Date', 'Amount', ''].map(h => (
                     <p key={h} style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.3)', margin: 0 }}>{h}</p>
@@ -513,29 +448,13 @@ export default function Settings() {
                 </div>
                 {invoices.map(inv => (
                   <div key={inv.id} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px 80px', gap: '16px', padding: '14px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {inv.description}
-                    </p>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-                      {formatDate(inv.date)}
-                    </p>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: 0 }}>
-                      {formatAmount(inv.amount, inv.currency)}
-                    </p>
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.description}</p>
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>{formatDate(inv.date)}</p>
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: 'white', margin: 0 }}>{formatAmount(inv.amount, inv.currency)}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{
-                        fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 500,
-                        color: inv.status === 'paid' ? ACCENT : '#f59e0b',
-                        background: inv.status === 'paid' ? 'rgba(0,219,197,0.1)' : 'rgba(245,158,11,0.1)',
-                        border: `1px solid ${inv.status === 'paid' ? ACCENT + '30' : 'rgba(245,158,11,0.3)'}`,
-                        borderRadius: '4px', padding: '2px 8px',
-                      }}>
-                        {inv.status}
-                      </span>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 500, color: inv.status === 'paid' ? ACCENT : '#f59e0b', background: inv.status === 'paid' ? 'rgba(0,219,197,0.1)' : 'rgba(245,158,11,0.1)', border: `1px solid ${inv.status === 'paid' ? ACCENT + '30' : 'rgba(245,158,11,0.3)'}`, borderRadius: '4px', padding: '2px 8px' }}>{inv.status}</span>
                       {inv.pdf && (
-                        <a href={inv.pdf} target="_blank" rel="noopener noreferrer"
-                          style={{ color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center' }}
-                          title="Download invoice">
+                        <a href={inv.pdf} target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center' }} title="Download invoice">
                           <Download style={{ width: '14px', height: '14px' }} />
                         </a>
                       )}
@@ -547,7 +466,7 @@ export default function Settings() {
           </div>
         </TabsContent>
 
-        {/* ── NOTIFICATIONS TAB ── */}
+        {/* NOTIFICATIONS */}
         <TabsContent value="notifications">
           <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
             <CardHeader>
@@ -576,7 +495,7 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        {/* ── PREFERENCES TAB ── */}
+        {/* PREFERENCES */}
         <TabsContent value="preferences">
           <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
             <CardHeader>
@@ -593,9 +512,9 @@ export default function Settings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <SelectItem value="dark" style={{ color: 'rgba(255,255,255,0.85)' }}>Dark Mode</SelectItem>
+                    <SelectItem value="dark"  style={{ color: 'rgba(255,255,255,0.85)' }}>Dark Mode</SelectItem>
                     <SelectItem value="light" style={{ color: 'rgba(255,255,255,0.85)' }}>Light Mode</SelectItem>
-                    <SelectItem value="auto" style={{ color: 'rgba(255,255,255,0.85)' }}>Auto (System)</SelectItem>
+                    <SelectItem value="auto"  style={{ color: 'rgba(255,255,255,0.85)' }}>Auto (System)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -619,7 +538,7 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        {/* ── SECURITY TAB ── */}
+        {/* SECURITY */}
         <TabsContent value="security">
           <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
             <CardHeader>
