@@ -81,22 +81,20 @@ export default function FloatingMessageCompose({
     const breakdown  = matchResult?.breakdown?.map(b => `${b.category}: ${b.score}%`).join(', ') || '';
     const cta        = randomCTA();
 
-    return `Write a short, professional real estate agent-to-agent outreach message. Plain text only, no formatting, no bullet points, no subject line.
+    return `Write a short, friendly, conversational real estate agent-to-agent message. Plain text only. No bullet points. No dashes of any kind. No em dashes. No hyphens used as dashes.
 
-Context:
-- Sender: ${myName}${myCompany ? `, ${myCompany}` : ''}
-- Recipient: ${recipientName}
-- The sender's ${myIsListing ? 'listing' : 'requirement'} matched the recipient's ${myIsListing ? 'requirement' : 'listing'} with a ${score}% ${label} score
-- Listing: ${listing?.title || 'listing'} · ${lPrice} · ${lSize} · ${lLoc}
-- Requirement: ${requirement?.title || 'requirement'} · ${rPrice}
-- Score breakdown: ${breakdown}
+Sender: ${myName}${myCompany ? ' from ' + myCompany : ''}
+Recipient: ${recipientName}
+Match strength: ${score}% ${label}
+${myIsListing ? 'Sender has a listing' : 'Sender has a requirement'}: ${listing?.title || ''}, priced at ${lPrice}, ${lSize}, located in ${lLoc}
+${myIsListing ? 'Recipient has a requirement' : 'Recipient has a listing'}: ${requirement?.title || ''}, budget ${rPrice}
 
 Write exactly 3 sentences:
-1. A warm introduction stating who you are and that you noticed a match on PropMatch
-2. One sentence summarizing the key reason this looks like a strong match, referencing specific details
-3. End with this call to action exactly as written: "${cta}"
+1. Greeting by first name, introduce yourself and your company naturally. Example: "Hi [first name], this is [my name] from [company]."
+2. Say you noticed a ${label} match between your ${myIsListing ? 'listing' : 'requirement'} and theirs, briefly describe what you have and what they are looking for in plain conversational terms, like you are texting a colleague.
+3. End with this call to action word for word: "${cta}"
 
-Keep it natural, conversational, and under 100 words total.`;
+Do not use em dashes, hyphens as dashes, or any special punctuation. Keep it under 80 words. Sound like a real person, not a robot.`;
   }, [currentUser, myPost, matchPost, matchResult, recipientName]);
 
   const generateMessage = useCallback(async () => {
@@ -105,7 +103,7 @@ Keep it natural, conversational, and under 100 words total.`;
     try {
       const response = await base44.functions.invoke('generateAIText', { prompt: buildPrompt(), maxTokens: 300 });
       const result = response.data;
-      if (result?.text) setText(result.text.trim());
+      if (result?.text) setText(result.text.trim().replace(/—/g, ',').replace(/–/g, ',').replace(/ - /g, ', '));
     } catch {
       // silently fail — user can type their own message
     } finally {
