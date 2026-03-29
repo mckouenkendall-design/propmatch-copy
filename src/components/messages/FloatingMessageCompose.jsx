@@ -91,10 +91,10 @@ ${myIsListing ? 'Recipient has a requirement' : 'Recipient has a listing'}: ${re
 
 Write exactly 3 sentences:
 1. Greeting by first name, introduce yourself and your company naturally. Example: "Hi [first name], this is [my name] from [company]."
-2. Say you noticed a ${label} match between your ${myIsListing ? 'listing' : 'requirement'} and theirs, briefly describe what you have and what they are looking for in plain conversational terms, like you are texting a colleague.
+2. Say you noticed a ${label} match between your ${myIsListing ? 'listing' : 'requirement'} and theirs, briefly describe what you have and what they are looking for in plain conversational terms, like you are texting a colleague. IMPORTANT: always use digits for numbers, never spell them out. Write "$20.50/SF/yr" not "twenty dollars and fifty cents per square foot per year". Write "1,100 SF" not "one thousand one hundred square feet".
 3. End with this call to action word for word: "${cta}"
 
-Do not use em dashes, hyphens as dashes, or any special punctuation. Keep it under 80 words. Sound like a real person, not a robot.`;
+Do not use em dashes, hyphens as dashes, or any special punctuation. Always write numbers as digits. Keep it under 80 words. Sound like a real person, not a robot.`;
   }, [currentUser, myPost, matchPost, matchResult, recipientName]);
 
   const generateMessage = useCallback(async () => {
