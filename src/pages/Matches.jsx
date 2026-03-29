@@ -578,7 +578,8 @@ Rules:
   const run = useCallback(async () => {
     setLoad(true); setError(null);
     try {
-      const result = await base44.functions.generateAIText({ prompt, maxTokens: 800 });
+      const response = await base44.functions.invoke('generateAIText', { prompt, maxTokens: 800 });
+      const result = response.data;
       setText(result?.text?.trim() || 'No breakdown generated.');
     } catch (e) {
       setError('Unable to generate breakdown. Please try again.');
