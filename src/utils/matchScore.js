@@ -47,18 +47,29 @@ function scoreTx(listingTx, reqTx) {
   return 0;
 }
 
-// Location score — exact city match or partial credit
+// Location score — ANY single city match = 100. Having more preferred areas never penalizes.
 function scoreLoc(listingCity, reqCities) {
-  // cities can come from DB as a JSON string — parse it
   let cities = reqCities;
   if (typeof cities === 'string') {
-    try { cities = JSON.parse(cities); } catch { cities = [cities]; }
+    try {
+      cities = JSON.parse(cities);
+    } catch {
+      // Handle plain comma-separated string: "Auburn Hills, Troy, Rochester"
+      cities = cities.split(',').map(c => c.trim()).filter(Boolean);
+    }
   }
   if (!Array.isArray(cities) || cities.length === 0) return null;
   if (!listingCity) return 0;
   const lc = listingCity.toLowerCase().trim();
-  if (cities.some(c => c.toLowerCase().trim() === lc)) return 100;
-  return 20;
+  // Any preferred city matching the listing city = 100%.
+  // Also handles "City, State" vs plain "City" format mismatch.
+  const hit = cities.some(c => {
+    const cc = c.toLowerCase().trim();
+    return cc === lc ||
+      cc.startsWith(lc + ',') ||
+      lc.startsWith(cc + ',');
+  });
+  return hit ? 100 : 20;
 }
 
 // Amenity / feature overlap
