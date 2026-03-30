@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import {
   Building2, Search, TrendingUp, MessageCircle, Bell,
   Bookmark, BookmarkCheck, Plus, ChevronRight, FileText,
-  Zap, ArrowUpRight, X, BarChart2, Clock
+  Zap, ArrowUpRight, X, BarChart2, Clock, Eye, Share2
 } from 'lucide-react';
 import { calculateMatchScore, getScoreColor, getScoreLabel } from '@/utils/matchScore';
 
@@ -323,6 +323,113 @@ function EmptyState({ Icon, text, cta, onCta }) {
   );
 }
 
+// ─── Property Type Donut ─────────────────────────────────────────────────────
+const TYPE_COLORS = [ACCENT, LAVENDER, '#F59E0B', '#10B981', '#F97316', '#8B5CF6', '#EC4899', 'rgba(255,255,255,0.3)'];
+
+function polarToXY(cx, cy, r, deg) {
+  const rad = (deg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function PropertyTypeDonut({ listings, requirements }) {
+  const allPosts = [
+    ...listings.map(l => ({ ...l, postType: 'listing' })),
+    ...requirements.map(r => ({ ...r, postType: 'requirement' })),
+  ];
+  if (allPosts.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '24px 0' }}>
+      <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.28)', margin: 0 }}>No posts yet</p>
+    </div>
+  );
+
+  // Count by property type
+  const raw = {};
+  allPosts.forEach(p => {
+    const k = PT[p.property_type] || p.property_type || 'Other';
+    raw[k] = (raw[k] || 0) + 1;
+  });
+  // Sort by count desc, cap at 5 + "Other"
+  const sorted = Object.entries(raw).sort((a, b) => b[1] - a[1]);
+  const top5 = sorted.slice(0, 5);
+  const rest = sorted.slice(5).reduce((s, [, n]) => s + n, 0);
+  const segments = rest > 0 ? [...top5, ['Other', rest]] : top5;
+  const total = segments.reduce((s, [, n]) => s + n, 0);
+
+  // Build SVG arcs
+  const cx = 56, cy = 56, R = 40, gap = 3;
+  let angle = 0;
+  const arcs = segments.map(([label, count], i) => {
+    const sweep = (count / total) * 360;
+    const start = angle + (i === 0 ? 0 : gap / 2);
+    const end = angle + sweep - (i === segments.length - 1 ? 0 : gap / 2);
+    const s = polarToXY(cx, cy, R, start);
+    const e = polarToXY(cx, cy, R, end);
+    const large = sweep > 180 ? 1 : 0;
+    const path = `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
+    angle += sweep;
+    return { path, color: TYPE_COLORS[i % TYPE_COLORS.length], label, count, pct: Math.round((count / total) * 100) };
+  });
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      {/* SVG Donut */}
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <svg width="112" height="112" viewBox="0 0 112 112">
+          {/* Track */}
+          <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="11"/>
+          {arcs.map((a, i) => (
+            <path key={i} d={a.path} fill="none" stroke={a.color} strokeWidth="11" strokeLinecap="round"
+              style={{ filter: `drop-shadow(0 0 4px ${a.color}60)` }}/>
+          ))}
+        </svg>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: '20px', fontWeight: 700, color: 'white', lineHeight: 1 }}>{total}</span>
+          <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '9px', color: 'rgba(255,255,255,0.35)', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>posts</span>
+        </div>
+      </div>
+      {/* Legend */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        {arcs.map((a, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: a.color, flexShrink: 0 }}/>
+            <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.65)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.label}</span>
+            <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', fontWeight: 600, color: a.color }}>{a.count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Engagement Stats Row ─────────────────────────────────────────────────────
+// Shows aggregate views/saves/shares across all posts.
+// Values come from view_count/save_count/share_count fields on Listing + Requirement entities.
+// These fields default to 0 until you add them in Base44 entity settings.
+function EngagementStats({ listings, requirements }) {
+  const allPosts = [...listings, ...requirements];
+  const totalViews  = allPosts.reduce((s, p) => s + (p.view_count  || 0), 0);
+  const totalSaves  = allPosts.reduce((s, p) => s + (p.save_count  || 0), 0);
+  const totalShares = allPosts.reduce((s, p) => s + (p.share_count || 0), 0);
+
+  const items = [
+    { Icon: Eye,      label: 'Total Views',  value: totalViews,  color: ACCENT   },
+    { Icon: Bookmark, label: 'Total Saves',  value: totalSaves,  color: LAVENDER },
+    { Icon: Share2,   label: 'Total Shares', value: totalShares, color: AMBER    },
+  ];
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
+      {items.map(({ Icon, label, value, color }) => (
+        <div key={label} style={{ background: `${color}0a`, border: `1px solid ${color}18`, borderRadius: '11px', padding: '14px 12px', textAlign: 'center' }}>
+          <Icon style={{ width: '16px', height: '16px', color, margin: '0 auto 8px', display: 'block' }}/>
+          <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: '22px', fontWeight: 700, color, lineHeight: 1, marginBottom: '4px' }}>{value.toLocaleString()}</div>
+          <div style={{ fontFamily: "'Inter',sans-serif", fontSize: '10px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const { user } = useAuth();
@@ -514,6 +621,21 @@ export default function Dashboard() {
 
         {/* RIGHT COLUMN */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
+          {/* Engagement Stats — Views / Saves / Shares */}
+          <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '22px' }}>
+            <SectionHeader title="Post Engagement" color={ACCENT}/>
+            <EngagementStats listings={myListings} requirements={myRequirements}/>
+            <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '10px', color: 'rgba(255,255,255,0.2)', margin: '12px 0 0', lineHeight: 1.5 }}>
+              Views, saves &amp; shares across all your posts. Add <code style={{ background:'rgba(255,255,255,0.07)', padding:'1px 4px', borderRadius:'3px' }}>view_count</code>, <code style={{ background:'rgba(255,255,255,0.07)', padding:'1px 4px', borderRadius:'3px' }}>save_count</code>, <code style={{ background:'rgba(255,255,255,0.07)', padding:'1px 4px', borderRadius:'3px' }}>share_count</code> fields in Base44 to activate live tracking.
+            </p>
+          </div>
+
+          {/* Property Type Breakdown Donut */}
+          <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '22px' }}>
+            <SectionHeader title="Portfolio Breakdown" color={LAVENDER}/>
+            <PropertyTypeDonut listings={myListings} requirements={myRequirements}/>
+          </div>
 
           {/* Activity Feed */}
           <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '22px' }}>
