@@ -270,10 +270,10 @@ function exportMatchPDF(listing, requirement, matchResult, posterProfile, darkMo
 ${label ? `<span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${sc};background:${sc}18;border:1px solid ${sc}35;border-radius:20px;padding:5px 18px;box-shadow:0 0 14px ${sc}30">${label}</span>` : ''}
 </div>`;
 
-  // Logo: tight viewBox crops to just the fish (x:2-44, y:11-29), rendered at 24px height to match text
+  // Logo: viewBox crops to exact fish bounds (y:13-27 = 14 units), rendered at font-size height so tail = cap height of P
   const propColor = D ? 'rgba(255,255,255,0.9)' : '#111827';
-  const logoHTML = `<div style="display:flex;align-items:center;gap:5px">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 11 42 18" width="56" height="24">
+  const logoHTML = `<div style="display:flex;align-items:center;gap:2px">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 13 41 14" width="53" height="18">
     <g transform="translate(20,20)">
       <path d="M -16,0 Q 0,-7 16,0 Q 19,-1.5 22,-5 Q 20,-1 16,0 Q 19,1.5 22,5 Q 20,1 16,0 Q 0,7 -16,0 Z"
         fill="none" stroke="#00DBC5" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
