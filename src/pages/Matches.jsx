@@ -15,7 +15,6 @@ import AgentContactModal from '@/components/shared/AgentContactModal';
 const ACCENT   = '#00DBC5';
 const LAVENDER = '#818cf8';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtN = (n) => {
   const num = parseFloat(n);
   if (!n || isNaN(num)) return null;
@@ -24,9 +23,19 @@ const fmtN = (n) => {
 const fmtMoney = (v) =>
   v >= 1000000 ? `$${(v/1e6).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v/1000)}K` : `$${Math.round(v).toLocaleString()}`;
 
-const PT = { office:'General Office', medical_office:'Medical Office', retail:'Retail', industrial_flex:'Industrial / Flex', land:'Land', special_use:'Special Use', single_family:'Single Family', condo:'Condo', apartment:'Apartment', multi_family:'Multi-Family (2\u20134)', multi_family_5:'Multi-Family (5+)', townhouse:'Townhouse', manufactured:'Manufactured / Mobile', land_residential:'Residential Land' };
+const PT = {
+  office:'General Office', medical_office:'Medical Office', retail:'Retail',
+  industrial_flex:'Industrial / Flex', land:'Land', special_use:'Special Use',
+  single_family:'Single Family', condo:'Condo', apartment:'Apartment',
+  multi_family:'Multi-Family (2\u20134)', multi_family_5:'Multi-Family (5+)',
+  townhouse:'Townhouse', manufactured:'Manufactured / Mobile', land_residential:'Residential Land'
+};
 const TX = { lease:'Lease', sublease:'Sublease', sale:'Sale', rent:'Rent', purchase:'Purchase' };
-const LL = { full_service_gross:'Full Service Gross', modified_gross:'Modified Gross', net_lease:'Net Lease', ground_lease:'Ground Lease', nnn:'NNN (Triple Net)', nn:'NN (Double Net)', n:'N (Single Net)', absolute_net:'Absolute Net' };
+const LL = {
+  full_service_gross:'Full Service Gross', modified_gross:'Modified Gross',
+  net_lease:'Net Lease', ground_lease:'Ground Lease', nnn:'NNN (Triple Net)',
+  nn:'NN (Double Net)', n:'N (Single Net)', absolute_net:'Absolute Net'
+};
 
 function priceStr(post, isListing) {
   const tx = post.transaction_type, pp = post.price_period;
@@ -41,7 +50,7 @@ function priceStr(post, isListing) {
   return null;
 }
 
-// ─── Phase 5: Saved Matches (localStorage) ────────────────────────────────────
+// ─── Saved Matches ────────────────────────────────────────────────────────────
 function useSavedMatches(userEmail) {
   const key = `propmatch_saved_${userEmail}`;
   const [saved, setSaved] = useState(() => {
@@ -60,7 +69,7 @@ function useSavedMatches(userEmail) {
   return { saved, isSaved, toggle };
 }
 
-// ─── Phase 5: Share Match Modal ───────────────────────────────────────────────
+// ─── Share Modal ──────────────────────────────────────────────────────────────
 function ShareMatchModal({ listing, requirement, matchResult, posterProfile, posterEmail, onMessage, onClose }) {
   const [copied, setCopied] = useState(false);
   const { totalScore } = matchResult;
@@ -68,12 +77,17 @@ function ShareMatchModal({ listing, requirement, matchResult, posterProfile, pos
   const lPrice = priceStr(listing, true);
   const rPrice = priceStr(requirement, false);
   const lLoc = [listing.city, listing.state].filter(Boolean).join(', ');
-  const rCities = (() => { let c = requirement.cities; if (typeof c === 'string') { try { c = JSON.parse(c); } catch { c = [c]; } } return Array.isArray(c) ? c.join(', ') : c || 'Any'; })();
+  const rCities = (() => {
+    let c = requirement.cities;
+    if (typeof c === 'string') { try { c = JSON.parse(c); } catch { c = c.split(',').map(x=>x.trim()); } }
+    return Array.isArray(c) ? c.join(', ') : c || 'Any';
+  })();
   const agentName = posterProfile?.full_name || 'the agent';
   const agentCompany = posterProfile?.brokerage_name;
   const agentPhone = posterProfile?.phone;
+  const scoreColor = getScoreColor(totalScore);
 
-  const summary = [
+  const lines = [
     `PropMatch \u2014 ${label || 'Match'} (${totalScore}%)`,
     '',
     `LISTING: ${listing.title}`,
@@ -83,20 +97,23 @@ function ShareMatchModal({ listing, requirement, matchResult, posterProfile, pos
     '',
     `REQUIREMENT: ${requirement.title}`,
     rPrice ? `Budget: ${rPrice}` : null,
-    (requirement.min_size_sqft || requirement.max_size_sqft) ? `Size: ${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF` : null,
+    (requirement.min_size_sqft || requirement.max_size_sqft)
+      ? `Size: ${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF` : null,
     rCities ? `Areas: ${rCities}` : null,
     '',
     `Agent: ${agentName}${agentCompany ? ` \u00b7 ${agentCompany}` : ''}`,
     posterEmail ? `Email: ${posterEmail}` : null,
     agentPhone ? `Phone: ${agentPhone}` : null,
     '',
-    `Match score calculated by PropMatch (prop-match.ai)`,
-  ].filter(l => l !== null).join('\n');
+    `Match score from PropMatch (prop-match.ai)`,
+  ].filter(l => l !== null);
+  const summary = lines.join('\n');
 
   const emailSubject = encodeURIComponent(`PropMatch: ${label || 'Match'} \u2014 ${listing.title}`);
   const emailBody = encodeURIComponent(summary);
-  const copy = () => { navigator.clipboard.writeText(summary).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); };
-  const scoreColor = getScoreColor(totalScore);
+  const copy = () => {
+    navigator.clipboard.writeText(summary).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  };
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(6px)', zIndex:350, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }} onClick={onClose}>
@@ -117,14 +134,14 @@ function ShareMatchModal({ listing, requirement, matchResult, posterProfile, pos
               {label && <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, color:scoreColor, background:`${scoreColor}15`, border:`1px solid ${scoreColor}35`, borderRadius:'5px', padding:'2px 8px' }}>{label}</span>}
             </div>
             <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.7)', margin:'0 0 4px', fontWeight:500 }}>{listing.title}</p>
-            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>matches with \u00b7 {requirement.title}</p>
+            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>matches with &middot; {requirement.title}</p>
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-            <button onClick={copy} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 16px', background:copied?`${ACCENT}15`:'rgba(255,255,255,0.05)', border:`1px solid ${copied?ACCENT:'rgba(255,255,255,0.1)'}`, borderRadius:'10px', cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}>
+            <button onClick={copy} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 16px', background:copied?`${ACCENT}15`:'rgba(255,255,255,0.05)', border:`1px solid ${copied?ACCENT:'rgba(255,255,255,0.1)'}`, borderRadius:'10px', cursor:'pointer', textAlign:'left' }}>
               {copied ? <CheckCheck style={{ width:'16px', height:'16px', color:ACCENT, flexShrink:0 }} /> : <Copy style={{ width:'16px', height:'16px', color:'rgba(255,255,255,0.5)', flexShrink:0 }} />}
               <div>
                 <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:600, color:copied?ACCENT:'white', margin:0 }}>{copied ? 'Copied!' : 'Copy Summary'}</p>
-                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', margin:0 }}>Paste anywhere \u2014 email, text, notes</p>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', margin:0 }}>Paste anywhere &mdash; email, text, notes</p>
               </div>
             </button>
             {posterEmail && (
@@ -151,36 +168,260 @@ function ShareMatchModal({ listing, requirement, matchResult, posterProfile, pos
   );
 }
 
-// ─── Phase 5: Export to PDF ───────────────────────────────────────────────────
-function exportMatchPDF(listing, requirement, matchResult, posterProfile) {
+// ─── PDF Theme Picker ─────────────────────────────────────────────────────────
+function PDFOptionsModal({ onPick, onClose }) {
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.65)', backdropFilter:'blur(6px)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }} onClick={onClose}>
+      <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'18px', width:'100%', maxWidth:'360px', overflow:'hidden' }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding:'20px 20px 6px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div>
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' }}>
+              <Printer style={{ width:'15px', height:'15px', color:ACCENT }} />
+              <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'15px', fontWeight:600, color:'white' }}>Export as PDF</span>
+            </div>
+            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>Choose a theme for your report</p>
+          </div>
+          <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'5px', cursor:'pointer', display:'flex', flexShrink:0 }}>
+            <X style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }} />
+          </button>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', padding:'16px 20px 20px' }}>
+          {[
+            { dark:true,  emoji:'\uD83C\uDF19', label:'Dark',  sub:'Matches PropMatch style' },
+            { dark:false, emoji:'\u2600\uFE0F', label:'Light', sub:'Clean, print-friendly'   },
+          ].map(opt => (
+            <button key={String(opt.dark)} onClick={() => { onPick(opt.dark); onClose(); }}
+              style={{ padding:'18px 14px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:'12px', cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.09)'; e.currentTarget.style.borderColor=`${ACCENT}55`; }}
+              onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.09)'; }}>
+              <div style={{ fontSize:'22px', marginBottom:'8px' }}>{opt.emoji}</div>
+              <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:600, color:'white', marginBottom:'3px' }}>{opt.label}</div>
+              <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>{opt.sub}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Export PDF ───────────────────────────────────────────────────────────────
+function exportMatchPDF(listing, requirement, matchResult, posterProfile, darkMode = false) {
   const { totalScore, breakdown } = matchResult;
   const label = getScoreLabel(totalScore) || '';
   const sc = totalScore >= 70 ? '#00DBC5' : totalScore >= 50 ? '#F59E0B' : '#F97316';
   const lPrice = priceStr(listing, true) || '\u2014';
   const rPrice = priceStr(requirement, false) || '\u2014';
   const lLoc = [listing.city, listing.state].filter(Boolean).join(', ') || '\u2014';
-  const rCities = (() => { let c = requirement.cities; if (typeof c === 'string') { try { c = JSON.parse(c); } catch { c = [c]; } } return Array.isArray(c) ? c.join(', ') : c || 'Any'; })();
-  const agentName = posterProfile?.full_name || 'Unknown Agent';
+  const rCities = (() => {
+    let c = requirement.cities;
+    if (typeof c === 'string') { try { c = JSON.parse(c); } catch { c = c.split(',').map(x=>x.trim()); } }
+    return Array.isArray(c) ? c.join(', ') : c || 'Any';
+  })();
+  const agentName    = posterProfile?.full_name || 'Unknown Agent';
   const agentCompany = posterProfile?.brokerage_name || '';
-  const agentEmail = posterProfile?.contact_email || posterProfile?.user_email || '';
-  const agentPhone = posterProfile?.phone || '';
+  const agentEmail   = posterProfile?.contact_email || posterProfile?.user_email || '';
+  const agentPhone   = posterProfile?.phone || '';
   const now = new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
-  const bRows = breakdown.map(b => `<tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;">${b.category}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center;"><span style="font-size:13px;font-weight:700;color:${b.score>=70?'#059669':b.score>=50?'#d97706':'#dc2626'};">${b.score}%</span></td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;">${b.details||''}</td></tr>`).join('');
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PropMatch \u2014 ${listing.title}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;background:white}@page{margin:.75in;size:letter}.header{background:#0E1318;padding:32px 40px;display:flex;align-items:center;justify-content:space-between}.logo{font-size:22px;font-weight:700;color:#00DBC5}.hdr-r{text-align:right;color:rgba(255,255,255,.5);font-size:12px}.score-banner{background:#f9fafb;border-bottom:2px solid #e5e7eb;padding:28px 40px;display:flex;align-items:center;gap:24px}.score-circle{width:80px;height:80px;border-radius:50%;border:5px solid ${sc};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}.score-num{font-size:28px;font-weight:800;color:${sc};line-height:1}.score-pct{font-size:10px;color:#6b7280}.score-lbl{font-size:20px;font-weight:700;color:${sc}}.score-sub{font-size:13px;color:#6b7280;margin-top:4px}.body{padding:32px 40px}.section{margin-bottom:28px}.sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e5e7eb}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}.post-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px}.lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}.ll{color:#00DBC5}.rl{color:#818cf8}.ptitle{font-size:15px;font-weight:600;color:#111827;margin-bottom:6px;line-height:1.3}.pprice{font-size:18px;font-weight:800;margin-bottom:4px}.lp{color:#00DBC5}.rp{color:#818cf8}.chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}.chip{background:#e5e7eb;border-radius:4px;padding:2px 7px;font-size:11px;color:#6b7280}.desc{font-size:12px;color:#6b7280;line-height:1.5;margin-top:6px}table{width:100%;border-collapse:collapse}th{background:#f3f4f6;padding:10px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;border-bottom:2px solid #e5e7eb}.agent-row{display:flex;align-items:flex-start;gap:14px}.avatar{width:44px;height:44px;border-radius:50%;background:#818cf8;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:white;flex-shrink:0}.footer{background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 40px;display:flex;align-items:center;justify-content:space-between}.footer p{font-size:11px;color:#9ca3af}.print-btn{position:fixed;bottom:24px;right:24px;background:#00DBC5;color:#111827;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer}@media print{.print-btn{display:none}}</style></head><body>
-<div class="header"><div class="logo">prop-match.ai</div><div class="hdr-r"><p>Match Report</p><p style="color:rgba(255,255,255,.7);font-size:13px;margin-top:3px">${now}</p></div></div>
-<div class="score-banner"><div class="score-circle"><span class="score-num">${totalScore}</span><span class="score-pct">MATCH</span></div><div><div class="score-lbl">${label}</div><div class="score-sub">${PT[listing.property_type]||listing.property_type} \u00b7 ${TX[listing.transaction_type]||listing.transaction_type}</div></div></div>
-<div class="body">
-<div class="section"><div class="sec-title">Match Summary</div><div class="two-col">
-<div class="post-card"><div class="lbl ll">Your Listing</div><div class="ptitle">${listing.title||'Untitled'}</div><div class="pprice lp">${lPrice}</div><div class="chips">${lLoc?`<span class="chip">${lLoc}</span>`:''} ${listing.size_sqft?`<span class="chip">${parseFloat(listing.size_sqft).toLocaleString()} SF</span>`:''} ${listing.transaction_type?`<span class="chip">${TX[listing.transaction_type]||listing.transaction_type}</span>`:''}</div>${listing.description?`<div class="desc">${listing.description}</div>`:''}</div>
-<div class="post-card"><div class="lbl rl">Their Requirement</div><div class="ptitle">${requirement.title||'Untitled'}</div><div class="pprice rp">${rPrice}</div><div class="chips">${rCities?`<span class="chip">${rCities}</span>`:''} ${(requirement.min_size_sqft||requirement.max_size_sqft)?`<span class="chip">${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF</span>`:''} ${requirement.transaction_type?`<span class="chip">${TX[requirement.transaction_type]||requirement.transaction_type}</span>`:''}</div>${requirement.notes?`<div class="desc">${requirement.notes}</div>`:''}</div>
-</div></div>
-<div class="section"><div class="sec-title">Score Breakdown</div><table><thead><tr><th>Category</th><th style="text-align:center;width:80px">Score</th><th>Details</th></tr></thead><tbody>${bRows}</tbody></table></div>
-<div class="section"><div class="sec-title">Agent Contact</div><div class="agent-row"><div class="avatar">${agentName[0]?.toUpperCase()||'A'}</div><div><div style="font-size:16px;font-weight:600;color:#111827">${agentName}</div>${agentCompany?`<div style="font-size:13px;color:#6b7280;margin-top:2px">${agentCompany}</div>`:''}<div style="font-size:13px;color:#6b7280;margin-top:6px">${agentEmail?`\uD83D\uDCE7 ${agentEmail}`:''}${agentEmail&&agentPhone?'&nbsp;&nbsp;':''}${agentPhone?`\uD83D\uDCDE ${agentPhone}`:''}</div></div></div></div>
+
+  const D = darkMode;
+  const bg      = D ? '#0e1318' : '#ffffff';
+  const surface = D ? '#161d25' : '#f9fafb';
+  const srf2    = D ? '#1b2534' : '#f3f4f6';
+  const border  = D ? 'rgba(255,255,255,0.09)' : '#e5e7eb';
+  const textPri = D ? 'rgba(255,255,255,0.9)'  : '#111827';
+  const textSub = D ? 'rgba(255,255,255,0.5)'  : '#6b7280';
+  const textMut = D ? 'rgba(255,255,255,0.28)' : '#9ca3af';
+  const track   = D ? 'rgba(255,255,255,0.07)' : '#e5e7eb';
+  const acc = '#00DBC5', lav = '#818cf8';
+
+  // SVG score arc — proper partial circle
+  const R = 42, circ = 2 * Math.PI * R;
+  const dash = (totalScore / 100) * circ;
+  const scoreSVG = `<svg width="104" height="104" viewBox="0 0 104 104" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="52" cy="52" r="${R}" fill="none" stroke="${track}" stroke-width="9"/>
+  <circle cx="52" cy="52" r="${R}" fill="none" stroke="${sc}" stroke-width="9"
+    stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
+    stroke-linecap="round" transform="rotate(-90 52 52)"/>
+  <text x="52" y="47" text-anchor="middle" dominant-baseline="middle"
+    font-family="-apple-system,sans-serif" font-size="26" font-weight="700" fill="${sc}">${totalScore}</text>
+  <text x="52" y="64" text-anchor="middle"
+    font-family="-apple-system,sans-serif" font-size="9" fill="${textMut}" letter-spacing="2">MATCH</text>
+</svg>`;
+
+  // Ichthys fish logo SVG
+  const fishSVG = `<svg width="30" height="19" viewBox="0 0 30 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M1.5 9.5C3.5 4.5 8.5 1.5 15 1.5C21.5 1.5 26.5 4.5 28.5 9.5C26.5 14.5 21.5 17.5 15 17.5C8.5 17.5 3.5 14.5 1.5 9.5Z"
+    stroke="${acc}" stroke-width="1.7" fill="${D ? 'rgba(0,219,197,0.1)' : 'rgba(0,219,197,0.08)'}"/>
+  <path d="M25 5L30 9.5L25 14" stroke="${acc}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="9.5" cy="9.5" r="1.8" fill="${acc}"/>
+</svg>`;
+
+  // Visual score breakdown bars
+  const barsHTML = breakdown.map(b => {
+    const bc = b.score >= 70 ? '#00DBC5' : b.score >= 50 ? '#F59E0B' : '#F97316';
+    return `<div style="margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+    <span style="font-size:13px;color:${textSub};font-family:-apple-system,sans-serif">${b.icon || ''} ${b.category}</span>
+    <span style="font-size:13px;font-weight:700;color:${bc};font-family:-apple-system,sans-serif">${b.score}%</span>
+  </div>
+  <div style="height:8px;background:${track};border-radius:4px;overflow:hidden">
+    <div style="height:100%;width:${b.score}%;background:${bc};border-radius:4px"></div>
+  </div>
+  ${b.details ? `<div style="font-size:11px;color:${textMut};margin-top:3px;font-family:-apple-system,sans-serif">${b.details}</div>` : ''}
+</div>`;
+  }).join('');
+
+  // Side-by-side comparison table
+  const compFields = [];
+  if (listing.price || requirement.min_price || requirement.max_price)
+    compFields.push({ label: 'Price / Budget', lv: lPrice, rv: rPrice });
+  if (listing.size_sqft || requirement.min_size_sqft || requirement.max_size_sqft)
+    compFields.push({ label: 'Size', lv: listing.size_sqft ? `${parseFloat(listing.size_sqft).toLocaleString()} SF` : '\u2014', rv: (requirement.min_size_sqft || requirement.max_size_sqft) ? `${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF` : '\u2014' });
+  compFields.push({ label: 'Location',      lv: lLoc, rv: rCities });
+  compFields.push({ label: 'Property Type', lv: PT[listing.property_type]||listing.property_type, rv: PT[requirement.property_type]||requirement.property_type });
+  compFields.push({ label: 'Transaction',   lv: TX[listing.transaction_type]||listing.transaction_type, rv: TX[requirement.transaction_type]||requirement.transaction_type });
+
+  const compRows = compFields.map((f, i) => `<tr style="background:${i%2===0?srf2:surface}">
+  <td style="padding:9px 14px;font-size:12px;font-weight:600;color:${textMut};font-family:-apple-system,sans-serif;white-space:nowrap">${f.label}</td>
+  <td style="padding:9px 14px;font-size:13px;color:${acc};font-family:-apple-system,sans-serif;font-weight:500">${f.lv}</td>
+  <td style="padding:9px 14px;font-size:13px;color:${lav};font-family:-apple-system,sans-serif;font-weight:500">${f.rv}</td>
+</tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PropMatch Report</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:${bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:${textPri}}
+@page{margin:.6in;size:letter}
+@media print{.np{display:none!important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.page{max-width:760px;margin:0 auto}
+.hdr{padding:22px 32px;background:${D?'#111820':surface};border-bottom:1px solid ${border};display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-t{font-size:18px;font-weight:700;color:${acc};letter-spacing:-.3px;font-family:-apple-system,sans-serif}
+.hdr-r{text-align:right}
+.hdr-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${textMut};font-family:-apple-system,sans-serif}
+.hdr-dt{font-size:12px;color:${textSub};margin-top:3px;font-family:-apple-system,sans-serif}
+.hero{padding:28px 32px;display:flex;flex-direction:column;align-items:center;gap:10px;background:${surface};border-bottom:1px solid ${border}}
+.badge{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${sc};background:${sc}18;border:1px solid ${sc}35;border-radius:6px;padding:4px 14px;font-family:-apple-system,sans-serif}
+.hero-sub{font-size:12px;color:${textSub};font-family:-apple-system,sans-serif}
+.body{padding:26px 32px}
+.sec{margin-bottom:26px}
+.sec-h{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid ${border}}
+.sec-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sec-t{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:${textMut};font-family:-apple-system,sans-serif}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:${surface};border:1px solid ${border};border-radius:11px;padding:16px}
+.c-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;font-family:-apple-system,sans-serif}
+.c-t{font-size:14px;font-weight:600;color:${textPri};margin-bottom:5px;line-height:1.3;font-family:-apple-system,sans-serif}
+.c-p{font-size:18px;font-weight:700;margin-bottom:6px;font-family:-apple-system,sans-serif}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.chip{background:${D?'rgba(255,255,255,0.07)':srf2};border:1px solid ${border};border-radius:4px;padding:2px 7px;font-size:11px;color:${textSub};font-family:-apple-system,sans-serif}
+.c-desc{font-size:12px;color:${textSub};line-height:1.5;margin-top:6px;font-family:-apple-system,sans-serif}
+table{width:100%;border-collapse:collapse;border:1px solid ${border};border-radius:10px;overflow:hidden}
+th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;background:${srf2};text-align:left;font-family:-apple-system,sans-serif;color:${textMut}}
+.a-card{background:${surface};border:1px solid ${border};border-radius:11px;padding:18px;display:flex;align-items:center;gap:14px}
+.a-av{width:44px;height:44px;border-radius:50%;background:${lav};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:white;flex-shrink:0;font-family:-apple-system,sans-serif}
+.a-n{font-size:16px;font-weight:600;color:${textPri};font-family:-apple-system,sans-serif}
+.a-co{font-size:13px;color:${textSub};margin-top:2px;font-family:-apple-system,sans-serif}
+.a-ct{font-size:13px;color:${textSub};margin-top:6px;font-family:-apple-system,sans-serif}
+.ftr{padding:14px 32px;border-top:1px solid ${border};display:flex;justify-content:space-between;background:${surface}}
+.ftr p{font-size:11px;color:${textMut};font-family:-apple-system,sans-serif}
+.pb{position:fixed;bottom:20px;right:20px;background:${acc};color:#111827;border:none;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px ${acc}40;font-family:-apple-system,sans-serif}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="hdr">
+    <div class="logo">${fishSVG}<span class="logo-t">PropMatch</span></div>
+    <div class="hdr-r">
+      <div class="hdr-lbl">Match Report</div>
+      <div class="hdr-dt">${now}</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    ${scoreSVG}
+    ${label ? `<div class="badge">${label}</div>` : ''}
+    <div class="hero-sub">${PT[listing.property_type]||listing.property_type} &middot; ${TX[listing.transaction_type]||listing.transaction_type}</div>
+  </div>
+
+  <div class="body">
+    <div class="sec">
+      <div class="sec-h"><div class="sec-dot" style="background:${acc}"></div><span class="sec-t">Match Summary</span></div>
+      <div class="two">
+        <div class="card">
+          <div class="c-lbl" style="color:${acc}">Your Listing</div>
+          <div class="c-t">${listing.title||'Untitled Listing'}</div>
+          <div class="c-p" style="color:${acc}">${lPrice}</div>
+          <div class="chips">
+            ${lLoc !== '\u2014' ? `<span class="chip">${lLoc}</span>` : ''}
+            ${listing.size_sqft ? `<span class="chip">${parseFloat(listing.size_sqft).toLocaleString()} SF</span>` : ''}
+            ${listing.transaction_type ? `<span class="chip">${TX[listing.transaction_type]||listing.transaction_type}</span>` : ''}
+          </div>
+          ${listing.description ? `<div class="c-desc">${listing.description}</div>` : ''}
+        </div>
+        <div class="card">
+          <div class="c-lbl" style="color:${lav}">Their Requirement</div>
+          <div class="c-t">${requirement.title||'Untitled Requirement'}</div>
+          <div class="c-p" style="color:${lav}">${rPrice}</div>
+          <div class="chips">
+            ${rCities ? `<span class="chip">${rCities}</span>` : ''}
+            ${(requirement.min_size_sqft||requirement.max_size_sqft) ? `<span class="chip">${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF</span>` : ''}
+            ${requirement.transaction_type ? `<span class="chip">${TX[requirement.transaction_type]||requirement.transaction_type}</span>` : ''}
+          </div>
+          ${requirement.notes ? `<div class="c-desc">${requirement.notes}</div>` : ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><div class="sec-dot" style="background:${sc}"></div><span class="sec-t">Side-by-Side Comparison</span></div>
+      <table>
+        <thead><tr>
+          <th style="width:130px">Field</th>
+          <th style="color:${acc}">Listing</th>
+          <th style="color:${lav}">Requirement</th>
+        </tr></thead>
+        <tbody>${compRows}</tbody>
+      </table>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><div class="sec-dot" style="background:${sc}"></div><span class="sec-t">Score Breakdown</span></div>
+      ${barsHTML}
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><div class="sec-dot" style="background:${lav}"></div><span class="sec-t">Agent Contact</span></div>
+      <div class="a-card">
+        <div class="a-av">${agentName[0]?.toUpperCase()||'A'}</div>
+        <div>
+          <div class="a-n">${agentName}</div>
+          ${agentCompany ? `<div class="a-co">${agentCompany}</div>` : ''}
+          <div class="a-ct">
+            ${agentEmail ? `&#128231; ${agentEmail}` : ''}
+            ${agentEmail && agentPhone ? '&nbsp;&nbsp;' : ''}
+            ${agentPhone ? `&#128222; ${agentPhone}` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ftr">
+    <p>Generated by <strong>prop-match.ai</strong></p>
+    <p>Match scores are estimates &mdash; verify details before transacting.</p>
+  </div>
 </div>
-<div class="footer"><p>Generated by <a href="https://prop-match.ai" style="color:#00DBC5">prop-match.ai</a></p><p>Match scores are estimates. Verify details before transacting.</p></div>
-<button class="print-btn" onclick="window.print()">\uD83D\uDDA8\uFE0F Print / Save PDF</button>
-</body></html>`;
-  const win = window.open('', '_blank', 'width=900,height=700');
+<button class="pb np" onclick="window.print()">&#128424;&#65039; Print / Save PDF</button>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=750');
   if (!win) { alert('Please allow popups to export the PDF.'); return; }
   win.document.write(html);
   win.document.close();
@@ -199,7 +440,14 @@ function HighlightedText({ text }) {
     last = regex.lastIndex;
   }
   if (last < text.length) parts.push({ type:'text', text:text.slice(last) });
-  return <span>{parts.map((p,i) => p.type==='text' ? <span key={i}>{p.text}</span> : <span key={i} style={{ color:p.side==='L'?ACCENT:LAVENDER, fontWeight:600 }}>{p.text}</span>)}</span>;
+  return (
+    <span>
+      {parts.map((p,i) => p.type === 'text'
+        ? <span key={i}>{p.text}</span>
+        : <span key={i} style={{ color:p.side==='L'?ACCENT:LAVENDER, fontWeight:600 }}>{p.text}</span>
+      )}
+    </span>
+  );
 }
 
 // ─── Photo Lightbox ───────────────────────────────────────────────────────────
@@ -310,7 +558,12 @@ function PostBlock({ post, isListing, label, color, onViewPhotos }) {
   const showCalc=isListing&&(post.transaction_type==='lease'||post.transaction_type==='sublease')&&lPrice&&lSize;
   const monthly=showCalc?Math.round((lPrice*lSize)/12):null, annual=showCalc?Math.round(lPrice*lSize):null;
   const brochureUrl=pd?.brochure_url, photoUrl=pd?.photo_url;
-  const chips=[isListing?[post.city,post.state].filter(Boolean).join(', '):post.cities?.join(', '),isListing?(lSize?`${lSize.toLocaleString()} SF`:null):((post.min_size_sqft||post.max_size_sqft)?`${fmtN(post.min_size_sqft)||'0'}\u2013${fmtN(post.max_size_sqft)||'\u221e'} SF`:null),TX[post.transaction_type]||post.transaction_type,PT[post.property_type]||post.property_type].filter(Boolean);
+  const chips=[
+    isListing?[post.city,post.state].filter(Boolean).join(', '):post.cities?.join(', '),
+    isListing?(lSize?`${lSize.toLocaleString()} SF`:null):((post.min_size_sqft||post.max_size_sqft)?`${fmtN(post.min_size_sqft)||'0'}\u2013${fmtN(post.max_size_sqft)||'\u221e'} SF`:null),
+    TX[post.transaction_type]||post.transaction_type,
+    PT[post.property_type]||post.property_type
+  ].filter(Boolean);
   return (
     <div style={{ background:`${color}08`, border:`1px solid ${color}20`, borderRadius:'14px', padding:'20px', flex:1 }}>
       <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'10px' }}>
@@ -318,9 +571,17 @@ function PostBlock({ post, isListing, label, color, onViewPhotos }) {
         <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color }}>{label}</span>
       </div>
       <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'17px', fontWeight:500, color:'white', margin:'0 0 6px', lineHeight:1.3 }}>{post.title}</h3>
-      {price&&<div style={{ fontFamily:"'Inter',sans-serif", fontSize:'20px', fontWeight:700, color, marginBottom:'4px' }}>{price}</div>}
-      {showCalc&&<div style={{ display:'flex', gap:'10px', marginBottom:'8px' }}><span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.45)' }}>${monthly?.toLocaleString()}/mo</span><span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.25)' }}>\u00b7</span><span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.45)' }}>${annual?.toLocaleString()}/yr total</span></div>}
-      <div style={{ display:'flex', flexWrap:'wrap', gap:'5px', marginBottom:'10px' }}>{chips.map((c,i)=><span key={i} style={{ padding:'2px 8px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'5px', fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.55)', textTransform:'capitalize' }}>{c}</span>)}</div>
+      {price && <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'20px', fontWeight:700, color, marginBottom:'4px' }}>{price}</div>}
+      {showCalc && (
+        <div style={{ display:'flex', gap:'10px', marginBottom:'8px' }}>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.45)' }}>${monthly?.toLocaleString()}/mo</span>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.25)' }}>&middot;</span>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.45)' }}>${annual?.toLocaleString()}/yr total</span>
+        </div>
+      )}
+      <div style={{ display:'flex', flexWrap:'wrap', gap:'5px', marginBottom:'10px' }}>
+        {chips.map((c,i)=><span key={i} style={{ padding:'2px 8px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'5px', fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.55)', textTransform:'capitalize' }}>{c}</span>)}
+      </div>
       {(post.description||post.notes)&&<p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', lineHeight:1.6, margin:'0 0 10px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{post.description||post.notes}</p>}
       {isListing&&(photoUrl||brochureUrl)&&(
         <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', marginTop:'6px' }}>
@@ -338,8 +599,18 @@ function buildSpecSections(listing, requirement, myIsListing) {
   const row=(lLabel,lVal,rLabel,rVal)=>({lLabel,lVal:lVal||null,rLabel:rLabel||null,rVal:rVal||null});
   const lo=(label,val)=>({listingOnly:true,label,val:val||null});
   const sections=[];
-  const parseCities=(c)=>{if(typeof c==='string'){try{c=JSON.parse(c);}catch{c=[c];}}return Array.isArray(c)?c.join(', '):c||null;};
-  const coreRows=[row('Property Type',PT[listing.property_type]||listing.property_type,'Property Type',PT[requirement.property_type]||requirement.property_type),row('Transaction',TX[listing.transaction_type]||listing.transaction_type,'Transaction',TX[requirement.transaction_type]||requirement.transaction_type),row('Price',priceStr(listing,true),'Budget',priceStr(requirement,false)),row('Size',listing.size_sqft?`${parseFloat(listing.size_sqft).toLocaleString()} SF`:null,'Size Range',(requirement.min_size_sqft||requirement.max_size_sqft)?`${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF`:null),row('Location',[listing.city,listing.state].filter(Boolean).join(', ')||null,'Preferred Areas',parseCities(requirement.cities)),row('Status',listing.status||'Active','Status',requirement.status||'Active')].filter(r=>r.lVal||r.rVal);
+  const parseCities=(c)=>{
+    if(typeof c==='string'){try{c=JSON.parse(c);}catch{c=c.split(',').map(x=>x.trim());}}
+    return Array.isArray(c)?c.join(', '):c||null;
+  };
+  const coreRows=[
+    row('Property Type',PT[listing.property_type]||listing.property_type,'Property Type',PT[requirement.property_type]||requirement.property_type),
+    row('Transaction',TX[listing.transaction_type]||listing.transaction_type,'Transaction',TX[requirement.transaction_type]||requirement.transaction_type),
+    row('Price',priceStr(listing,true),'Budget',priceStr(requirement,false)),
+    row('Size',listing.size_sqft?`${parseFloat(listing.size_sqft).toLocaleString()} SF`:null,'Size Range',(requirement.min_size_sqft||requirement.max_size_sqft)?`${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF`:null),
+    row('Location',[listing.city,listing.state].filter(Boolean).join(', ')||null,'Preferred Areas',parseCities(requirement.cities)),
+    row('Status',listing.status||'Active','Status',requirement.status||'Active'),
+  ].filter(r=>r.lVal||r.rVal);
   const coreLO=[lo('Address',listing.address),lo('Zip Code',listing.zip_code)].filter(r=>r.val);
   if(coreRows.length||coreLO.length)sections.push({key:'core',title:'Core Details',rows:coreRows,listingOnlyRows:coreLO});
   if(listing.transaction_type==='lease'||listing.transaction_type==='sublease'){const leaseLO=[lo('Lease Type',LL[listing.lease_type]||listing.lease_type)].filter(r=>r.val);if(leaseLO.length)sections.push({key:'lease',title:'Lease Terms',rows:[],listingOnlyRows:leaseLO});}
@@ -401,20 +672,35 @@ function AccordionSection({ section, myColor, theirColor, myLabel, theirLabel, o
 
 // ─── AI Breakdown ─────────────────────────────────────────────────────────────
 function AIBreakdown({ listing, requirement, matchResult, onStartConversation }) {
-  const [text, setText]=useState(null), [loading, setLoad]=useState(false), [error, setError]=useState(null);
+  const [text,setText]=useState(null),[loading,setLoad]=useState(false),[error,setError]=useState(null);
   const prompt=useMemo(()=>{
     const {totalScore,breakdown}=matchResult;
-    const lPrice=priceStr(listing,true), rPrice=priceStr(requirement,false);
+    const lPrice=priceStr(listing,true),rPrice=priceStr(requirement,false);
     const lSize=listing.size_sqft?`${parseFloat(listing.size_sqft).toLocaleString()} SF`:'unknown size';
     const rSize=(requirement.min_size_sqft||requirement.max_size_sqft)?`${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF`:'no size preference';
-    let cities=requirement.cities;if(typeof cities==='string'){try{cities=JSON.parse(cities);}catch{cities=[cities];}}
+    let cities=requirement.cities;if(typeof cities==='string'){try{cities=JSON.parse(cities);}catch{cities=cities.split(',').map(x=>x.trim());}}
     const rLoc=Array.isArray(cities)?cities.join(', '):'any location';
     const lLoc=[listing.city,listing.state].filter(Boolean).join(', ')||'unknown location';
     const bStr=breakdown.map(b=>`${b.category}: ${b.score}%`).join(', ');
     const lp=parseFloat(listing.price),ls=parseFloat(listing.size_sqft),isLease=listing.transaction_type==='lease'||listing.transaction_type==='sublease';
     const mc=isLease&&lp&&ls?`$${Math.round((lp*ls)/12).toLocaleString()}/mo`:null;
     const ac=isLease&&lp&&ls?`$${Math.round(lp*ls).toLocaleString()}/yr`:null;
-    return `You are a sharp commercial real estate analyst. Write a 4\u20136 sentence deal breakdown.\n\nLISTING: ${PT[listing.property_type]||listing.property_type} for ${TX[listing.transaction_type]||listing.transaction_type} in ${lLoc} \u00b7 Rate: ${lPrice} \u00b7 Size: ${lSize}${mc?` \u00b7 Monthly total: ${mc}`:''}${ac?` \u00b7 Annual total: ${ac}`:''}\nREQUIREMENT: Seeking ${PT[requirement.property_type]||requirement.property_type} in ${rLoc} \u00b7 Budget: ${rPrice} \u00b7 Size: ${rSize}\nMATCH SCORE: ${totalScore}% (${getScoreLabel(totalScore)||'no label'})\nSCORE BREAKDOWN: ${bStr}\n\nRules:\n1. Be concise and analytical. Reference actual numbers.\n2. Wrap listing-specific values like this: {{L:value}}\n3. Wrap requirement-specific values like this: {{R:value}}\n4. Highlight the strongest alignment and any gaps.\n5. End with a clear call to action for why these agents should connect.\n6. Write in second person to the listing agent.\n7. Plain prose only. No markdown, bullets, headers, or em dashes.\n8. Use ONLY the numbers provided above.`;
+    return `You are a sharp commercial real estate analyst. Write a 4\u20136 sentence deal breakdown.
+
+LISTING: ${PT[listing.property_type]||listing.property_type} for ${TX[listing.transaction_type]||listing.transaction_type} in ${lLoc} \u00b7 Rate: ${lPrice} \u00b7 Size: ${lSize}${mc?` \u00b7 Monthly total: ${mc}`:''}${ac?` \u00b7 Annual total: ${ac}`:''}
+REQUIREMENT: Seeking ${PT[requirement.property_type]||requirement.property_type} in ${rLoc} \u00b7 Budget: ${rPrice} \u00b7 Size: ${rSize}
+MATCH SCORE: ${totalScore}% (${getScoreLabel(totalScore)||'no label'})
+SCORE BREAKDOWN: ${bStr}
+
+Rules:
+1. Be concise and analytical. Reference actual numbers.
+2. Wrap listing-specific values like this: {{L:value}}
+3. Wrap requirement-specific values like this: {{R:value}}
+4. Highlight the strongest alignment and any gaps.
+5. End with a clear call to action for why these agents should connect.
+6. Write in second person to the listing agent.
+7. Plain prose only. No markdown, bullets, headers, or em dashes.
+8. Use ONLY the numbers provided above.`;
   },[listing,requirement,matchResult]);
   const run=useCallback(async()=>{setLoad(true);setError(null);try{const r=await base44.functions.invoke('generateAIText',{prompt,maxTokens:800});const t=r.data;setText((t?.text?.trim()||'No breakdown generated.').replace(/\u2014/g,',').replace(/ - /g,', '));}catch(e){setError('Unable to generate breakdown. Please try again.');}finally{setLoad(false);}},[ prompt]);
   useEffect(()=>{run();},[run]);
@@ -439,7 +725,7 @@ function AIBreakdown({ listing, requirement, matchResult, onStartConversation })
 function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex, totalMatches, onPrev, onNext, onClose, savedHook }) {
   const [tab,setTab]=useState('analysis'),[openSections,setOpen]=useState({core:true});
   const [lightboxPhoto,setLightboxPhoto]=useState(null),[showCompose,setShowCompose]=useState(false);
-  const [showShare,setShowShare]=useState(false),[viewingAgent,setViewingAgent]=useState(null);
+  const [showShare,setShowShare]=useState(false),[showPDFOptions,setShowPDFOptions]=useState(false),[viewingAgent,setViewingAgent]=useState(null);
 
   const myIsListing=myPost.postType==='listing',myColor=myIsListing?ACCENT:LAVENDER,theirColor=myIsListing?LAVENDER:ACCENT;
   const listing=myIsListing?myPost:matchPost, requirement=myIsListing?matchPost:myPost;
@@ -458,8 +744,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
     <button onClick={onClick} title={title} style={{ background:active?`${ACCENT}18`:'rgba(255,255,255,0.06)', border:`1px solid ${active?ACCENT:'rgba(255,255,255,0.1)'}`, borderRadius:'7px', padding:'6px 10px', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', flexShrink:0, transition:'all 0.15s' }}
       onMouseEnter={e=>{e.currentTarget.style.background=active?`${ACCENT}28`:'rgba(255,255,255,0.12)';}}
       onMouseLeave={e=>{e.currentTarget.style.background=active?`${ACCENT}18`:'rgba(255,255,255,0.06)';}}>
-      {icon}
-      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color:active?ACCENT:'rgba(255,255,255,0.5)' }}>{label}</span>
+      {icon}<span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color:active?ACCENT:'rgba(255,255,255,0.5)' }}>{label}</span>
     </button>
   );
 
@@ -468,7 +753,6 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
   return(<>
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.88)', backdropFilter:'blur(8px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }} onClick={onClose}>
       <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'20px', width:'95vw', height:'92vh', maxWidth:'1100px', display:'flex', flexDirection:'column', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
-        {/* Header */}
         <div style={{ padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, gap:'12px' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'10px', flex:1, minWidth:0 }}>
             {totalMatches>1&&(<div style={{ display:'flex', alignItems:'center', gap:'4px', flexShrink:0 }}>
@@ -480,16 +764,13 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
               {TABS.map(t=><button key={t.key} onClick={()=>setTab(t.key)} style={{ padding:'7px 14px', background:tab===t.key?'rgba(255,255,255,0.1)':'transparent', border:'none', borderRadius:'6px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color:tab===t.key?'white':'rgba(255,255,255,0.4)', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>{t.label}</button>)}
             </div>
           </div>
-          {/* Phase 5 action buttons */}
           <div style={{ display:'flex', alignItems:'center', gap:'6px', flexShrink:0 }}>
-            {iconBtn(()=>savedHook.toggle(listing.id,requirement.id), isMatchSaved?'Unsave match':'Save match', isMatchSaved?<BookmarkCheck style={{ width:'14px', height:'14px', color:ACCENT }}/>:<Bookmark style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>, isMatchSaved?'Saved':'Save', isMatchSaved)}
+            {iconBtn(()=>savedHook.toggle(listing.id,requirement.id),isMatchSaved?'Unsave':'Save match',isMatchSaved?<BookmarkCheck style={{ width:'14px', height:'14px', color:ACCENT }}/>:<Bookmark style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,isMatchSaved?'Saved':'Save',isMatchSaved)}
             {iconBtn(()=>setShowShare(true),'Share match',<Share2 style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,'Share',false)}
-            {iconBtn(()=>exportMatchPDF(listing,requirement,matchResult,posterProfile),'Export PDF',<Printer style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,'PDF',false)}
+            {iconBtn(()=>setShowPDFOptions(true),'Export PDF',<Printer style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,'PDF',false)}
             <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'6px', cursor:'pointer', display:'flex' }}><X style={{ width:'16px', height:'16px', color:'rgba(255,255,255,0.5)' }}/></button>
           </div>
         </div>
-
-        {/* Body */}
         <div style={{ flex:1, overflowY:'auto' }}>
           {tab==='analysis'&&(
             <div style={{ padding:'28px 32px' }}>
@@ -521,12 +802,12 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
                   <button onClick={()=>setShowCompose(true)} style={{ display:'flex',alignItems:'center',gap:'7px',padding:'8px 16px',background:theirColor,border:'none',borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:600,color:'#111827',cursor:'pointer' }}><MessageCircle style={{width:'13px',height:'13px'}}/> Send Message</button>
                 </div>
               </div>
-              <button onClick={()=>setTab('specs')} style={{ width:'100%', marginTop:'16px', padding:'10px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.35)', cursor:'pointer' }}>View complete field-by-field specs \u2192</button>
+              <button onClick={()=>setTab('specs')} style={{ width:'100%', marginTop:'16px', padding:'10px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.35)', cursor:'pointer' }}>View complete field-by-field specs &rarr;</button>
             </div>
           )}
           {tab==='specs'&&(
             <div style={{ padding:'20px 28px' }}>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.3)', margin:'0 0 16px', lineHeight:1.6 }}>Left: <span style={{color:myColor,fontWeight:600}}>{myLabel}</span> \u00b7 Right: <span style={{color:theirColor,fontWeight:600}}>{theirLabel}</span></p>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.3)', margin:'0 0 16px', lineHeight:1.6 }}>Left: <span style={{color:myColor,fontWeight:600}}>{myLabel}</span> &middot; Right: <span style={{color:theirColor,fontWeight:600}}>{theirLabel}</span></p>
               {specSections.map(s=><AccordionSection key={s.key} section={s} myColor={myColor} theirColor={theirColor} myLabel={myLabel} theirLabel={theirLabel} open={!!openSections[s.key]} onToggle={()=>setOpen(p=>({...p,[s.key]:!p[s.key]}))}/>)}
               <div style={{height:'20px'}}/>
             </div>
@@ -544,6 +825,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
     {lightboxPhoto&&<PhotoLightbox photos={lightboxPhoto} onClose={()=>setLightboxPhoto(null)}/>}
     {showCompose&&<FloatingMessageCompose recipientProfile={posterProfile} recipientEmail={posterEmail} myPost={myPost} matchPost={matchPost} matchResult={matchResult} onClose={()=>setShowCompose(false)}/>}
     {showShare&&<ShareMatchModal listing={listing} requirement={requirement} matchResult={matchResult} posterProfile={posterProfile} posterEmail={posterEmail} onMessage={()=>setShowCompose(true)} onClose={()=>setShowShare(false)}/>}
+    {showPDFOptions&&<PDFOptionsModal onPick={(dark)=>exportMatchPDF(listing,requirement,matchResult,posterProfile,dark)} onClose={()=>setShowPDFOptions(false)}/>}
     {viewingAgent&&<AgentContactModal profile={viewingAgent.profile} email={viewingAgent.email} onClose={()=>setViewingAgent(null)}/>}
   </>);
 }
@@ -556,7 +838,6 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
   const matchPost=myIsListing?best.requirement:best.listing;
   const sz=44,r=18,circ=2*Math.PI*r,dash=(best.totalScore/100)*circ;
   const anySaved=matches.some(m=>{const l=myIsListing?myPost:m.listing,r2=myIsListing?m.requirement:myPost;return savedHook.isSaved(l.id,r2.id);});
-
   return(
     <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'20px', transition:'all 0.2s', position:'relative' }}
       onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor=`${myColor}35`;}}
@@ -611,42 +892,34 @@ export default function Matches() {
   const {user}=useAuth();
   const [activeTab,setActiveTab]=useState('listings'),[filterSaved,setFilterSaved]=useState(false),[modalState,setModalState]=useState(null);
   const savedHook=useSavedMatches(user?.email);
-
   const {data:myListings=[]}      =useQuery({queryKey:['my-listings'],              queryFn:()=>base44.entities.Listing.filter({created_by:user?.email})});
   const {data:myRequirements=[]}  =useQuery({queryKey:['my-requirements'],          queryFn:()=>base44.entities.Requirement.filter({created_by:user?.email})});
   const {data:allListings=[]}     =useQuery({queryKey:['all-listings-matches'],     queryFn:()=>base44.entities.Listing.list('-created_date',200)});
   const {data:allRequirements=[]} =useQuery({queryKey:['all-requirements-matches'], queryFn:()=>base44.entities.Requirement.list('-created_date',200)});
   const {data:allProfiles=[]}     =useQuery({queryKey:['all-user-profiles'],        queryFn:()=>base44.entities.UserProfile.list()});
-
   const profileMap=Object.fromEntries(allProfiles.map(p=>[p.user_email,p]));
-
   const listingGroups=useMemo(()=>myListings.map(listing=>{
     const matches=allRequirements.filter(r=>r.created_by!==user?.email).map(req=>{const r=calculateMatchScore(listing,req);return r.isMatch?{listing,requirement:req,...r}:null;}).filter(Boolean).sort((a,b)=>b.totalScore-a.totalScore);
     return matches.length?{myPost:{...listing,postType:'listing'},matches}:null;
   }).filter(Boolean),[myListings,allRequirements,user?.email]);
-
   const requirementGroups=useMemo(()=>myRequirements.map(req=>{
     const matches=allListings.filter(l=>l.created_by!==user?.email).map(listing=>{const r=calculateMatchScore(listing,req);return r.isMatch?{listing,requirement:req,...r}:null;}).filter(Boolean).sort((a,b)=>b.totalScore-a.totalScore);
     return matches.length?{myPost:{...req,postType:'requirement'},matches}:null;
   }).filter(Boolean),[myRequirements,allListings,user?.email]);
-
   const currentGroups=useMemo(()=>{
     const groups=activeTab==='listings'?listingGroups:requirementGroups;
     if(!filterSaved)return groups;
     return groups.filter(g=>g.matches.some(m=>{const il=g.myPost.postType==='listing',l=il?g.myPost:m.listing,r=il?m.requirement:g.myPost;return savedHook.isSaved(l.id,r.id);}));
   },[activeTab,listingGroups,requirementGroups,filterSaved,savedHook.saved]);
-
   const savedCount=savedHook.saved.length;
   const openModal=(myPost,matchResult,matchIndex)=>{const groups=myPost.postType==='listing'?listingGroups:requirementGroups;const group=groups.find(g=>g.myPost.id===myPost.id);setModalState({myPost,matches:group?.matches||[matchResult],matchIndex});};
   const navigate=(dir)=>{if(!modalState)return;const t=modalState.matches.length;setModalState(s=>({...s,matchIndex:(s.matchIndex+dir+t)%t}));};
-
   return(
     <div style={{ maxWidth:'860px', margin:'0 auto', padding:'48px 32px' }}>
       <div style={{ marginBottom:'32px' }}>
         <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:300, color:'white', margin:'0 0 6px' }}>My Matches</h1>
         <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.4)', margin:0 }}>Matches scoring 30% or higher. Click any card to open the full analysis.</p>
       </div>
-
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'28px', flexWrap:'wrap', gap:'10px' }}>
         <div style={{ display:'inline-flex', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'4px' }}>
           {[{key:'listings',label:'My Listings',color:ACCENT,Icon:Building2,count:listingGroups.length},{key:'requirements',label:'My Requirements',color:LAVENDER,Icon:Search,count:requirementGroups.length}].map(t=>(
@@ -663,23 +936,18 @@ export default function Matches() {
           </button>
         )}
       </div>
-
       {currentGroups.length===0?(
         <div style={{ textAlign:'center', padding:'80px 32px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'16px' }}>
-          {filterSaved
-            ?<><BookmarkCheck style={{width:'48px',height:'48px',color:`${ACCENT}30`,margin:'0 auto 16px',display:'block'}}/><h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'20px',fontWeight:400,color:'white',margin:'0 0 8px' }}>No saved matches</h3><p style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',color:'rgba(255,255,255,0.4)',margin:0 }}>Open any match and click Save to bookmark it here.</p></>
-            :<><TrendingUp style={{width:'48px',height:'48px',color:`${ACCENT}30`,margin:'0 auto 16px',display:'block'}}/><h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'20px',fontWeight:400,color:'white',margin:'0 0 8px' }}>No matches yet</h3><p style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',color:'rgba(255,255,255,0.4)',margin:0 }}>{activeTab==='listings'?"Your listings haven't matched with any requirements yet":"Your requirements haven't matched with any listings yet"}</p></>
-          }
+          {filterSaved?(<><BookmarkCheck style={{width:'48px',height:'48px',color:`${ACCENT}30`,margin:'0 auto 16px',display:'block'}}/><h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'20px',fontWeight:400,color:'white',margin:'0 0 8px' }}>No saved matches</h3><p style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',color:'rgba(255,255,255,0.4)',margin:0 }}>Open any match and click Save to bookmark it here.</p></>):(<><TrendingUp style={{width:'48px',height:'48px',color:`${ACCENT}30`,margin:'0 auto 16px',display:'block'}}/><h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'20px',fontWeight:400,color:'white',margin:'0 0 8px' }}>No matches yet</h3><p style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',color:'rgba(255,255,255,0.4)',margin:0 }}>{activeTab==='listings'?"Your listings haven't matched with any requirements yet":"Your requirements haven't matched with any listings yet"}</p></>)}
         </div>
       ):(
         <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
           {currentGroups.map((g,i)=><MatchGroupCard key={i} myPost={g.myPost} matches={g.matches} onOpen={openModal} savedHook={savedHook}/>)}
         </div>
       )}
-
       {modalState&&(()=>{
         const {myPost,matches,matchIndex}=modalState;
-        const current=matches[matchIndex], myIsListing=myPost.postType==='listing';
+        const current=matches[matchIndex],myIsListing=myPost.postType==='listing';
         const matchPost=myIsListing?current.requirement:current.listing;
         return <MatchModal myPost={myPost} matchPost={matchPost} matchResult={current} posterProfile={profileMap[matchPost.created_by]} matchIndex={matchIndex} totalMatches={matches.length} onPrev={()=>navigate(-1)} onNext={()=>navigate(1)} onClose={()=>setModalState(null)} savedHook={savedHook}/>;
       })()}
