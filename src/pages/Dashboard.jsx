@@ -94,9 +94,7 @@ export default function Dashboard() {
           <h1 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'30px',fontWeight:300,color:'white',margin:'0 0 5px',lineHeight:1.2}}>{greeting()}, <span style={{fontWeight:700,color:ACCENT}}>{firstName}</span></h1>
           <p style={{fontFamily:"'Inter',sans-serif",fontSize:'14px',color:'rgba(255,255,255,0.38)',margin:0}}>Here's your PropMatch overview for today.</p>
         </div>
-        <button onClick={()=>setShowQuickPost(true)} style={{display:'flex',alignItems:'center',gap:'8px',padding:'11px 22px',background:ACCENT,border:'none',borderRadius:'10px',fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'14px',fontWeight:600,color:'#111827',cursor:'pointer',boxShadow:`0 4px 20px ${ACCENT}45`,transition:'all 0.15s'}} onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow=`0 6px 28px ${ACCENT}65`;}} onMouseLeave={e=>{e.currentTarget.style.transform='none';e.currentTarget.style.boxShadow=`0 4px 20px ${ACCENT}45`;}}>
-          <Plus style={{width:'16px',height:'16px'}}/> New Post
-        </button>
+        
       </div>
 
       {/* Stats Row */}
@@ -117,7 +115,7 @@ export default function Dashboard() {
           {card(<SectionHeader title="Top Matches" onAction={()=>navigate('/Matches')} actionLabel="View All" color={ACCENT}/>,
             topMatches.length===0
               ? <div style={{textAlign:'center',padding:'32px 16px'}}><TrendingUp style={{width:'32px',height:'32px',color:'rgba(255,255,255,0.1)',margin:'0 auto 10px',display:'block'}}/><p style={{fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.3)',margin:'0 0 12px'}}>No matches yet</p><button onClick={()=>setShowQuickPost(true)} style={{padding:'7px 16px',background:`${ACCENT}15`,border:`1px solid ${ACCENT}35`,borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'12px',color:ACCENT,cursor:'pointer'}}>Create a post</button></div>
-              : <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>{topMatches.map((m,i)=><MatchCard key={i} myPost={m.myPost} match={m} onNavigate={()=>navigate('/Matches')}/>)}</div>
+              : <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>{topMatches.map((m,i)=><MatchCard key={i} myPost={m.myPost} match={m} onNavigate={()=>navigate('/Matches',{state:{openPostId:m.myPost.id}})}/>)}</div>
           )}
 
           {/* My Active Posts */}
@@ -132,7 +130,7 @@ export default function Dashboard() {
             <div>
               <div style={{display:'flex',flexDirection:'column'}}>
                 {[{tag:'Market',title:'Real estate AI tools are reshaping how agents close deals in 2026',time:'Trending'},{tag:'Strategy',title:'Why B2B agent-to-agent matching is becoming the new standard',time:'Industry'},{tag:'Market',title:'Michigan commercial real estate: office vacancies fall for third straight quarter',time:'Local'}].map((item,i)=>(
-                  <div key={i} style={{display:'flex',alignItems:'flex-start',gap:'12px',padding:'12px 0',borderBottom:i<2?'1px solid rgba(255,255,255,0.05)':'none'}}>
+                  <div key={i} onClick={()=>navigate('/NewsWire')} style={{display:'flex',alignItems:'flex-start',gap:'12px',padding:'12px 0',borderBottom:i<2?'1px solid rgba(255,255,255,0.05)':'none',cursor:'pointer',transition:'opacity 0.15s'}} onMouseEnter={e=>e.currentTarget.style.opacity='0.75'} onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
                     <div style={{width:'4px',height:'4px',borderRadius:'50%',background:ACCENT,marginTop:'6px',flexShrink:0,boxShadow:`0 0 6px ${ACCENT}`}}/>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:'4px'}}>
@@ -149,11 +147,11 @@ export default function Dashboard() {
           )}
 
           {/* Blog */}
-          {card(<SectionHeader title="Blog & Insights" onAction={()=>navigate('/Blog')} actionLabel="View All" color={LAVENDER}/>,
+          {card(<SectionHeader title="Blog & Insights" onAction={()=>navigate('/BlogFeed')} actionLabel="View All" color={LAVENDER}/>,
             <div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
                 {[{tag:'Guide',title:'How to write a listing that attracts the right agent match',read:'4 min'},{tag:'Tips',title:'Setting your requirement filters: the most common mistakes',read:'3 min'}].map((item,i)=>(
-                  <div key={i} style={{padding:'14px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'10px',cursor:'pointer',transition:'all 0.15s'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.borderColor=`${LAVENDER}30`;}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.07)';}}>
+                  <div key={i} onClick={()=>navigate('/BlogFeed')} style={{padding:'14px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'10px',cursor:'pointer',transition:'all 0.15s'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.borderColor=`${LAVENDER}30`;}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.07)';}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'7px'}}>
                       <span style={{fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,color:LAVENDER,background:`${LAVENDER}12`,border:`1px solid ${LAVENDER}25`,borderRadius:'4px',padding:'1px 6px'}}>{item.tag}</span>
                       <span style={{fontFamily:"'Inter',sans-serif",fontSize:'10px',color:'rgba(255,255,255,0.25)'}}>{item.read} read</span>
@@ -185,7 +183,7 @@ export default function Dashboard() {
           )}
 
           {/* Activity */}
-          {card(<SectionHeader title="Recent Activity" onAction={()=>navigate('/Messages')} actionLabel="Inbox" color={ACCENT}/>,
+          {card(<SectionHeader title="Recent Activity" onAction={()=>navigate('/Inbox')} actionLabel="Inbox" color={ACCENT}/>,
             activityFeed.length===0
               ? <p style={{fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.28)',textAlign:'center',padding:'24px 0 8px'}}>No recent activity</p>
               : <div>{activityFeed.map((item,i)=><ActivityRow key={item.id||i} Icon={item.Icon} iconColor={item.color} title={item.title} sub={item.sub} time={item.time}/>)}</div>
