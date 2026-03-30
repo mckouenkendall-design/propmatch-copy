@@ -119,10 +119,10 @@ export default function Dashboard() {
           )}
 
           {/* My Active Posts */}
-          {card(<SectionHeader title="My Active Posts" onAction={()=>navigate('/MyPosts')} actionLabel="Manage" color={LAVENDER}/>,
+          {card(<SectionHeader title="My Active Posts" onAction={()=>navigate('/Inventory')} actionLabel="Manage" color={LAVENDER}/>,
             postsForAnalytics.length===0
               ? <div style={{textAlign:'center',padding:'32px 16px'}}><FileText style={{width:'32px',height:'32px',color:'rgba(255,255,255,0.1)',margin:'0 auto 10px',display:'block'}}/><p style={{fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.3)',margin:'0 0 12px'}}>No posts yet</p><button onClick={()=>setShowQuickPost(true)} style={{padding:'7px 16px',background:`${ACCENT}15`,border:`1px solid ${ACCENT}35`,borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'12px',color:ACCENT,cursor:'pointer'}}>Create your first post</button></div>
-              : <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>{postsForAnalytics.map((p,i)=><PostCard key={p.id||i} post={p} maxCount={maxMatchCount} onNavigate={()=>navigate('/Matches')}/>)}</div>
+              : <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>{postsForAnalytics.map((p,i)=><PostCard key={p.id||i} post={p} maxCount={maxMatchCount} onNavigate={()=>navigate('/Inventory')}/>)}</div>
           )}
 
           {/* News Wire */}
@@ -183,7 +183,7 @@ export default function Dashboard() {
           )}
 
           {/* Activity */}
-          {card(<SectionHeader title="Recent Activity" onAction={()=>navigate('/Inbox')} actionLabel="Inbox" color={ACCENT}/>,
+          {card(<SectionHeader title="Recent Activity" onAction={()=>navigate('/Messages')} actionLabel="Inbox" color={ACCENT}/>,
             activityFeed.length===0
               ? <p style={{fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.28)',textAlign:'center',padding:'24px 0 8px'}}>No recent activity</p>
               : <div>{activityFeed.map((item,i)=><ActivityRow key={item.id||i} Icon={item.Icon} iconColor={item.color} title={item.title} sub={item.sub} time={item.time}/>)}</div>
@@ -213,7 +213,7 @@ export default function Dashboard() {
           <div style={{background:`linear-gradient(135deg,${ACCENT}0c,${LAVENDER}0c)`,border:`1px solid ${ACCENT}18`,borderRadius:'16px',padding:'20px 22px'}}>
             <p style={{fontFamily:"'Inter',sans-serif",fontSize:'11px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'rgba(255,255,255,0.35)',margin:'0 0 14px'}}>QUICK ACTIONS</p>
             <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-              {[{label:'View My Matches',Icon:TrendingUp,color:ACCENT,path:'/matches'},{label:'Open Inbox',Icon:MessageCircle,color:LAVENDER,path:'/inbox'},{label:'Saved Matches',Icon:BookmarkCheck,color:AMBER,path:'/matches'},{label:'My Posts',Icon:BarChart2,color:ACCENT,path:'/my-posts'}].map(({label,Icon,color,path})=>(
+              {[{label:'View My Matches',Icon:TrendingUp,color:ACCENT,path:'/Matches'},{label:'Open Inbox',Icon:MessageCircle,color:LAVENDER,path:'/Messages'},{label:'Saved Matches',Icon:BookmarkCheck,color:AMBER,path:'/Matches'},{label:'My Posts',Icon:BarChart2,color:ACCENT,path:'/Inventory'}].map(({label,Icon,color,path})=>(
                 <button key={path+label} onClick={()=>navigate(path)} style={{display:'flex',alignItems:'center',gap:'10px',padding:'9px 12px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'9px',cursor:'pointer',textAlign:'left',transition:'all 0.15s',width:'100%'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.09)';e.currentTarget.style.borderColor=`${color}35`;}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.07)';}}>
                   <div style={{width:'26px',height:'26px',borderRadius:'7px',background:`${color}15`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon style={{width:'13px',height:'13px',color}}/></div>
                   <span style={{fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:500,color:'rgba(255,255,255,0.75)'}}>{label}</span>
