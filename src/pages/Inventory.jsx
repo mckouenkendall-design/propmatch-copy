@@ -1,192 +1,207 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, Search, Plus, Trash2, Loader2, FileText, Eye, Bookmark, Share2 } from 'lucide-react';
-import DealPost from '../components/dashboard/DealPost';
-import CreatePostModal from '../components/dashboard/CreatePostModal';
+import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { Building2, Search, Plus, Grid, List as ListIcon, Pencil } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import CreatePostModal from '@/components/dashboard/CreatePostModal';
+import ListingWizard from '@/components/forms/ListingWizard';
+import RequirementWizard from '@/components/forms/RequirementWizard';
 
 const ACCENT = '#00DBC5';
 
-export default function MyPosts() {
-  const [filter, setFilter] = useState('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
+export default function Inventory() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: listings = [], isLoading: loadingListings } = useQuery({
+  const [activeTab, setActiveTab] = useState('listings');
+  const [viewMode, setViewMode] = useState('grid');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingListing, setEditingListing] = useState(null);
+  const [editingRequirement, setEditingRequirement] = useState(null);
+
+  const { data: listings = [] } = useQuery({
     queryKey: ['my-listings'],
-    queryFn: () => base44.entities.Listing.list('-created_date'),
+    queryFn: () => base44.entities.Listing.filter({ created_by: user?.email }),
   });
 
-  const { data: requirements = [], isLoading: loadingRequirements } = useQuery({
+  const { data: requirements = [] } = useQuery({
     queryKey: ['my-requirements'],
-    queryFn: () => base44.entities.Requirement.list('-created_date'),
+    queryFn: () => base44.entities.Requirement.filter({ created_by: user?.email }),
   });
 
-  const allPosts = [
-    ...listings.map(l => ({ ...l, postType: 'listing' })),
-    ...requirements.map(r => ({ ...r, postType: 'requirement' })),
-  ].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-
-  const filteredPosts = filter === 'all' ? allPosts
-    : filter === 'listings' ? allPosts.filter(p => p.postType === 'listing')
-    : allPosts.filter(p => p.postType === 'requirement');
-
-  const handleDelete = async (post) => {
-    if (!confirm('Delete this post?')) return;
-    setDeletingId(post.id);
-    try {
-      if (post.postType === 'listing') {
-        await base44.entities.Listing.delete(post.id);
-        queryClient.invalidateQueries({ queryKey: ['my-listings'] });
-        queryClient.invalidateQueries({ queryKey: ['listings'] });
-      } else {
-        await base44.entities.Requirement.delete(post.id);
-        queryClient.invalidateQueries({ queryKey: ['my-requirements'] });
-        queryClient.invalidateQueries({ queryKey: ['requirements'] });
-      }
-    } finally {
-      setDeletingId(null);
+  const parseItem = (item) => {
+    const parsed = { ...item };
+    if (typeof parsed.property_details === 'string') {
+      try { parsed.property_details = JSON.parse(parsed.property_details); } catch { parsed.property_details = {}; }
     }
+    if (typeof parsed.area_map_data === 'string') {
+      try { parsed.mapAreas = JSON.parse(parsed.area_map_data); } catch { parsed.mapAreas = []; }
+    }
+    return parsed;
   };
 
-  const isLoading = loadingListings || loadingRequirements;
+  const handleEditSuccess = () => {
+    setEditingListing(null);
+    setEditingRequirement(null);
+    queryClient.invalidateQueries({ queryKey: ['my-listings'] });
+    queryClient.invalidateQueries({ queryKey: ['my-requirements'] });
+  };
 
-  const tabs = [
-    { key: 'all',          label: 'All',          count: allPosts.length },
-    { key: 'listings',     label: 'Listings',     count: listings.length,     icon: Building2 },
-    { key: 'requirements', label: 'Requirements', count: requirements.length, icon: Search },
-  ];
+  const PropertyCard = ({ item, type }) => (
+    <Card
+      onClick={() => type === 'listing'
+        ? setEditingListing(parseItem(item))
+        : setEditingRequirement(parseItem(item))
+      }
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        position: 'relative',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = 'translateY(-3px)';
+        e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
+        e.currentTarget.style.boxShadow = `0 8px 24px ${ACCENT}15`;
+        e.currentTarget.style.borderColor = `${ACCENT}40`;
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+        e.currentTarget.style.boxShadow = 'none';
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+      }}
+    >
+      <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(0,219,197,0.1)', border: `1px solid ${ACCENT}30`, borderRadius: '6px', padding: '3px 8px' }}>
+        <Pencil style={{ width: '11px', height: '11px', color: ACCENT }} />
+        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: ACCENT }}>Edit</span>
+      </div>
+
+      <CardContent style={{ padding: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px' }}>
+          <div style={{
+            width: '44px', height: '44px', borderRadius: '10px',
+            background: type === 'listing' ? `${ACCENT}15` : 'rgba(255,255,255,0.06)',
+            border: type === 'listing' ? `1px solid ${ACCENT}30` : '1px solid rgba(255,255,255,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            {type === 'listing'
+              ? <Building2 style={{ width: '20px', height: '20px', color: ACCENT }} />
+              : <Search style={{ width: '20px', height: '20px', color: 'rgba(255,255,255,0.6)' }} />
+            }
+          </div>
+          <div style={{ flex: 1, minWidth: 0, paddingRight: '60px' }}>
+            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 500, color: 'white', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {item.title}
+            </h3>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+              {item.city || (item.cities?.join(', ')) || 'Location TBD'} · {item.property_type?.replace(/_/g, ' ')}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', marginBottom: '12px' }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 600, color: ACCENT, margin: 0 }}>
+            {(() => {
+              const isListing = type === 'listing';
+              const fmt = (n) => { const num = parseFloat(n); if (isNaN(num)||!n) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
+              const u = isListing
+                ? (item.transaction_type==='lease'||item.transaction_type==='sublease' ? '/SF/yr' : item.transaction_type==='rent' ? '/mo' : '')
+                : (item.price_period==='per_month' ? '/mo' : item.price_period==='per_sf_per_year' ? '/SF/yr' : item.price_period==='annually' ? '/yr' : '');
+              if (isListing) return `$${fmt(item.price)||'0'}${u}`;
+              const lo = fmt(item.min_price), hi = fmt(item.max_price);
+              if (lo && hi) return `$${lo}–$${hi}${u}`;
+              if (hi) return `Up to $${hi}${u}`;
+              if (lo) return `From $${lo}${u}`;
+              return '—';
+            })()}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            {item.status || 'Active'}
+          </span>
+          {item.size_sqft && (
+            <span style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+              {item.size_sqft.toLocaleString()} SF
+            </span>
+          )}
+          {item.transaction_type && (
+            <span style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.6)', textTransform: 'capitalize' }}>
+              {item.transaction_type}
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const currentItems = activeTab === 'listings' ? listings : requirements;
 
   return (
-    <div style={{ maxWidth: '860px', margin: '0 auto', padding: '48px 24px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '32px', gap: '16px', flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '28px', fontWeight: 400, color: 'white', margin: '0 0 6px' }}>
-            My Posts
-          </h1>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-            Manage your active listings and requirements
-          </p>
-        </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: ACCENT, border: 'none', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: '#111827', cursor: 'pointer', flexShrink: 0 }}
-        >
-          <Plus style={{ width: '16px', height: '16px' }} />
-          New Post
-        </button>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '48px 32px' }}>
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '28px', fontWeight: 400, color: 'white', margin: '0 0 6px' }}>
+          My Listings & Client Requirements
+        </h1>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+          Click any card to edit. Changes save instantly when you click Post.
+        </p>
       </div>
 
-      {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-        {tabs.map(tab => {
-          const isActive = filter === tab.key;
-          const Icon = tab.icon;
-          return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '4px' }}>
             <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '8px 16px', borderRadius: '8px',
-                background: isActive ? ACCENT : 'rgba(255,255,255,0.06)',
-                border: isActive ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
-                color: isActive ? '#111827' : 'rgba(255,255,255,0.6)',
-                cursor: 'pointer', transition: 'all 0.15s',
-              }}
+              onClick={() => setActiveTab('listings')}
+              style={{ padding: '8px 20px', background: activeTab === 'listings' ? `${ACCENT}20` : 'transparent', border: activeTab === 'listings' ? `1px solid ${ACCENT}40` : 'none', borderRadius: '6px', color: activeTab === 'listings' ? ACCENT : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}
             >
-              {Icon && <Icon style={{ width: '14px', height: '14px' }} />}
-              {tab.label}
-              <span style={{
-                padding: '1px 7px', borderRadius: '99px', fontSize: '11px',
-                background: isActive ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)',
-                color: isActive ? '#111827' : 'rgba(255,255,255,0.5)',
-              }}>
-                {tab.count}
-              </span>
+              <Building2 style={{ width: '16px', height: '16px' }} /> Listings ({listings.length})
             </button>
-          );
-        })}
-      </div>
-
-      {/* Content */}
-      {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-          <Loader2 style={{ width: '32px', height: '32px', color: ACCENT, animation: 'spin 1s linear infinite' }} />
-        </div>
-      ) : filteredPosts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '64px 24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px' }}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: `${ACCENT}15`, border: `1px solid ${ACCENT}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-            <FileText style={{ width: '28px', height: '28px', color: ACCENT }} />
+            <button
+              onClick={() => setActiveTab('requirements')}
+              style={{ padding: '8px 20px', background: activeTab === 'requirements' ? `${ACCENT}20` : 'transparent', border: activeTab === 'requirements' ? `1px solid ${ACCENT}40` : 'none', borderRadius: '6px', color: activeTab === 'requirements' ? ACCENT : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Search style={{ width: '16px', height: '16px' }} /> Requirements ({requirements.length})
+            </button>
           </div>
-          <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '18px', fontWeight: 400, color: 'white', margin: '0 0 8px' }}>
-            No posts yet
-          </h3>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: '0 0 24px' }}>
-            Create your first listing or requirement to start getting matched.
-          </p>
           <button
             onClick={() => setShowCreateModal(true)}
-            style={{ padding: '10px 24px', background: ACCENT, border: 'none', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: '#111827', cursor: 'pointer' }}
+            style={{ padding: '10px 20px', background: ACCENT, border: 'none', borderRadius: '8px', color: '#111827', cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            Create a Post
+            <Plus style={{ width: '16px', height: '16px' }} /> Post
           </button>
         </div>
+
+        <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '4px' }}>
+          <button onClick={() => setViewMode('grid')} style={{ padding: '6px 12px', background: viewMode === 'grid' ? 'rgba(255,255,255,0.08)' : 'transparent', border: 'none', borderRadius: '4px', color: viewMode === 'grid' ? 'white' : 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
+            <Grid style={{ width: '16px', height: '16px' }} />
+          </button>
+          <button onClick={() => setViewMode('list')} style={{ padding: '6px 12px', background: viewMode === 'list' ? 'rgba(255,255,255,0.08)' : 'transparent', border: 'none', borderRadius: '4px', color: viewMode === 'list' ? 'white' : 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
+            <ListIcon style={{ width: '16px', height: '16px' }} />
+          </button>
+        </div>
+      </div>
+
+      {currentItems.length === 0 ? (
+        <Card style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <CardContent style={{ padding: '64px', textAlign: 'center' }}>
+            {activeTab === 'listings'
+              ? <Building2 style={{ width: '64px', height: '64px', color: `${ACCENT}40`, margin: '0 auto 20px' }} />
+              : <Search style={{ width: '64px', height: '64px', color: `${ACCENT}40`, margin: '0 auto 20px' }} />
+            }
+            <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 500, color: 'white', margin: '0 0 8px' }}>No {activeTab} yet</h3>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>Click "Post" to get started</p>
+          </CardContent>
+        </Card>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {filteredPosts.map(post => {
-            const isListing = post.postType === 'listing';
-            const color = isListing ? ACCENT : '#818cf8';
-            const views  = post.view_count  || 0;
-            const saves  = post.save_count  || 0;
-            const shares = post.share_count || 0;
-            return (
-              <div key={`${post.postType}-${post.id}`} style={{ position: 'relative' }}
-                onMouseEnter={e => { const btn = e.currentTarget.querySelector('[data-delete]'); if (btn) btn.style.opacity = '1'; }}
-                onMouseLeave={e => { const btn = e.currentTarget.querySelector('[data-delete]'); if (btn) btn.style.opacity = '0'; }}
-              >
-                <DealPost post={post} />
-                {/* Engagement stats bar */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '18px', padding: '8px 18px 10px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.05)', borderRadius: '0 0 12px 12px', marginTop: '-4px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <Eye style={{ width: '12px', height: '12px', color: 'rgba(255,255,255,0.3)' }}/>
-                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: views > 0 ? 600 : 400 }}>{views.toLocaleString()} {views === 1 ? 'view' : 'views'}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <Bookmark style={{ width: '12px', height: '12px', color: 'rgba(255,255,255,0.3)' }}/>
-                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: saves > 0 ? 600 : 400 }}>{saves.toLocaleString()} {saves === 1 ? 'save' : 'saves'}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <Share2 style={{ width: '12px', height: '12px', color: 'rgba(255,255,255,0.3)' }}/>
-                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: shares > 0 ? 600 : 400 }}>{shares.toLocaleString()} {shares === 1 ? 'share' : 'shares'}</span>
-                  </div>
-                </div>
-                <button
-                  data-delete
-                  onClick={() => handleDelete(post)}
-                  disabled={deletingId === post.id}
-                  style={{
-                    position: 'absolute', top: '14px', right: '14px',
-                    padding: '7px', background: 'rgba(14,19,24,0.9)', backdropFilter: 'blur(4px)',
-                    border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px',
-                    cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    opacity: 0, transition: 'all 0.15s', color: 'rgba(255,255,255,0.5)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
-                >
-                  {deletingId === post.id
-                    ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
-                    : <Trash2 style={{ width: '15px', height: '15px' }} />
-                  }
-                </button>
-              </div>
-            );
-          })}
+        <div style={{ display: 'grid', gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(320px, 1fr))' : '1fr', gap: '20px' }}>
+          {currentItems.map(item => (
+            <PropertyCard key={item.id} item={item} type={activeTab.slice(0, -1)} />
+          ))}
         </div>
       )}
 
@@ -197,13 +212,29 @@ export default function MyPosts() {
             setShowCreateModal(false);
             queryClient.invalidateQueries({ queryKey: ['my-listings'] });
             queryClient.invalidateQueries({ queryKey: ['my-requirements'] });
-            queryClient.invalidateQueries({ queryKey: ['listings'] });
-            queryClient.invalidateQueries({ queryKey: ['requirements'] });
           }}
         />
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      {editingListing && (
+        <ListingWizard
+          category={editingListing.property_category || 'commercial'}
+          initialData={editingListing}
+          editMode={true}
+          onClose={() => setEditingListing(null)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {editingRequirement && (
+        <RequirementWizard
+          category={editingRequirement.property_category || 'commercial'}
+          initialData={editingRequirement}
+          editMode={true}
+          onClose={() => setEditingRequirement(null)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
     </div>
   );
 }
