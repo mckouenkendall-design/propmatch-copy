@@ -901,7 +901,21 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
     <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'20px', transition:'all 0.2s', position:'relative' }}
       onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor=`${myColor}35`;}}
       onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.08)';}}>
-      {anySaved&&<div style={{ position:'absolute', top:'14px', right:'14px', display:'flex', alignItems:'center', gap:'4px', background:`${ACCENT}15`, border:`1px solid ${ACCENT}35`, borderRadius:'6px', padding:'3px 8px' }}><BookmarkCheck style={{ width:'11px', height:'11px', color:ACCENT }}/><span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, color:ACCENT }}>Saved</span></div>}
+      {(()=>{
+        const il=myIsListing, saveL=il?myPost:best.listing, saveR=il?best.requirement:myPost;
+        const isSaved=savedHook.isSaved(saveL.id,saveR.id);
+        return(
+          <button onClick={e=>{e.stopPropagation();savedHook.toggle(saveL.id,saveR.id);}}
+            style={{ position:'absolute', top:'14px', right:'14px', display:'flex', alignItems:'center', gap:'5px', padding:'4px 10px', background:isSaved?`${ACCENT}15`:'rgba(255,255,255,0.06)', border:`1px solid ${isSaved?ACCENT+'35':'rgba(255,255,255,0.12)'}`, borderRadius:'6px', cursor:'pointer', transition:'all 0.15s' }}
+            onMouseEnter={e=>{e.currentTarget.style.background=isSaved?`${ACCENT}25`:'rgba(255,255,255,0.12)';}}
+            onMouseLeave={e=>{e.currentTarget.style.background=isSaved?`${ACCENT}15`:'rgba(255,255,255,0.06)';}}>
+            {isSaved
+              ? <><BookmarkCheck style={{ width:'11px', height:'11px', color:ACCENT }}/><span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, color:ACCENT }}>Saved</span></>
+              : <><Bookmark style={{ width:'11px', height:'11px', color:'rgba(255,255,255,0.4)' }}/><span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:500, color:'rgba(255,255,255,0.4)' }}>Save</span></>
+            }
+          </button>
+        );
+      })()}
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'12px', marginBottom:'14px' }}>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'3px' }}><div style={{ width:'6px',height:'6px',borderRadius:'50%',background:myColor }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:myColor }}>Your {myIsListing?'Listing':'Requirement'}</span></div>
@@ -959,8 +973,10 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
 export default function Matches() {
   const {user}=useAuth();
   const [activeTab,setActiveTab]=useState('listings'),[filterSaved,setFilterSaved]=useState(false),[modalState,setModalState]=useState(null);
+  useEffect(()=>{if(showSaved)setFilterSaved(true);},[showSaved]);
   const location = useLocation();
   const openPostId = location.state?.openPostId;
+  const showSaved = location.state?.showSaved;
   const savedHook=useSavedMatches(user?.email);
   const {data:myListings=[]}      =useQuery({queryKey:['my-listings'],              queryFn:()=>base44.entities.Listing.filter({created_by:user?.email})});
   const {data:myRequirements=[]}  =useQuery({queryKey:['my-requirements'],          queryFn:()=>base44.entities.Requirement.filter({created_by:user?.email})});
@@ -1012,11 +1028,11 @@ export default function Matches() {
             </button>
           ))}
         </div>
-        {savedCount>0&&(
-          <button onClick={()=>setFilterSaved(f=>!f)} style={{ display:'flex', alignItems:'center', gap:'7px', padding:'8px 14px', background:filterSaved?`${ACCENT}15`:'rgba(255,255,255,0.05)', border:`1px solid ${filterSaved?ACCENT:'rgba(255,255,255,0.1)'}`, borderRadius:'8px', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:filterSaved?ACCENT:'rgba(255,255,255,0.5)', transition:'all 0.15s' }}>
-            <BookmarkCheck style={{ width:'14px', height:'14px' }}/>{filterSaved?'Show All':`Saved (${savedCount})`}
-          </button>
-        )}
+        <button onClick={()=>setFilterSaved(f=>!f)}
+          disabled={savedCount===0&&!filterSaved}
+          style={{ display:'flex', alignItems:'center', gap:'7px', padding:'8px 14px', background:filterSaved?`${ACCENT}15`:'rgba(255,255,255,0.05)', border:`1px solid ${filterSaved?ACCENT:'rgba(255,255,255,0.1)'}`, borderRadius:'8px', cursor:savedCount===0?'default':'pointer', fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:filterSaved?ACCENT:savedCount===0?'rgba(255,255,255,0.2)':'rgba(255,255,255,0.5)', transition:'all 0.15s', opacity:savedCount===0?0.5:1 }}>
+          <BookmarkCheck style={{ width:'14px', height:'14px' }}/>{filterSaved?'Show All':savedCount>0?`Saved (${savedCount})`:'Saved Matches'}
+        </button>
       </div>
       {currentGroups.length===0?(
         <div style={{ textAlign:'center', padding:'80px 32px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'16px' }}>
