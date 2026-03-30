@@ -170,9 +170,10 @@ function ShareMatchModal({ listing, requirement, matchResult, posterProfile, pos
 
 // ─── PDF Theme Picker ─────────────────────────────────────────────────────────
 function PDFOptionsModal({ onPick, onClose }) {
+  const [includeAgent, setIncludeAgent] = useState(true);
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.65)', backdropFilter:'blur(6px)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }} onClick={onClose}>
-      <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'18px', width:'100%', maxWidth:'360px', overflow:'hidden' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'18px', width:'100%', maxWidth:'380px', overflow:'hidden' }} onClick={e => e.stopPropagation()}>
         <div style={{ padding:'20px 20px 6px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <div>
             <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' }}>
@@ -185,12 +186,12 @@ function PDFOptionsModal({ onPick, onClose }) {
             <X style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }} />
           </button>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', padding:'16px 20px 20px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', padding:'16px 20px 14px' }}>
           {[
             { dark:true,  emoji:'\uD83C\uDF19', label:'Dark',  sub:'Matches PropMatch style' },
             { dark:false, emoji:'\u2600\uFE0F', label:'Light', sub:'Clean, print-friendly'   },
           ].map(opt => (
-            <button key={String(opt.dark)} onClick={() => { onPick(opt.dark); onClose(); }}
+            <button key={String(opt.dark)} onClick={() => { onPick(opt.dark, includeAgent); onClose(); }}
               style={{ padding:'18px 14px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:'12px', cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.09)'; e.currentTarget.style.borderColor=`${ACCENT}55`; }}
               onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.09)'; }}>
@@ -200,13 +201,23 @@ function PDFOptionsModal({ onPick, onClose }) {
             </button>
           ))}
         </div>
+        {/* Agent contact toggle */}
+        <div style={{ margin:'0 20px 20px', padding:'12px 14px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer' }} onClick={() => setIncludeAgent(v => !v)}>
+          <div>
+            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'white', margin:0 }}>Include Agent Contact</p>
+            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', margin:0 }}>Show name, email, and phone in the report</p>
+          </div>
+          <div style={{ width:'36px', height:'20px', borderRadius:'10px', background:includeAgent?ACCENT:'rgba(255,255,255,0.15)', position:'relative', flexShrink:0, transition:'background 0.2s' }}>
+            <div style={{ position:'absolute', top:'3px', left:includeAgent?'19px':'3px', width:'14px', height:'14px', borderRadius:'50%', background:'white', transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.3)' }}/>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
 // ─── Export PDF ───────────────────────────────────────────────────────────────
-function exportMatchPDF(listing, requirement, matchResult, posterProfile, darkMode = false) {
+function exportMatchPDF(listing, requirement, matchResult, posterProfile, darkMode = false, includeAgent = true) {
   const { totalScore, breakdown } = matchResult;
   const label = getScoreLabel(totalScore) || '';
   const sc = totalScore >= 70 ? '#00DBC5' : totalScore >= 50 ? '#F59E0B' : '#F97316';
@@ -235,108 +246,151 @@ function exportMatchPDF(listing, requirement, matchResult, posterProfile, darkMo
   const track   = D ? 'rgba(255,255,255,0.07)' : '#e5e7eb';
   const acc = '#00DBC5', lav = '#818cf8';
 
-  // SVG score arc — proper partial circle
-  const R = 42, circ = 2 * Math.PI * R;
-  const dash = (totalScore / 100) * circ;
-  const scoreSVG = `<svg width="104" height="104" viewBox="0 0 104 104" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="52" cy="52" r="${R}" fill="none" stroke="${track}" stroke-width="9"/>
-  <circle cx="52" cy="52" r="${R}" fill="none" stroke="${sc}" stroke-width="9"
-    stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
-    stroke-linecap="round" transform="rotate(-90 52 52)"/>
-  <text x="52" y="47" text-anchor="middle" dominant-baseline="middle"
-    font-family="-apple-system,sans-serif" font-size="26" font-weight="700" fill="${sc}">${totalScore}</text>
-  <text x="52" y="64" text-anchor="middle"
-    font-family="-apple-system,sans-serif" font-size="9" fill="${textMut}" letter-spacing="2">MATCH</text>
-</svg>`;
+  // SVG score arc with glow animation
+  const R = 46, circ = 2 * Math.PI * R, dash = (totalScore / 100) * circ;
+  const scoreSVG = `<div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+<style>
+@keyframes pglow {
+  0%,100%{filter:drop-shadow(0 0 6px ${sc}80) drop-shadow(0 0 18px ${sc}45)}
+  50%{filter:drop-shadow(0 0 13px ${sc}aa) drop-shadow(0 0 32px ${sc}65)}
+}
+.parc{animation:pglow 3s ease-in-out infinite}
+</style>
+<div style="position:relative;width:116px;height:116px">
+<svg width="116" height="116" viewBox="0 0 116 116" xmlns="http://www.w3.org/2000/svg" class="parc" style="transform:rotate(-90deg)">
+  <circle cx="58" cy="58" r="${R}" fill="none" stroke="${track}" stroke-width="11"/>
+  <circle cx="58" cy="58" r="${R}" fill="none" stroke="${sc}" stroke-width="11"
+    stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round"/>
+</svg>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+  <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:32px;font-weight:700;color:${sc};line-height:1">${totalScore}</span>
+  <span style="font-family:'Inter',sans-serif;font-size:9px;color:${textMut};letter-spacing:0.1em;margin-top:3px">MATCH</span>
+</div>
+</div>
+${label ? `<span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${sc};background:${sc}18;border:1px solid ${sc}35;border-radius:20px;padding:5px 18px;box-shadow:0 0 14px ${sc}30">${label}</span>` : ''}
+</div>`;
 
-  // Ichthys fish logo SVG
-  const fishSVG = `<svg width="30" height="19" viewBox="0 0 30 19" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M1.5 9.5C3.5 4.5 8.5 1.5 15 1.5C21.5 1.5 26.5 4.5 28.5 9.5C26.5 14.5 21.5 17.5 15 17.5C8.5 17.5 3.5 14.5 1.5 9.5Z"
-    stroke="${acc}" stroke-width="1.7" fill="${D ? 'rgba(0,219,197,0.1)' : 'rgba(0,219,197,0.08)'}"/>
-  <path d="M25 5L30 9.5L25 14" stroke="${acc}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="9.5" cy="9.5" r="1.8" fill="${acc}"/>
-</svg>`;
+  // Logo: fish SVG + HTML text so Google Fonts actually renders correctly
+  const propColor = D ? 'rgba(255,255,255,0.9)' : '#111827';
+  const logoHTML = `<div style="display:flex;align-items:center;gap:10px">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 28" width="44" height="28">
+    <g transform="translate(10,14)">
+      <path d="M -10,0 Q 0,-6 10,0 Q 13,-1 16,-4 Q 13.5,-0.5 10,0 Q 13,1 16,4 Q 13.5,0.5 10,0 Q 0,6 -10,0 Z"
+        fill="none" stroke="#00DBC5" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+    </g>
+    <circle cx="8" cy="14" r="1.5" fill="#00DBC5"/>
+  </svg>
+  <div style="display:flex;align-items:baseline;gap:0">
+    <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:300;color:${propColor};letter-spacing:-0.2px">Prop</span><span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700;color:#00DBC5;letter-spacing:-0.2px">Match</span>
+  </div>
+</div>`;
 
   // Visual score breakdown bars
   const barsHTML = breakdown.map(b => {
     const bc = b.score >= 70 ? '#00DBC5' : b.score >= 50 ? '#F59E0B' : '#F97316';
     return `<div style="margin-bottom:14px">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-    <span style="font-size:13px;color:${textSub};font-family:-apple-system,sans-serif">${b.icon || ''} ${b.category}</span>
-    <span style="font-size:13px;font-weight:700;color:${bc};font-family:-apple-system,sans-serif">${b.score}%</span>
+    <span style="font-size:13px;color:${textSub};font-family:'Inter',sans-serif">${b.icon||''} ${b.category}</span>
+    <span style="font-size:13px;font-weight:700;color:${bc};font-family:'Inter',sans-serif">${b.score}%</span>
   </div>
   <div style="height:8px;background:${track};border-radius:4px;overflow:hidden">
     <div style="height:100%;width:${b.score}%;background:${bc};border-radius:4px"></div>
   </div>
-  ${b.details ? `<div style="font-size:11px;color:${textMut};margin-top:3px;font-family:-apple-system,sans-serif">${b.details}</div>` : ''}
+  ${b.details ? `<div style="font-size:11px;color:${textMut};margin-top:3px;font-family:'Inter',sans-serif">${b.details}</div>` : ''}
 </div>`;
   }).join('');
 
   // Side-by-side comparison table
   const compFields = [];
   if (listing.price || requirement.min_price || requirement.max_price)
-    compFields.push({ label: 'Price / Budget', lv: lPrice, rv: rPrice });
+    compFields.push({ label:'Price / Budget', lv:lPrice, rv:rPrice });
   if (listing.size_sqft || requirement.min_size_sqft || requirement.max_size_sqft)
-    compFields.push({ label: 'Size', lv: listing.size_sqft ? `${parseFloat(listing.size_sqft).toLocaleString()} SF` : '\u2014', rv: (requirement.min_size_sqft || requirement.max_size_sqft) ? `${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF` : '\u2014' });
-  compFields.push({ label: 'Location',      lv: lLoc, rv: rCities });
-  compFields.push({ label: 'Property Type', lv: PT[listing.property_type]||listing.property_type, rv: PT[requirement.property_type]||requirement.property_type });
-  compFields.push({ label: 'Transaction',   lv: TX[listing.transaction_type]||listing.transaction_type, rv: TX[requirement.transaction_type]||requirement.transaction_type });
-
-  const compRows = compFields.map((f, i) => `<tr style="background:${i%2===0?srf2:surface}">
-  <td style="padding:9px 14px;font-size:12px;font-weight:600;color:${textMut};font-family:-apple-system,sans-serif;white-space:nowrap">${f.label}</td>
-  <td style="padding:9px 14px;font-size:13px;color:${acc};font-family:-apple-system,sans-serif;font-weight:500">${f.lv}</td>
-  <td style="padding:9px 14px;font-size:13px;color:${lav};font-family:-apple-system,sans-serif;font-weight:500">${f.rv}</td>
+    compFields.push({ label:'Size', lv:listing.size_sqft?`${parseFloat(listing.size_sqft).toLocaleString()} SF`:'\u2014', rv:(requirement.min_size_sqft||requirement.max_size_sqft)?`${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF`:'\u2014' });
+  compFields.push({ label:'Location',      lv:lLoc,  rv:rCities });
+  compFields.push({ label:'Property Type', lv:PT[listing.property_type]||listing.property_type,   rv:PT[requirement.property_type]||requirement.property_type });
+  compFields.push({ label:'Transaction',   lv:TX[listing.transaction_type]||listing.transaction_type, rv:TX[requirement.transaction_type]||requirement.transaction_type });
+  const compRows = compFields.map((f,i) => `<tr style="background:${i%2===0?srf2:surface}">
+  <td style="padding:9px 14px;font-size:12px;font-weight:600;color:${textMut};font-family:'Inter',sans-serif;white-space:nowrap">${f.label}</td>
+  <td style="padding:9px 14px;font-size:13px;color:${acc};font-family:'Inter',sans-serif;font-weight:500">${f.lv}</td>
+  <td style="padding:9px 14px;font-size:13px;color:${lav};font-family:'Inter',sans-serif;font-weight:500">${f.rv}</td>
 </tr>`).join('');
+
+  const agentSection = (!includeAgent) ? '' : `
+    <div class="sec">
+      <div class="sec-h"><div class="sec-dot" style="background:${lav}"></div><span class="sec-t">Agent Contact</span></div>
+      <div class="a-card">
+        <div class="a-av">${agentName[0]?.toUpperCase()||'A'}</div>
+        <div>
+          <div class="a-n">${agentName}</div>
+          ${agentCompany?`<div class="a-co">${agentCompany}</div>`:''}
+          <div class="a-ct">
+            ${agentEmail?`&#128231; ${agentEmail}`:''}
+            ${agentEmail&&agentPhone?'&nbsp;&nbsp;':''}
+            ${agentPhone?`&#128222; ${agentPhone}`:''}
+          </div>
+        </div>
+      </div>
+    </div>`;
 
   const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>PropMatch Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:${bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:${textPri}}
-@page{margin:.6in;size:letter}
-@media print{.np{display:none!important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-.page{max-width:760px;margin:0 auto}
-.hdr{padding:22px 32px;background:${D?'#111820':surface};border-bottom:1px solid ${border};display:flex;align-items:center;justify-content:space-between}
-.logo{display:flex;align-items:center;gap:10px}
-.logo-t{font-size:18px;font-weight:700;color:${acc};letter-spacing:-.3px;font-family:-apple-system,sans-serif}
+html{background:${bg}!important;color:${textPri}}
+body{font-family:'Inter',sans-serif;background:${bg}!important;color:${textPri}!important;min-height:100vh}
+/* Print: force ALL colors — critical for dark mode */
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+  html,body{background:${bg}!important;background-color:${bg}!important}
+  .hdr{background:${D?'#111820':surface}!important;background-color:${D?'#111820':surface}!important}
+  .hero,.surface,.card,.a-card,.ftr{background:${surface}!important;background-color:${surface}!important}
+  .np{display:none!important}
+  .page{max-width:100%!important;padding:0!important}
+  body{padding:0!important}
+}
+@page{margin:.5in;size:letter}
+body{padding:0 20px 0}
+.page{max-width:100%;margin:0 auto}
+.hdr{padding:20px 28px;background:${D?'#111820':surface};border-bottom:1px solid ${border};display:flex;align-items:center;justify-content:space-between}
 .hdr-r{text-align:right}
-.hdr-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${textMut};font-family:-apple-system,sans-serif}
-.hdr-dt{font-size:12px;color:${textSub};margin-top:3px;font-family:-apple-system,sans-serif}
-.hero{padding:28px 32px;display:flex;flex-direction:column;align-items:center;gap:10px;background:${surface};border-bottom:1px solid ${border}}
-.badge{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${sc};background:${sc}18;border:1px solid ${sc}35;border-radius:6px;padding:4px 14px;font-family:-apple-system,sans-serif}
-.hero-sub{font-size:12px;color:${textSub};font-family:-apple-system,sans-serif}
-.body{padding:26px 32px}
-.sec{margin-bottom:26px}
+.hdr-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${textMut};font-family:'Inter',sans-serif}
+.hdr-dt{font-size:12px;color:${textSub};margin-top:3px;font-family:'Inter',sans-serif}
+.hero{padding:28px 28px;display:flex;flex-direction:column;align-items:center;gap:10px;background:${surface};border-bottom:1px solid ${border}}
+.hero-sub{font-size:13px;color:${textSub};font-family:'Inter',sans-serif}
+.body{padding:22px 28px}
+.sec{margin-bottom:22px}
 .sec-h{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid ${border}}
 .sec-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.sec-t{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:${textMut};font-family:-apple-system,sans-serif}
+.sec-t{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:${textMut};font-family:'Inter',sans-serif}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .card{background:${surface};border:1px solid ${border};border-radius:11px;padding:16px}
-.c-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;font-family:-apple-system,sans-serif}
-.c-t{font-size:14px;font-weight:600;color:${textPri};margin-bottom:5px;line-height:1.3;font-family:-apple-system,sans-serif}
-.c-p{font-size:18px;font-weight:700;margin-bottom:6px;font-family:-apple-system,sans-serif}
+.c-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;font-family:'Inter',sans-serif}
+.c-t{font-size:14px;font-weight:600;color:${textPri};margin-bottom:5px;line-height:1.3;font-family:'Plus Jakarta Sans',sans-serif}
+.c-p{font-size:19px;font-weight:700;margin-bottom:6px;font-family:'Plus Jakarta Sans',sans-serif}
 .chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
-.chip{background:${D?'rgba(255,255,255,0.07)':srf2};border:1px solid ${border};border-radius:4px;padding:2px 7px;font-size:11px;color:${textSub};font-family:-apple-system,sans-serif}
-.c-desc{font-size:12px;color:${textSub};line-height:1.5;margin-top:6px;font-family:-apple-system,sans-serif}
+.chip{background:${D?'rgba(255,255,255,0.07)':srf2};border:1px solid ${border};border-radius:4px;padding:2px 7px;font-size:11px;color:${textSub};font-family:'Inter',sans-serif}
+.c-desc{font-size:12px;color:${textSub};line-height:1.5;margin-top:6px;font-family:'Inter',sans-serif}
 table{width:100%;border-collapse:collapse;border:1px solid ${border};border-radius:10px;overflow:hidden}
-th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;background:${srf2};text-align:left;font-family:-apple-system,sans-serif;color:${textMut}}
+th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;background:${srf2};text-align:left;font-family:'Inter',sans-serif;color:${textMut}}
 .a-card{background:${surface};border:1px solid ${border};border-radius:11px;padding:18px;display:flex;align-items:center;gap:14px}
-.a-av{width:44px;height:44px;border-radius:50%;background:${lav};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:white;flex-shrink:0;font-family:-apple-system,sans-serif}
-.a-n{font-size:16px;font-weight:600;color:${textPri};font-family:-apple-system,sans-serif}
-.a-co{font-size:13px;color:${textSub};margin-top:2px;font-family:-apple-system,sans-serif}
-.a-ct{font-size:13px;color:${textSub};margin-top:6px;font-family:-apple-system,sans-serif}
-.ftr{padding:14px 32px;border-top:1px solid ${border};display:flex;justify-content:space-between;background:${surface}}
-.ftr p{font-size:11px;color:${textMut};font-family:-apple-system,sans-serif}
-.pb{position:fixed;bottom:20px;right:20px;background:${acc};color:#111827;border:none;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px ${acc}40;font-family:-apple-system,sans-serif}
+.a-av{width:44px;height:44px;border-radius:50%;background:${lav};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:white;flex-shrink:0;font-family:'Plus Jakarta Sans',sans-serif}
+.a-n{font-size:16px;font-weight:600;color:${textPri};font-family:'Plus Jakarta Sans',sans-serif}
+.a-co{font-size:13px;color:${textSub};margin-top:2px;font-family:'Inter',sans-serif}
+.a-ct{font-size:13px;color:${textSub};margin-top:6px;font-family:'Inter',sans-serif}
+.ftr{padding:14px 28px;border-top:1px solid ${border};display:flex;justify-content:space-between;background:${surface}}
+.ftr p{font-size:11px;color:${textMut};font-family:'Inter',sans-serif}
+.pb{position:fixed;bottom:20px;right:20px;background:${acc};color:#111827;border:none;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px ${acc}40;font-family:'Plus Jakarta Sans',sans-serif}
 </style>
 </head>
 <body>
 <div class="page">
   <div class="hdr">
-    <div class="logo">${fishSVG}<span class="logo-t">PropMatch</span></div>
+    <div>${logoHTML}</div>
     <div class="hdr-r">
       <div class="hdr-lbl">Match Report</div>
       <div class="hdr-dt">${now}</div>
@@ -345,7 +399,6 @@ th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;lett
 
   <div class="hero">
     ${scoreSVG}
-    ${label ? `<div class="badge">${label}</div>` : ''}
     <div class="hero-sub">${PT[listing.property_type]||listing.property_type} &middot; ${TX[listing.transaction_type]||listing.transaction_type}</div>
   </div>
 
@@ -358,22 +411,22 @@ th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;lett
           <div class="c-t">${listing.title||'Untitled Listing'}</div>
           <div class="c-p" style="color:${acc}">${lPrice}</div>
           <div class="chips">
-            ${lLoc !== '\u2014' ? `<span class="chip">${lLoc}</span>` : ''}
-            ${listing.size_sqft ? `<span class="chip">${parseFloat(listing.size_sqft).toLocaleString()} SF</span>` : ''}
-            ${listing.transaction_type ? `<span class="chip">${TX[listing.transaction_type]||listing.transaction_type}</span>` : ''}
+            ${lLoc!=='\u2014'?`<span class="chip">${lLoc}</span>`:''}
+            ${listing.size_sqft?`<span class="chip">${parseFloat(listing.size_sqft).toLocaleString()} SF</span>`:''}
+            ${listing.transaction_type?`<span class="chip">${TX[listing.transaction_type]||listing.transaction_type}</span>`:''}
           </div>
-          ${listing.description ? `<div class="c-desc">${listing.description}</div>` : ''}
+          ${listing.description?`<div class="c-desc">${listing.description}</div>`:''}
         </div>
         <div class="card">
           <div class="c-lbl" style="color:${lav}">Their Requirement</div>
           <div class="c-t">${requirement.title||'Untitled Requirement'}</div>
           <div class="c-p" style="color:${lav}">${rPrice}</div>
           <div class="chips">
-            ${rCities ? `<span class="chip">${rCities}</span>` : ''}
-            ${(requirement.min_size_sqft||requirement.max_size_sqft) ? `<span class="chip">${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF</span>` : ''}
-            ${requirement.transaction_type ? `<span class="chip">${TX[requirement.transaction_type]||requirement.transaction_type}</span>` : ''}
+            ${rCities?`<span class="chip">${rCities}</span>`:''}
+            ${(requirement.min_size_sqft||requirement.max_size_sqft)?`<span class="chip">${fmtN(requirement.min_size_sqft)||'0'}\u2013${fmtN(requirement.max_size_sqft)||'\u221e'} SF</span>`:''}
+            ${requirement.transaction_type?`<span class="chip">${TX[requirement.transaction_type]||requirement.transaction_type}</span>`:''}
           </div>
-          ${requirement.notes ? `<div class="c-desc">${requirement.notes}</div>` : ''}
+          ${requirement.notes?`<div class="c-desc">${requirement.notes}</div>`:''}
         </div>
       </div>
     </div>
@@ -395,21 +448,7 @@ th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;lett
       ${barsHTML}
     </div>
 
-    <div class="sec">
-      <div class="sec-h"><div class="sec-dot" style="background:${lav}"></div><span class="sec-t">Agent Contact</span></div>
-      <div class="a-card">
-        <div class="a-av">${agentName[0]?.toUpperCase()||'A'}</div>
-        <div>
-          <div class="a-n">${agentName}</div>
-          ${agentCompany ? `<div class="a-co">${agentCompany}</div>` : ''}
-          <div class="a-ct">
-            ${agentEmail ? `&#128231; ${agentEmail}` : ''}
-            ${agentEmail && agentPhone ? '&nbsp;&nbsp;' : ''}
-            ${agentPhone ? `&#128222; ${agentPhone}` : ''}
-          </div>
-        </div>
-      </div>
-    </div>
+    ${agentSection}
   </div>
 
   <div class="ftr">
@@ -417,11 +456,12 @@ th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;lett
     <p>Match scores are estimates &mdash; verify details before transacting.</p>
   </div>
 </div>
-<button class="pb np" onclick="window.print()">&#128424;&#65039; Print / Save PDF</button>
+<button class="pb np" onclick="document.fonts.ready.then(()=>window.print())">&#128424;&#65039; Print / Save PDF</button>
+${D ? `<div style="position:fixed;bottom:70px;right:20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;font-family:'Inter',sans-serif;font-size:11px;color:rgba(255,255,255,0.5);max-width:220px;text-align:center" class="np">Tip: Enable "Background graphics" in print dialog to preserve dark mode</div>` : ''}
 </body>
 </html>`;
 
-  const win = window.open('', '_blank', 'width=900,height=750');
+  const win = window.open('', '_blank', 'width=960,height=780');
   if (!win) { alert('Please allow popups to export the PDF.'); return; }
   win.document.write(html);
   win.document.close();
@@ -473,20 +513,33 @@ function PhotoLightbox({ photos, onClose }) {
 // ─── Big Score Circle ─────────────────────────────────────────────────────────
 function BigScoreCircle({ score }) {
   const color = getScoreColor(score), label = getScoreLabel(score);
-  const sz=96, r=38, circ=2*Math.PI*r, dash=(score/100)*circ;
+  const sz=120, r=48, circ=2*Math.PI*r, dash=(score/100)*circ;
+  const uid = `sg${score}`;
   return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'12px' }}>
+      <style>{`
+        @keyframes ${uid}{
+          0%,100%{filter:drop-shadow(0 0 6px ${color}70) drop-shadow(0 0 18px ${color}40)}
+          50%{filter:drop-shadow(0 0 13px ${color}a0) drop-shadow(0 0 32px ${color}65)}
+        }
+        .${uid}{animation:${uid} 3s ease-in-out infinite}
+      `}</style>
       <div style={{ position:'relative', width:sz, height:sz }}>
-        <svg width={sz} height={sz} style={{ transform:'rotate(-90deg)' }}>
-          <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="9"/>
-          <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth="9" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
+        <svg width={sz} height={sz} className={uid} style={{ transform:'rotate(-90deg)' }}>
+          <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="11"/>
+          <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth="11"
+            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
         </svg>
         <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-          <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'28px', fontWeight:700, color, lineHeight:1 }}>{score}</span>
-          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.3)', letterSpacing:'0.06em', marginTop:'2px' }}>MATCH</span>
+          <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:700, color, lineHeight:1 }}>{score}</span>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)', letterSpacing:'0.09em', marginTop:'3px' }}>MATCH</span>
         </div>
       </div>
-      {label && <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color, background:`${color}15`, border:`1px solid ${color}35`, borderRadius:'6px', padding:'4px 14px' }}>{label}</span>}
+      {label && (
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color, background:`${color}15`, border:`1px solid ${color}35`, borderRadius:'30px', padding:'5px 18px', boxShadow:`0 0 18px ${color}35` }}>
+          {label}
+        </span>
+      )}
     </div>
   );
 }
@@ -825,7 +878,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
     {lightboxPhoto&&<PhotoLightbox photos={lightboxPhoto} onClose={()=>setLightboxPhoto(null)}/>}
     {showCompose&&<FloatingMessageCompose recipientProfile={posterProfile} recipientEmail={posterEmail} myPost={myPost} matchPost={matchPost} matchResult={matchResult} onClose={()=>setShowCompose(false)}/>}
     {showShare&&<ShareMatchModal listing={listing} requirement={requirement} matchResult={matchResult} posterProfile={posterProfile} posterEmail={posterEmail} onMessage={()=>setShowCompose(true)} onClose={()=>setShowShare(false)}/>}
-    {showPDFOptions&&<PDFOptionsModal onPick={(dark)=>exportMatchPDF(listing,requirement,matchResult,posterProfile,dark)} onClose={()=>setShowPDFOptions(false)}/>}
+    {showPDFOptions&&<PDFOptionsModal onPick={(dark,incAgent)=>exportMatchPDF(listing,requirement,matchResult,posterProfile,dark,incAgent)} onClose={()=>setShowPDFOptions(false)}/>}
     {viewingAgent&&<AgentContactModal profile={viewingAgent.profile} email={viewingAgent.email} onClose={()=>setViewingAgent(null)}/>}
   </>);
 }
@@ -873,7 +926,7 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
             <p style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',fontWeight:500,color:'white',margin:'0 0 2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{matchPost.title}</p>
             <div style={{ display:'flex',alignItems:'center',gap:'6px' }}>
               <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)' }}>{priceStr(matchPost,!myIsListing)}</span>
-              {label&&<span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,color:scoreColor,background:`${scoreColor}12`,border:`1px solid ${scoreColor}30`,borderRadius:'4px',padding:'1px 6px' }}>{label}</span>}
+              {label&&<span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,color:scoreColor,background:`${scoreColor}12`,border:`1px solid ${scoreColor}30`,borderRadius:'20px',padding:'2px 8px' }}>{label}</span>}
             </div>
           </div>
         </div>
