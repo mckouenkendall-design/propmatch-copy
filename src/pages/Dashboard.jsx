@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import {
   Building2, Search, TrendingUp, MessageCircle, Bell,
   Bookmark, BookmarkCheck, Plus, ChevronRight, FileText,
-  Zap, ArrowUpRight, X, Users, BarChart2, Clock
+  Zap, ArrowUpRight, X, BarChart2, Clock
 } from 'lucide-react';
 import { calculateMatchScore, getScoreColor, getScoreLabel } from '@/utils/matchScore';
 
@@ -164,44 +164,59 @@ function MatchCard({ myPost, match, onNavigate }) {
 }
 
 // ─── Post Analytics Card ──────────────────────────────────────────────────────
-function PostCard({ post, matchCount, maxCount, onNavigate }) {
+function PostCard({ post, maxCount, onNavigate }) {
   const [hov, setHov] = useState(false);
   const isListing = post.postType === 'listing';
   const color = isListing ? ACCENT : LAVENDER;
-  const barPct = maxCount > 0 ? (matchCount / maxCount) * 100 : 0;
+  const { total = 0, strong = 0, good = 0, fair = 0 } = post;
+  const barPct = maxCount > 0 ? (total / maxCount) * 100 : 0;
   const price = fmtPrice(post, isListing);
-  const scoreColor = matchCount === 0 ? 'rgba(255,255,255,0.2)' : matchCount >= 3 ? ACCENT : AMBER;
+
+  const Dot = ({ c, label, dotColor }) => c === 0 ? null : (
+    <div style={{ display:'flex', alignItems:'center', gap:'3px' }}>
+      <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:dotColor, boxShadow: dotColor !== 'rgba(255,255,255,0.25)' ? `0 0 5px ${dotColor}80` : 'none', flexShrink:0 }}/>
+      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:600, color:dotColor }}>{c}</span>
+    </div>
+  );
 
   return (
     <div onClick={onNavigate}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      style={{ padding: '13px 15px', background: hov ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)', border: `1px solid ${hov ? color + '22' : 'rgba(255,255,255,0.06)'}`, borderRadius: '11px', cursor: 'pointer', transition: 'all 0.15s' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '9px' }}>
-        <div style={{ flex: 1, minWidth: 0, marginRight: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px' }}>
-            <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: color, flexShrink: 0 }}/>
-            <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color }}>
-              {isListing ? 'Listing' : 'Requirement'}
-            </span>
+      style={{ padding:'13px 15px', background:hov?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.03)', border:`1px solid ${hov?color+'22':'rgba(255,255,255,0.06)'}`, borderRadius:'11px', cursor:'pointer', transition:'all 0.15s' }}>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'8px' }}>
+        <div style={{ flex:1, minWidth:0, marginRight:'12px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'3px' }}>
+            <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:color, flexShrink:0 }}/>
+            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color }}>{isListing?'Listing':'Requirement'}</span>
           </div>
-          <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.85)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {post.title}
-          </p>
-          <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.32)', margin: '2px 0 0' }}>
-            {PT[post.property_type] || post.property_type}
-            {post.city ? ` · ${post.city}` : ''}
-            {price ? ` · ${price}` : ''}
+          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'rgba(255,255,255,0.85)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{post.title}</p>
+          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.32)', margin:'2px 0 0' }}>
+            {PT[post.property_type]||post.property_type}{post.city?` · ${post.city}`:''}
+            {price?` · ${price}`:''}
           </p>
         </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: '22px', fontWeight: 700, color: scoreColor, lineHeight: 1 }}>{matchCount}</div>
-          <div style={{ fontFamily: "'Inter',sans-serif", fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>{matchCount === 1 ? 'match' : 'matches'}</div>
+        <div style={{ textAlign:'right', flexShrink:0 }}>
+          <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'22px', fontWeight:700, color:total===0?'rgba(255,255,255,0.2)':total>=3?color:AMBER, lineHeight:1 }}>{total}</div>
+          <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.3)', marginTop:'2px' }}>{total===1?'match':'matches'}</div>
         </div>
       </div>
-      {/* Match bar */}
-      <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${barPct}%`, background: `linear-gradient(90deg, ${color}90, ${color})`, borderRadius: '2px', transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)', boxShadow: barPct > 0 ? `0 0 6px ${color}60` : 'none' }}/>
+      {/* Score distribution dots */}
+      {total > 0 && (
+        <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'8px' }}>
+          <Dot c={strong} dotColor={ACCENT}/>
+          <Dot c={good}   dotColor={AMBER}/>
+          <Dot c={fair}   dotColor="rgba(255,255,255,0.25)"/>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.2)', marginLeft:'2px' }}>
+            {strong>0?'strong·':''}
+            {good>0?'good·':''}
+            {fair>0?'fair':''}
+          </span>
+        </div>
+      )}
+      {/* Match count bar */}
+      <div style={{ height:'3px', background:'rgba(255,255,255,0.05)', borderRadius:'2px', overflow:'hidden' }}>
+        <div style={{ height:'100%', width:`${barPct}%`, background:`linear-gradient(90deg,${color}90,${color})`, borderRadius:'2px', transition:'width 0.8s cubic-bezier(0.16,1,0.3,1)', boxShadow:barPct>0?`0 0 6px ${color}60`:'none' }}/>
       </div>
     </div>
   );
@@ -331,34 +346,37 @@ export default function Dashboard() {
     const otherListings = allListings.filter(l => l.created_by !== user?.email);
     const otherReqs     = allRequirements.filter(r => r.created_by !== user?.email);
     const all = [];
-    const counts = {};
+    const counts = {}; // { [id]: { total, strong, good, fair } }
+    const addCount = (id, score) => {
+      if (!counts[id]) counts[id] = { total:0, strong:0, good:0, fair:0 };
+      counts[id].total++;
+      if (score >= 70)      counts[id].strong++;
+      else if (score >= 50) counts[id].good++;
+      else                  counts[id].fair++;
+    };
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     let weekCount = 0;
 
     myListings.forEach(listing => {
-      let c = 0;
       otherReqs.forEach(req => {
         const r = calculateMatchScore(listing, req);
         if (r.isMatch) {
           all.push({ myPost: { ...listing, postType: 'listing' }, listing, requirement: req, ...r });
-          c++;
+          addCount(listing.id, r.totalScore);
           const reqTs = new Date(req.created_date).getTime();
           if (reqTs > weekAgo) weekCount++;
         }
       });
-      counts[listing.id] = c;
     });
 
     myRequirements.forEach(req => {
-      let c = 0;
       otherListings.forEach(listing => {
         const r = calculateMatchScore(listing, req);
         if (r.isMatch) {
           all.push({ myPost: { ...req, postType: 'requirement' }, listing, requirement: req, ...r });
-          c++;
+          addCount(req.id, r.totalScore);
         }
       });
-      counts[req.id] = c;
     });
 
     all.sort((a, b) => b.totalScore - a.totalScore);
@@ -368,11 +386,11 @@ export default function Dashboard() {
   // ── Posts for analytics panel ──────────────────────────────────────────────
   const postsForAnalytics = useMemo(() => {
     return [
-      ...myListings.map(l  => ({ ...l,  postType: 'listing',      matchCount: postMatchCounts[l.id]  || 0 })),
-      ...myRequirements.map(r => ({ ...r, postType: 'requirement', matchCount: postMatchCounts[r.id] || 0 })),
-    ].sort((a, b) => b.matchCount - a.matchCount).slice(0, 7);
+      ...myListings.map(l  => ({ ...l,  postType:'listing',      ...(postMatchCounts[l.id]  || { total:0, strong:0, good:0, fair:0 }) })),
+      ...myRequirements.map(r => ({ ...r, postType:'requirement', ...(postMatchCounts[r.id] || { total:0, strong:0, good:0, fair:0 }) })),
+    ].sort((a, b) => b.total - a.total).slice(0, 7);
   }, [myListings, myRequirements, postMatchCounts]);
-  const maxMatchCount = Math.max(...postsForAnalytics.map(p => p.matchCount), 1);
+  const maxMatchCount = Math.max(...postsForAnalytics.map(p => p.total), 1);
 
   // ── Saved matches resolved ─────────────────────────────────────────────────
   const savedMatches = useMemo(() => {
@@ -486,7 +504,7 @@ export default function Dashboard() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
                   {postsForAnalytics.map((post, i) => (
-                    <PostCard key={post.id || i} post={post} matchCount={post.matchCount} maxCount={maxMatchCount} onNavigate={() => navigate('/matches')}/>
+                    <PostCard key={post.id || i} post={post} maxCount={maxMatchCount} onNavigate={() => navigate('/matches')}/>
                   ))}
                 </div>
               </>
@@ -564,10 +582,10 @@ export default function Dashboard() {
             <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.35)', margin: '0 0 14px' }}>QUICK ACTIONS</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {[
-                { label: 'View My Matches', icon: TrendingUp,    color: ACCENT,   path: '/matches'     },
-                { label: 'Open Inbox',      icon: MessageCircle, color: LAVENDER, path: '/inbox'       },
-                { label: 'Fish Tanks',      icon: Users,         color: AMBER,    path: '/groups'      },
-                { label: 'My Posts',        icon: BarChart2,     color: ACCENT,   path: '/my-posts'    },
+                { label: 'View My Matches',  icon: TrendingUp,    color: ACCENT,   path: '/matches'     },
+                { label: 'Open Inbox',       icon: MessageCircle, color: LAVENDER, path: '/inbox'       },
+                { label: 'Saved Matches',    icon: BookmarkCheck, color: AMBER,    path: '/matches'     },
+                { label: 'My Posts',         icon: BarChart2,     color: ACCENT,   path: '/my-posts'    },
               ].map(({ label, icon: Icon, color, path }) => (
                 <button key={path} onClick={() => navigate(path)}
                   style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '9px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', width: '100%' }}
