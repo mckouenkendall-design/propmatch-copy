@@ -22,6 +22,7 @@ import GroupDetail from './pages/GroupDetail';
 import Inventory from './pages/Inventory';
 import Matches from './pages/Matches';
 import Teams from './pages/Teams';
+import NewsWire from './pages/NewsWire';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -129,6 +130,7 @@ const AuthenticatedApp = () => {
         } 
       />
       <Route path="/GroupDetail" element={<GroupDetail />} />
+      <Route path="/NewsWire" element={<LayoutWrapper currentPageName="NewsWire"><NewsWire /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
