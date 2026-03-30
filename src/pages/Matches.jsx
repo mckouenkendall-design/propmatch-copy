@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import {
@@ -958,6 +959,8 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
 export default function Matches() {
   const {user}=useAuth();
   const [activeTab,setActiveTab]=useState('listings'),[filterSaved,setFilterSaved]=useState(false),[modalState,setModalState]=useState(null);
+  const location = useLocation();
+  const openPostId = location.state?.openPostId;
   const savedHook=useSavedMatches(user?.email);
   const {data:myListings=[]}      =useQuery({queryKey:['my-listings'],              queryFn:()=>base44.entities.Listing.filter({created_by:user?.email})});
   const {data:myRequirements=[]}  =useQuery({queryKey:['my-requirements'],          queryFn:()=>base44.entities.Requirement.filter({created_by:user?.email})});
@@ -980,6 +983,18 @@ export default function Matches() {
   },[activeTab,listingGroups,requirementGroups,filterSaved,savedHook.saved]);
   const savedCount=savedHook.saved.length;
   const openModal=(myPost,matchResult,matchIndex)=>{const groups=myPost.postType==='listing'?listingGroups:requirementGroups;const group=groups.find(g=>g.myPost.id===myPost.id);setModalState({myPost,matches:group?.matches||[matchResult],matchIndex});};
+
+  // Deep-link: if navigated here from Control Center with a specific post, auto-open it
+  useEffect(()=>{
+    if(!openPostId)return;
+    const allGroups=[...listingGroups,...requirementGroups];
+    const group=allGroups.find(g=>g.myPost.id===openPostId);
+    if(group&&group.matches.length>0){
+      setActiveTab(group.myPost.postType==='listing'?'listings':'requirements');
+      setModalState({myPost:group.myPost,matches:group.matches,matchIndex:0});
+      window.history.replaceState({},'');
+    }
+  },[openPostId,listingGroups,requirementGroups]);
   const navigate=(dir)=>{if(!modalState)return;const t=modalState.matches.length;setModalState(s=>({...s,matchIndex:(s.matchIndex+dir+t)%t}));};
   return(
     <div style={{ maxWidth:'860px', margin:'0 auto', padding:'48px 32px' }}>
