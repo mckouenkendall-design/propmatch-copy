@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, Search, Plus, Trash2, Loader2, FileText } from 'lucide-react';
+import { Building2, Search, Plus, Trash2, Loader2, FileText, Eye, Bookmark, Share2 } from 'lucide-react';
 import DealPost from '../components/dashboard/DealPost';
 import CreatePostModal from '../components/dashboard/CreatePostModal';
 
@@ -137,34 +137,56 @@ export default function MyPosts() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {filteredPosts.map(post => (
-            <div key={`${post.postType}-${post.id}`} style={{ position: 'relative' }}
-              onMouseEnter={e => { const btn = e.currentTarget.querySelector('[data-delete]'); if (btn) btn.style.opacity = '1'; }}
-              onMouseLeave={e => { const btn = e.currentTarget.querySelector('[data-delete]'); if (btn) btn.style.opacity = '0'; }}
-            >
-              <DealPost post={post} />
-              <button
-                data-delete
-                onClick={() => handleDelete(post)}
-                disabled={deletingId === post.id}
-                style={{
-                  position: 'absolute', top: '14px', right: '14px',
-                  padding: '7px', background: 'rgba(14,19,24,0.9)', backdropFilter: 'blur(4px)',
-                  border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px',
-                  cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  opacity: 0, transition: 'all 0.15s', color: 'rgba(255,255,255,0.5)',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+          {filteredPosts.map(post => {
+            const isListing = post.postType === 'listing';
+            const color = isListing ? ACCENT : '#818cf8';
+            const views  = post.view_count  || 0;
+            const saves  = post.save_count  || 0;
+            const shares = post.share_count || 0;
+            return (
+              <div key={`${post.postType}-${post.id}`} style={{ position: 'relative' }}
+                onMouseEnter={e => { const btn = e.currentTarget.querySelector('[data-delete]'); if (btn) btn.style.opacity = '1'; }}
+                onMouseLeave={e => { const btn = e.currentTarget.querySelector('[data-delete]'); if (btn) btn.style.opacity = '0'; }}
               >
-                {deletingId === post.id
-                  ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
-                  : <Trash2 style={{ width: '15px', height: '15px' }} />
-                }
-              </button>
-            </div>
-          ))}
+                <DealPost post={post} />
+                {/* Engagement stats bar */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '18px', padding: '8px 18px 10px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.05)', borderRadius: '0 0 12px 12px', marginTop: '-4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Eye style={{ width: '12px', height: '12px', color: 'rgba(255,255,255,0.3)' }}/>
+                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: views > 0 ? 600 : 400 }}>{views.toLocaleString()} {views === 1 ? 'view' : 'views'}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Bookmark style={{ width: '12px', height: '12px', color: 'rgba(255,255,255,0.3)' }}/>
+                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: saves > 0 ? 600 : 400 }}>{saves.toLocaleString()} {saves === 1 ? 'save' : 'saves'}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Share2 style={{ width: '12px', height: '12px', color: 'rgba(255,255,255,0.3)' }}/>
+                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: shares > 0 ? 600 : 400 }}>{shares.toLocaleString()} {shares === 1 ? 'share' : 'shares'}</span>
+                  </div>
+                </div>
+                <button
+                  data-delete
+                  onClick={() => handleDelete(post)}
+                  disabled={deletingId === post.id}
+                  style={{
+                    position: 'absolute', top: '14px', right: '14px',
+                    padding: '7px', background: 'rgba(14,19,24,0.9)', backdropFilter: 'blur(4px)',
+                    border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px',
+                    cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: 0, transition: 'all 0.15s', color: 'rgba(255,255,255,0.5)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                >
+                  {deletingId === post.id
+                    ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
+                    : <Trash2 style={{ width: '15px', height: '15px' }} />
+                  }
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 
