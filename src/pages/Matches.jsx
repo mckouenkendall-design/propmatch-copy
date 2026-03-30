@@ -270,13 +270,13 @@ function exportMatchPDF(listing, requirement, matchResult, posterProfile, darkMo
 ${label ? `<span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${sc};background:${sc}18;border:1px solid ${sc}35;border-radius:20px;padding:5px 18px;box-shadow:0 0 14px ${sc}30">${label}</span>` : ''}
 </div>`;
 
-  // Logo: crop viewBox to fish area only (brand SVG was 200x40 with text too — just take the fish portion 0–46)
+  // Logo: tight viewBox crops to just the fish (x:2-44, y:11-29), rendered at 24px height to match text
   const propColor = D ? 'rgba(255,255,255,0.9)' : '#111827';
-  const logoHTML = `<div style="display:flex;align-items:center;gap:8px">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 46 40" width="26" height="22">
+  const logoHTML = `<div style="display:flex;align-items:center;gap:5px">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 11 42 18" width="56" height="24">
     <g transform="translate(20,20)">
       <path d="M -16,0 Q 0,-7 16,0 Q 19,-1.5 22,-5 Q 20,-1 16,0 Q 19,1.5 22,5 Q 20,1 16,0 Q 0,7 -16,0 Z"
-        fill="none" stroke="#00DBC5" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+        fill="none" stroke="#00DBC5" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
     </g>
   </svg>
   <div style="display:flex;align-items:baseline;gap:0">
