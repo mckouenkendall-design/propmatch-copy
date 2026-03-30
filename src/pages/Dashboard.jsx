@@ -130,7 +130,7 @@ function MatchCard({ myPost, match, onNavigate }) {
   const [hov, setHov] = useState(false);
   const isListing = myPost.postType === 'listing';
   const myColor = isListing ? ACCENT : LAVENDER;
-  const matchPost = isListing ? match.requirement : match.listing;
+  const matchPost = (isListing ? match.requirement : match.listing) || {};
   const label = getScoreLabel(match.totalScore);
   const sc = getScoreColor(match.totalScore);
 
@@ -340,7 +340,7 @@ export default function Dashboard() {
       otherReqs.forEach(req => {
         const r = calculateMatchScore(listing, req);
         if (r.isMatch) {
-          all.push({ myPost: { ...listing, postType: 'listing' }, ...r });
+          all.push({ myPost: { ...listing, postType: 'listing' }, listing, requirement: req, ...r });
           c++;
           const reqTs = new Date(req.created_date).getTime();
           if (reqTs > weekAgo) weekCount++;
@@ -354,7 +354,7 @@ export default function Dashboard() {
       otherListings.forEach(listing => {
         const r = calculateMatchScore(listing, req);
         if (r.isMatch) {
-          all.push({ myPost: { ...req, postType: 'requirement' }, ...r });
+          all.push({ myPost: { ...req, postType: 'requirement' }, listing, requirement: req, ...r });
           c++;
         }
       });
@@ -402,7 +402,7 @@ export default function Dashboard() {
           Icon: TrendingUp,
           color: sc,
           title: `${m.totalScore}% match — ${m.myPost.title}`,
-          sub: `vs. ${(m.listing || m.requirement)?.title || ''}`,
+          sub: `vs. ${m.requirement?.title || m.listing?.title || ''}`,
           time: timeAgo(m.myPost.created_date),
           ts: new Date(m.myPost.created_date).getTime() || 0,
         });
