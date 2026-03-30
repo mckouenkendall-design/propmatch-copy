@@ -108,27 +108,27 @@ export default function Dashboard() {
       </div>
 
       {/* 2-col grid */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 380px',gap:'18px',alignItems:'stretch'}}>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 380px',gap:'18px',alignItems:'start'}}>
 
         {/* LEFT COLUMN */}
         <div style={{display:'flex',flexDirection:'column',gap:'18px'}}>
 
           {/* Top Matches */}
-          {card(<SectionHeader title="Top Matches" onAction={()=>navigate('/matches')} actionLabel="View All" color={ACCENT}/>,
+          {card(<SectionHeader title="Top Matches" onAction={()=>navigate('/Matches')} actionLabel="View All" color={ACCENT}/>,
             topMatches.length===0
               ? <div style={{textAlign:'center',padding:'32px 16px'}}><TrendingUp style={{width:'32px',height:'32px',color:'rgba(255,255,255,0.1)',margin:'0 auto 10px',display:'block'}}/><p style={{fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.3)',margin:'0 0 12px'}}>No matches yet</p><button onClick={()=>setShowQuickPost(true)} style={{padding:'7px 16px',background:`${ACCENT}15`,border:`1px solid ${ACCENT}35`,borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'12px',color:ACCENT,cursor:'pointer'}}>Create a post</button></div>
-              : <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>{topMatches.map((m,i)=><MatchCard key={i} myPost={m.myPost} match={m} onNavigate={()=>navigate('/matches')}/>)}</div>
+              : <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>{topMatches.map((m,i)=><MatchCard key={i} myPost={m.myPost} match={m} onNavigate={()=>navigate('/Matches')}/>)}</div>
           )}
 
           {/* My Active Posts */}
-          {card(<SectionHeader title="My Active Posts" onAction={()=>navigate('/my-posts')} actionLabel="Manage" color={LAVENDER}/>,
+          {card(<SectionHeader title="My Active Posts" onAction={()=>navigate('/MyPosts')} actionLabel="Manage" color={LAVENDER}/>,
             postsForAnalytics.length===0
               ? <div style={{textAlign:'center',padding:'32px 16px'}}><FileText style={{width:'32px',height:'32px',color:'rgba(255,255,255,0.1)',margin:'0 auto 10px',display:'block'}}/><p style={{fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.3)',margin:'0 0 12px'}}>No posts yet</p><button onClick={()=>setShowQuickPost(true)} style={{padding:'7px 16px',background:`${ACCENT}15`,border:`1px solid ${ACCENT}35`,borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'12px',color:ACCENT,cursor:'pointer'}}>Create your first post</button></div>
-              : <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>{postsForAnalytics.map((p,i)=><PostCard key={p.id||i} post={p} maxCount={maxMatchCount} onNavigate={()=>navigate('/matches')}/>)}</div>
+              : <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>{postsForAnalytics.map((p,i)=><PostCard key={p.id||i} post={p} maxCount={maxMatchCount} onNavigate={()=>navigate('/Matches')}/>)}</div>
           )}
 
           {/* News Wire */}
-          {card(<SectionHeader title="PropMatch News Wire" color={ACCENT}/>,
+          {card(<SectionHeader title="PropMatch News Wire" onAction={()=>navigate('/NewsWire')} actionLabel="View All" color={ACCENT}/>,
             <div>
               <div style={{display:'flex',flexDirection:'column'}}>
                 {[{tag:'Market',title:'Real estate AI tools are reshaping how agents close deals in 2026',time:'Trending'},{tag:'Strategy',title:'Why B2B agent-to-agent matching is becoming the new standard',time:'Industry'},{tag:'Market',title:'Michigan commercial real estate: office vacancies fall for third straight quarter',time:'Local'}].map((item,i)=>(
@@ -144,17 +144,15 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-              <div style={{marginTop:'14px',padding:'10px 14px',background:'rgba(255,255,255,0.03)',border:'1px dashed rgba(255,255,255,0.1)',borderRadius:'8px'}}>
-                <p style={{fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.28)',margin:0,lineHeight:1.5}}>Live news wire coming soon — PropMatch AI will scan and surface real estate news, market data, and strategy updates in real time.</p>
-              </div>
+
             </div>
           )}
 
           {/* Blog */}
-          {card(<SectionHeader title="Blog & Insights" color={LAVENDER}/>,
+          {card(<SectionHeader title="Blog & Insights" onAction={()=>navigate('/Blog')} actionLabel="View All" color={LAVENDER}/>,
             <div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
-                {[{tag:'Guide',title:'How to write a listing that attracts the right agent match',read:'4 min'},{tag:'Tips',title:'Setting your requirement filters: the most common mistakes',read:'3 min'},{tag:'Deep Dive',title:'Understanding match scores: what 70%+ really means',read:'5 min'},{tag:'Strategy',title:'When to share a match vs. when to message directly',read:'3 min'}].map((item,i)=>(
+                {[{tag:'Guide',title:'How to write a listing that attracts the right agent match',read:'4 min'},{tag:'Tips',title:'Setting your requirement filters: the most common mistakes',read:'3 min'}].map((item,i)=>(
                   <div key={i} style={{padding:'14px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'10px',cursor:'pointer',transition:'all 0.15s'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.borderColor=`${LAVENDER}30`;}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.07)';}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'7px'}}>
                       <span style={{fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,color:LAVENDER,background:`${LAVENDER}12`,border:`1px solid ${LAVENDER}25`,borderRadius:'4px',padding:'1px 6px'}}>{item.tag}</span>
@@ -164,16 +162,14 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-              <div style={{marginTop:'14px',padding:'10px 14px',background:'rgba(255,255,255,0.03)',border:'1px dashed rgba(255,255,255,0.1)',borderRadius:'8px'}}>
-                <p style={{fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.28)',margin:0,lineHeight:1.5}}>Full blog launching soon — guides, strategy breakdowns, and deep dives for agents who want to work smarter.</p>
-              </div>
+
             </div>
           )}
 
         </div>
 
         {/* RIGHT COLUMN */}
-        <div style={{display:'flex',flexDirection:'column',gap:'18px',height:'100%'}}>
+        <div style={{display:'flex',flexDirection:'column',gap:'18px'}}>
 
           {/* Engagement Stats */}
           {card(<SectionHeader title="Post Engagement" color={ACCENT}/>,
@@ -189,19 +185,19 @@ export default function Dashboard() {
           )}
 
           {/* Activity */}
-          {card(<SectionHeader title="Recent Activity" onAction={()=>navigate('/inbox')} actionLabel="Inbox" color={ACCENT}/>,
+          {card(<SectionHeader title="Recent Activity" onAction={()=>navigate('/Messages')} actionLabel="Inbox" color={ACCENT}/>,
             activityFeed.length===0
               ? <p style={{fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.28)',textAlign:'center',padding:'24px 0 8px'}}>No recent activity</p>
               : <div>{activityFeed.map((item,i)=><ActivityRow key={item.id||i} Icon={item.Icon} iconColor={item.color} title={item.title} sub={item.sub} time={item.time}/>)}</div>
           )}
 
           {/* Saved Matches */}
-          {savedMatches.length>0 && card(<SectionHeader title="Saved Matches" onAction={()=>navigate('/matches')} actionLabel="View All" color={AMBER}/>,
-            <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>{savedMatches.map((m,i)=><SavedMatchRow key={i} listing={m.listing} requirement={m.requirement} onNavigate={()=>navigate('/matches')}/>)}</div>
+          {savedMatches.length>0 && card(<SectionHeader title="Saved Matches" onAction={()=>navigate('/Matches')} actionLabel="View All" color={AMBER}/>,
+            <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>{savedMatches.map((m,i)=><SavedMatchRow key={i} listing={m.listing} requirement={m.requirement} onNavigate={()=>navigate('/Matches')}/>)}</div>
           )}
 
           {/* Templates */}
-          {card(<SectionHeader title="My Templates" onAction={()=>navigate('/my-templates')} actionLabel="View All" color="rgba(255,255,255,0.4)"/>,
+          {card(<SectionHeader title="My Templates" onAction={()=>navigate('/MyTemplates')} actionLabel="View All" color="rgba(255,255,255,0.4)"/>,
             myTemplates.length===0
               ? <div style={{padding:'4px 0'}}><p style={{fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.28)',margin:'0 0 5px'}}>No templates saved yet.</p><p style={{fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.18)',margin:0}}>Save a listing or requirement as a template to reuse it fast.</p></div>
               : <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
@@ -211,12 +207,12 @@ export default function Dashboard() {
                       <div style={{flex:1,minWidth:0}}><p style={{fontFamily:"'Inter',sans-serif",fontSize:'12px',fontWeight:500,color:'rgba(255,255,255,0.72)',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.name||t.title||'Untitled Template'}</p><p style={{fontFamily:"'Inter',sans-serif",fontSize:'10px',color:'rgba(255,255,255,0.28)',margin:'1px 0 0'}}>{PT[t.property_type]||t.property_type||'Template'} · {t.folder||'General'}</p></div>
                     </div>
                   ))}
-                  {myTemplates.length>5&&<button onClick={()=>navigate('/my-templates')} style={{fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.35)',background:'none',border:'none',cursor:'pointer',padding:'4px 0',textAlign:'left'}}>+{myTemplates.length-5} more →</button>}
+                  {myTemplates.length>5&&<button onClick={()=>navigate('/MyTemplates')} style={{fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.35)',background:'none',border:'none',cursor:'pointer',padding:'4px 0',textAlign:'left'}}>+{myTemplates.length-5} more →</button>}
                 </div>
           )}
 
           {/* Quick Actions */}
-          <div style={{background:`linear-gradient(135deg,${ACCENT}0c,${LAVENDER}0c)`,border:`1px solid ${ACCENT}18`,borderRadius:'16px',padding:'20px 22px',flex:1}}>
+          <div style={{background:`linear-gradient(135deg,${ACCENT}0c,${LAVENDER}0c)`,border:`1px solid ${ACCENT}18`,borderRadius:'16px',padding:'20px 22px'}}>
             <p style={{fontFamily:"'Inter',sans-serif",fontSize:'11px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'rgba(255,255,255,0.35)',margin:'0 0 14px'}}>QUICK ACTIONS</p>
             <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
               {[{label:'View My Matches',Icon:TrendingUp,color:ACCENT,path:'/matches'},{label:'Open Inbox',Icon:MessageCircle,color:LAVENDER,path:'/inbox'},{label:'Saved Matches',Icon:BookmarkCheck,color:AMBER,path:'/matches'},{label:'My Posts',Icon:BarChart2,color:ACCENT,path:'/my-posts'}].map(({label,Icon,color,path})=>(
