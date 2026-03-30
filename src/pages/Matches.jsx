@@ -270,25 +270,24 @@ function exportMatchPDF(listing, requirement, matchResult, posterProfile, darkMo
 ${label ? `<span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${sc};background:${sc}18;border:1px solid ${sc}35;border-radius:20px;padding:5px 18px;box-shadow:0 0 14px ${sc}30">${label}</span>` : ''}
 </div>`;
 
-  // Logo: fish SVG + HTML text so Google Fonts actually renders correctly
+  // Logo: exact brand SVG (fish path from brand assets) + HTML text for correct font rendering
   const propColor = D ? 'rgba(255,255,255,0.9)' : '#111827';
   const logoHTML = `<div style="display:flex;align-items:center;gap:10px">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 28" width="44" height="28">
-    <g transform="translate(10,14)">
-      <path d="M -10,0 Q 0,-6 10,0 Q 13,-1 16,-4 Q 13.5,-0.5 10,0 Q 13,1 16,4 Q 13.5,0.5 10,0 Q 0,6 -10,0 Z"
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="156" height="31">
+    <g transform="translate(20,20)">
+      <path d="M -16,0 Q 0,-7 16,0 Q 19,-1.5 22,-5 Q 20,-1 16,0 Q 19,1.5 22,5 Q 20,1 16,0 Q 0,7 -16,0 Z"
         fill="none" stroke="#00DBC5" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
     </g>
-    <circle cx="8" cy="14" r="1.5" fill="#00DBC5"/>
   </svg>
-  <div style="display:flex;align-items:baseline;gap:0">
+  <div style="display:flex;align-items:baseline;gap:0;margin-left:-6px">
     <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:300;color:${propColor};letter-spacing:-0.2px">Prop</span><span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700;color:#00DBC5;letter-spacing:-0.2px">Match</span>
   </div>
 </div>`;
 
-  // Visual score breakdown bars
+  // Visual score breakdown bars — break-inside:avoid prevents mid-bar page splits
   const barsHTML = breakdown.map(b => {
     const bc = b.score >= 70 ? '#00DBC5' : b.score >= 50 ? '#F59E0B' : '#F97316';
-    return `<div style="margin-bottom:14px">
+    return `<div style="margin-bottom:14px;break-inside:avoid;page-break-inside:avoid">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
     <span style="font-size:13px;color:${textSub};font-family:'Inter',sans-serif">${b.icon||''} ${b.category}</span>
     <span style="font-size:13px;font-weight:700;color:${bc};font-family:'Inter',sans-serif">${b.score}%</span>
@@ -324,9 +323,9 @@ ${label ? `<span style="font-family:'Inter',sans-serif;font-size:11px;font-weigh
           <div class="a-n">${agentName}</div>
           ${agentCompany?`<div class="a-co">${agentCompany}</div>`:''}
           <div class="a-ct">
-            ${agentEmail?`&#128231; ${agentEmail}`:''}
-            ${agentEmail&&agentPhone?'&nbsp;&nbsp;':''}
-            ${agentPhone?`&#128222; ${agentPhone}`:''}
+            ${agentEmail?`<span style="color:${textMut}">&#9993;</span> ${agentEmail}`:''}
+            ${agentEmail&&agentPhone?'&nbsp;&nbsp;&nbsp;':''}
+            ${agentPhone?`<span style="color:${textMut}">&#9990;</span> ${agentPhone}`:''}
           </div>
         </div>
       </div>
@@ -431,7 +430,7 @@ th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;lett
       </div>
     </div>
 
-    <div class="sec">
+    <div class="sec" style="break-inside:avoid;page-break-inside:avoid">
       <div class="sec-h"><div class="sec-dot" style="background:${sc}"></div><span class="sec-t">Side-by-Side Comparison</span></div>
       <table>
         <thead><tr>
