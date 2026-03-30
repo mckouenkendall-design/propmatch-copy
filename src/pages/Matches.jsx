@@ -890,6 +890,12 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
   const matchPost=myIsListing?best.requirement:best.listing;
   const sz=44,r=18,circ=2*Math.PI*r,dash=(best.totalScore/100)*circ;
   const anySaved=matches.some(m=>{const l=myIsListing?myPost:m.listing,r2=myIsListing?m.requirement:myPost;return savedHook.isSaved(l.id,r2.id);});
+
+  // Score quality breakdown
+  const strong=matches.filter(m=>m.totalScore>=70).length;
+  const good=matches.filter(m=>m.totalScore>=50&&m.totalScore<70).length;
+  const fair=matches.filter(m=>m.totalScore<50).length;
+
   return(
     <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'20px', transition:'all 0.2s', position:'relative' }}
       onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor=`${myColor}35`;}}
@@ -899,11 +905,20 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'3px' }}><div style={{ width:'6px',height:'6px',borderRadius:'50%',background:myColor }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:myColor }}>Your {myIsListing?'Listing':'Requirement'}</span></div>
           <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'15px',fontWeight:500,color:'white',margin:'0 0 2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{myPost.title}</h3>
-          <p style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:0 }}>{priceStr(myPost,myIsListing)}{myIsListing&&myPost.size_sqft?` \u00b7 ${parseFloat(myPost.size_sqft).toLocaleString()} SF`:''}{myPost.city?` \u00b7 ${myPost.city}`:''}</p>
+          <p style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:0 }}>{priceStr(myPost,myIsListing)}{myIsListing&&myPost.size_sqft?` · ${parseFloat(myPost.size_sqft).toLocaleString()} SF`:''}{myPost.city?` · ${myPost.city}`:''}</p>
         </div>
-        <div style={{ display:'flex',alignItems:'center',gap:'5px',padding:'4px 10px',background:`${myColor}10`,border:`1px solid ${myColor}25`,borderRadius:'20px',flexShrink:0,marginRight:anySaved?'70px':'0' }}>
-          <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:700,color:myColor }}>{matches.length}</span>
-          <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.35)' }}>{matches.length===1?'match':'matches'}</span>
+        <div style={{ display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'5px',flexShrink:0,marginRight:anySaved?'70px':'0' }}>
+          <div style={{ display:'flex',alignItems:'center',gap:'5px',padding:'4px 10px',background:`${myColor}10`,border:`1px solid ${myColor}25`,borderRadius:'20px' }}>
+            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:700,color:myColor }}>{matches.length}</span>
+            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.35)' }}>{matches.length===1?'match':'matches'}</span>
+          </div>
+          {matches.length > 1 && (
+            <div style={{ display:'flex',alignItems:'center',gap:'7px' }}>
+              {strong>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:ACCENT,boxShadow:`0 0 5px ${ACCENT}80` }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:ACCENT }}>{strong}</span></div>}
+              {good>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:'#F59E0B' }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'#F59E0B' }}>{good}</span></div>}
+              {fair>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:'rgba(255,255,255,0.25)' }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'rgba(255,255,255,0.4)' }}>{fair}</span></div>}
+            </div>
+          )}
         </div>
       </div>
       <div style={{ height:'1px',background:'rgba(255,255,255,0.06)',margin:'0 0 14px' }}/>
