@@ -108,7 +108,7 @@ export default function Dashboard() {
       </div>
 
       {/* 2-col grid */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 380px',gap:'18px',alignItems:'start'}}>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 380px',gap:'18px',alignItems:'stretch'}}>
 
         {/* LEFT COLUMN */}
         <div style={{display:'flex',flexDirection:'column',gap:'18px'}}>
@@ -173,7 +173,7 @@ export default function Dashboard() {
         </div>
 
         {/* RIGHT COLUMN */}
-        <div style={{display:'flex',flexDirection:'column',gap:'18px'}}>
+        <div style={{display:'flex',flexDirection:'column',gap:'18px',height:'100%'}}>
 
           {/* Engagement Stats */}
           {card(<SectionHeader title="Post Engagement" color={ACCENT}/>,
@@ -216,7 +216,7 @@ export default function Dashboard() {
           )}
 
           {/* Quick Actions */}
-          <div style={{background:`linear-gradient(135deg,${ACCENT}0c,${LAVENDER}0c)`,border:`1px solid ${ACCENT}18`,borderRadius:'16px',padding:'20px 22px'}}>
+          <div style={{background:`linear-gradient(135deg,${ACCENT}0c,${LAVENDER}0c)`,border:`1px solid ${ACCENT}18`,borderRadius:'16px',padding:'20px 22px',flex:1}}>
             <p style={{fontFamily:"'Inter',sans-serif",fontSize:'11px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'rgba(255,255,255,0.35)',margin:'0 0 14px'}}>QUICK ACTIONS</p>
             <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
               {[{label:'View My Matches',Icon:TrendingUp,color:ACCENT,path:'/matches'},{label:'Open Inbox',Icon:MessageCircle,color:LAVENDER,path:'/inbox'},{label:'Saved Matches',Icon:BookmarkCheck,color:AMBER,path:'/matches'},{label:'My Posts',Icon:BarChart2,color:ACCENT,path:'/my-posts'}].map(({label,Icon,color,path})=>(
