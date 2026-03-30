@@ -190,7 +190,7 @@ export default function Dashboard() {
           )}
 
           {/* Saved Matches */}
-          {savedMatches.length>0 && card(<SectionHeader title="Saved Matches" onAction={()=>navigate('/Matches')} actionLabel="View All" color={AMBER}/>,
+          {savedMatches.length>0 && card(<SectionHeader title="Saved Matches" onAction={()=>navigate('/Matches',{state:{showSaved:true}})} actionLabel="View All" color={AMBER}/>,
             <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>{savedMatches.map((m,i)=><SavedMatchRow key={i} listing={m.listing} requirement={m.requirement} onNavigate={()=>navigate('/Matches')}/>)}</div>
           )}
 
@@ -213,8 +213,8 @@ export default function Dashboard() {
           <div style={{background:`linear-gradient(135deg,${ACCENT}0c,${LAVENDER}0c)`,border:`1px solid ${ACCENT}18`,borderRadius:'16px',padding:'20px 22px'}}>
             <p style={{fontFamily:"'Inter',sans-serif",fontSize:'11px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'rgba(255,255,255,0.35)',margin:'0 0 14px'}}>QUICK ACTIONS</p>
             <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-              {[{label:'View My Matches',Icon:TrendingUp,color:ACCENT,path:'/Matches'},{label:'Open Inbox',Icon:MessageCircle,color:LAVENDER,path:'/Messages'},{label:'Saved Matches',Icon:BookmarkCheck,color:AMBER,path:'/Matches'},{label:'My Posts',Icon:BarChart2,color:ACCENT,path:'/Inventory'}].map(({label,Icon,color,path})=>(
-                <button key={path+label} onClick={()=>navigate(path)} style={{display:'flex',alignItems:'center',gap:'10px',padding:'9px 12px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'9px',cursor:'pointer',textAlign:'left',transition:'all 0.15s',width:'100%'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.09)';e.currentTarget.style.borderColor=`${color}35`;}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.07)';}}>
+              {[{label:'View My Matches',Icon:TrendingUp,color:ACCENT,path:'/Matches'},{label:'Open Inbox',Icon:MessageCircle,color:LAVENDER,path:'/Messages'},{label:'Saved Matches',Icon:BookmarkCheck,color:AMBER,path:'/Matches',state:{showSaved:true}},{label:'My Posts',Icon:BarChart2,color:ACCENT,path:'/Inventory'}].map(({label,Icon,color,path,state})=>(
+                <button key={path+label} onClick={()=>navigate(path,state?{state}:{})} style={{display:'flex',alignItems:'center',gap:'10px',padding:'9px 12px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'9px',cursor:'pointer',textAlign:'left',transition:'all 0.15s',width:'100%'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.09)';e.currentTarget.style.borderColor=`${color}35`;}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.07)';}}>
                   <div style={{width:'26px',height:'26px',borderRadius:'7px',background:`${color}15`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon style={{width:'13px',height:'13px',color}}/></div>
                   <span style={{fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:500,color:'rgba(255,255,255,0.75)'}}>{label}</span>
                   <ChevronRight style={{width:'13px',height:'13px',color:'rgba(255,255,255,0.2)',marginLeft:'auto'}}/>
