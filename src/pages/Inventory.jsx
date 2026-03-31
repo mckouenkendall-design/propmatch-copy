@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Search, Plus, Trash2, Loader2, LayoutGrid, List, Eye, Bookmark, Share2, Pencil } from 'lucide-react';
 import CreatePostModal from '../components/dashboard/CreatePostModal';
@@ -139,9 +140,17 @@ export default function Inventory() {
   const [editPost, setEditPost]     = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const qc = useQueryClient();
+  const location = useLocation();
 
   const { data: listings     = [], isLoading: loadL } = useQuery({ queryKey:['inv-listings'],     queryFn:() => base44.entities.Listing.list('-created_date') });
   const { data: requirements = [], isLoading: loadR } = useQuery({ queryKey:['inv-requirements'], queryFn:() => base44.entities.Requirement.list('-created_date') });
+
+  useEffect(()=>{
+    const id = location.state?.openPostId;
+    if(!id) return;
+    const found = [...listings.map(l=>({...l,postType:'listing'})),...requirements.map(r=>({...r,postType:'requirement'}))].find(p=>p.id===id);
+    if(found){ setTab(found.postType==='listing'?'listings':'requirements'); setEditPost(found); window.history.replaceState({},''); }
+  },[location.state?.openPostId, listings, requirements]);
 
   const posts = tab === 'listings'
     ? listings.map(l => ({ ...l, postType:'listing' }))
