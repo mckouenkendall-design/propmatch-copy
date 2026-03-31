@@ -973,10 +973,10 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
 export default function Matches() {
   const {user}=useAuth();
   const [activeTab,setActiveTab]=useState('listings'),[filterSaved,setFilterSaved]=useState(false),[modalState,setModalState]=useState(null);
-  useEffect(()=>{if(showSaved)setFilterSaved(true);},[showSaved]);
   const location = useLocation();
   const openPostId = location.state?.openPostId;
   const showSaved = location.state?.showSaved;
+  useEffect(()=>{if(showSaved)setFilterSaved(true);},[showSaved]);
   const savedHook=useSavedMatches(user?.email);
   const {data:myListings=[]}      =useQuery({queryKey:['my-listings'],              queryFn:()=>base44.entities.Listing.filter({created_by:user?.email})});
   const {data:myRequirements=[]}  =useQuery({queryKey:['my-requirements'],          queryFn:()=>base44.entities.Requirement.filter({created_by:user?.email})});
