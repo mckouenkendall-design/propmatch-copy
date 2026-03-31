@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Radio, ExternalLink, Search } from 'lucide-react';
@@ -40,6 +41,13 @@ function timeAgo(d) {
 export default function NewsWire() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
+  const [openArticle, setOpenArticle] = useState(null);
+  const location = useLocation();
+
+  useEffect(()=>{
+    const idx = location.state?.openIndex;
+    if(idx != null && PLACEHOLDER_ARTICLES[idx]) setOpenArticle(PLACEHOLDER_ARTICLES[idx]);
+  },[location.state?.openIndex]);
 
   // When NewsArticle entity is created in Base44, swap this for a real query:
   // const { data: articles = [] } = useQuery({ queryKey:['news-articles'], queryFn:()=>base44.entities.NewsArticle.list('-published_date', 50) });
@@ -53,6 +61,23 @@ export default function NewsWire() {
   });
 
   const catColor = CATEGORY_COLORS[activeCategory] || ACCENT;
+
+  if (openArticle) return (
+    <div style={{ maxWidth:'720px', margin:'0 auto', padding:'48px 32px 60px' }}>
+      <button onClick={()=>setOpenArticle(null)} style={{ display:'flex', alignItems:'center', gap:'6px', background:'none', border:'none', color:'rgba(255,255,255,0.45)', fontFamily:"'Inter',sans-serif", fontSize:'13px', cursor:'pointer', marginBottom:'32px', padding:0 }}>
+        ← Back to News Wire
+      </button>
+      <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'16px' }}>
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, color:CATEGORY_COLORS[openArticle.category]||ACCENT, background:`${CATEGORY_COLORS[openArticle.category]||ACCENT}15`, border:`1px solid ${CATEGORY_COLORS[openArticle.category]||ACCENT}30`, borderRadius:'4px', padding:'2px 8px' }}>{openArticle.category}</span>
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.3)' }}>{openArticle.source} · {timeAgo(openArticle.published_date)}</span>
+      </div>
+      <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'28px', fontWeight:600, color:'white', margin:'0 0 20px', lineHeight:1.3 }}>{openArticle.title}</h1>
+      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'15px', color:'rgba(255,255,255,0.55)', lineHeight:1.8, margin:'0 0 32px' }}>{openArticle.summary}</p>
+      <div style={{ padding:'24px', background:'rgba(255,255,255,0.03)', border:'1px dashed rgba(255,255,255,0.1)', borderRadius:'12px' }}>
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.28)', margin:0 }}>Full article coming soon — PropMatch AI news wire is being built and will surface live real estate news here.</p>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ maxWidth:'860px', margin:'0 auto', padding:'48px 32px 60px' }}>
@@ -117,7 +142,7 @@ export default function NewsWire() {
             const color = CATEGORY_COLORS[article.category] || ACCENT;
             return (
               <div key={article.id}
-                style={{ display:'flex', alignItems:'flex-start', gap:'16px', padding:'18px 20px', background:'#0e1318', cursor:'pointer', transition:'background 0.15s' }}
+                onClick={()=>setOpenArticle(article)} style={{ display:'flex', alignItems:'flex-start', gap:'16px', padding:'18px 20px', background:'#0e1318', cursor:'pointer', transition:'background 0.15s' }}
                 onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}
                 onMouseLeave={e=>e.currentTarget.style.background='#0e1318'}>
                 <div style={{ width:'4px', height:'4px', borderRadius:'50%', background:color, marginTop:'8px', flexShrink:0, boxShadow:`0 0 6px ${color}` }}/>
