@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { BookOpen, Clock, ChevronRight } from 'lucide-react';
 
 const ACCENT = '#00DBC5';
@@ -27,6 +28,14 @@ const CATEGORIES = ['All', ...new Set(POSTS.map(p => p.tag))];
 export default function BlogFeed() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [openPost, setOpenPost] = useState(null);
+  const location = useLocation();
+
+  useEffect(()=>{
+    const slug = location.state?.openSlug;
+    if(!slug) return;
+    const found = POSTS.find(p=>p.slug===slug||p.tag?.toLowerCase()===slug);
+    if(found) setOpenPost(found);
+  },[location.state?.openSlug]);
 
   const filtered = POSTS.filter(p => activeCategory === 'All' || p.tag === activeCategory);
 
