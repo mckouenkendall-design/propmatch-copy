@@ -130,7 +130,7 @@ export default function Dashboard() {
             <div>
               <div style={{display:'flex',flexDirection:'column'}}>
                 {[{tag:'Market',title:'Real estate AI tools are reshaping how agents close deals in 2026',time:'Trending'},{tag:'Strategy',title:'Why B2B agent-to-agent matching is becoming the new standard',time:'Industry'},{tag:'Market',title:'Michigan commercial real estate: office vacancies fall for third straight quarter',time:'Local'}].map((item,i)=>(
-                  <div key={i} onClick={()=>navigate('/NewsWire')} style={{display:'flex',alignItems:'flex-start',gap:'12px',padding:'12px 0',borderBottom:i<2?'1px solid rgba(255,255,255,0.05)':'none',cursor:'pointer',transition:'opacity 0.15s'}} onMouseEnter={e=>e.currentTarget.style.opacity='0.75'} onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
+                  <div key={i} onClick={()=>navigate('/NewsWire',{state:{openIndex:i}})} style={{display:'flex',alignItems:'flex-start',gap:'12px',padding:'12px 0',borderBottom:i<2?'1px solid rgba(255,255,255,0.05)':'none',cursor:'pointer',transition:'opacity 0.15s'}} onMouseEnter={e=>e.currentTarget.style.opacity='0.75'} onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
                     <div style={{width:'4px',height:'4px',borderRadius:'50%',background:ACCENT,marginTop:'6px',flexShrink:0,boxShadow:`0 0 6px ${ACCENT}`}}/>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:'4px'}}>
@@ -151,7 +151,7 @@ export default function Dashboard() {
             <div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
                 {[{tag:'Guide',title:'How to write a listing that attracts the right agent match',read:'4 min'},{tag:'Tips',title:'Setting your requirement filters: the most common mistakes',read:'3 min'}].map((item,i)=>(
-                  <div key={i} onClick={()=>navigate('/BlogFeed')} style={{padding:'14px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'10px',cursor:'pointer',transition:'all 0.15s'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.borderColor=`${LAVENDER}30`;}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.07)';}}>
+                  <div key={i} onClick={()=>navigate('/BlogFeed',{state:{openSlug:['guide','tips'][i]}})} style={{padding:'14px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'10px',cursor:'pointer',transition:'all 0.15s'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.borderColor=`${LAVENDER}30`;}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.07)';}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'7px'}}>
                       <span style={{fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,color:LAVENDER,background:`${LAVENDER}12`,border:`1px solid ${LAVENDER}25`,borderRadius:'4px',padding:'1px 6px'}}>{item.tag}</span>
                       <span style={{fontFamily:"'Inter',sans-serif",fontSize:'10px',color:'rgba(255,255,255,0.25)'}}>{item.read} read</span>
