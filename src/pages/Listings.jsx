@@ -113,14 +113,16 @@ export default function Listings() {
   const profileMap = Object.fromEntries(allProfiles.map(p => [p.user_email, p]));
 
   // Pre-compute best match score for each listing against current user's requirements
+  // Never score your own listings — they show Edit instead
   const listingScores = useMemo(() => {
     const map = {};
     listings.forEach(l => {
+      if (l.created_by === user?.email) { map[l.id] = null; return; }
       const scores = myRequirements.map(req => calculateMatchScore(l, req)).filter(r => r.isMatch);
       map[l.id] = scores.length ? scores.reduce((best, s) => s.totalScore > best.totalScore ? s : best) : null;
     });
     return map;
-  }, [listings, myRequirements]);
+  }, [listings, myRequirements, user?.email]);
 
   const handleCardClick = (listing) => {
     if (listing.created_by === user?.email) {
@@ -162,7 +164,7 @@ export default function Listings() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: view === 'grid' ? 'repeat(auto-fill, minmax(300px, 1fr))' : '1fr', gap: '16px' }}>
           {listings.map(listing => {
-            const isOwn  = listing.created_by === user?.email;
+            const isOwn  = !!user?.email && listing.created_by === user?.email;
             const match  = listingScores[listing.id];
             const color  = match ? getScoreColor(match.totalScore) : null;
 
