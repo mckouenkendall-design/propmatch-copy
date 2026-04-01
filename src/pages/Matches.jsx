@@ -1007,7 +1007,7 @@ export default function Matches() {
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'28px', flexWrap:'wrap', gap:'10px' }}>
         <div style={{ display:'inline-flex', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'4px' }}>
           {[{key:'listings',label:'My Listings',color:ACCENT,Icon:Building2,count:listingGroups.length},{key:'requirements',label:'My Requirements',color:LAVENDER,Icon:Search,count:requirementGroups.length}].map(t=>(
-            <button key={t.key} onClick={()=>{setActiveTab(t.key);setFilterSaved(false);}}
+            <button key={t.key} onClick={()=>{setActiveTab(t.key);}}
               style={{ padding:'10px 20px', background:activeTab===t.key?`${t.color}18`:'transparent', border:activeTab===t.key?`1px solid ${t.color}40`:'none', borderRadius:'7px', color:activeTab===t.key?t.color:'rgba(255,255,255,0.5)', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:500, display:'flex', alignItems:'center', gap:'8px', transition:'all 0.15s' }}>
               <t.Icon style={{width:'15px',height:'15px'}}/>{t.label}
               <span style={{ padding:'1px 7px', borderRadius:'12px', fontSize:'11px', fontWeight:700, background:activeTab===t.key?`${t.color}22`:'rgba(255,255,255,0.08)', color:activeTab===t.key?t.color:'rgba(255,255,255,0.4)' }}>{t.count}</span>
