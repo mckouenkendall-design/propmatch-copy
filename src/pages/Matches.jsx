@@ -1001,8 +1001,8 @@ export default function Matches() {
   return(
     <div style={{ maxWidth:'860px', margin:'0 auto', padding:'48px 32px' }}>
       <div style={{ marginBottom:'32px' }}>
-        <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:300, color:'white', margin:'0 0 6px' }}>My Matches</h1>
-        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.4)', margin:0 }}>Matches scoring 30% or higher. Click any card to open the full analysis.</p>
+        <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:300, color:'white', margin:'0 0 6px' }}>{filterSaved?'Saved Matches':'My Matches'}</h1>
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.4)', margin:0 }}>{filterSaved?'Your bookmarked matches. Toggle between listings and requirements below.':'Matches scoring 30% or higher. Click any card to open the full analysis.'}</p>
       </div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'28px', flexWrap:'wrap', gap:'10px' }}>
         <div style={{ display:'inline-flex', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'4px' }}>
