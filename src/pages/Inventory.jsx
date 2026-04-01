@@ -4,8 +4,8 @@ import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Search, Plus, Trash2, Loader2, LayoutGrid, List, Eye, Bookmark, Share2, Pencil } from 'lucide-react';
 import CreatePostModal from '../components/dashboard/CreatePostModal';
-import ListingWizard from './ListingWizard';
-import RequirementWizard from './RequirementWizard';
+import ListingWizard from '@/components/forms/ListingWizard';
+import RequirementWizard from '@/components/forms/RequirementWizard';
 
 const ACCENT   = '#00DBC5';
 const LAVENDER = '#818cf8';
@@ -260,7 +260,7 @@ export default function Inventory() {
         />
       )}
 
-      {/* Edit existing listing */}
+      {/* Edit existing listing — opens straight into wizard step 1 */}
       {editPost && editPost.postType === 'listing' && (
         <ListingWizard
           category={editPost.property_category || 'commercial'}
@@ -275,7 +275,7 @@ export default function Inventory() {
         />
       )}
 
-      {/* Edit existing requirement */}
+      {/* Edit existing requirement — opens straight into wizard step 1 */}
       {editPost && editPost.postType === 'requirement' && (
         <RequirementWizard
           category={editPost.property_category || 'commercial'}
