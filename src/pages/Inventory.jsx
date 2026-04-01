@@ -4,6 +4,8 @@ import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Search, Plus, Trash2, Loader2, LayoutGrid, List, Eye, Bookmark, Share2, Pencil } from 'lucide-react';
 import CreatePostModal from '../components/dashboard/CreatePostModal';
+import ListingWizard from './ListingWizard';
+import RequirementWizard from './RequirementWizard';
 
 const ACCENT   = '#00DBC5';
 const LAVENDER = '#818cf8';
@@ -244,15 +246,45 @@ export default function Inventory() {
         </div>
       )}
 
-      {(showCreate || editPost) && (
+      {/* Create new post */}
+      {showCreate && (
         <CreatePostModal
-          post={editPost}
-          onClose={() => { setShowCreate(false); setEditPost(null); }}
+          onClose={() => setShowCreate(false)}
           onSuccess={() => {
-            setShowCreate(false); setEditPost(null);
+            setShowCreate(false);
             qc.invalidateQueries({ queryKey:['inv-listings'] });
             qc.invalidateQueries({ queryKey:['inv-requirements'] });
             qc.invalidateQueries({ queryKey:['listings'] });
+            qc.invalidateQueries({ queryKey:['requirements'] });
+          }}
+        />
+      )}
+
+      {/* Edit existing listing */}
+      {editPost && editPost.postType === 'listing' && (
+        <ListingWizard
+          category={editPost.property_category || 'commercial'}
+          initialData={editPost}
+          editMode={true}
+          onClose={() => setEditPost(null)}
+          onSuccess={() => {
+            setEditPost(null);
+            qc.invalidateQueries({ queryKey:['inv-listings'] });
+            qc.invalidateQueries({ queryKey:['listings'] });
+          }}
+        />
+      )}
+
+      {/* Edit existing requirement */}
+      {editPost && editPost.postType === 'requirement' && (
+        <RequirementWizard
+          category={editPost.property_category || 'commercial'}
+          initialData={editPost}
+          editMode={true}
+          onClose={() => setEditPost(null)}
+          onSuccess={() => {
+            setEditPost(null);
+            qc.invalidateQueries({ queryKey:['inv-requirements'] });
             qc.invalidateQueries({ queryKey:['requirements'] });
           }}
         />
