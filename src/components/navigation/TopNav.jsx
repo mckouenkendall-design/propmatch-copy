@@ -24,10 +24,11 @@ export default function TopNav() {
 
   const mainNavItems = [
     { label: 'Control Center', path: '/Dashboard' },
-    { label: 'My Matches', path: '/Matches' },
-    { label: 'My Posts', path: '/Inventory' },
-    { label: 'Fish Tanks', path: '/Groups' },
-    { label: 'Inbox', path: '/Messages' },
+    { label: 'My Matches',     path: '/Matches'   },
+    { label: 'My Posts',       path: '/Inventory' },
+    { label: 'Fish Tanks',     path: '/Groups'    },
+    { label: 'Inbox',          path: '/Messages'  },
+    { label: 'Insights',       path: '/Insights'  },
   ];
 
   const handleLogout = async () => {
