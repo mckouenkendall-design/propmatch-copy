@@ -72,31 +72,88 @@ function SectionTitle({ children }) {
 function FileUpload({ label, accept, field, details, setDetail, hint }) {
   const ref = useRef();
   const [uploading, setUploading] = React.useState(false);
-  const handleFile = async (file) => {
-    if (!file) return; setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setDetail(field, file_url); setUploading(false);
+  const [dragOver, setDragOver] = React.useState(false);
+  const isPhoto = field === 'photo_url';
+
+  const urls = React.useMemo(() => {
+    if (isPhoto) {
+      const arr = details['photo_urls'];
+      if (Array.isArray(arr) && arr.length) return arr;
+      if (details['photo_url']) return [details['photo_url']];
+      return [];
+    }
+    return details[field] ? [details[field]] : [];
+  }, [details, field, isPhoto]);
+
+  const uploadFiles = async (files) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      const uploaded = await Promise.all(
+        Array.from(files).map(file => base44.integrations.Core.UploadFile({ file }).then(r => r.file_url))
+      );
+      if (isPhoto) {
+        const combined = [...urls, ...uploaded];
+        setDetail('photo_urls', combined);
+        setDetail('photo_url', combined[0]);
+      } else {
+        setDetail(field, uploaded[0]);
+      }
+    } finally { setUploading(false); }
   };
-  const url = details[field];
+
+  const removePhoto = (idx) => {
+    const next = urls.filter((_, i) => i !== idx);
+    setDetail('photo_urls', next);
+    setDetail('photo_url', next[0] || '');
+  };
+
+  const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files); };
+  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); };
+  const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); };
+  const hasFile = isPhoto ? urls.length > 0 : !!details[field];
+
   return (
     <Field label={label} hint={hint}>
-      <div className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors"
-        style={{ borderColor: url ? ACCENT : '#d1d5db' }} onClick={() => ref.current.click()}>
-        <input ref={ref} type="file" accept={accept} className="hidden" onChange={e => handleFile(e.target.files[0])} />
-        {uploading ? <p className="text-sm text-gray-500">Uploading…</p>
-          : url ? (
-            <div className="flex items-center justify-center gap-2">
-              <FileText className="w-4 h-4" style={{ color: ACCENT }} />
-              <span className="text-sm text-gray-600 truncate max-w-xs">Uploaded ✓</span>
-              <button type="button" onClick={e => { e.stopPropagation(); setDetail(field, ''); }}><X className="w-4 h-4 text-gray-400" /></button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-1">
-              <Upload className="w-5 h-5 text-gray-400" />
-              <p className="text-sm text-gray-500">Click to upload</p>
-            </div>
-          )}
+      <div
+        onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}
+        onClick={() => ref.current.click()}
+        style={{ border: `2px dashed ${dragOver ? ACCENT : hasFile ? ACCENT + '80' : 'rgba(255,255,255,0.2)'}`, borderRadius: '12px', padding: '18px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s', background: dragOver ? `${ACCENT}08` : 'rgba(255,255,255,0.03)' }}>
+        <input ref={ref} type="file" accept={accept} multiple={isPhoto} className="hidden"
+          onChange={e => isPhoto ? uploadFiles(e.target.files) : uploadFiles([e.target.files[0]])} />
+        {uploading
+          ? <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Uploading…</p>
+          : !hasFile
+            ? <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                <Upload style={{ width: '20px', height: '20px', color: 'rgba(255,255,255,0.3)' }} />
+                <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>
+                  {isPhoto ? 'Click or drag & drop photos here' : 'Click to upload'}
+                </p>
+                {isPhoto && <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>Multiple photos supported · Drop files inside this box</p>}
+              </div>
+            : isPhoto
+              ? <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: ACCENT, margin: 0 }}>+ Add more photos</p>
+              : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <FileText style={{ width: '14px', height: '14px', color: ACCENT }} />
+                  <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: ACCENT }}>Uploaded ✓</span>
+                  <button type="button" onClick={e => { e.stopPropagation(); setDetail(field, ''); }}><X style={{ width: '13px', height: '13px', color: 'rgba(255,255,255,0.4)' }} /></button>
+                </div>
+        }
       </div>
+      {isPhoto && urls.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+          {urls.map((url, idx) => (
+            <div key={idx} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)', flexShrink: 0 }}>
+              <img src={url} alt={`Photo ${idx+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <button type="button" onClick={e => { e.stopPropagation(); removePhoto(idx); }}
+                style={{ position: 'absolute', top: '3px', right: '3px', width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X style={{ width: '10px', height: '10px', color: 'white' }} />
+              </button>
+              {idx === 0 && <div style={{ position: 'absolute', bottom: '3px', left: '3px', fontFamily: "'Inter',sans-serif", fontSize: '9px', fontWeight: 700, color: 'white', background: `${ACCENT}cc`, borderRadius: '3px', padding: '1px 4px' }}>MAIN</div>}
+            </div>
+          ))}
+        </div>
+      )}
     </Field>
   );
 }
