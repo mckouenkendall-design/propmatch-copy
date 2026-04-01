@@ -141,17 +141,31 @@ function FileUpload({ label, accept, field, details, setDetail, hint }) {
         }
       </div>
       {isPhoto && urls.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
-          {urls.map((url, idx) => (
-            <div key={idx} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)', flexShrink: 0 }}>
-              <img src={url} alt={`Photo ${idx+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              <button type="button" onClick={e => { e.stopPropagation(); removePhoto(idx); }}
-                style={{ position: 'absolute', top: '3px', right: '3px', width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X style={{ width: '10px', height: '10px', color: 'white' }} />
-              </button>
-              {idx === 0 && <div style={{ position: 'absolute', bottom: '3px', left: '3px', fontFamily: "'Inter',sans-serif", fontSize: '9px', fontWeight: 700, color: 'white', background: `${ACCENT}cc`, borderRadius: '3px', padding: '1px 4px' }}>MAIN</div>}
-            </div>
-          ))}
+        <div>
+          <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: '10px 0 6px' }}>Click a photo to set it as main · X to remove</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {urls.map((url, idx) => (
+              <div key={idx}
+                onClick={e => { e.stopPropagation(); if (idx !== 0) { const next = [url, ...urls.filter((_,i) => i !== idx)]; setDetail('photo_urls', next); setDetail('photo_url', next[0]); } }}
+                style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: `2px solid ${idx === 0 ? ACCENT : 'rgba(255,255,255,0.15)'}`, flexShrink: 0, cursor: idx === 0 ? 'default' : 'pointer', transition: 'border-color 0.15s' }}>
+                <img src={url} alt={`Photo ${idx+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button type="button" onClick={e => { e.stopPropagation(); removePhoto(idx); }}
+                  style={{ position: 'absolute', top: '3px', right: '3px', width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X style={{ width: '10px', height: '10px', color: 'white' }} />
+                </button>
+                {idx === 0
+                  ? <div style={{ position: 'absolute', bottom: '3px', left: '3px', fontFamily: "'Inter',sans-serif", fontSize: '9px', fontWeight: 700, color: 'white', background: `${ACCENT}cc`, borderRadius: '3px', padding: '1px 4px' }}>MAIN</div>
+                  : <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.35)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0)'}>
+                      <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '9px', fontWeight: 700, color: 'white', opacity: 0, transition: 'opacity 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                        onMouseLeave={e => e.currentTarget.style.opacity = '0'}>Set main</span>
+                    </div>
+                }
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </Field>
