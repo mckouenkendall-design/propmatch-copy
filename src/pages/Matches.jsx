@@ -610,7 +610,23 @@ function PostBlock({ post, isListing, label, color, onViewPhotos }) {
   const pd=parseDetails(post), price=priceStr(post,isListing), lPrice=parseFloat(post.price), lSize=parseFloat(post.size_sqft);
   const showCalc=isListing&&(post.transaction_type==='lease'||post.transaction_type==='sublease')&&lPrice&&lSize;
   const monthly=showCalc?Math.round((lPrice*lSize)/12):null, annual=showCalc?Math.round(lPrice*lSize):null;
-  const brochureUrl=pd?.brochure_url, photoUrl=pd?.photo_url;
+  const brochureUrl=pd?.brochure_url;
+  const photoUrl = (() => {
+    // photo_urls lives inside property_details which is already parsed by parseDetails
+    let arr = pd?.photo_urls;
+    if (typeof arr === 'string') { try { arr = JSON.parse(arr); } catch { arr = null; } }
+    if (Array.isArray(arr) && arr.length) return arr;
+    // fallback: check raw post property_details for photo_urls
+    try {
+      const raw = typeof post.property_details === 'string' ? JSON.parse(post.property_details) : (post.property_details || {});
+      let rawArr = raw.photo_urls;
+      if (typeof rawArr === 'string') { try { rawArr = JSON.parse(rawArr); } catch { rawArr = null; } }
+      if (Array.isArray(rawArr) && rawArr.length) return rawArr;
+    } catch {}
+    if (pd?.photo_url) return [pd.photo_url];
+    if (post.photo_url) return [post.photo_url];
+    return null;
+  })();
   const chips=[
     isListing?[post.city,post.state].filter(Boolean).join(', '):post.cities?.join(', '),
     isListing?(lSize?`${lSize.toLocaleString()} SF`:null):((post.min_size_sqft||post.max_size_sqft)?`${fmtN(post.min_size_sqft)||'0'}\u2013${fmtN(post.max_size_sqft)||'\u221e'} SF`:null),
