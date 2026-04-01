@@ -26,6 +26,10 @@
       "type": "string",
       "description": "Specific property type for display"
     },
+    "folder": {
+      "type": "string",
+      "description": "Folder name to group templates under"
+    },
     "data": {
       "type": "string",
       "description": "JSON string of the saved form data"
