@@ -94,8 +94,7 @@ function FileUpload({ label, accept, field, details, setDetail, hint }) {
       );
       if (isPhoto) {
         const combined = [...urls, ...uploaded];
-        setDetail('photo_urls', combined);
-        setDetail('photo_url', combined[0]);
+        setDetails({ photo_urls: combined, photo_url: combined[0] });
       } else {
         setDetail(field, uploaded[0]);
       }
@@ -104,8 +103,7 @@ function FileUpload({ label, accept, field, details, setDetail, hint }) {
 
   const removePhoto = (idx) => {
     const next = urls.filter((_, i) => i !== idx);
-    setDetail('photo_urls', next);
-    setDetail('photo_url', next[0] || '');
+    setDetails({ photo_urls: next, photo_url: next[0] || '' });
   };
 
   const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files); };
@@ -146,7 +144,7 @@ function FileUpload({ label, accept, field, details, setDetail, hint }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {urls.map((url, idx) => (
               <div key={idx}
-                onClick={e => { e.stopPropagation(); if (idx !== 0) { const next = [url, ...urls.filter((_,i) => i !== idx)]; setDetail('photo_urls', next); setDetail('photo_url', next[0]); } }}
+                onClick={e => { e.stopPropagation(); if (idx !== 0) { const next = [url, ...urls.filter((_,i) => i !== idx)]; setDetails({ photo_urls: next, photo_url: next[0] }); } }}
                 style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: `2px solid ${idx === 0 ? ACCENT : 'rgba(255,255,255,0.15)'}`, flexShrink: 0, cursor: idx === 0 ? 'default' : 'pointer', transition: 'border-color 0.15s' }}>
                 <img src={url} alt={`Photo ${idx+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <button type="button" onClick={e => { e.stopPropagation(); removePhoto(idx); }}
@@ -1068,6 +1066,7 @@ function LandDetails({ details, setDetail }) {
 export default function ListStep2Commercial({ data, update, onNext }) {
   const details   = data.property_details || {};
   const setDetail = (key, val) => update({ property_details: { ...details, [key]: val } });
+  const setDetails = (patch) => update({ property_details: { ...details, ...patch } });
   const type      = data.property_type;
   const isSale    = data.transaction_type === 'sale';
   const saleTypeDefault = type === 'land' ? null : 'investment';
