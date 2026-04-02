@@ -188,7 +188,7 @@ function removeBackground(imgElement, tolerance = 30) {
   });
 }
 
-function LogoUploader({ currentUrl, onSave, onRemove }) {
+function LogoUploader({ currentUrl, onSave, onRemove, editing = true }) {
   const [processing, setProcessing] = React.useState(false);
   const [preview, setPreview] = React.useState(null); // pending preview before save
   const ACCENT = '#00DBC5';
@@ -236,32 +236,32 @@ function LogoUploader({ currentUrl, onSave, onRemove }) {
           }
         </div>
 
-        {/* Action buttons */}
-        <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
-          <label htmlFor="logo-upload" style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'7px 13px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'7px', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.75)', whiteSpace:'nowrap' }}>
-            <Upload style={{ width:'12px', height:'12px' }} />
-            {currentUrl ? 'Replace' : 'Upload Logo'}
-          </label>
-          <input id="logo-upload" type="file" accept="image/*" style={{ display:'none' }}
-            onChange={e => handleFile(e.target.files?.[0])} />
-
-          {currentUrl && (
-            <button type="button" onClick={handleRemoveBg} disabled={processing}
-              style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'7px 13px', background:`${ACCENT}12`, border:`1px solid ${ACCENT}30`, borderRadius:'7px', cursor:processing?'not-allowed':'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:ACCENT, whiteSpace:'nowrap', opacity:processing?0.6:1 }}>
-              {processing
-                ? <><Loader2 style={{ width:'12px', height:'12px', animation:'spin 1s linear infinite' }} /> Removing…</>
-                : <>✨ Remove Background</>
-              }
-            </button>
-          )}
-
-          {currentUrl && (
-            <button type="button" onClick={onRemove}
-              style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'7px 13px', background:'transparent', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'7px', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', whiteSpace:'nowrap' }}>
-              <X style={{ width:'11px', height:'11px' }} /> Remove
-            </button>
-          )}
-        </div>
+        {/* Action buttons — only in edit mode */}
+        {editing && (
+          <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+            <label htmlFor="logo-upload" style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'7px 13px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'7px', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.75)', whiteSpace:'nowrap' }}>
+              <Upload style={{ width:'12px', height:'12px' }} />
+              {currentUrl ? 'Replace' : 'Upload Logo'}
+            </label>
+            <input id="logo-upload" type="file" accept="image/*" style={{ display:'none' }}
+              onChange={e => handleFile(e.target.files?.[0])} />
+            {currentUrl && (
+              <button type="button" onClick={handleRemoveBg} disabled={processing}
+                style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'7px 13px', background:`${ACCENT}12`, border:`1px solid ${ACCENT}30`, borderRadius:'7px', cursor:processing?'not-allowed':'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:ACCENT, whiteSpace:'nowrap', opacity:processing?0.6:1 }}>
+                {processing
+                  ? <><Loader2 style={{ width:'12px', height:'12px', animation:'spin 1s linear infinite' }} /> Removing…</>
+                  : <>✨ Remove Background</>
+                }
+              </button>
+            )}
+            {currentUrl && (
+              <button type="button" onClick={onRemove}
+                style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'7px 13px', background:'transparent', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'7px', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', whiteSpace:'nowrap' }}>
+                <X style={{ width:'11px', height:'11px' }} /> Remove
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.28)', margin:0 }}>
         Upload your logo · Click "Remove Background" to auto-strip white/solid backgrounds · PNG with transparent background looks best on PDFs
@@ -564,34 +564,16 @@ export default function Profile() {
                 </div>
                 {/* Logo / Branding */}
                 <div>
-                  <Label style={{ color: 'rgba(255,255,255,0.7)', display:'flex', alignItems:'center', gap:'6px' }}>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)', display:'flex', alignItems:'center', gap:'6px', marginBottom:'8px' }}>
                     <ImageIcon style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>
                     Your Logo <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>(shown on exported PDFs)</span>
                   </Label>
-                  <div style={{ marginTop:'8px', display:'flex', alignItems:'center', gap:'14px' }}>
-                    {formData.logo_url ? (
-                      <div style={{ position:'relative', height:'50px', padding:'6px 12px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'8px', display:'flex', alignItems:'center' }}>
-                        <img src={formData.logo_url} alt="Logo" style={{ height:'38px', maxWidth:'160px', objectFit:'contain' }} />
-                        {editing && (
-                          <button type="button" onClick={() => setFormData(p => ({ ...p, logo_url: '' }))}
-                            style={{ position:'absolute', top:'-6px', right:'-6px', width:'18px', height:'18px', borderRadius:'50%', background:'rgba(239,68,68,0.9)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                            <X style={{ width:'10px', height:'10px', color:'white' }} />
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <div style={{ width:'120px', height:'50px', background:'rgba(255,255,255,0.03)', border:'1px dashed rgba(255,255,255,0.15)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                        <ImageIcon style={{ width:'20px', height:'20px', color:'rgba(255,255,255,0.2)' }} />
-                      </div>
-                    )}
-                    {editing && (
-                      <LogoUploader
-                        currentUrl={formData.logo_url}
-                        onSave={url => setFormData(p => ({ ...p, logo_url: url }))}
-                        onRemove={() => setFormData(p => ({ ...p, logo_url: '' }))}
-                      />
-                    )}
-                  </div>
+                  <LogoUploader
+                    currentUrl={formData.logo_url}
+                    onSave={url => setFormData(p => ({ ...p, logo_url: url }))}
+                    onRemove={() => setFormData(p => ({ ...p, logo_url: '' }))}
+                    editing={editing}
+                  />
                 </div>
 
                 <div>
