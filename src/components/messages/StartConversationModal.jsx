@@ -118,14 +118,17 @@ export default function StartConversationModal({ currentUser, profiles, onClose,
       const participantEmails = [myEmail, ...selected.map(p => p.user_email)];
       const sortedKey = [...participantEmails].sort().join(',');
 
-      // Check if group already exists
-      const allGC = await base44.entities.GroupConversation.list('-last_message_time', 200);
-      const existing = allGC.find(gc => {
-        try { return JSON.parse(gc.participant_emails || '[]').sort().join(',') === sortedKey; }
-        catch { return false; }
-      });
+      // Check if group already exists — filter by created_by first then check participants
+      let existingGroup = null;
+      try {
+        const myGCs = await base44.entities.GroupConversation.filter({ created_by: myEmail });
+        existingGroup = myGCs.find(gc => {
+          try { return JSON.parse(gc.participant_emails || '[]').sort().join(',') === sortedKey; }
+          catch { return false; }
+        });
+      } catch { /* no existing groups */ }
 
-      if (existing) { onCreated(existing.id, 'group'); return; }
+      if (existingGroup) { onCreated(existingGroup.id, 'group'); return; }
 
       const myName = profiles.find(p => p.user_email === myEmail)?.full_name || myEmail?.split('@')[0] || 'Me';
       const groupName = [...selected.map(p => p.full_name || p.user_email.split('@')[0]), myName].join(', ');
@@ -139,8 +142,8 @@ export default function StartConversationModal({ currentUser, profiles, onClose,
       });
       onCreated(gc.id, 'group');
     } catch (e) {
-      console.error(e);
-      setError('Something went wrong. Please try again.');
+      console.error('StartConversationModal error:', e);
+      setError(e?.message || 'Something went wrong. Please try again.');
     } finally { setLoading(false); }
   };
 
