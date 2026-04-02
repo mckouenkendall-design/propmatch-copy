@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Check, Loader2, ChevronDown, Bookmark } from 'lucide-react';
+import { Check, Loader2, ChevronDown, Bookmark, Search, X } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import SaveTemplateModal from '@/components/templates/SaveTemplateModal';
@@ -33,6 +33,85 @@ const VISIBILITY_OPTIONS = [
   { value: 'brokerage', label: 'Brokerage Only',        desc: 'Only users sharing your Brokerage ID' },
   { value: 'private',   label: 'Private (Invite Only)', desc: 'Direct access link sent to a specific person' },
 ];
+
+// ─── Private recipient picker — search by name, username, or email ────────────
+function PrivateRecipientPicker({ value, onChange }) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen]   = useState(false);
+
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['all-user-profiles-picker'],
+    queryFn: () => base44.entities.UserProfile.list(),
+  });
+
+  const filtered = allProfiles.filter(p =>
+    (p.full_name    || '').toLowerCase().includes(query.toLowerCase()) ||
+    (p.username     || '').toLowerCase().includes(query.toLowerCase()) ||
+    (p.user_email   || '').toLowerCase().includes(query.toLowerCase()) ||
+    (p.brokerage_name || '').toLowerCase().includes(query.toLowerCase())
+  ).slice(0, 20);
+
+  const selected = allProfiles.find(p => p.user_email === value);
+
+  return (
+    <div style={{ position:'relative' }}>
+      {selected ? (
+        <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 12px', background:'rgba(0,219,197,0.08)', border:`1px solid ${ACCENT}35`, borderRadius:'8px' }}>
+          <div style={{ width:'28px', height:'28px', borderRadius:'50%', background:ACCENT, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'12px', fontWeight:700 }}>
+            {selected.profile_photo_url
+              ? <img src={selected.profile_photo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+              : (selected.full_name||selected.user_email||'?')[0].toUpperCase()}
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:600, color:'white', margin:0 }}>{selected.full_name || selected.user_email}</p>
+            {selected.username && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:0 }}>@{selected.username}</p>}
+          </div>
+          <button type="button" onClick={() => { onChange(''); setQuery(''); }}
+            style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, display:'flex' }}>
+            <X style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.4)' }}/>
+          </button>
+        </div>
+      ) : (
+        <div style={{ position:'relative' }}>
+          <Search style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', width:'13px', height:'13px', color:'rgba(255,255,255,0.35)', pointerEvents:'none' }}/>
+          <input
+            value={query}
+            onChange={e => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            placeholder="Search by name, @username, or email..."
+            style={{ width:'100%', padding:'9px 9px 9px 30px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white', outline:'none', boxSizing:'border-box' }}
+          />
+        </div>
+      )}
+      {open && !selected && query && (
+        <div style={{ position:'absolute', top:'100%', left:0, right:0, marginTop:'4px', background:'#1a1f25', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'8px', zIndex:50, maxHeight:'200px', overflowY:'auto', boxShadow:'0 8px 24px rgba(0,0,0,0.4)' }}>
+          {filtered.length === 0 ? (
+            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.35)', padding:'12px', margin:0 }}>No agents found</p>
+          ) : filtered.map(p => (
+            <div key={p.user_email}
+              onClick={() => { onChange(p.user_email); setOpen(false); setQuery(''); }}
+              style={{ display:'flex', alignItems:'center', gap:'8px', padding:'10px 12px', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.05)' }}
+              onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.05)'}
+              onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+              <div style={{ width:'28px', height:'28px', borderRadius:'50%', background:ACCENT, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'11px', fontWeight:700 }}>
+                {p.profile_photo_url
+                  ? <img src={p.profile_photo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                  : (p.full_name||p.user_email||'?')[0].toUpperCase()}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'5px' }}>
+                  <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'white' }}>{p.full_name || p.user_email}</span>
+                  {p.username && <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)' }}>@{p.username}</span>}
+                </div>
+                {p.brokerage_name && <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>{p.brokerage_name}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoading, editMode }) {
   const [termsAccepted, setTermsAccepted]           = useState(true);
@@ -157,8 +236,11 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
       )}
 
       {visibility === 'private' && (
-        <Field label="Recipient Email" hint="A direct access link will be sent to this person">
-          <Input type="email" value={data.visibility_recipient_email || ''} onChange={e => update({ visibility_recipient_email: e.target.value })} placeholder="recipient@email.com" />
+        <Field label="Send To" hint="Search by name, @username, or email">
+          <PrivateRecipientPicker
+            value={data.visibility_recipient_email || ''}
+            onChange={email => update({ visibility_recipient_email: email })}
+          />
         </Field>
       )}
 
