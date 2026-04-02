@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Plus, Calendar, MapPin, Video, Clock, Users, ExternalLink, Trash2, Mail, Phone, Building } from 'lucide-react';
+import { Plus, Calendar, MapPin, Video, Clock, Users, ExternalLink, Trash2, Mail, Phone, Building, MessageSquare, ChevronDown, ChevronUp, Send } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import GroupEventModal from './GroupEventModal';
 
@@ -17,6 +17,100 @@ const EVENT_TYPE_COLORS = {
   networking: '#4FB3A9', workshop: '#6366f1', open_house: '#f59e0b',
   webinar: '#3b82f6', social: '#ec4899', site_tour: '#10b981', other: '#9ca3af',
 };
+
+
+// ─── Comment Section (Events) ─────────────────────────────────────────────────
+function CommentSection({ postId, groupId, currentUser, profileMap }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const [text, setText] = React.useState('');
+  const queryClient = useQueryClient();
+
+  const { data: comments = [], isLoading } = useQuery({
+    queryKey: ['comments', postId],
+    queryFn: () => base44.entities.GroupComment.filter({ post_id: postId }).then(r => r.sort((a,b) => new Date(a.created_date)-new Date(b.created_date))),
+    enabled: expanded,
+    refetchInterval: expanded ? 10000 : false,
+  });
+
+  const addComment = useMutation({
+    mutationFn: () => base44.entities.GroupComment.create({
+      post_id: postId, post_type: 'group_event', group_id: groupId,
+      author_email: currentUser?.email || '',
+      author_name: currentUser?.full_name || currentUser?.email || 'Member',
+      content: text.trim(),
+    }),
+    onSuccess: () => { setText(''); queryClient.invalidateQueries({ queryKey: ['comments', postId] }); },
+  });
+
+  const deleteComment = useMutation({
+    mutationFn: (id) => base44.entities.GroupComment.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', postId] }),
+  });
+
+  const timeAgo = (d) => {
+    const m = Math.floor((Date.now()-new Date(d))/60000);
+    if (m<1) return 'just now'; if (m<60) return `${m}m ago`;
+    const h=Math.floor(m/60); if (h<24) return `${h}h ago`;
+    return `${Math.floor(h/24)}d ago`;
+  };
+
+  return (
+    <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', paddingTop:'12px', marginTop:'4px' }}>
+      <button onClick={() => setExpanded(!expanded)}
+        style={{ display:'flex', alignItems:'center', gap:'6px', background:'transparent', border:'none', cursor:'pointer', padding:'4px 0', color:'rgba(255,255,255,0.4)' }}
+        onMouseEnter={e => e.currentTarget.style.color=ACCENT}
+        onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.4)'}>
+        <MessageSquare style={{ width:'13px', height:'13px' }}/>
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500 }}>
+          {expanded ? 'Hide comments' : `${comments.length > 0 ? `${comments.length} comment${comments.length!==1?'s':''}` : 'Comment'}`}
+        </span>
+        {expanded ? <ChevronUp style={{ width:'11px', height:'11px' }}/> : <ChevronDown style={{ width:'11px', height:'11px' }}/>}
+      </button>
+
+      {expanded && (
+        <div style={{ marginTop:'10px', display:'flex', flexDirection:'column', gap:'8px' }}>
+          {isLoading ? (
+            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.3)', margin:0 }}>Loading...</p>
+          ) : comments.length === 0 ? (
+            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.25)', margin:0 }}>No comments yet.</p>
+          ) : comments.map(c => {
+            const profile = profileMap?.[c.author_email];
+            const photo = profile?.profile_photo_url;
+            const name = profile?.full_name || c.author_name || 'Member';
+            const isMe = c.author_email === currentUser?.email;
+            return (
+              <div key={c.id} style={{ display:'flex', gap:'8px', alignItems:'flex-start' }}>
+                <div style={{ width:'28px', height:'28px', borderRadius:'50%', background:ACCENT, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'11px', fontWeight:700 }}>
+                  {photo ? <img src={photo} alt={name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : name[0]?.toUpperCase()}
+                </div>
+                <div style={{ flex:1, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'10px', padding:'8px 12px' }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'3px' }}>
+                    <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:600, color:'white' }}>{name}</span>
+                    <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>{timeAgo(c.created_date)}</span>
+                      {isMe && <button onClick={() => deleteComment.mutate(c.id)} style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, color:'rgba(255,255,255,0.2)', fontSize:'10px' }} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='rgba(255,255,255,0.2)'}>Delete</button>}
+                    </div>
+                  </div>
+                  <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.75)', margin:0, lineHeight:1.5 }}>{c.content}</p>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ display:'flex', gap:'8px', alignItems:'center', marginTop:'4px' }}>
+            <input value={text} onChange={e => setText(e.target.value)}
+              onKeyDown={e => { if (e.key==='Enter' && !e.shiftKey && text.trim()) { e.preventDefault(); addComment.mutate(); } }}
+              placeholder="Write a comment..."
+              style={{ flex:1, padding:'8px 12px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'20px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white', outline:'none' }}/>
+            <button onClick={() => text.trim() && addComment.mutate()} disabled={!text.trim()}
+              style={{ width:'32px', height:'32px', borderRadius:'50%', background:text.trim()?ACCENT:'rgba(255,255,255,0.1)', border:'none', cursor:text.trim()?'pointer':'default', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <Send style={{ width:'13px', height:'13px', color:text.trim()?'#111827':'rgba(255,255,255,0.3)' }}/>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function GroupEvents({ groupId, currentUser }) {
   const [showCreate, setShowCreate] = useState(false);
@@ -75,7 +169,7 @@ export default function GroupEvents({ groupId, currentUser }) {
               <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px' }}>Upcoming</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {upcoming.map(event => (
-                  <EventCard key={event.id} event={event} currentUser={currentUser} hostProfile={profileMap[event.host_email]}
+                  <EventCard key={event.id} event={event} currentUser={currentUser} hostProfile={profileMap[event.host_email]} profileMap={profileMap} groupId={groupId}
                     onRsvp={() => rsvpMutation.mutate(event)} onDelete={() => deleteMutation.mutate(event.id)} />
                 ))}
               </div>
@@ -86,7 +180,7 @@ export default function GroupEvents({ groupId, currentUser }) {
               <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px' }}>Past Events</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {past.map(event => (
-                  <EventCard key={event.id} event={event} currentUser={currentUser} hostProfile={profileMap[event.host_email]}
+                  <EventCard key={event.id} event={event} currentUser={currentUser} hostProfile={profileMap[event.host_email]} profileMap={profileMap} groupId={groupId}
                     onRsvp={() => rsvpMutation.mutate(event)} onDelete={() => deleteMutation.mutate(event.id)} isPast />
                 ))}
               </div>
@@ -103,7 +197,7 @@ export default function GroupEvents({ groupId, currentUser }) {
   );
 }
 
-function EventCard({ event, currentUser, hostProfile, onRsvp, onDelete, isPast }) {
+function EventCard({ event, currentUser, hostProfile, profileMap, groupId, onRsvp, onDelete, isPast }) {
   const rsvpList = JSON.parse(event.rsvp_list || '[]');
   const isRsvpd = rsvpList.includes(currentUser?.email);
   const isHost = event.host_email === currentUser?.email;
@@ -228,7 +322,7 @@ function EventCard({ event, currentUser, hostProfile, onRsvp, onDelete, isPast }
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 12px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{event.description}</p>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Users style={{ width: '14px', height: '14px', color: 'rgba(255,255,255,0.4)' }} />
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
@@ -243,6 +337,7 @@ function EventCard({ event, currentUser, hostProfile, onRsvp, onDelete, isPast }
             </button>
           )}
         </div>
+        <CommentSection postId={event.id} groupId={groupId} currentUser={currentUser} profileMap={profileMap}/>
       </div>
     </div>
   );
