@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { X, Send, Loader2 } from 'lucide-react';
 import { getScoreLabel } from '@/utils/matchScore';
 import { useAuth } from '@/lib/AuthContext';
+import { createNotification } from '@/utils/notifications';
 
 const ACCENT   = '#00DBC5';
 const LAVENDER = '#818cf8';
@@ -160,6 +161,17 @@ Do not use em dashes, hyphens as dashes, or any special punctuation. Always writ
         last_message_time: new Date().toISOString(),
         unread_by_2: (existing[0]?.unread_by_2 || 0) + 1,
       });
+
+      // Notify the recipient
+      const senderName = currentUser?.full_name || currentUser?.email?.split('@')[0] || 'An agent';
+      await createNotification(
+        base44,
+        theirEmail,
+        'new_message',
+        `New message from ${senderName}`,
+        text.trim().slice(0, 100),
+        { senderEmail: myEmail, linkType: 'inbox', linkId: convoId }
+      );
 
       return convoId;
     },
