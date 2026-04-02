@@ -87,6 +87,15 @@ function PrivateRecipientPicker({ value, onChange, currentUserEmail }) {
     c.participant_1 === currentUserEmail ? c.participant_2 : c.participant_1
   ));
 
+  // value is comma-separated emails — supports multiple recipients
+  const selectedEmails = (value || '').split(',').map(s => s.trim()).filter(Boolean);
+  const toggleEmail = (email) => {
+    const next = selectedEmails.includes(email)
+      ? selectedEmails.filter(e => e !== email)
+      : [...selectedEmails, email];
+    onChange(next.join(','));
+  };
+
   const allFiltered = allProfiles.filter(p =>
     p.user_email !== currentUserEmail && (
       !query ||
@@ -97,7 +106,6 @@ function PrivateRecipientPicker({ value, onChange, currentUserEmail }) {
     )
   );
 
-  // Sort: known contacts first, then rest
   const sorted = [
     ...allFiltered.filter(p => knownEmails.has(p.user_email)),
     ...allFiltered.filter(p => !knownEmails.has(p.user_email)),
@@ -105,18 +113,31 @@ function PrivateRecipientPicker({ value, onChange, currentUserEmail }) {
 
   return (
     <div>
-      {/* Search input — autoComplete off kills browser autofill */}
+      {/* Selected chips */}
+      {selectedEmails.length > 0 && (
+        <div style={{ display:'flex', flexWrap:'wrap', gap:'5px', marginBottom:'8px' }}>
+          {selectedEmails.map(email => {
+            const p = allProfiles.find(pr => pr.user_email === email);
+            return (
+              <span key={email} style={{ display:'flex', alignItems:'center', gap:'4px', padding:'3px 8px 3px 10px', background:`${ACCENT}15`, border:`1px solid ${ACCENT}35`, borderRadius:'20px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:ACCENT }}>
+                {p?.full_name || email.split('@')[0]}
+                <button type="button" onClick={() => toggleEmail(email)} style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, display:'flex' }}>
+                  <X style={{ width:'10px', height:'10px', color:ACCENT }}/>
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+      {/* Search — autoComplete off kills browser autofill */}
       <div style={{ position:'relative', marginBottom:'8px' }}>
         <Search style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', width:'13px', height:'13px', color:'rgba(255,255,255,0.35)', pointerEvents:'none' }}/>
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search by name, @username, or email..."
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck="false"
-          name="propmatch-private-recipient"
+          autoComplete="off" autoCorrect="off" autoCapitalize="off"
+          spellCheck="false" name="propmatch-private-recipient-field"
           style={{ width:'100%', padding:'9px 9px 9px 30px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white', outline:'none', boxSizing:'border-box' }}
         />
       </div>
@@ -130,10 +151,80 @@ function PrivateRecipientPicker({ value, onChange, currentUserEmail }) {
               <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.3)', padding:'6px 12px 2px', margin:0 }}>Recent</p>
             )}
             {sorted.map(p => (
-              <AgentCheckRow key={p.user_email} profile={p} selected={value === p.user_email} onToggle={() => onChange(value === p.user_email ? '' : p.user_email)}/>
+              <AgentCheckRow key={p.user_email} profile={p} selected={selectedEmails.includes(p.user_email)} onToggle={toggleEmail}/>
             ))}
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+
+// ─── Visibility Confirmation Modal ───────────────────────────────────────────
+const VISIBILITY_MESSAGES = {
+  team: {
+    icon: '🐟',
+    title: 'Fish Tank Visibility',
+    body: "This post will only be visible to members of the Fish Tank(s) you selected. It will not appear in public search, it will not show in your brokerage's listings/requirements, and agents outside those tanks will not be able to find or match with it.",
+    storageKey: 'pm_vis_confirm_team_dismissed',
+  },
+  brokerage: {
+    icon: '🏢',
+    title: 'Brokerage Only Visibility',
+    body: "This post will only be visible to agents who share your Brokerage ID. It will not appear in public search, it will not show in any Fish Tanks, and agents outside your brokerage will not be able to find or match with it.",
+    storageKey: 'pm_vis_confirm_brokerage_dismissed',
+  },
+  private: {
+    icon: '🔒',
+    title: 'Private Post',
+    body: "This post will only be visible to the specific person(s) you selected. No one else on PropMatch will see it, it won't show publicly, and it won't appear in any Fish Tank or brokerage listings/requirements.",
+    storageKey: 'pm_vis_confirm_private_dismissed',
+  },
+};
+
+function VisibilityConfirmModal({ visibilityType, onConfirm, onCancel }) {
+  const info = VISIBILITY_MESSAGES[visibilityType];
+  if (!info) return null;
+
+  const handleNeverShow = () => {
+    try { localStorage.setItem(info.storageKey, 'true'); } catch {}
+    onConfirm();
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(6px)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}
+      onClick={onCancel}>
+      <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'20px', width:'100%', maxWidth:'440px', padding:'28px', boxShadow:'0 24px 60px rgba(0,0,0,0.5)' }}
+        onClick={e => e.stopPropagation()}>
+        {/* Icon + Title */}
+        <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px' }}>
+          <div style={{ width:'44px', height:'44px', borderRadius:'12px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0 }}>
+            {info.icon}
+          </div>
+          <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'17px', fontWeight:600, color:'white', margin:0 }}>{info.title}</h3>
+        </div>
+        {/* Body */}
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.6)', lineHeight:1.7, margin:'0 0 24px' }}>
+          {info.body}
+        </p>
+        {/* Buttons */}
+        <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+          <button onClick={onConfirm}
+            style={{ width:'100%', padding:'12px', background:ACCENT, border:'none', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:700, color:'#111827', cursor:'pointer' }}>
+            Got it, post
+          </button>
+          <button onClick={handleNeverShow}
+            style={{ width:'100%', padding:'10px', background:'transparent', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.4)', cursor:'pointer', transition:'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.25)'; e.currentTarget.style.color='rgba(255,255,255,0.65)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'; e.currentTarget.style.color='rgba(255,255,255,0.4)'; }}>
+            Never show this again
+          </button>
+          <button onClick={onCancel}
+            style={{ width:'100%', padding:'8px', background:'transparent', border:'none', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.25)', cursor:'pointer' }}>
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -145,6 +236,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
   const [groupSearchInput, setGroupSearchInput]     = useState('');
   const [currentUserEmail, setCurrentUserEmail]     = useState(null);
   const [showSaveTemplate, setShowSaveTemplate]     = useState(false);
+  const [pendingVisibility, setPendingVisibility]     = useState(null); // visibility type awaiting confirmation
 
   useEffect(() => {
     async function prefill() {
@@ -175,6 +267,23 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
   });
 
   const visibility     = data.visibility || 'public';
+
+  const isDismissed = (type) => {
+    try { return localStorage.getItem(VISIBILITY_MESSAGES[type]?.storageKey) === 'true'; } catch { return false; }
+  };
+
+  const handleVisibilitySelect = (value) => {
+    if (value === 'public') {
+      update({ visibility: value });
+      return;
+    }
+    if (isDismissed(value)) {
+      update({ visibility: value });
+      return;
+    }
+    // Store pending and show modal
+    setPendingVisibility(value);
+  };
   const filteredGroups = userGroups.filter(g => g.name.toLowerCase().includes(groupSearchInput.toLowerCase()));
 
   const handleGroupSelect = (groupName) => {
@@ -218,7 +327,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
       <Field label="Who can see this post?">
         <div className="space-y-2">
           {VISIBILITY_OPTIONS.map(opt => (
-            <button key={opt.value} type="button" onClick={() => update({ visibility: opt.value })}
+            <button key={opt.value} type="button" onClick={() => handleVisibilitySelect(opt.value)}
               className="w-full flex items-start gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all"
               style={{ borderColor: visibility === opt.value ? ACCENT : 'rgba(255,255,255,0.2)', backgroundColor: visibility === opt.value ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)' }}>
               <div className="mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
@@ -255,9 +364,6 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
                   onMouseLeave={e => { e.currentTarget.style.background=isSel?`${ACCENT}10`:'transparent'; }}>
                   <div style={{ width:'18px', height:'18px', borderRadius:'5px', flexShrink:0, border:`2px solid ${isSel?ACCENT:'rgba(255,255,255,0.2)'}`, background:isSel?ACCENT:'transparent', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}>
                     {isSel && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 6 4.5 8.5 10 3.5"/></svg>}
-                  </div>
-                  <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:`${ACCENT}20`, border:`1px solid ${ACCENT}30`, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <span style={{ fontSize:'14px' }}>🐟</span>
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'white', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.name}</p>
@@ -313,6 +419,15 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
           </Button>
         </div>
       </div>
+
+      {/* Visibility confirmation modal */}
+      {pendingVisibility && (
+        <VisibilityConfirmModal
+          visibilityType={pendingVisibility}
+          onConfirm={() => { update({ visibility: pendingVisibility }); setPendingVisibility(null); }}
+          onCancel={() => setPendingVisibility(null)}
+        />
+      )}
 
       {showSaveTemplate && (
         <SaveTemplateModal formData={data} templateType="listing" onClose={() => setShowSaveTemplate(false)} />
