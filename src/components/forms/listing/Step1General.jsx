@@ -172,6 +172,15 @@ export default function ListStep1({ data, update, onNext }) {
     data.zip_code
   );
 
+
+  const isTBD = !!data.price_is_tbd;
+  const handleTBD = () => {
+    if (isTBD) {
+      update({ price_is_tbd: false, price: '' });
+    } else {
+      update({ price_is_tbd: true, price: '' });
+    }
+  };
   return (
     <div className="space-y-6">
 
@@ -213,12 +222,22 @@ export default function ListStep1({ data, update, onNext }) {
       {showLease && (
         <>
           <div className="space-y-1.5">
-            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Asking Rate ($ / SF / yr)<Req /></Label>
-            <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
-              placeholder="e.g. 24.00" step={0.01}
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Price per square foot per year</p>
-            {data.price && data.size_sqft && (
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Asking Rate ($ / SF / yr)</Label>
+            <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+              {isTBD ? (
+                <div style={{ flex:1, padding:'9px 14px', background:'rgba(0,219,197,0.08)', border:`1px solid ${ACCENT}40`, borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:ACCENT, fontWeight:600 }}>Price: TBD</div>
+              ) : (
+                <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
+                  placeholder="e.g. 24.00" step={0.01}
+                  style={{ flex:1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+              )}
+              <button type="button" onClick={handleTBD}
+                style={{ padding:'8px 14px', borderRadius:'8px', border:`1px solid ${isTBD?ACCENT+'60':'rgba(255,255,255,0.15)'}`, background:isTBD?`${ACCENT}15`:'transparent', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:700, color:isTBD?ACCENT:'rgba(255,255,255,0.5)', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                TBD
+              </button>
+            </div>
+            {!isTBD && <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Price per square foot per year</p>}
+            {!isTBD && data.price && data.size_sqft && (
               <div className="mt-2 p-3 rounded-lg text-sm space-y-1" style={{ backgroundColor: 'rgba(0,219,197,0.08)', border: '1px solid rgba(0,219,197,0.2)' }}>
                 <p className="font-medium" style={{ color: ACCENT }}>Estimated totals:</p>
                 <p style={{ color: 'rgba(255,255,255,0.7)' }}>Monthly: <strong>${(parseFloat(data.price) * parseFloat(data.size_sqft) / 12).toLocaleString('en-US', { maximumFractionDigits: 0 })}/mo</strong></p>
@@ -265,10 +284,20 @@ export default function ListStep1({ data, update, onNext }) {
       {/* Commercial Sale */}
       {isCommercial && showSalePrice && (
         <div className="space-y-1.5">
-          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($)<Req /></Label>
-          <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
-            placeholder="e.g. 1,250,000"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($)</Label>
+          <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+            {isTBD ? (
+              <div style={{ flex:1, padding:'9px 14px', background:'rgba(0,219,197,0.08)', border:`1px solid ${ACCENT}40`, borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:ACCENT, fontWeight:600 }}>Price: TBD</div>
+            ) : (
+              <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
+                placeholder="e.g. 1,250,000"
+                style={{ flex:1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+            )}
+            <button type="button" onClick={handleTBD}
+              style={{ padding:'8px 14px', borderRadius:'8px', border:`1px solid ${isTBD?ACCENT+'60':'rgba(255,255,255,0.15)'}`, background:isTBD?`${ACCENT}15`:'transparent', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:700, color:isTBD?ACCENT:'rgba(255,255,255,0.5)', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+              TBD
+            </button>
+          </div>
         </div>
       )}
 
@@ -276,10 +305,20 @@ export default function ListStep1({ data, update, onNext }) {
       {showRent && (
         <>
           <div className="space-y-1.5">
-            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Monthly Rent ($/mo)<Req /></Label>
-            <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
-              placeholder="e.g. 2,500"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Monthly Rent ($/mo)</Label>
+            <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+              {isTBD ? (
+                <div style={{ flex:1, padding:'9px 14px', background:'rgba(0,219,197,0.08)', border:`1px solid ${ACCENT}40`, borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:ACCENT, fontWeight:600 }}>Price: TBD</div>
+              ) : (
+                <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
+                  placeholder="e.g. 2,500"
+                  style={{ flex:1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+              )}
+              <button type="button" onClick={handleTBD}
+                style={{ padding:'8px 14px', borderRadius:'8px', border:`1px solid ${isTBD?ACCENT+'60':'rgba(255,255,255,0.15)'}`, background:isTBD?`${ACCENT}15`:'transparent', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:700, color:isTBD?ACCENT:'rgba(255,255,255,0.5)', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                TBD
+              </button>
+            </div>
           </div>
           <div className="space-y-2">
             <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Utilities Included in Rent</Label>
@@ -295,10 +334,20 @@ export default function ListStep1({ data, update, onNext }) {
       {/* Residential Sale */}
       {!isCommercial && showSalePrice && (
         <div className="space-y-1.5">
-          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($)<Req /></Label>
-          <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
-            placeholder="e.g. 450,000"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($)</Label>
+          <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+            {isTBD ? (
+              <div style={{ flex:1, padding:'9px 14px', background:'rgba(0,219,197,0.08)', border:`1px solid ${ACCENT}40`, borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:ACCENT, fontWeight:600 }}>Price: TBD</div>
+            ) : (
+              <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
+                placeholder="e.g. 450,000"
+                style={{ flex:1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+            )}
+            <button type="button" onClick={handleTBD}
+              style={{ padding:'8px 14px', borderRadius:'8px', border:`1px solid ${isTBD?ACCENT+'60':'rgba(255,255,255,0.15)'}`, background:isTBD?`${ACCENT}15`:'transparent', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:700, color:isTBD?ACCENT:'rgba(255,255,255,0.5)', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+              TBD
+            </button>
+          </div>
         </div>
       )}
 
