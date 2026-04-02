@@ -29,6 +29,10 @@
     "unread_counts": {
       "type": "string",
       "description": "JSON object mapping participant email to unread count"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Optional group photo or avatar URL"
     }
   },
   "required": [
