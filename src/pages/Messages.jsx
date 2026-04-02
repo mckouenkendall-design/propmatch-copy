@@ -164,7 +164,7 @@ function PostDetailModal({ post, postType, onClose }) {
 }
 
 // ─── Main Messages Page ───────────────────────────────────────────────────────
-// ── Group Chat Crop Modal ──────────────────────────────────────────────────────
+// ── Group Chat Crop Modal — exact same logic as Profile CropModal ──────────────
 function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(0.5);
@@ -174,79 +174,44 @@ function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
     croppedAreaPixelsRef.current = cappx;
   }, []);
 
-  // Ensure a fallback value exists even if user hasn't interacted
   React.useEffect(() => {
     if (!croppedAreaPixelsRef.current) {
       croppedAreaPixelsRef.current = { x: 0, y: 0, width: 300, height: 300 };
     }
   }, []);
 
-  const [confirming, setConfirming] = useState(false);
-
   const handleConfirm = async () => {
-    if (confirming) return;
-    setConfirming(true);
     const cappx = croppedAreaPixelsRef.current;
-    let step = 'start';
     try {
-      // Step 1: Convert data URL to blob
-      step = 'fetch dataurl';
-      let originalBlob;
-      try {
-        const res = await fetch(imageSrc);
-        originalBlob = await res.blob();
-      } catch (fetchErr) {
-        // fetch may be CSP-blocked — fall back to manual atob decode
-        step = 'atob decode';
-        const [header, b64] = imageSrc.split(',');
-        const mime = header.match(/:(.*?);/)[1];
-        const binary = atob(b64);
-        const arr = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
-        originalBlob = new Blob([arr], { type: mime });
-      }
-
-      // Step 2: Load image
-      step = 'load image';
+      const originalBlob = await fetch(imageSrc).then(r => r.blob());
       const blobUrl = URL.createObjectURL(originalBlob);
       const image = await new Promise((res, rej) => {
         const img = new Image();
         img.onload  = () => res(img);
-        img.onerror = (e) => rej(new Error('img load failed'));
+        img.onerror = rej;
         img.src = blobUrl;
       });
-      // NOTE: revoke AFTER canvas draw, not before — revoking early can free image data
-
-      // Step 3: Draw to canvas
-      step = `canvas draw (naturalW=${image.naturalWidth} naturalH=${image.naturalHeight} cappx=${JSON.stringify(cappx)})`;
       const canvas = document.createElement('canvas');
       canvas.width = 400; canvas.height = 400;
       const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('getContext returned null');
-
       if (cappx && image.naturalWidth > 0) {
         const sx = Math.max(0, Math.round(cappx.x));
         const sy = Math.max(0, Math.round(cappx.y));
         const sw = Math.min(Math.round(cappx.width),  image.naturalWidth  - sx);
         const sh = Math.min(Math.round(cappx.height), image.naturalHeight - sy);
-        ctx.drawImage(image, sx, sy, sw > 0 ? sw : image.naturalWidth, sh > 0 ? sh : image.naturalHeight, 0, 0, 400, 400);
+        ctx.drawImage(image, sx > 0 ? sx : 0, sy > 0 ? sy : 0, sw > 0 ? sw : image.naturalWidth, sh > 0 ? sh : image.naturalHeight, 0, 0, 400, 400);
       } else {
         ctx.drawImage(image, 0, 0, 400, 400);
       }
-
       URL.revokeObjectURL(blobUrl);
-
-      // Step 4: toBlob
-      step = 'toBlob';
-      const croppedBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
-      step = `toBlob done size=${croppedBlob?.size}`;
-
-      onConfirm(croppedBlob || originalBlob);
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+      if (blob && blob.size > 100) {
+        onConfirm(blob);
+      } else {
+        onConfirm(originalBlob);
+      }
     } catch (e) {
-      const msg = `Failed at: ${step} — ${e?.message || e}`;
-      console.error(msg, e);
-    } finally {
-      setConfirming(false);
+      console.error('Group crop error:', e);
     }
   };
 
@@ -274,12 +239,8 @@ function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
           <button onClick={onCancel} style={{ flex:1, padding:'11px', background:'transparent', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.6)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
             <X style={{ width:'15px', height:'15px' }}/> Cancel
           </button>
-          <button onClick={handleConfirm} disabled={confirming}
-            style={{ flex:1, padding:'11px', background:'#00DBC5', border:'none', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:600, color:'#111827', cursor:confirming?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', opacity:confirming?0.7:1 }}>
-            {confirming
-              ? <><div style={{ width:'14px', height:'14px', border:'2px solid #111827', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/> Processing...</>
-              : <><Check style={{ width:'15px', height:'15px' }}/> Use Photo</>
-            }
+          <button onClick={handleConfirm} style={{ flex:1, padding:'11px', background:'#00DBC5', border:'none', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:600, color:'#111827', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
+            <Check style={{ width:'15px', height:'15px' }}/> Use Photo
           </button>
         </div>
         <style>{`input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:#00DBC5;cursor:pointer;border:2px solid #1a1f25;} input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#00DBC5;cursor:pointer;border:2px solid #1a1f25;}`}</style>
@@ -287,6 +248,7 @@ function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
     </div>
   );
 }
+
 
 export default function Messages() {
   const { user } = useAuth();
