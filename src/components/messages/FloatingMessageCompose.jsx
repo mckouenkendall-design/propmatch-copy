@@ -182,13 +182,16 @@ Rules: no bullet points, no em dashes, no markdown. Plain conversational text on
       // ── CREATE / FIND GROUP CHAT ──
       const participantEmails = [myEmail, ...recipients];
       const sortedEmails = [...participantEmails].sort().join(',');
-      const allGroupConvos = await base44.entities.GroupConversation.list('-last_message_time', 200);
-      const existingGroup = allGroupConvos.find(gc => {
-        try {
-          const p = JSON.parse(gc.participant_emails || '[]').sort().join(',');
-          return p === sortedEmails;
-        } catch { return false; }
-      });
+      let existingGroup = null;
+      try {
+        const myGCs = await base44.entities.GroupConversation.filter({ created_by: myEmail });
+        existingGroup = myGCs.find(gc => {
+          try {
+            const p = JSON.parse(gc.participant_emails || '[]').sort().join(',');
+            return p === sortedEmails;
+          } catch { return false; }
+        });
+      } catch { /* no existing */ }
 
       let groupConvoId;
       if (existingGroup) {
