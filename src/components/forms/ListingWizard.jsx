@@ -55,6 +55,7 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
     state: '',
     zip_code: '',
     price: '',
+    price_is_tbd: false,
     size_sqft: '',
     property_details: {},
     amenities: [],
@@ -93,6 +94,10 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
         delete submitData[f];
       }
     });
+
+    // Preserve price_is_tbd boolean explicitly
+    if (formData.price_is_tbd) submitData.price_is_tbd = true;
+    else submitData.price_is_tbd = false;
 
     // If lease_sub is an array (modified_gross tenant expenses), stringify it
     if (Array.isArray(submitData.lease_sub)) {
