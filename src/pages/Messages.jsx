@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import {
   Send, Plus, Paperclip, X, Search, MessageCircle,
-  FileText, Image, File, ChevronLeft, Building2, ExternalLink, Users
+  FileText, Image, File, ChevronLeft, Building2, ExternalLink, Users, Pencil, Check, Camera
 } from 'lucide-react';
 import StartConversationModal from '@/components/messages/StartConversationModal';
 import AgentContactModal from '@/components/shared/AgentContactModal';
@@ -175,6 +175,11 @@ export default function Messages() {
   const [searchQuery, setSearchQuery] = useState('');
   const [pendingAttachment, setPendingAttachment] = useState(null);
   const [viewingPost, setViewingPost] = useState(null); // { post, postType }
+  const [editingGroupName, setEditingGroupName] = useState(false);
+  const [groupNameDraft, setGroupNameDraft]     = useState('');
+  const [showGroupMembers, setShowGroupMembers] = useState(false);
+  const [uploadingGroupPhoto, setUploadingGroupPhoto] = useState(false);
+  const groupPhotoInputRef = React.useRef(null);
   const messagesEndRef = useRef(null);
   const fileInputRef   = useRef(null);
 
@@ -395,6 +400,29 @@ export default function Messages() {
     );
   };
 
+  // ── Group chat management ──────────────────────────────────────────────────
+  const saveGroupName = async () => {
+    if (!groupNameDraft.trim() || !selectedGroupConvoId) return;
+    try {
+      await base44.entities.GroupConversation.update(selectedGroupConvoId, { name: groupNameDraft.trim() });
+      queryClient.invalidateQueries({ queryKey: ['group-convos'] });
+    } catch {}
+    setEditingGroupName(false);
+  };
+
+  const handleGroupPhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedGroupConvoId) return;
+    setUploadingGroupPhoto(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.entities.GroupConversation.update(selectedGroupConvoId, { photo_url: file_url });
+      queryClient.invalidateQueries({ queryKey: ['group-convos'] });
+    } catch {}
+    setUploadingGroupPhoto(false);
+    e.target.value = '';
+  };
+
   return (
     <div style={{ height:'calc(100vh - 70px)', display:'flex', background:'#0A0E13', overflow:'hidden' }}>
 
@@ -512,20 +540,80 @@ export default function Messages() {
         <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
           {/* Thread header */}
-          <div style={{ padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', gap:'12px', background:'#0E1318', flexShrink:0 }}>
+          <div style={{ padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', gap:'12px', background:'#0E1318', flexShrink:0, position:'relative' }}>
             {selectedConvoType === 'group' ? (
-              <div style={{ width:'38px', height:'38px', borderRadius:'50%', background:`${LAVENDER}20`, border:`1px solid ${LAVENDER}40`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                <Users style={{ width:'18px', height:'18px', color:LAVENDER }}/>
+              // Group photo — clickable to change
+              <div style={{ position:'relative', flexShrink:0 }}>
+                <input ref={groupPhotoInputRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleGroupPhotoUpload}/>
+                <div onClick={() => groupPhotoInputRef.current?.click()}
+                  style={{ width:'42px', height:'42px', borderRadius:'50%', background:`${LAVENDER}20`, border:`1px solid ${LAVENDER}40`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', overflow:'hidden', position:'relative', transition:'all 0.2s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor=LAVENDER; e.currentTarget.querySelector('.cam-overlay').style.opacity='1'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor=`${LAVENDER}40`; e.currentTarget.querySelector('.cam-overlay').style.opacity='0'; }}>
+                  {uploadingGroupPhoto ? (
+                    <div style={{ width:'16px', height:'16px', border:`2px solid ${LAVENDER}`, borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+                  ) : selectedGroupConvo?.photo_url ? (
+                    <img src={selectedGroupConvo.photo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                  ) : (
+                    <Users style={{ width:'18px', height:'18px', color:LAVENDER }}/>
+                  )}
+                  <div className="cam-overlay" style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.55)', display:'flex', alignItems:'center', justifyContent:'center', opacity:0, transition:'opacity 0.2s', borderRadius:'50%' }}>
+                    <Camera style={{ width:'14px', height:'14px', color:'white' }}/>
+                  </div>
+                </div>
               </div>
             ) : (
               <Avatar profile={otherProfile} name={otherName} size={38}/>
             )}
+
             <div style={{ flex:1, minWidth:0 }}>
               {selectedConvoType === 'group' ? (
                 <>
-                  <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:500, color:'white', margin:0 }}>{selectedGroupConvo?.name}</p>
-                  <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.35)', margin:0 }}>
-                    {groupParticipants.map(e => profileMap[e]?.full_name || e).join(', ')}
+                  {/* Editable group name */}
+                  {editingGroupName ? (
+                    <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                      <input
+                        value={groupNameDraft}
+                        onChange={e => setGroupNameDraft(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') saveGroupName(); if (e.key === 'Escape') setEditingGroupName(false); }}
+                        autoFocus
+                        style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'15px', fontWeight:500, color:'white', background:'rgba(255,255,255,0.08)', border:`1px solid ${LAVENDER}50`, borderRadius:'6px', padding:'3px 8px', outline:'none', width:'100%', maxWidth:'300px' }}
+                      />
+                      <button onClick={saveGroupName} style={{ background:`${LAVENDER}20`, border:`1px solid ${LAVENDER}40`, borderRadius:'6px', padding:'4px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}>
+                        <Check style={{ width:'13px', height:'13px', color:LAVENDER }}/>
+                      </button>
+                      <button onClick={() => setEditingGroupName(false)} style={{ background:'transparent', border:'none', cursor:'pointer', padding:'4px' }}>
+                        <X style={{ width:'13px', height:'13px', color:'rgba(255,255,255,0.3)' }}/>
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                      <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:500, color:'white', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {selectedGroupConvo?.name}
+                      </p>
+                      <button onClick={() => { setGroupNameDraft(selectedGroupConvo?.name || ''); setEditingGroupName(true); }}
+                        style={{ background:'transparent', border:'none', cursor:'pointer', padding:'3px', display:'flex', alignItems:'center', opacity:0.4, flexShrink:0 }}
+                        onMouseEnter={e => e.currentTarget.style.opacity='1'}
+                        onMouseLeave={e => e.currentTarget.style.opacity='0.4'}>
+                        <Pencil style={{ width:'12px', height:'12px', color:'white' }}/>
+                      </button>
+                    </div>
+                  )}
+                  {/* Clickable member names */}
+                  <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.35)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {groupParticipants.map((e, i) => {
+                      const p = profileMap[e];
+                      return (
+                        <span key={e}>
+                          <span onClick={() => setViewingAgent({ profile: p, email: e })}
+                            style={{ cursor:'pointer', textDecoration:'underline', textDecorationColor:'rgba(255,255,255,0.2)' }}
+                            onMouseEnter={ev => ev.currentTarget.style.color=ACCENT}
+                            onMouseLeave={ev => ev.currentTarget.style.color='rgba(255,255,255,0.35)'}>
+                            {p?.full_name || e.split('@')[0]}
+                          </span>
+                          {i < groupParticipants.length - 1 && ', '}
+                        </span>
+                      );
+                    })}
                   </p>
                 </>
               ) : (
@@ -540,6 +628,7 @@ export default function Messages() {
                 </>
               )}
             </div>
+
             {selectedConvoType === 'dm' && (
               <div style={{ display:'flex', background:'rgba(255,255,255,0.05)', borderRadius:'8px', padding:'3px', gap:'2px' }}>
                 {[{k:'chat',l:'Chat'},{k:'posts',l:`Posts${sharedPosts.length>0?` (${sharedPosts.length})`:''}`}].map(t => (
