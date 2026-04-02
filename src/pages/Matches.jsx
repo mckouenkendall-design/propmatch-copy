@@ -261,10 +261,10 @@ function exportMatchPDF(listing, requirement, matchResult, posterProfile, darkMo
   const propColor = D ? 'rgba(255,255,255,0.9)' : '#111827';
   const agentLogoUrl = posterProfile?.logo_url || '';
   const logoHTML = agentLogoUrl
-    ? `<div style="display:flex;align-items:center;gap:10px">
-        <img src="${agentLogoUrl}" style="height:40px;max-width:160px;object-fit:contain;" />
+    ? `<div style="flex-shrink:0;height:44px;display:flex;align-items:center;">
+        <img src="${agentLogoUrl}" style="max-height:44px;max-width:200px;width:auto;height:auto;object-fit:contain;display:block;" />
       </div>`
-    : `<div style="display:flex;align-items:center;gap:6px">
+    : `<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 13 41 14" width="53" height="18">
           <g transform="translate(20,20)">
             <path d="M -16,0 Q 0,-7 16,0 Q 19,-1.5 22,-5 Q 20,-1 16,0 Q 19,1.5 22,5 Q 20,1 16,0 Q 0,7 -16,0 Z"
@@ -275,7 +275,7 @@ function exportMatchPDF(listing, requirement, matchResult, posterProfile, darkMo
       </div>`;
 
   const photosHTML = listingPhotos.length === 0 ? '' : `
-    <div class="sec" style="break-inside:avoid;page-break-inside:avoid">
+    <div class="sec">
       <div class="sec-h"><div class="sec-dot" style="background:${acc}"></div><span class="sec-t">Property Photos</span></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         ${listingPhotos.map((url, i) => `<div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:16/10;background:${srf2};">
@@ -389,7 +389,7 @@ html,body{background:${bg}!important;color:${textPri};font-family:'Inter',sans-s
 @page{margin:.45in;size:letter}
 body{padding:0}
 .page{max-width:100%;margin:0 auto}
-.hdr{padding:18px 28px;background:${D?'#111820':surface};border-bottom:1px solid ${border};display:flex;align-items:center;justify-content:space-between;gap:16px}
+.hdr{padding:16px 28px;background:${D?'#111820':surface};border-bottom:1px solid ${border};display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:72px}
 .body{padding:22px 28px}
 .sec{margin-bottom:24px}
 .sec-h{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid ${border}}
@@ -937,28 +937,14 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
     <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'20px', transition:'all 0.2s', position:'relative' }}
       onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor=`${myColor}35`;}}
       onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.08)';}}>
-      {(()=>{
-        const il=myIsListing, saveL=il?myPost:best.listing, saveR=il?best.requirement:myPost;
-        const isSaved=savedHook.isSaved(saveL.id,saveR.id);
-        return(
-          <button onClick={e=>{e.stopPropagation();savedHook.toggle(saveL.id,saveR.id);}}
-            style={{ position:'absolute', top:'14px', right:'14px', display:'flex', alignItems:'center', gap:'5px', padding:'4px 10px', background:isSaved?`${ACCENT}15`:'rgba(255,255,255,0.06)', border:`1px solid ${isSaved?ACCENT+'35':'rgba(255,255,255,0.12)'}`, borderRadius:'6px', cursor:'pointer', transition:'all 0.15s' }}
-            onMouseEnter={e=>{e.currentTarget.style.background=isSaved?`${ACCENT}25`:'rgba(255,255,255,0.12)';}}
-            onMouseLeave={e=>{e.currentTarget.style.background=isSaved?`${ACCENT}15`:'rgba(255,255,255,0.06)';}}>
-            {isSaved
-              ? <><BookmarkCheck style={{ width:'11px', height:'11px', color:ACCENT }}/><span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, color:ACCENT }}>Saved</span></>
-              : <><Bookmark style={{ width:'11px', height:'11px', color:'rgba(255,255,255,0.4)' }}/><span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:500, color:'rgba(255,255,255,0.4)' }}>Save</span></>
-            }
-          </button>
-        );
-      })()}
+
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'12px', marginBottom:'14px' }}>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'3px' }}><div style={{ width:'6px',height:'6px',borderRadius:'50%',background:myColor }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:myColor }}>Your {myIsListing?'Listing':'Requirement'}</span></div>
           <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'15px',fontWeight:500,color:'white',margin:'0 0 2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{myPost.title}</h3>
           <p style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:0 }}>{priceStr(myPost,myIsListing)}{myIsListing&&myPost.size_sqft?` · ${parseFloat(myPost.size_sqft).toLocaleString()} SF`:''}{myPost.city?` · ${myPost.city}`:''}</p>
         </div>
-        <div style={{ display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'5px',flexShrink:0,marginRight:'70px' }}>
+        <div style={{ display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'5px',flexShrink:0 }}>
           <div style={{ display:'flex',alignItems:'center',gap:'5px',padding:'4px 10px',background:`${myColor}10`,border:`1px solid ${myColor}25`,borderRadius:'20px' }}>
             <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:700,color:myColor }}>{matches.length}</span>
             <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.35)' }}>{matches.length===1?'match':'matches'}</span>
