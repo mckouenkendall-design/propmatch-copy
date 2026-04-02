@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Search, Sparkles, X, Phone, Mail, User, MapPin, DollarSign, MessageCircle } from 'lucide-react';

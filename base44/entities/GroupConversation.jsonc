@@ -1,0 +1,38 @@
+{
+  "name": "GroupConversation",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Display name of the group conversation"
+    },
+    "participant_emails": {
+      "type": "string",
+      "description": "JSON array of participant email addresses"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Email of the user who created the group conversation"
+    },
+    "last_message": {
+      "type": "string",
+      "description": "Preview of the most recent message"
+    },
+    "last_message_time": {
+      "type": "string",
+      "description": "Timestamp of the most recent message"
+    },
+    "last_message_sender": {
+      "type": "string",
+      "description": "Name or email of the last message sender"
+    },
+    "unread_counts": {
+      "type": "string",
+      "description": "JSON object mapping participant email to unread count"
+    }
+  },
+  "required": [
+    "name",
+    "participant_emails"
+  ]
+}
