@@ -88,6 +88,11 @@
       "type": "number",
       "description": "Price \u2014 total for sale, $/mo for rent, $/SF/yr for lease"
     },
+    "price_is_tbd": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, the price is TBD / negotiable"
+    },
     "size_sqft": {
       "type": "number"
     },
