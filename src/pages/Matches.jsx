@@ -612,19 +612,25 @@ function PostBlock({ post, isListing, label, color, onViewPhotos }) {
   const monthly=showCalc?Math.round((lPrice*lSize)/12):null, annual=showCalc?Math.round(lPrice*lSize):null;
   const brochureUrl=pd?.brochure_url;
   const photoUrl = (() => {
-    // photo_urls lives inside property_details which is already parsed by parseDetails
-    let arr = pd?.photo_urls;
-    if (typeof arr === 'string') { try { arr = JSON.parse(arr); } catch { arr = null; } }
-    if (Array.isArray(arr) && arr.length) return arr;
-    // fallback: check raw post property_details for photo_urls
+    // Helper to safely get photo array from any source
+    const toArr = (v) => {
+      if (Array.isArray(v) && v.length) return v;
+      if (typeof v === 'string') { try { const p = JSON.parse(v); if (Array.isArray(p) && p.length) return p; } catch {} }
+      return null;
+    };
+    // 1. photo_urls from parsed property_details
+    const fromPd = toArr(pd?.photo_urls);
+    if (fromPd) return fromPd;
+    // 2. raw property_details string
     try {
       const raw = typeof post.property_details === 'string' ? JSON.parse(post.property_details) : (post.property_details || {});
-      let rawArr = raw.photo_urls;
-      if (typeof rawArr === 'string') { try { rawArr = JSON.parse(rawArr); } catch { rawArr = null; } }
-      if (Array.isArray(rawArr) && rawArr.length) return rawArr;
+      const fromRaw = toArr(raw.photo_urls);
+      if (fromRaw) return fromRaw;
+      if (raw.photo_url) return [raw.photo_url];
     } catch {}
-    if (pd?.photo_url) return [pd.photo_url];
-    if (post.photo_url) return [post.photo_url];
+    // 3. single photo fallback
+    const single = pd?.photo_url || post.photo_url;
+    if (single) return [single];
     return null;
   })();
   const chips=[
