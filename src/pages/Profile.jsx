@@ -23,7 +23,7 @@ function formatPhone(raw) {
 // ── Circular Crop Modal using react-easy-crop ─────────────────────────────────
 function CropModal({ imageSrc, onConfirm, onCancel }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(0.5);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
   const onCropComplete = useCallback((_, cappx) => {
@@ -75,6 +75,8 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
             aspect={1}
             cropShape="round"
             showGrid={false}
+            minZoom={0.4}
+            maxZoom={3}
             cropSize={{ width: 260, height: 260 }}
             onCropChange={setCrop}
             onZoomChange={setZoom}
@@ -90,7 +92,7 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>Zoom</span>
           <input
             type="range"
-            min={1}
+            min={0.4}
             max={3}
             step={0.01}
             value={zoom}
@@ -98,7 +100,7 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
             style={{
               flex: 1, height: '4px', appearance: 'none',
               borderRadius: '2px', outline: 'none', cursor: 'pointer',
-              background: `linear-gradient(to right, #00DBC5 0%, #00DBC5 ${((zoom - 1) / 2) * 100}%, rgba(255,255,255,0.15) ${((zoom - 1) / 2) * 100}%, rgba(255,255,255,0.15) 100%)`,
+              background: `linear-gradient(to right, #00DBC5 0%, #00DBC5 ${((zoom - 0.4) / 2.6) * 100}%, rgba(255,255,255,0.15) ${((zoom - 0.4) / 2.6) * 100}%, rgba(255,255,255,0.15) 100%)`,
             }}
           />
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.4)', flexShrink: 0, minWidth: '30px', textAlign: 'right' }}>
