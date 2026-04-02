@@ -196,6 +196,7 @@ function PostDetailModal({ post, posterProfile, onClose, onMessage, onViewAgent 
 
 // ── Lightweight match modal for Fish Tank context ────────────────────────────
 function GroupMatchModal({ myPost, matchPost, matchResult, posterProfile, onClose, onMessage }) {
+  const navigate = useNavigate();
   const isListing = myPost.postType === 'listing';
   const myColor   = isListing ? ACCENT : LAVENDER;
   const theirColor = isListing ? LAVENDER : ACCENT;
@@ -277,6 +278,14 @@ function GroupMatchModal({ myPost, matchPost, matchResult, posterProfile, onClos
               </button>
             </div>
           </div>
+          {/* Navigate to full match in My Matches */}
+          <button
+            onClick={() => { onClose(); navigate('/Matches', { state: { openPostId: myPost.id } }); }}
+            style={{ width:'100%', marginTop:'14px', padding:'10px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'rgba(255,255,255,0.5)', cursor:'pointer', transition:'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.08)'; e.currentTarget.style.color='white'; }}
+            onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.04)'; e.currentTarget.style.color='rgba(255,255,255,0.5)'; }}>
+            View Full Match Details in My Matches →
+          </button>
         </div>
       </div>
     </div>
