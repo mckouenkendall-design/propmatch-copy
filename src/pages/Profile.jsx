@@ -35,19 +35,21 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
     try {
       const image = new Image();
       image.src = imageSrc;
-      await new Promise((res) => { image.onload = res; });
+      // Wait for load only if not already complete
+      if (!image.complete || !image.naturalWidth) {
+        await new Promise((res, rej) => { image.onload = res; image.onerror = rej; });
+      }
       const canvas = document.createElement('canvas');
       canvas.width = 400;
       canvas.height = 400;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(
-        image,
-        croppedAreaPixels.x,
-        croppedAreaPixels.y,
-        croppedAreaPixels.width,
-        croppedAreaPixels.height,
-        0, 0, 400, 400
-      );
+      // Clamp crop area — negative/out-of-bounds values from low zoom cause silent failure
+      const sx = Math.max(0, Math.round(croppedAreaPixels.x));
+      const sy = Math.max(0, Math.round(croppedAreaPixels.y));
+      const sw = Math.min(Math.round(croppedAreaPixels.width),  image.naturalWidth  - sx);
+      const sh = Math.min(Math.round(croppedAreaPixels.height), image.naturalHeight - sy);
+      if (sw <= 0 || sh <= 0) return;
+      ctx.drawImage(image, sx, sy, sw, sh, 0, 0, 400, 400);
       canvas.toBlob((blob) => { if (blob) onConfirm(blob); }, 'image/jpeg', 0.92);
     } catch (e) {
       console.error('Crop error:', e);
