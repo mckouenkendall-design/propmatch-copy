@@ -69,11 +69,13 @@ function SectionTitle({ children }) {
     </div>
   );
 }
-// Photo manager — handles multi-photo upload, thumbnails, set-main, reorder, remove
+// Photo manager — drag to reorder, top-left = main, X to remove, upload zone
 function PhotoManager({ details, onPhotosChange }) {
   const ref = useRef();
   const [uploading, setUploading] = React.useState(false);
-  const [dragOver, setDragOver] = React.useState(false);
+  const [dropZoneDrag, setDropZoneDrag] = React.useState(false);
+  const [dragIdx, setDragIdx] = React.useState(null);   // which thumb is being dragged
+  const [overIdx, setOverIdx] = React.useState(null);   // which slot it's hovering over
 
   const urls = React.useMemo(() => {
     const arr = details['photo_urls'];
@@ -95,20 +97,54 @@ function PhotoManager({ details, onPhotosChange }) {
     } finally { setUploading(false); }
   };
 
-  const remove = (idx) => save(urls.filter((_, i) => i !== idx));
-  const setMain = (idx) => { if (idx === 0) return; save([urls[idx], ...urls.filter((_, i) => i !== idx)]); };
+  const remove = (e, idx) => {
+    e.stopPropagation();
+    e.preventDefault();
+    save(urls.filter((_, i) => i !== idx));
+  };
 
-  const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files); };
-  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); };
-  const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); };
+  // File drop on the upload zone
+  const handleZoneDrop = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    setDropZoneDrag(false);
+    if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files);
+  };
+
+  // Thumbnail drag-to-reorder handlers
+  const handleThumbDragStart = (e, idx) => {
+    setDragIdx(idx);
+    e.dataTransfer.effectAllowed = 'move';
+    // Prevent this from triggering the file-drop zone
+    e.dataTransfer.setData('text/plain', String(idx));
+  };
+  const handleThumbDragOver = (e, idx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    setOverIdx(idx);
+  };
+  const handleThumbDrop = (e, targetIdx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const fromIdx = dragIdx;
+    setDragIdx(null); setOverIdx(null);
+    if (fromIdx == null || fromIdx === targetIdx) return;
+    const next = [...urls];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(targetIdx, 0, moved);
+    save(next);
+  };
+  const handleThumbDragEnd = () => { setDragIdx(null); setOverIdx(null); };
 
   return (
-    <Field label="Photos" hint="First photo is the main photo shown in matches">
-      {/* Drop zone */}
+    <Field label="Photos" hint="Top-left photo is the main photo · Drag to reorder">
+      {/* Upload drop zone */}
       <div
-        onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}
+        onDrop={handleZoneDrop}
+        onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDropZoneDrag(true); }}
+        onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setDropZoneDrag(false); }}
         onClick={() => ref.current.click()}
-        style={{ border: `2px dashed ${dragOver ? ACCENT : urls.length ? ACCENT+'80' : 'rgba(255,255,255,0.2)'}`, borderRadius: '12px', padding: '20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s', background: dragOver ? `${ACCENT}08` : 'rgba(255,255,255,0.03)' }}>
+        style={{ border:`2px dashed ${dropZoneDrag?ACCENT:urls.length?ACCENT+'80':'rgba(255,255,255,0.2)'}`, borderRadius:'12px', padding:'18px', textAlign:'center', cursor:'pointer', transition:'all 0.15s', background:dropZoneDrag?`${ACCENT}08`:'rgba(255,255,255,0.03)' }}>
         <input ref={ref} type="file" accept="image/*" multiple className="hidden" onChange={e => uploadFiles(e.target.files)} />
         {uploading
           ? <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.4)', margin:0 }}>Uploading…</p>
@@ -122,36 +158,45 @@ function PhotoManager({ details, onPhotosChange }) {
         }
       </div>
 
-      {/* Thumbnails */}
+      {/* Thumbnails — drag to reorder */}
       {urls.length > 0 && (
         <div style={{ marginTop:'10px' }}>
-          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.3)', margin:'0 0 8px' }}>Click a photo to make it main · X to remove</p>
+          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.3)', margin:'0 0 8px' }}>
+            Drag photos to reorder · Top-left is main · X to remove
+          </p>
           <div style={{ display:'flex', flexWrap:'wrap', gap:'8px' }}>
-            {urls.map((url, idx) => (
-              <div key={url+idx}
-                onClick={() => setMain(idx)}
-                style={{ position:'relative', width:'88px', height:'88px', borderRadius:'9px', overflow:'hidden', border:`2px solid ${idx===0?ACCENT:'rgba(255,255,255,0.12)'}`, flexShrink:0, cursor:idx===0?'default':'pointer', transition:'border-color 0.15s', boxShadow:idx===0?`0 0 10px ${ACCENT}50`:'none' }}>
-                <img src={url} alt={`Photo ${idx+1}`} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                {/* Hover overlay for non-main */}
-                {idx !== 0 && (
-                  <div className="photo-hover-overlay" style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0)', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.15s' }}
-                    onMouseEnter={e=>{ e.currentTarget.style.background='rgba(0,0,0,0.45)'; e.currentTarget.querySelector('span').style.opacity='1'; }}
-                    onMouseLeave={e=>{ e.currentTarget.style.background='rgba(0,0,0,0)'; e.currentTarget.querySelector('span').style.opacity='0'; }}>
-                    <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, color:'white', opacity:0, transition:'opacity 0.15s', textAlign:'center', lineHeight:1.3 }}>Set<br/>main</span>
-                  </div>
-                )}
-                {/* MAIN badge */}
-                {idx === 0 && (
-                  <div style={{ position:'absolute', bottom:'4px', left:'4px', fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, color:'#111827', background:ACCENT, borderRadius:'3px', padding:'2px 5px' }}>MAIN</div>
-                )}
-                {/* Remove button */}
-                <button type="button"
-                  onClick={e => { e.stopPropagation(); remove(idx); }}
-                  style={{ position:'absolute', top:'3px', right:'3px', width:'20px', height:'20px', borderRadius:'50%', background:'rgba(0,0,0,0.75)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', zIndex:2 }}>
-                  <X style={{ width:'10px', height:'10px', color:'white' }} />
-                </button>
-              </div>
-            ))}
+            {urls.map((url, idx) => {
+              const isMain = idx === 0;
+              const isDragging = dragIdx === idx;
+              const isOver = overIdx === idx && dragIdx !== idx;
+              return (
+                <div key={url+idx}
+                  draggable
+                  onDragStart={e => handleThumbDragStart(e, idx)}
+                  onDragOver={e => handleThumbDragOver(e, idx)}
+                  onDrop={e => handleThumbDrop(e, idx)}
+                  onDragEnd={handleThumbDragEnd}
+                  style={{
+                    position:'relative', width:'88px', height:'88px', borderRadius:'9px', overflow:'hidden',
+                    border:`2px solid ${isOver?'white':isMain?ACCENT:'rgba(255,255,255,0.12)'}`,
+                    flexShrink:0, cursor:'grab', transition:'all 0.15s',
+                    opacity: isDragging ? 0.4 : 1,
+                    boxShadow: isMain?`0 0 10px ${ACCENT}50`:isOver?'0 0 0 2px white':'none',
+                    transform: isOver ? 'scale(1.05)' : 'scale(1)',
+                  }}>
+                  <img src={url} alt={`Photo ${idx+1}`} style={{ width:'100%', height:'100%', objectFit:'cover', pointerEvents:'none' }} />
+                  {isMain && (
+                    <div style={{ position:'absolute', bottom:'4px', left:'4px', fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, color:'#111827', background:ACCENT, borderRadius:'3px', padding:'2px 5px', pointerEvents:'none' }}>MAIN</div>
+                  )}
+                  <button type="button"
+                    onMouseDown={e => { e.stopPropagation(); }}
+                    onClick={e => remove(e, idx)}
+                    style={{ position:'absolute', top:'3px', right:'3px', width:'20px', height:'20px', borderRadius:'50%', background:'rgba(0,0,0,0.75)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', zIndex:2 }}>
+                    <X style={{ width:'10px', height:'10px', color:'white' }} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
