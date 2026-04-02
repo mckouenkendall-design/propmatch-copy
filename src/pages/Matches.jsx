@@ -1089,4 +1089,262 @@ export default function Matches() {
       })()}
     </div>
   );
+}// ─── Export PDF ─────────────────────────────────────────────────
+function exportMatchPDF(listing, requirement, matchResult, posterProfile, darkMode = false, includeAgent = true) {
+  const { totalScore, breakdown } = matchResult;
+  const label = getScoreLabel(totalScore) || '';
+  const sc = totalScore >= 70 ? '#00DBC5' : totalScore >= 50 ? '#F59E0B' : '#F97316';
+  const lPrice = priceStr(listing, true) || '—';
+  const rPrice = priceStr(requirement, false) || '—';
+  const lLoc = [listing.city, listing.state].filter(Boolean).join(', ') || '—';
+  const rCities = (() => {
+    let c = requirement.cities;
+    if (typeof c === 'string') { try { c = JSON.parse(c); } catch { c = c.split(',').map(x=>x.trim()); } }
+    return Array.isArray(c) ? c.join(', ') : c || 'Any';
+  })();
+  const agentName    = posterProfile?.full_name || 'Unknown Agent';
+  const agentCompany = posterProfile?.brokerage_name || '';
+  const agentEmail   = posterProfile?.contact_email || posterProfile?.user_email || '';
+  const agentPhone   = posterProfile?.phone || '';
+  const now = new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+
+  const listingPhotos = (() => {
+    try {
+      const pd = typeof listing.property_details === 'string' ? JSON.parse(listing.property_details) : (listing.property_details || {});
+      const arr = pd.photo_urls;
+      if (Array.isArray(arr) && arr.length) return arr;
+      if (pd.photo_url) return [pd.photo_url];
+    } catch {}
+    return [];
+  })();
+
+  const D = darkMode;
+  const bg      = D ? '#0e1318' : '#ffffff';
+  const surface = D ? '#161d25' : '#f9fafb';
+  const srf2    = D ? '#1b2534' : '#f3f4f6';
+  const border  = D ? 'rgba(255,255,255,0.09)' : '#e5e7eb';
+  const textPri = D ? 'rgba(255,255,255,0.9)'  : '#111827';
+  const textSub = D ? 'rgba(255,255,255,0.5)'  : '#6b7280';
+  const textMut = D ? 'rgba(255,255,255,0.28)' : '#9ca3af';
+  const track   = D ? 'rgba(255,255,255,0.07)' : '#e5e7eb';
+  const cardBg  = D ? '#161d25' : '#f9fafb';
+  const acc = '#00DBC5', lav = '#818cf8';
+
+  const propColor = D ? 'rgba(255,255,255,0.9)' : '#111827';
+  const agentLogoUrl = posterProfile?.logo_url || '';
+  const logoHTML = agentLogoUrl
+    ? `<div style="display:flex;align-items:center;gap:10px">
+        <img src="${agentLogoUrl}" style="height:40px;max-width:160px;object-fit:contain;" />
+      </div>`
+    : `<div style="display:flex;align-items:center;gap:6px">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 13 41 14" width="53" height="18">
+          <g transform="translate(20,20)">
+            <path d="M -16,0 Q 0,-7 16,0 Q 19,-1.5 22,-5 Q 20,-1 16,0 Q 19,1.5 22,5 Q 20,1 16,0 Q 0,7 -16,0 Z"
+              fill="none" stroke="#00DBC5" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+          </g>
+        </svg>
+        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:300;color:${propColor}">Prop<span style="font-weight:700;color:#00DBC5">Match</span></span>
+      </div>`;
+
+  const photosHTML = listingPhotos.length === 0 ? '' : `
+    <div class="sec" style="break-inside:avoid;page-break-inside:avoid">
+      <div class="sec-h"><div class="sec-dot" style="background:${acc}"></div><span class="sec-t">Property Photos</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        ${listingPhotos.map((url, i) => `<div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:16/10;background:${srf2};">
+          <img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block;" />
+          ${i === 0 ? `<div style="position:absolute;top:8px;left:8px;background:${acc};color:#111827;font-family:'Inter',sans-serif;font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;">MAIN PHOTO</div>` : ''}
+        </div>`).join('')}
+      </div>
+    </div>`;
+
+  const R = 40, circ = 2 * Math.PI * R, dash = (totalScore / 100) * circ;
+  const scoreSVG = `<div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+<div style="position:relative;width:100px;height:100px">
+<svg width="100" height="100" viewBox="0 0 100 100" style="transform:rotate(-90deg)">
+  <circle cx="50" cy="50" r="${R}" fill="none" stroke="${track}" stroke-width="10"/>
+  <circle cx="50" cy="50" r="${R}" fill="none" stroke="${sc}" stroke-width="10"
+    stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round"/>
+</svg>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+  <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:700;color:${sc};line-height:1">${totalScore}</span>
+  <span style="font-family:'Inter',sans-serif;font-size:9px;color:${textMut};letter-spacing:0.1em;margin-top:2px">MATCH</span>
+</div>
+</div>
+${label ? `<span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${sc};background:${sc}18;border:1px solid ${sc}35;border-radius:20px;padding:4px 16px">${label}</span>` : ''}
+</div>`;
+
+  const whyFits = breakdown.map(b => {
+    const icon = b.score >= 70 ? '&#10003;' : b.score >= 50 ? '&#126;' : '&#8226;';
+    const color = b.score >= 70 ? acc : b.score >= 50 ? '#F59E0B' : '#F97316';
+    const bc = b.score >= 70 ? '#00DBC5' : b.score >= 50 ? '#F59E0B' : '#F97316';
+    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid ${border};break-inside:avoid">
+  <span style="font-size:14px;color:${color};flex-shrink:0;margin-top:1px">${icon}</span>
+  <div style="flex:1">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="font-size:13px;font-weight:600;color:${textPri};font-family:'Inter',sans-serif">${b.category}</span>
+      <span style="font-size:13px;font-weight:700;color:${bc};font-family:'Inter',sans-serif">${b.score}%</span>
+    </div>
+    <div style="height:5px;background:${track};border-radius:3px;overflow:hidden">
+      <div style="height:100%;width:${b.score}%;background:${bc};border-radius:3px"></div>
+    </div>
+    ${b.details ? `<div style="font-size:11px;color:${textMut};margin-top:3px;font-family:'Inter',sans-serif">${b.details}</div>` : ''}
+  </div>
+</div>`;
+  }).join('');
+
+  const compFields = [];
+  if (listing.price || requirement.min_price || requirement.max_price)
+    compFields.push({ label:'Price / Budget', lv:lPrice, rv:rPrice });
+  if (listing.size_sqft || requirement.min_size_sqft || requirement.max_size_sqft)
+    compFields.push({ label:'Size', lv:listing.size_sqft?`${parseFloat(listing.size_sqft).toLocaleString()} SF`:'—', rv:(requirement.min_size_sqft||requirement.max_size_sqft)?`${fmtN(requirement.min_size_sqft)||'0'}–${fmtN(requirement.max_size_sqft)||'∞'} SF`:'—' });
+  compFields.push({ label:'Location', lv:lLoc, rv:rCities });
+  compFields.push({ label:'Property Type', lv:PT[listing.property_type]||listing.property_type, rv:PT[requirement.property_type]||requirement.property_type });
+  compFields.push({ label:'Transaction', lv:TX[listing.transaction_type]||listing.transaction_type, rv:TX[requirement.transaction_type]||requirement.transaction_type });
+  const compRows = compFields.map((f,i) => `<tr style="background:${i%2===0?srf2:surface}">
+  <td style="padding:9px 14px;font-size:12px;font-weight:600;color:${textMut};font-family:'Inter',sans-serif;white-space:nowrap">${f.label}</td>
+  <td style="padding:9px 14px;font-size:13px;color:${acc};font-family:'Inter',sans-serif;font-weight:500">${f.lv}</td>
+  <td style="padding:9px 14px;font-size:13px;color:${lav};font-family:'Inter',sans-serif;font-weight:500">${f.rv}</td>
+</tr>`).join('');
+
+  const lp = parseFloat(listing.price), ls = parseFloat(listing.size_sqft);
+  const isLease = listing.transaction_type === 'lease' || listing.transaction_type === 'sublease';
+  const monthlyTotal = isLease && lp && ls ? Math.round((lp * ls) / 12) : null;
+  const annualTotal  = isLease && lp && ls ? Math.round(lp * ls) : null;
+  const financialHTML = monthlyTotal ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+      <div style="background:${acc}12;border:1px solid ${acc}25;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-family:'Inter',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${textMut};margin-bottom:4px">Monthly Total</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:700;color:${acc}">$${monthlyTotal.toLocaleString()}/mo</div>
+      </div>
+      <div style="background:${srf2};border:1px solid ${border};border-radius:8px;padding:12px;text-align:center">
+        <div style="font-family:'Inter',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${textMut};margin-bottom:4px">Annual Total</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:700;color:${textPri}">$${annualTotal.toLocaleString()}/yr</div>
+      </div>
+    </div>` : '';
+
+  const agentSection = (!includeAgent) ? '' : `
+    <div class="sec" style="break-inside:avoid">
+      <div class="sec-h"><div class="sec-dot" style="background:${lav}"></div><span class="sec-t">Your Agent</span></div>
+      <div style="background:${cardBg};border:1px solid ${border};border-radius:12px;padding:20px;display:flex;align-items:center;gap:16px">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,${lav},${acc});display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:white;flex-shrink:0;font-family:'Plus Jakarta Sans',sans-serif">${agentName[0]?.toUpperCase()||'A'}</div>
+        <div style="flex:1">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:600;color:${textPri};margin-bottom:2px">${agentName}</div>
+          ${agentCompany?`<div style="font-family:'Inter',sans-serif;font-size:13px;color:${textSub};margin-bottom:6px">${agentCompany}</div>`:''}
+          <div style="display:flex;gap:20px;flex-wrap:wrap">
+            ${agentEmail?`<span style="font-family:'Inter',sans-serif;font-size:13px;color:${acc}">&#9993; ${agentEmail}</span>`:''}
+            ${agentPhone?`<span style="font-family:'Inter',sans-serif;font-size:13px;color:${textSub}">&#9990; ${agentPhone}</span>`:''}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:'Inter',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${textMut};margin-bottom:6px">Next Step</div>
+          <div style="font-family:'Inter',sans-serif;font-size:12px;color:${textSub};max-width:160px;line-height:1.5">Reply to this email or call to schedule a showing</div>
+        </div>
+      </div>
+    </div>`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PropMatch — Property Match Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:${bg}!important;color:${textPri};font-family:'Inter',sans-serif}
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+  html,body{background:${bg}!important;background-color:${bg}!important}
+  .hdr{background:${D?'#111820':surface}!important;background-color:${D?'#111820':surface}!important}
+  .np{display:none!important}
+}
+@page{margin:.45in;size:letter}
+body{padding:0}
+.page{max-width:100%;margin:0 auto}
+.hdr{padding:18px 28px;background:${D?'#111820':surface};border-bottom:1px solid ${border};display:flex;align-items:center;justify-content:space-between;gap:16px}
+.body{padding:22px 28px}
+.sec{margin-bottom:24px}
+.sec-h{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid ${border}}
+.sec-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sec-t{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:${textMut};font-family:'Inter',sans-serif}
+table{width:100%;border-collapse:collapse;border:1px solid ${border};border-radius:10px;overflow:hidden}
+th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;background:${srf2};text-align:left;font-family:'Inter',sans-serif;color:${textMut}}
+.ftr{padding:14px 28px;border-top:1px solid ${border};display:flex;justify-content:space-between;background:${surface};margin-top:8px}
+.ftr p{font-size:11px;color:${textMut};font-family:'Inter',sans-serif}
+.pb{position:fixed;bottom:20px;right:20px;background:${acc};color:#111827;border:none;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px ${acc}40;font-family:'Plus Jakarta Sans',sans-serif}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hdr">
+    <div>${logoHTML}</div>
+    <div style="text-align:center">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:600;color:${textPri}">Property Match Report</div>
+      <div style="font-family:'Inter',sans-serif;font-size:12px;color:${textSub};margin-top:2px">Prepared for your review &middot; ${now}</div>
+    </div>
+    <div style="display:inline-flex;align-items:center;gap:6px;background:${sc}15;border:1px solid ${sc}30;border-radius:20px;padding:6px 14px">
+      <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700;color:${sc}">${totalScore}%</span>
+      ${label?`<span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:${sc}">${label}</span>`:''}
+    </div>
+  </div>
+
+  <div style="padding:24px 28px;background:${surface};border-bottom:1px solid ${border}">
+    <div style="display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start">
+      <div>
+        <div style="font-family:'Inter',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${acc};margin-bottom:6px">Property Available</div>
+        <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:600;color:${textPri};margin-bottom:8px;line-height:1.2">${listing.title||'Property Listing'}</h1>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px">
+          ${lLoc!=='—'?`<span style="font-family:'Inter',sans-serif;font-size:13px;color:${textSub}">&#128205; ${lLoc}</span>`:''}
+          ${listing.size_sqft?`<span style="font-family:'Inter',sans-serif;font-size:13px;color:${textSub}">&middot; ${parseFloat(listing.size_sqft).toLocaleString()} SF</span>`:''}
+          ${listing.transaction_type?`<span style="font-family:'Inter',sans-serif;font-size:13px;color:${textSub}">&middot; ${TX[listing.transaction_type]||listing.transaction_type}</span>`:''}
+        </div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:700;color:${acc}">${lPrice}</div>
+        ${financialHTML}
+      </div>
+      <div>${scoreSVG}</div>
+    </div>
+    ${listing.description?`<div style="margin-top:14px;padding:12px 16px;background:${D?'rgba(255,255,255,0.04)':srf2};border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;color:${textSub};line-height:1.6">${listing.description}</div>`:''}
+  </div>
+
+  <div class="body">
+    ${photosHTML}
+
+    <div class="sec">
+      <div class="sec-h"><div class="sec-dot" style="background:${sc}"></div><span class="sec-t">How This Property Fits Your Needs</span></div>
+      <div style="background:${cardBg};border:1px solid ${border};border-radius:10px;padding:4px 16px">
+        ${whyFits}
+      </div>
+    </div>
+
+    <div class="sec" style="break-inside:avoid;page-break-inside:avoid">
+      <div class="sec-h"><div class="sec-dot" style="background:${lav}"></div><span class="sec-t">Requirements vs. This Property</span></div>
+      <table>
+        <thead><tr>
+          <th style="width:130px">Category</th>
+          <th style="color:${acc}">This Property Offers</th>
+          <th style="color:${lav}">Your Client Needs</th>
+        </tr></thead>
+        <tbody>${compRows}</tbody>
+      </table>
+    </div>
+
+    ${agentSection}
+  </div>
+
+  <div class="ftr">
+    <p>Generated by <strong>prop-match.ai</strong></p>
+    <p>Match scores are analytical estimates. Verify all details before transacting.</p>
+  </div>
+</div>
+<button class="pb np" onclick="document.fonts.ready.then(()=>window.print())">&#128424; Print / Save PDF</button>
+${D ? `<div style="position:fixed;bottom:70px;right:20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;font-family:'Inter',sans-serif;font-size:11px;color:rgba(255,255,255,0.5);max-width:220px;text-align:center" class="np">Tip: Enable "Background graphics" in print dialog for dark mode</div>` : ''}
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=960,height=780');
+  if (!win) { alert('Please allow popups to export the PDF.'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
 }
