@@ -193,7 +193,7 @@ export default function Messages() {
 
   const { data: allGroupConvos = [] } = useQuery({
     queryKey: ['group-convos'],
-    queryFn: () => base44.entities.GroupConversation.list('-last_message_time', 200),
+    queryFn: () => base44.entities.GroupConversation.filter({}).catch(() => []),
     enabled: !!user?.email,
     refetchInterval: 5000,
   });
