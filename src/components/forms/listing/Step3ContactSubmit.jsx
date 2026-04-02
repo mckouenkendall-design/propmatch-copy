@@ -34,81 +34,107 @@ const VISIBILITY_OPTIONS = [
   { value: 'private',   label: 'Private (Invite Only)', desc: 'Direct access link sent to a specific person' },
 ];
 
-// ─── Private recipient picker — search by name, username, or email ────────────
-function PrivateRecipientPicker({ value, onChange }) {
+// ─── Reusable agent row with checkbox ─────────────────────────────────────────
+function AgentCheckRow({ profile, selected, onToggle }) {
+  const [hov, setHov] = React.useState(false);
+  return (
+    <div onClick={() => onToggle(profile.user_email)}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ display:'flex', alignItems:'center', gap:'10px', padding:'9px 12px', borderRadius:'9px', cursor:'pointer', background:selected?`${ACCENT}10`:'transparent', transition:'background 0.1s' }}
+      onMouseEnterCapture={e => { if(!selected) e.currentTarget.style.background='rgba(255,255,255,0.04)'; }}
+      onMouseLeaveCapture={e => { if(!selected) e.currentTarget.style.background=selected?`${ACCENT}10`:'transparent'; }}>
+      <div style={{ width:'18px', height:'18px', borderRadius:'5px', flexShrink:0, border:`2px solid ${selected?ACCENT:hov?'rgba(255,255,255,0.4)':'rgba(255,255,255,0.2)'}`, background:selected?ACCENT:'transparent', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}>
+        {selected && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 6 4.5 8.5 10 3.5"/></svg>}
+      </div>
+      <div style={{ width:'32px', height:'32px', borderRadius:'50%', background:ACCENT, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'13px', fontWeight:700 }}>
+        {profile.profile_photo_url ? <img src={profile.profile_photo_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : (profile.full_name||profile.user_email||'?')[0].toUpperCase()}
+      </div>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{profile.full_name || profile.user_email}</span>
+          {profile.username && <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', flexShrink:0 }}>@{profile.username}</span>}
+        </div>
+        {profile.brokerage_name && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:0 }}>{profile.brokerage_name}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Private recipient picker ─────────────────────────────────────────────────
+function PrivateRecipientPicker({ value, onChange, currentUserEmail }) {
   const [query, setQuery] = useState('');
-  const [open, setOpen]   = useState(false);
 
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles-picker'],
     queryFn: () => base44.entities.UserProfile.list(),
   });
 
-  const filtered = allProfiles.filter(p =>
-    (p.full_name    || '').toLowerCase().includes(query.toLowerCase()) ||
-    (p.username     || '').toLowerCase().includes(query.toLowerCase()) ||
-    (p.user_email   || '').toLowerCase().includes(query.toLowerCase()) ||
-    (p.brokerage_name || '').toLowerCase().includes(query.toLowerCase())
-  ).slice(0, 20);
+  // People you already have conversations with — shown first
+  const { data: conversations = [] } = useQuery({
+    queryKey: ['conversations-picker', currentUserEmail],
+    queryFn: async () => {
+      if (!currentUserEmail) return [];
+      const [c1, c2] = await Promise.all([
+        base44.entities.Conversation.filter({ participant_1: currentUserEmail }),
+        base44.entities.Conversation.filter({ participant_2: currentUserEmail }),
+      ]);
+      return [...c1, ...c2];
+    },
+    enabled: !!currentUserEmail,
+  });
 
-  const selected = allProfiles.find(p => p.user_email === value);
+  const knownEmails = new Set(conversations.map(c =>
+    c.participant_1 === currentUserEmail ? c.participant_2 : c.participant_1
+  ));
+
+  const allFiltered = allProfiles.filter(p =>
+    p.user_email !== currentUserEmail && (
+      !query ||
+      (p.full_name      || '').toLowerCase().includes(query.toLowerCase()) ||
+      (p.username       || '').toLowerCase().includes(query.toLowerCase()) ||
+      (p.user_email     || '').toLowerCase().includes(query.toLowerCase()) ||
+      (p.brokerage_name || '').toLowerCase().includes(query.toLowerCase())
+    )
+  );
+
+  // Sort: known contacts first, then rest
+  const sorted = [
+    ...allFiltered.filter(p => knownEmails.has(p.user_email)),
+    ...allFiltered.filter(p => !knownEmails.has(p.user_email)),
+  ].slice(0, 25);
 
   return (
-    <div style={{ position:'relative' }}>
-      {selected ? (
-        <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 12px', background:'rgba(0,219,197,0.08)', border:`1px solid ${ACCENT}35`, borderRadius:'8px' }}>
-          <div style={{ width:'28px', height:'28px', borderRadius:'50%', background:ACCENT, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'12px', fontWeight:700 }}>
-            {selected.profile_photo_url
-              ? <img src={selected.profile_photo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
-              : (selected.full_name||selected.user_email||'?')[0].toUpperCase()}
-          </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:600, color:'white', margin:0 }}>{selected.full_name || selected.user_email}</p>
-            {selected.username && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:0 }}>@{selected.username}</p>}
-          </div>
-          <button type="button" onClick={() => { onChange(''); setQuery(''); }}
-            style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, display:'flex' }}>
-            <X style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.4)' }}/>
-          </button>
-        </div>
-      ) : (
-        <div style={{ position:'relative' }}>
-          <Search style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', width:'13px', height:'13px', color:'rgba(255,255,255,0.35)', pointerEvents:'none' }}/>
-          <input
-            value={query}
-            onChange={e => { setQuery(e.target.value); setOpen(true); }}
-            onFocus={() => setOpen(true)}
-            placeholder="Search by name, @username, or email..."
-            style={{ width:'100%', padding:'9px 9px 9px 30px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white', outline:'none', boxSizing:'border-box' }}
-          />
-        </div>
-      )}
-      {open && !selected && query && (
-        <div style={{ position:'absolute', top:'100%', left:0, right:0, marginTop:'4px', background:'#1a1f25', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'8px', zIndex:50, maxHeight:'200px', overflowY:'auto', boxShadow:'0 8px 24px rgba(0,0,0,0.4)' }}>
-          {filtered.length === 0 ? (
-            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.35)', padding:'12px', margin:0 }}>No agents found</p>
-          ) : filtered.map(p => (
-            <div key={p.user_email}
-              onClick={() => { onChange(p.user_email); setOpen(false); setQuery(''); }}
-              style={{ display:'flex', alignItems:'center', gap:'8px', padding:'10px 12px', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.05)' }}
-              onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.05)'}
-              onMouseLeave={e => e.currentTarget.style.background='transparent'}>
-              <div style={{ width:'28px', height:'28px', borderRadius:'50%', background:ACCENT, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'11px', fontWeight:700 }}>
-                {p.profile_photo_url
-                  ? <img src={p.profile_photo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
-                  : (p.full_name||p.user_email||'?')[0].toUpperCase()}
-              </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:'5px' }}>
-                  <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'white' }}>{p.full_name || p.user_email}</span>
-                  {p.username && <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)' }}>@{p.username}</span>}
-                </div>
-                {p.brokerage_name && <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>{p.brokerage_name}</span>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+    <div>
+      {/* Search input — autoComplete off kills browser autofill */}
+      <div style={{ position:'relative', marginBottom:'8px' }}>
+        <Search style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', width:'13px', height:'13px', color:'rgba(255,255,255,0.35)', pointerEvents:'none' }}/>
+        <input
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search by name, @username, or email..."
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck="false"
+          name="propmatch-private-recipient"
+          style={{ width:'100%', padding:'9px 9px 9px 30px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white', outline:'none', boxSizing:'border-box' }}
+        />
+      </div>
+      {/* Agent list */}
+      <div style={{ maxHeight:'220px', overflowY:'auto', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.02)', padding:'4px' }}>
+        {sorted.length === 0 ? (
+          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.3)', padding:'16px', textAlign:'center', margin:0 }}>No agents found</p>
+        ) : (
+          <>
+            {!query && knownEmails.size > 0 && (
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.3)', padding:'6px 12px 2px', margin:0 }}>Recent</p>
+            )}
+            {sorted.map(p => (
+              <AgentCheckRow key={p.user_email} profile={p} selected={value === p.user_email} onToggle={() => onChange(value === p.user_email ? '' : p.user_email)}/>
+            ))}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -209,28 +235,37 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
       </Field>
 
       {visibility === 'team' && (
-        <Field label="Select Networking Group(s)" hint="Search and select Fish Tanks you belong to">
-          <div className="relative">
-            <Input
-              value={groupSearchInput || data.visibility_groups || ''}
-              onChange={e => { setGroupSearchInput(e.target.value); update({ visibility_groups: e.target.value }); setGroupsDropdownOpen(true); }}
-              onFocus={() => setGroupsDropdownOpen(true)}
-              placeholder="Search your Fish Tanks..."
-            />
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'rgba(255,255,255,0.5)' }} />
-            {groupsDropdownOpen && filteredGroups.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 rounded-lg shadow-lg" style={{ background: '#0E1318', border: '1px solid rgba(255,255,255,0.2)', maxHeight: '200px', overflowY: 'auto' }}>
-                {filteredGroups.map(group => (
-                  <button key={group.id} type="button" onClick={() => handleGroupSelect(group.name)}
-                    className="w-full px-4 py-2.5 text-left text-sm"
-                    style={{ color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,219,197,0.1)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                    {group.name}
-                  </button>
-                ))}
-              </div>
-            )}
+        <Field label="Select Fish Tank(s)" hint="Your post will only be visible in the selected tanks">
+          <div style={{ maxHeight:'220px', overflowY:'auto', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.02)', padding:'4px' }}>
+            {userGroups.length === 0 ? (
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.3)', padding:'16px', textAlign:'center', margin:0 }}>You haven't joined any Fish Tanks yet</p>
+            ) : userGroups.map(group => {
+              const selectedIds = (data.visibility_groups || '').split(',').map(s=>s.trim()).filter(Boolean);
+              const isSel = selectedIds.includes(group.id);
+              const toggleGroup = () => {
+                const next = isSel
+                  ? selectedIds.filter(id => id !== group.id)
+                  : [...selectedIds, group.id];
+                update({ visibility_groups: next.join(',') });
+              };
+              return (
+                <div key={group.id} onClick={toggleGroup}
+                  style={{ display:'flex', alignItems:'center', gap:'10px', padding:'9px 12px', borderRadius:'9px', cursor:'pointer', background:isSel?`${ACCENT}10`:'transparent', transition:'background 0.1s' }}
+                  onMouseEnter={e => { if(!isSel) e.currentTarget.style.background='rgba(255,255,255,0.04)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background=isSel?`${ACCENT}10`:'transparent'; }}>
+                  <div style={{ width:'18px', height:'18px', borderRadius:'5px', flexShrink:0, border:`2px solid ${isSel?ACCENT:'rgba(255,255,255,0.2)'}`, background:isSel?ACCENT:'transparent', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}>
+                    {isSel && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 6 4.5 8.5 10 3.5"/></svg>}
+                  </div>
+                  <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:`${ACCENT}20`, border:`1px solid ${ACCENT}30`, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <span style={{ fontSize:'14px' }}>🐟</span>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'white', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.name}</p>
+                    {group.location && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:0 }}>{group.location}</p>}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Field>
       )}
@@ -240,6 +275,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
           <PrivateRecipientPicker
             value={data.visibility_recipient_email || ''}
             onChange={email => update({ visibility_recipient_email: email })}
+            currentUserEmail={currentUserEmail}
           />
         </Field>
       )}
