@@ -188,7 +188,7 @@ function removeBackground(imgElement, tolerance = 30) {
   });
 }
 
-function LogoUploader({ currentUrl, onSave, onRemove, editing = true }) {
+function LogoUploader({ currentUrl, onSave, onRemove, editing = true, onAutoSave }) {
   const [processing, setProcessing] = React.useState(false);
   const [preview, setPreview] = React.useState(null); // pending preview before save
   const ACCENT = '#00DBC5';
@@ -199,6 +199,7 @@ function LogoUploader({ currentUrl, onSave, onRemove, editing = true }) {
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       onSave(file_url);
+      if (onAutoSave) await onAutoSave(file_url);
       setPreview(null);
     } catch { console.error('Upload failed'); }
     finally { setProcessing(false); }
@@ -212,12 +213,12 @@ function LogoUploader({ currentUrl, onSave, onRemove, editing = true }) {
       img.crossOrigin = 'anonymous';
       img.onload = async () => {
         const dataUrl = await removeBackground(img);
-        // Convert dataUrl to file and upload
         const res = await fetch(dataUrl);
         const blob = await res.blob();
         const file = new File([blob], 'logo-transparent.png', { type: 'image/png' });
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
         onSave(file_url);
+        if (onAutoSave) await onAutoSave(file_url);
         setProcessing(false);
       };
       img.onerror = () => { setProcessing(false); };
@@ -286,30 +287,60 @@ export default function Profile() {
     tiktok: '', facebook: '', profile_photo_url: '',
   });
 
+  // Load UserProfile entity to get logo_url and other stored fields
   useEffect(() => {
-    if (user) {
-      setFormData({
-        full_name: user.full_name || '',
-        username: user.username || '',
-        contact_email: user.contact_email || '',
-        phone: user.phone || '',
-        state: user.state || '',
-        brokerage_name: user.brokerage_name || '',
-        brokerage_address: user.brokerage_address || '',
-        logo_url: user.logo_url || '',
-        bio: user.bio || '',
-        years_experience: user.years_experience || '',
-        specialties: user.specialties || '',
-        certifications: user.certifications || '',
-        languages: user.languages || '',
-        linkedin: user.linkedin || '',
-        website: user.website || '',
-        instagram: user.instagram || '',
-        tiktok: user.tiktok || '',
-        facebook: user.facebook || '',
-        profile_photo_url: user.profile_photo_url || '',
-      });
-    }
+    if (!user?.email) return;
+    const load = async () => {
+      try {
+        const profiles = await base44.entities.UserProfile.filter({ user_email: user.email });
+        const profile = profiles?.[0] || {};
+        setFormData({
+          full_name: user.full_name || '',
+          username: user.username || '',
+          contact_email: user.contact_email || '',
+          phone: user.phone || '',
+          state: user.state || '',
+          brokerage_name: user.brokerage_name || '',
+          brokerage_address: user.brokerage_address || '',
+          logo_url: profile.logo_url || user.logo_url || '',
+          bio: user.bio || '',
+          years_experience: user.years_experience || '',
+          specialties: user.specialties || '',
+          certifications: user.certifications || '',
+          languages: user.languages || '',
+          linkedin: user.linkedin || '',
+          website: user.website || '',
+          instagram: user.instagram || '',
+          tiktok: user.tiktok || '',
+          facebook: user.facebook || '',
+          profile_photo_url: profile.profile_photo_url || user.profile_photo_url || '',
+        });
+      } catch {
+        // fallback to user object only
+        setFormData({
+          full_name: user.full_name || '',
+          username: user.username || '',
+          contact_email: user.contact_email || '',
+          phone: user.phone || '',
+          state: user.state || '',
+          brokerage_name: user.brokerage_name || '',
+          brokerage_address: user.brokerage_address || '',
+          logo_url: user.logo_url || '',
+          bio: user.bio || '',
+          years_experience: user.years_experience || '',
+          specialties: user.specialties || '',
+          certifications: user.certifications || '',
+          languages: user.languages || '',
+          linkedin: user.linkedin || '',
+          website: user.website || '',
+          instagram: user.instagram || '',
+          tiktok: user.tiktok || '',
+          facebook: user.facebook || '',
+          profile_photo_url: user.profile_photo_url || '',
+        });
+      }
+    };
+    load();
   }, [user]);
 
   const updateMutation = useMutation({
@@ -573,6 +604,16 @@ export default function Profile() {
                     onSave={url => setFormData(p => ({ ...p, logo_url: url }))}
                     onRemove={() => setFormData(p => ({ ...p, logo_url: '' }))}
                     editing={editing}
+                    onAutoSave={async (url) => {
+                      const email = user?.email;
+                      if (!email) return;
+                      const existing = await base44.entities.UserProfile.filter({ user_email: email });
+                      if (existing?.length > 0) {
+                        await base44.entities.UserProfile.update(existing[0].id, { logo_url: url });
+                      } else {
+                        await base44.entities.UserProfile.create({ user_email: email, logo_url: url });
+                      }
+                    }}
                   />
                 </div>
 
