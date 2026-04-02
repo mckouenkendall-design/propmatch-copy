@@ -1,0 +1,35 @@
+{
+  "name": "GroupMessage",
+  "type": "object",
+  "properties": {
+    "group_conversation_id": {
+      "type": "string",
+      "description": "ID of the GroupConversation this message belongs to"
+    },
+    "sender_email": {
+      "type": "string",
+      "description": "Email of the message sender"
+    },
+    "sender_name": {
+      "type": "string",
+      "description": "Display name of the sender"
+    },
+    "content": {
+      "type": "string",
+      "description": "Text body of the message"
+    },
+    "attachment_url": {
+      "type": "string",
+      "description": "Optional URL of an attached file or image"
+    },
+    "attachment_type": {
+      "type": "string",
+      "description": "Optional type of attachment (e.g. image, pdf, doc)"
+    }
+  },
+  "required": [
+    "group_conversation_id",
+    "sender_email",
+    "content"
+  ]
+}
