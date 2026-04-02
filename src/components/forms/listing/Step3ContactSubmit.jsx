@@ -28,7 +28,7 @@ function SectionTitle({ children }) {
 }
 
 const VISIBILITY_OPTIONS = [
-  { value: 'public',    label: 'Public',               desc: 'Visible to all users on PropMatch' },
+  { value: 'public',    label: 'Public',               desc: 'Visible to all users on PropMatch — recommended for the highest chance of a match' },
   { value: 'team',      label: 'Fishtank(s)',           desc: 'Only members of selected networking groups' },
   { value: 'brokerage', label: 'Brokerage Only',        desc: 'Only users sharing your Brokerage ID' },
   { value: 'private',   label: 'Private (Invite Only)', desc: 'Direct access link sent to a specific person' },
