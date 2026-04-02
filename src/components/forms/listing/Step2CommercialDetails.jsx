@@ -482,7 +482,7 @@ function SpecialUseCommonFields({ details, setDetail }) {
       </Field>
       <Field label="Tags"><TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} /></Field>
       <div className="grid grid-cols-2 gap-4">
-        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
+        <PhotoManager details={details} onPhotosChange={urls => setDetail({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -804,7 +804,7 @@ function OfficeDetails({ details, setDetail }) {
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
         options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
       <div className="grid grid-cols-2 gap-4">
-        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
+        <PhotoManager details={details} onPhotosChange={urls => setDetail({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -849,7 +849,7 @@ function MedicalOfficeDetails({ details, setDetail }) {
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
         options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
       <div className="grid grid-cols-2 gap-4">
-        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
+        <PhotoManager details={details} onPhotosChange={urls => setDetail({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -926,7 +926,7 @@ function RetailDetails({ details, setDetail }) {
       <Field label="Description"><Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space and highlights…" rows={4} /></Field>
       <Field label="Tags"><TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} /></Field>
       <div className="grid grid-cols-2 gap-4">
-        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
+        <PhotoManager details={details} onPhotosChange={urls => setDetail({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -1008,7 +1008,7 @@ function IndustrialFlexDetails({ details, setDetail }) {
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
         options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
       <div className="grid grid-cols-2 gap-4">
-        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
+        <PhotoManager details={details} onPhotosChange={urls => setDetail({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -1085,7 +1085,7 @@ function LandDetails({ details, setDetail }) {
       <Field label="Description"><Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the site, highlights, and development potential…" rows={4} /></Field>
       <Field label="Tags"><TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} /></Field>
       <div className="grid grid-cols-2 gap-4">
-        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
+        <PhotoManager details={details} onPhotosChange={urls => setDetail({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure / Site Plan (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF" />
       </div>
     </>
@@ -1095,8 +1095,15 @@ function LandDetails({ details, setDetail }) {
 // ── MAIN EXPORT ──────────────────────────────────────────────────────────────
 export default function ListStep2Commercial({ data, update, onNext }) {
   const details   = data.property_details || {};
-  const setDetail = (key, val) => update({ property_details: { ...details, [key]: val } });
-  const setDetails = (patch) => update({ property_details: { ...details, ...patch } });
+  // setDetail supports both single key: setDetail('key', val)
+  // and batch object: setDetail({ key1: val1, key2: val2 })
+  const setDetail = (key, val) => {
+    if (typeof key === 'object' && key !== null) {
+      update({ property_details: { ...details, ...key } });
+    } else {
+      update({ property_details: { ...details, [key]: val } });
+    }
+  };
   const type      = data.property_type;
   const isSale    = data.transaction_type === 'sale';
   const saleTypeDefault = type === 'land' ? null : 'investment';
