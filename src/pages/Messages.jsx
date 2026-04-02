@@ -188,56 +188,46 @@ function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
     setConfirming(true);
     const cappx = croppedAreaPixelsRef.current;
     try {
-      // Load the image from the data URL
+      // Convert data URL to blob, then to object URL for reliable canvas loading
+      const originalBlob = await fetch(imageSrc).then(r => r.blob());
+      const blobUrl = URL.createObjectURL(originalBlob);
+
       const image = await new Promise((res, rej) => {
         const img = new Image();
         img.onload  = () => res(img);
-        img.onerror = (e) => rej(new Error('Image failed to load: ' + e));
-        img.src = imageSrc;
+        img.onerror = rej;
+        img.src = blobUrl;
       });
 
       const canvas = document.createElement('canvas');
-      canvas.width  = 400;
-      canvas.height = 400;
+      canvas.width = 400; canvas.height = 400;
       const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Canvas context unavailable');
 
-      if (cappx && image.naturalWidth > 0) {
+      if (cappx && image.naturalWidth > 0 && image.naturalHeight > 0) {
         const sx = Math.max(0, Math.round(cappx.x));
         const sy = Math.max(0, Math.round(cappx.y));
         const sw = Math.min(Math.round(cappx.width),  image.naturalWidth  - sx);
         const sh = Math.min(Math.round(cappx.height), image.naturalHeight - sy);
-        if (sw > 0 && sh > 0) {
-          ctx.drawImage(image, sx, sy, sw, sh, 0, 0, 400, 400);
-        } else {
-          // Crop coords invalid — draw full image centered
-          ctx.drawImage(image, 0, 0, 400, 400);
-        }
+        ctx.drawImage(image, sx > 0 ? sx : 0, sy > 0 ? sy : 0, sw > 0 ? sw : image.naturalWidth, sh > 0 ? sh : image.naturalHeight, 0, 0, 400, 400);
       } else {
         ctx.drawImage(image, 0, 0, 400, 400);
       }
 
-      // Wrap toBlob in a Promise so we can await it
-      const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.92));
+      URL.revokeObjectURL(blobUrl);
 
-      if (blob) {
-        onConfirm(blob);
+      const croppedBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+
+      if (croppedBlob) {
+        onConfirm(croppedBlob);
       } else {
-        // Last resort fallback — convert data URL directly to blob
-        const response = await fetch(imageSrc);
-        const fallback = await response.blob();
-        onConfirm(fallback);
+        onConfirm(originalBlob);
       }
     } catch (e) {
       console.error('Group crop error:', e);
-      // Fallback: upload the original image uncropped
       try {
-        const response = await fetch(imageSrc);
-        const fallback = await response.blob();
+        const fallback = await fetch(imageSrc).then(r => r.blob());
         onConfirm(fallback);
-      } catch (e2) {
-        console.error('Fallback also failed:', e2);
-      }
+      } catch { /* nothing we can do */ }
     } finally {
       setConfirming(false);
     }
