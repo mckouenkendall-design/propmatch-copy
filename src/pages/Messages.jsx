@@ -496,14 +496,15 @@ export default function Messages() {
   };
 
   const handleGroupCropConfirm = async (blob) => {
-    if (!selectedGroupConvoId) return;
+    if (!blob || !selectedGroupConvoId) return;
     setGroupCropSrc(null);
     setUploadingGroupPhoto(true);
     try {
       const file = new File([blob], 'group-photo.jpg', { type: 'image/jpeg' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       await base44.entities.GroupConversation.update(selectedGroupConvoId, { photo_url: file_url });
-      queryClient.invalidateQueries({ queryKey: ['group-convos'] });
+      // Refetch immediately rather than just invalidating
+      await queryClient.refetchQueries({ queryKey: ['group-convos'] });
     } catch (err) { console.error('Group photo upload error:', err); }
     setUploadingGroupPhoto(false);
   };
