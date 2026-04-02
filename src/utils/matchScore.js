@@ -376,11 +376,17 @@ export function calculateMatchScore(listing, requirement) {
   totalWeight += W.tx;
 
   // ── Price (with unit normalization) ────────────────────────────────────────
-  const listingPrice = parseFloat(listing.price) || 0;
-  const reqMinRaw    = parseFloat(requirement.min_price) || 0;
-  const reqMaxRaw    = parseFloat(requirement.max_price) || 0;
+  const listingPrice    = parseFloat(listing.price) || 0;
+  const listingPriceTBD = !!(listing.price_is_tbd);
+  const reqMinRaw       = parseFloat(requirement.min_price) || 0;
+  const reqMaxRaw       = parseFloat(requirement.max_price) || 0;
 
-  if (listingPrice > 0 && (reqMinRaw > 0 || reqMaxRaw > 0)) {
+  // TBD price: counts as 100% — listing is open to negotiation, not a blocker
+  if (listingPriceTBD) {
+    breakdown.push({ category: 'Price', score: 100, weight: W.price, details: 'TBD — open to offers', icon: '💰' });
+    weightedSum += W.price;
+    totalWeight += W.price;
+  } else if (listingPrice > 0 && (reqMinRaw > 0 || reqMaxRaw > 0)) {
     const listingTx = listing.transaction_type;
     const reqPeriod = requirement.price_period || 'per_month';
     let compareValue, compareMin, compareMax, priceLabel, priceDetails, priceUnit;
