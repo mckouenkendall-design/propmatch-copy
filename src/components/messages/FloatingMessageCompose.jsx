@@ -295,40 +295,56 @@ Rules: no bullet points, no em dashes, no markdown. Plain conversational text on
 
         {/* Multi-select recipient area */}
         {multiMode && (
-          <div style={{ padding:'14px 22px', borderBottom:'1px solid rgba(255,255,255,0.07)', background:'rgba(255,255,255,0.02)' }}>
-            {/* Fish Tank selector */}
-            <div style={{ marginBottom:'10px' }}>
-              <button onClick={() => setShowTanks(!showTanks)}
-                style={{ display:'flex', alignItems:'center', gap:'6px', padding:'6px 12px', background:selectedTankIds.length>0?`${ACCENT}15`:'rgba(255,255,255,0.05)', border:`1px solid ${selectedTankIds.length>0?ACCENT+'40':'rgba(255,255,255,0.1)'}`, borderRadius:'8px', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:selectedTankIds.length>0?ACCENT:'rgba(255,255,255,0.5)' }}>
-                <Fish style={{ width:'12px', height:'12px' }}/> 
-                {selectedTankIds.length > 0 ? `${selectedTankIds.length} Fish Tank${selectedTankIds.length>1?'s':''} selected` : 'Select Fish Tanks'}
-                <ChevronDown style={{ width:'11px', height:'11px' }}/>
+          <div style={{ padding:'12px 22px', borderBottom:'1px solid rgba(255,255,255,0.07)', background:'rgba(255,255,255,0.02)', maxHeight:'280px', overflowY:'auto' }}>
+
+            {/* Section toggle: Agents or Fish Tanks */}
+            <div style={{ display:'flex', gap:'6px', marginBottom:'10px' }}>
+              <button onClick={() => { setShowTanks(false); setSelectedTankIds([]); }}
+                style={{ padding:'5px 12px', borderRadius:'7px', border:`1px solid ${!showTanks?ACCENT+'50':'rgba(255,255,255,0.1)'}`, background:!showTanks?`${ACCENT}15`:'transparent', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:!showTanks?ACCENT:'rgba(255,255,255,0.5)', cursor:'pointer' }}>
+                Agents
               </button>
-              {showTanks && myTanks.length > 0 && (
-                <div style={{ marginTop:'6px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'8px', display:'flex', flexDirection:'column', gap:'4px' }}>
-                  <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.3)', margin:'0 0 4px' }}>Posts to tanks are sent separately — no group chat created</p>
-                  {myTanks.map(t => (
-                    <button key={t.id} onClick={() => toggleTank(t.id)}
-                      style={{ display:'flex', alignItems:'center', gap:'8px', padding:'7px 10px', background:selectedTankIds.includes(t.id)?`${ACCENT}12`:'transparent', border:`1px solid ${selectedTankIds.includes(t.id)?ACCENT+'30':'rgba(255,255,255,0.06)'}`, borderRadius:'6px', cursor:'pointer', textAlign:'left' }}>
-                      {selectedTankIds.includes(t.id) && <Check style={{ width:'12px', height:'12px', color:ACCENT, flexShrink:0 }}/>}
-                      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white' }}>{t.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <button onClick={() => { setShowTanks(true); setSelectedEmails([]); }}
+                style={{ padding:'5px 12px', borderRadius:'7px', border:`1px solid ${showTanks?ACCENT+'50':'rgba(255,255,255,0.1)'}`, background:showTanks?`${ACCENT}15`:'transparent', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:showTanks?ACCENT:'rgba(255,255,255,0.5)', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px' }}>
+                <Fish style={{ width:'12px', height:'12px' }}/> Fish Tanks
+              </button>
             </div>
 
-            {/* Agent search */}
-            {selectedTankIds.length === 0 && (
+            {/* Fish Tanks */}
+            {showTanks && (
+              <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.3)', margin:'0 0 6px' }}>Posts to tanks are sent separately to each tank</p>
+                {myTanks.length === 0 ? (
+                  <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.3)', margin:0 }}>You haven't joined any Fish Tanks yet</p>
+                ) : myTanks.map(t => {
+                  const isSel = selectedTankIds.includes(t.id);
+                  return (
+                    <div key={t.id} onClick={() => toggleTank(t.id)}
+                      style={{ display:'flex', alignItems:'center', gap:'10px', padding:'9px 10px', borderRadius:'8px', cursor:'pointer', background:isSel?`${ACCENT}10`:'transparent', transition:'background 0.1s' }}
+                      onMouseEnter={e => { if(!isSel) e.currentTarget.style.background='rgba(255,255,255,0.04)'; }}
+                      onMouseLeave={e => { if(!isSel) e.currentTarget.style.background=isSel?`${ACCENT}10`:'transparent'; }}>
+                      <div style={{ width:'18px', height:'18px', borderRadius:'5px', flexShrink:0, border:`2px solid ${isSel?ACCENT:'rgba(255,255,255,0.2)'}`, background:isSel?ACCENT:'transparent', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}>
+                        {isSel && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 6 4.5 8.5 10 3.5"/></svg>}
+                      </div>
+                      <Fish style={{ width:'14px', height:'14px', color:isSel?ACCENT:'rgba(255,255,255,0.4)', flexShrink:0 }}/>
+                      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white' }}>{t.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Agents */}
+            {!showTanks && (
               <>
+                {/* Selected chips */}
                 {selectedEmails.length > 0 && (
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:'6px', marginBottom:'8px' }}>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:'5px', marginBottom:'8px' }}>
                     {selectedEmails.map(email => {
                       const p = allProfiles.find(pr => pr.user_email === email);
                       return (
-                        <span key={email} style={{ display:'flex', alignItems:'center', gap:'5px', padding:'3px 8px', background:`${LAVENDER}15`, border:`1px solid ${LAVENDER}30`, borderRadius:'20px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:LAVENDER }}>
+                        <span key={email} style={{ display:'flex', alignItems:'center', gap:'4px', padding:'3px 8px 3px 10px', background:`${LAVENDER}15`, border:`1px solid ${LAVENDER}30`, borderRadius:'20px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:LAVENDER }}>
                           {p?.full_name || email.split('@')[0]}
-                          <button onClick={() => toggleEmail(email)} style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, display:'flex' }}>
+                          <button onClick={e => { e.stopPropagation(); toggleEmail(email); }} style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, display:'flex' }}>
                             <X style={{ width:'10px', height:'10px', color:LAVENDER }}/>
                           </button>
                         </span>
@@ -336,43 +352,56 @@ Rules: no bullet points, no em dashes, no markdown. Plain conversational text on
                     })}
                   </div>
                 )}
-                <div style={{ position:'relative' }}>
+
+                {/* Search — always visible */}
+                <div style={{ position:'relative', marginBottom:'6px' }}>
                   <Search style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', width:'13px', height:'13px', color:'rgba(255,255,255,0.3)' }}/>
                   <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Search agents by name or email..."
+                    placeholder="Search by name, @username, or email..."
                     style={{ width:'100%', padding:'8px 8px 8px 30px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white', outline:'none', boxSizing:'border-box' }}/>
                 </div>
+
+                {/* Agent list — show when searching */}
                 {searchQuery && (
-                  <div style={{ maxHeight:'160px', overflowY:'auto', marginTop:'6px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'8px' }}>
+                  <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
                     {filteredProfiles.length === 0 ? (
-                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.3)', padding:'12px', margin:0 }}>No agents found</p>
-                    ) : filteredProfiles.map(p => (
-                      <div key={p.user_email} onClick={() => { toggleEmail(p.user_email); setSearchQuery(''); }}
-                        style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.05)', background:selectedEmails.includes(p.user_email)?`${LAVENDER}08`:'transparent' }}
-                        onMouseEnter={e => e.currentTarget.style.background=`${LAVENDER}08`}
-                        onMouseLeave={e => e.currentTarget.style.background=selectedEmails.includes(p.user_email)?`${LAVENDER}08`:'transparent'}>
-                        <div style={{ width:'28px', height:'28px', borderRadius:'50%', background:ACCENT, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'11px', fontWeight:700 }}>
-                          {p.profile_photo_url ? <img src={p.profile_photo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : p.full_name?.[0]?.toUpperCase() || '?'}
+                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.3)', padding:'8px 0', margin:0 }}>No agents found</p>
+                    ) : filteredProfiles.map(p => {
+                      const isSel = selectedEmails.includes(p.user_email);
+                      return (
+                        <div key={p.user_email}
+                          onClick={() => toggleEmail(p.user_email)}
+                          style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 10px', borderRadius:'8px', cursor:'pointer', background:isSel?`${LAVENDER}10`:'transparent', transition:'background 0.1s' }}
+                          onMouseEnter={e => { if(!isSel) e.currentTarget.style.background='rgba(255,255,255,0.04)'; }}
+                          onMouseLeave={e => { if(!isSel) e.currentTarget.style.background=isSel?`${LAVENDER}10`:'transparent'; }}>
+                          <div style={{ width:'18px', height:'18px', borderRadius:'5px', flexShrink:0, border:`2px solid ${isSel?LAVENDER:'rgba(255,255,255,0.2)'}`, background:isSel?LAVENDER:'transparent', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}>
+                            {isSel && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 6 4.5 8.5 10 3.5"/></svg>}
+                          </div>
+                          <div style={{ width:'28px', height:'28px', borderRadius:'50%', background:ACCENT, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'11px', fontWeight:700 }}>
+                            {p.profile_photo_url ? <img src={p.profile_photo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : p.full_name?.[0]?.toUpperCase() || '?'}
+                          </div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:'5px' }}>
+                              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'white', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.full_name || p.user_email}</p>
+                              {p.username && <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', flexShrink:0 }}>@{p.username}</span>}
+                            </div>
+                            {p.brokerage_name && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:0 }}>{p.brokerage_name}</p>}
+                          </div>
                         </div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'white', margin:0 }}>{p.full_name || p.user_email}</p>
-                          {p.brokerage_name && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:0 }}>{p.brokerage_name}</p>}
-                        </div>
-                        {selectedEmails.includes(p.user_email) && <Check style={{ width:'14px', height:'14px', color:LAVENDER, flexShrink:0 }}/>}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
-                {/* Send separately toggle — only show when multiple selected */}
+                {/* Send separately toggle for multiple agents */}
                 {selectedEmails.length > 1 && (
-                  <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'10px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'8px', padding:'8px 10px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'8px' }}>
                     <button onClick={() => setSendSeparately(!sendSeparately)}
                       style={{ width:'36px', height:'20px', borderRadius:'10px', background:sendSeparately?ACCENT:'rgba(255,255,255,0.15)', border:'none', cursor:'pointer', position:'relative', transition:'all 0.2s', flexShrink:0 }}>
                       <div style={{ width:'16px', height:'16px', borderRadius:'50%', background:'white', position:'absolute', top:'2px', left:sendSeparately?'18px':'2px', transition:'left 0.2s' }}/>
                     </button>
-                    <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.5)' }}>
-                      {sendSeparately ? 'Send Separately (individual DMs to each person)' : 'Create Group Chat (one thread with everyone)'}
+                    <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.55)' }}>
+                      {sendSeparately ? 'Send Separately — individual DM each' : 'Create Group Chat — one thread'}
                     </span>
                   </div>
                 )}
