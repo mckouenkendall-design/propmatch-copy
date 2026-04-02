@@ -1005,15 +1005,35 @@ export default function Matches() {
   const {data:allListings=[]}     =useQuery({queryKey:['all-listings-matches'],     queryFn:()=>base44.entities.Listing.list('-created_date',200)});
   const {data:allRequirements=[]} =useQuery({queryKey:['all-requirements-matches'], queryFn:()=>base44.entities.Requirement.list('-created_date',200)});
   const {data:allProfiles=[]}     =useQuery({queryKey:['all-user-profiles'],        queryFn:()=>base44.entities.UserProfile.list()});
+  const {data:myMemberships=[]}   =useQuery({queryKey:['my-memberships',user?.email], queryFn:()=>base44.entities.GroupMember.filter({user_email:user?.email}), enabled:!!user?.email});
   const profileMap=Object.fromEntries(allProfiles.map(p=>[p.user_email,p]));
+  const myProfile=profileMap[user?.email];
+  const myBrokerageId=myProfile?.brokerage_id||user?.employing_broker_id||'';
+  const myGroupIds=new Set(myMemberships.map(m=>m.group_id));
+
+  // Filter posts by visibility rules before matching
+  const isVisibleToMe = React.useCallback((post) => {
+    const v = post.visibility || 'public';
+    if (v === 'public') return true;
+    if (v === 'brokerage') return myBrokerageId && post.brokerage_id === myBrokerageId;
+    if (v === 'team') {
+      const groups = (post.visibility_groups || '').split(',').map(s=>s.trim()).filter(Boolean);
+      return groups.some(gId => myGroupIds.has(gId));
+    }
+    if (v === 'private') return post.visibility_recipient_email === user?.email;
+    return false;
+  }, [myBrokerageId, myGroupIds, user?.email]);
+
+  const visibleListings     = React.useMemo(() => allListings.filter(l => l.created_by === user?.email || isVisibleToMe(l)),     [allListings,     isVisibleToMe, user?.email]);
+  const visibleRequirements = React.useMemo(() => allRequirements.filter(r => r.created_by === user?.email || isVisibleToMe(r)), [allRequirements, isVisibleToMe, user?.email]);
   const listingGroups=useMemo(()=>myListings.map(listing=>{
-    const matches=allRequirements.filter(r=>r.created_by!==user?.email).map(req=>{const r=calculateMatchScore(listing,req);return r.isMatch?{listing,requirement:req,...r}:null;}).filter(Boolean).sort((a,b)=>b.totalScore-a.totalScore);
+    const matches=visibleRequirements.filter(r=>r.created_by!==user?.email).map(req=>{const r=calculateMatchScore(listing,req);return r.isMatch?{listing,requirement:req,...r}:null;}).filter(Boolean).sort((a,b)=>b.totalScore-a.totalScore);
     return matches.length?{myPost:{...listing,postType:'listing'},matches}:null;
-  }).filter(Boolean),[myListings,allRequirements,user?.email]);
+  }).filter(Boolean),[myListings,visibleRequirements,user?.email]);
   const requirementGroups=useMemo(()=>myRequirements.map(req=>{
-    const matches=allListings.filter(l=>l.created_by!==user?.email).map(listing=>{const r=calculateMatchScore(listing,req);return r.isMatch?{listing,requirement:req,...r}:null;}).filter(Boolean).sort((a,b)=>b.totalScore-a.totalScore);
+    const matches=visibleListings.filter(l=>l.created_by!==user?.email).map(listing=>{const r=calculateMatchScore(listing,req);return r.isMatch?{listing,requirement:req,...r}:null;}).filter(Boolean).sort((a,b)=>b.totalScore-a.totalScore);
     return matches.length?{myPost:{...req,postType:'requirement'},matches}:null;
-  }).filter(Boolean),[myRequirements,allListings,user?.email]);
+  }).filter(Boolean),[myRequirements,visibleListings,user?.email]);
   const currentGroups=useMemo(()=>{
     const groups=activeTab==='listings'?listingGroups:requirementGroups;
     if(!filterSaved)return groups;
