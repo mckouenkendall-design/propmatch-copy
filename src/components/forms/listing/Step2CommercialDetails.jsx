@@ -69,103 +69,133 @@ function SectionTitle({ children }) {
     </div>
   );
 }
-function FileUpload({ label, accept, field, details, setDetail, hint }) {
+// Photo manager — handles multi-photo upload, thumbnails, set-main, reorder, remove
+function PhotoManager({ details, onPhotosChange }) {
   const ref = useRef();
   const [uploading, setUploading] = React.useState(false);
   const [dragOver, setDragOver] = React.useState(false);
-  const isPhoto = field === 'photo_url';
 
   const urls = React.useMemo(() => {
-    if (isPhoto) {
-      const arr = details['photo_urls'];
-      if (Array.isArray(arr) && arr.length) return arr;
-      if (details['photo_url']) return [details['photo_url']];
-      return [];
-    }
-    return details[field] ? [details[field]] : [];
-  }, [details, field, isPhoto]);
+    const arr = details['photo_urls'];
+    if (Array.isArray(arr) && arr.length) return arr;
+    if (details['photo_url']) return [details['photo_url']];
+    return [];
+  }, [details]);
+
+  const save = (next) => onPhotosChange(next);
 
   const uploadFiles = async (files) => {
     if (!files || files.length === 0) return;
     setUploading(true);
     try {
       const uploaded = await Promise.all(
-        Array.from(files).map(file => base44.integrations.Core.UploadFile({ file }).then(r => r.file_url))
+        Array.from(files).map(f => base44.integrations.Core.UploadFile({ file: f }).then(r => r.file_url))
       );
-      if (isPhoto) {
-        const combined = [...urls, ...uploaded];
-        setDetails({ photo_urls: combined, photo_url: combined[0] });
-      } else {
-        setDetail(field, uploaded[0]);
-      }
+      save([...urls, ...uploaded]);
     } finally { setUploading(false); }
   };
 
-  const removePhoto = (idx) => {
-    const next = urls.filter((_, i) => i !== idx);
-    setDetails({ photo_urls: next, photo_url: next[0] || '' });
-  };
+  const remove = (idx) => save(urls.filter((_, i) => i !== idx));
+  const setMain = (idx) => { if (idx === 0) return; save([urls[idx], ...urls.filter((_, i) => i !== idx)]); };
 
   const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files); };
   const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); };
   const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); };
-  const hasFile = isPhoto ? urls.length > 0 : !!details[field];
 
   return (
-    <Field label={label} hint={hint}>
+    <Field label="Photos" hint="First photo is the main photo shown in matches">
+      {/* Drop zone */}
       <div
         onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}
         onClick={() => ref.current.click()}
-        style={{ border: `2px dashed ${dragOver ? ACCENT : hasFile ? ACCENT + '80' : 'rgba(255,255,255,0.2)'}`, borderRadius: '12px', padding: '18px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s', background: dragOver ? `${ACCENT}08` : 'rgba(255,255,255,0.03)' }}>
-        <input ref={ref} type="file" accept={accept} multiple={isPhoto} className="hidden"
-          onChange={e => isPhoto ? uploadFiles(e.target.files) : uploadFiles([e.target.files[0]])} />
+        style={{ border: `2px dashed ${dragOver ? ACCENT : urls.length ? ACCENT+'80' : 'rgba(255,255,255,0.2)'}`, borderRadius: '12px', padding: '20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s', background: dragOver ? `${ACCENT}08` : 'rgba(255,255,255,0.03)' }}>
+        <input ref={ref} type="file" accept="image/*" multiple className="hidden" onChange={e => uploadFiles(e.target.files)} />
         {uploading
-          ? <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Uploading…</p>
-          : !hasFile
-            ? <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                <Upload style={{ width: '20px', height: '20px', color: 'rgba(255,255,255,0.3)' }} />
-                <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>
-                  {isPhoto ? 'Click or drag & drop photos here' : 'Click to upload'}
-                </p>
-                {isPhoto && <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>Multiple photos supported · Drop files inside this box</p>}
-              </div>
-            : isPhoto
-              ? <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: ACCENT, margin: 0 }}>+ Add more photos</p>
-              : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <FileText style={{ width: '14px', height: '14px', color: ACCENT }} />
-                  <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: ACCENT }}>Uploaded ✓</span>
-                  <button type="button" onClick={e => { e.stopPropagation(); setDetail(field, ''); }}><X style={{ width: '13px', height: '13px', color: 'rgba(255,255,255,0.4)' }} /></button>
-                </div>
+          ? <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.4)', margin:0 }}>Uploading…</p>
+          : <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'5px' }}>
+              <Upload style={{ width:'20px', height:'20px', color:'rgba(255,255,255,0.3)' }} />
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.5)', margin:0 }}>
+                {urls.length ? '+ Add more photos' : 'Click or drag & drop photos here'}
+              </p>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.25)', margin:0 }}>Multiple photos · Drop files inside this box</p>
+            </div>
         }
       </div>
-      {isPhoto && urls.length > 0 && (
-        <div>
-          <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: '10px 0 6px' }}>Click a photo to set it as main · X to remove</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+
+      {/* Thumbnails */}
+      {urls.length > 0 && (
+        <div style={{ marginTop:'10px' }}>
+          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.3)', margin:'0 0 8px' }}>Click a photo to make it main · X to remove</p>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'8px' }}>
             {urls.map((url, idx) => (
-              <div key={idx}
-                onClick={e => { e.stopPropagation(); if (idx !== 0) { const next = [url, ...urls.filter((_,i) => i !== idx)]; setDetails({ photo_urls: next, photo_url: next[0] }); } }}
-                style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: `2px solid ${idx === 0 ? ACCENT : 'rgba(255,255,255,0.15)'}`, flexShrink: 0, cursor: idx === 0 ? 'default' : 'pointer', transition: 'border-color 0.15s' }}>
-                <img src={url} alt={`Photo ${idx+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button type="button" onClick={e => { e.stopPropagation(); removePhoto(idx); }}
-                  style={{ position: 'absolute', top: '3px', right: '3px', width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <X style={{ width: '10px', height: '10px', color: 'white' }} />
+              <div key={url+idx}
+                onClick={() => setMain(idx)}
+                style={{ position:'relative', width:'88px', height:'88px', borderRadius:'9px', overflow:'hidden', border:`2px solid ${idx===0?ACCENT:'rgba(255,255,255,0.12)'}`, flexShrink:0, cursor:idx===0?'default':'pointer', transition:'border-color 0.15s', boxShadow:idx===0?`0 0 10px ${ACCENT}50`:'none' }}>
+                <img src={url} alt={`Photo ${idx+1}`} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                {/* Hover overlay for non-main */}
+                {idx !== 0 && (
+                  <div className="photo-hover-overlay" style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0)', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.15s' }}
+                    onMouseEnter={e=>{ e.currentTarget.style.background='rgba(0,0,0,0.45)'; e.currentTarget.querySelector('span').style.opacity='1'; }}
+                    onMouseLeave={e=>{ e.currentTarget.style.background='rgba(0,0,0,0)'; e.currentTarget.querySelector('span').style.opacity='0'; }}>
+                    <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, color:'white', opacity:0, transition:'opacity 0.15s', textAlign:'center', lineHeight:1.3 }}>Set<br/>main</span>
+                  </div>
+                )}
+                {/* MAIN badge */}
+                {idx === 0 && (
+                  <div style={{ position:'absolute', bottom:'4px', left:'4px', fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, color:'#111827', background:ACCENT, borderRadius:'3px', padding:'2px 5px' }}>MAIN</div>
+                )}
+                {/* Remove button */}
+                <button type="button"
+                  onClick={e => { e.stopPropagation(); remove(idx); }}
+                  style={{ position:'absolute', top:'3px', right:'3px', width:'20px', height:'20px', borderRadius:'50%', background:'rgba(0,0,0,0.75)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', zIndex:2 }}>
+                  <X style={{ width:'10px', height:'10px', color:'white' }} />
                 </button>
-                {idx === 0
-                  ? <div style={{ position: 'absolute', bottom: '3px', left: '3px', fontFamily: "'Inter',sans-serif", fontSize: '9px', fontWeight: 700, color: 'white', background: `${ACCENT}cc`, borderRadius: '3px', padding: '1px 4px' }}>MAIN</div>
-                  : <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.35)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0)'}>
-                      <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '9px', fontWeight: 700, color: 'white', opacity: 0, transition: 'opacity 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                        onMouseLeave={e => e.currentTarget.style.opacity = '0'}>Set main</span>
-                    </div>
-                }
               </div>
             ))}
           </div>
         </div>
       )}
+    </Field>
+  );
+}
+
+// Single file upload (for brochure PDF etc)
+function FileUpload({ label, accept, field, details, setDetail, hint }) {
+  const ref = useRef();
+  const [uploading, setUploading] = React.useState(false);
+  const [dragOver, setDragOver] = React.useState(false);
+  const url = details[field];
+
+  const upload = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    try { const { file_url } = await base44.integrations.Core.UploadFile({ file }); setDetail(field, file_url); }
+    finally { setUploading(false); }
+  };
+
+  const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const f = e.dataTransfer.files?.[0]; if (f) upload(f); };
+  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); };
+  const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); };
+
+  return (
+    <Field label={label} hint={hint}>
+      <div onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onClick={() => ref.current.click()}
+        style={{ border:`2px dashed ${dragOver?ACCENT:url?ACCENT+'80':'rgba(255,255,255,0.2)'}`, borderRadius:'12px', padding:'18px', textAlign:'center', cursor:'pointer', transition:'all 0.15s', background:dragOver?`${ACCENT}08`:'rgba(255,255,255,0.03)' }}>
+        <input ref={ref} type="file" accept={accept} className="hidden" onChange={e => upload(e.target.files[0])} />
+        {uploading
+          ? <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.4)', margin:0 }}>Uploading…</p>
+          : url
+            ? <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>
+                <FileText style={{ width:'14px', height:'14px', color:ACCENT }} />
+                <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:ACCENT }}>Uploaded ✓</span>
+                <button type="button" onClick={e=>{ e.stopPropagation(); setDetail(field,''); }}><X style={{ width:'13px', height:'13px', color:'rgba(255,255,255,0.4)' }} /></button>
+              </div>
+            : <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'5px' }}>
+                <Upload style={{ width:'20px', height:'20px', color:'rgba(255,255,255,0.3)' }} />
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.5)', margin:0 }}>Click or drag & drop here</p>
+              </div>
+        }
+      </div>
     </Field>
   );
 }
@@ -452,7 +482,7 @@ function SpecialUseCommonFields({ details, setDetail }) {
       </Field>
       <Field label="Tags"><TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} /></Field>
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -774,7 +804,7 @@ function OfficeDetails({ details, setDetail }) {
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
         options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -819,7 +849,7 @@ function MedicalOfficeDetails({ details, setDetail }) {
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
         options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -896,7 +926,7 @@ function RetailDetails({ details, setDetail }) {
       <Field label="Description"><Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space and highlights…" rows={4} /></Field>
       <Field label="Tags"><TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} /></Field>
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -978,7 +1008,7 @@ function IndustrialFlexDetails({ details, setDetail }) {
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
         options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -1055,7 +1085,7 @@ function LandDetails({ details, setDetail }) {
       <Field label="Description"><Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the site, highlights, and development potential…" rows={4} /></Field>
       <Field label="Tags"><TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} /></Field>
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <PhotoManager details={details} onPhotosChange={urls => setDetails({ photo_urls: urls, photo_url: urls[0] || '' })} />
         <FileUpload label="Brochure / Site Plan (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF" />
       </div>
     </>
