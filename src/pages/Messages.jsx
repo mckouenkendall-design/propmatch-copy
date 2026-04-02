@@ -168,26 +168,37 @@ function PostDetailModal({ post, postType, onClose }) {
 function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(0.5);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const croppedAreaPixelsRef = useRef(null);
 
-  const onCropComplete = useCallback((_, cappx) => setCroppedAreaPixels(cappx), []);
+  const onCropComplete = useCallback((_, cappx) => {
+    croppedAreaPixelsRef.current = cappx;
+  }, []);
+
+  // Ensure a fallback value exists even if user hasn't interacted
+  React.useEffect(() => {
+    if (!croppedAreaPixelsRef.current) {
+      croppedAreaPixelsRef.current = { x: 0, y: 0, width: 300, height: 300 };
+    }
+  }, []);
 
   const handleConfirm = async () => {
-    if (!croppedAreaPixels) return;
+    const cappx = croppedAreaPixelsRef.current;
+    if (!cappx) return;
     try {
-      const image = new Image();
-      image.src = imageSrc;
-      if (!image.complete || !image.naturalWidth) {
-        await new Promise((res, rej) => { image.onload = res; image.onerror = rej; });
-      }
+      const image = await new Promise((res, rej) => {
+        const img = new Image();
+        img.addEventListener('load', () => res(img));
+        img.addEventListener('error', rej);
+        img.src = imageSrc;
+      });
       const canvas = document.createElement('canvas');
       canvas.width = 400; canvas.height = 400;
       const ctx = canvas.getContext('2d');
-      const sx = Math.max(0, Math.round(croppedAreaPixels.x));
-      const sy = Math.max(0, Math.round(croppedAreaPixels.y));
-      const sw = Math.min(Math.round(croppedAreaPixels.width),  image.naturalWidth  - sx);
-      const sh = Math.min(Math.round(croppedAreaPixels.height), image.naturalHeight - sy);
-      if (sw <= 0 || sh <= 0) return;
+      const sx = Math.max(0, Math.round(cappx.x));
+      const sy = Math.max(0, Math.round(cappx.y));
+      const sw = Math.min(Math.round(cappx.width),  image.naturalWidth  - sx);
+      const sh = Math.min(Math.round(cappx.height), image.naturalHeight - sy);
+      if (sw <= 0 || sh <= 0) { onConfirm(null); return; }
       ctx.drawImage(image, sx, sy, sw, sh, 0, 0, 400, 400);
       canvas.toBlob(blob => { if (blob) onConfirm(blob); }, 'image/jpeg', 0.92);
     } catch (e) { console.error('Crop error:', e); }
