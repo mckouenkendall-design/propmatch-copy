@@ -181,27 +181,66 @@ function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
     }
   }, []);
 
+  const [confirming, setConfirming] = useState(false);
+
   const handleConfirm = async () => {
+    if (confirming) return;
+    setConfirming(true);
     const cappx = croppedAreaPixelsRef.current;
-    if (!cappx) return;
     try {
+      // Load the image from the data URL
       const image = await new Promise((res, rej) => {
         const img = new Image();
-        img.addEventListener('load', () => res(img));
-        img.addEventListener('error', rej);
+        img.onload  = () => res(img);
+        img.onerror = (e) => rej(new Error('Image failed to load: ' + e));
         img.src = imageSrc;
       });
+
       const canvas = document.createElement('canvas');
-      canvas.width = 400; canvas.height = 400;
+      canvas.width  = 400;
+      canvas.height = 400;
       const ctx = canvas.getContext('2d');
-      const sx = Math.max(0, Math.round(cappx.x));
-      const sy = Math.max(0, Math.round(cappx.y));
-      const sw = Math.min(Math.round(cappx.width),  image.naturalWidth  - sx);
-      const sh = Math.min(Math.round(cappx.height), image.naturalHeight - sy);
-      if (sw <= 0 || sh <= 0) { onConfirm(null); return; }
-      ctx.drawImage(image, sx, sy, sw, sh, 0, 0, 400, 400);
-      canvas.toBlob(blob => { if (blob) onConfirm(blob); }, 'image/jpeg', 0.92);
-    } catch (e) { console.error('Crop error:', e); }
+      if (!ctx) throw new Error('Canvas context unavailable');
+
+      if (cappx && image.naturalWidth > 0) {
+        const sx = Math.max(0, Math.round(cappx.x));
+        const sy = Math.max(0, Math.round(cappx.y));
+        const sw = Math.min(Math.round(cappx.width),  image.naturalWidth  - sx);
+        const sh = Math.min(Math.round(cappx.height), image.naturalHeight - sy);
+        if (sw > 0 && sh > 0) {
+          ctx.drawImage(image, sx, sy, sw, sh, 0, 0, 400, 400);
+        } else {
+          // Crop coords invalid — draw full image centered
+          ctx.drawImage(image, 0, 0, 400, 400);
+        }
+      } else {
+        ctx.drawImage(image, 0, 0, 400, 400);
+      }
+
+      // Wrap toBlob in a Promise so we can await it
+      const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.92));
+
+      if (blob) {
+        onConfirm(blob);
+      } else {
+        // Last resort fallback — convert data URL directly to blob
+        const response = await fetch(imageSrc);
+        const fallback = await response.blob();
+        onConfirm(fallback);
+      }
+    } catch (e) {
+      console.error('Group crop error:', e);
+      // Fallback: upload the original image uncropped
+      try {
+        const response = await fetch(imageSrc);
+        const fallback = await response.blob();
+        onConfirm(fallback);
+      } catch (e2) {
+        console.error('Fallback also failed:', e2);
+      }
+    } finally {
+      setConfirming(false);
+    }
   };
 
   return (
@@ -228,8 +267,12 @@ function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
           <button onClick={onCancel} style={{ flex:1, padding:'11px', background:'transparent', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.6)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
             <X style={{ width:'15px', height:'15px' }}/> Cancel
           </button>
-          <button onClick={handleConfirm} style={{ flex:1, padding:'11px', background:'#00DBC5', border:'none', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:600, color:'#111827', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
-            <Check style={{ width:'15px', height:'15px' }}/> Use Photo
+          <button onClick={handleConfirm} disabled={confirming}
+            style={{ flex:1, padding:'11px', background:'#00DBC5', border:'none', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:600, color:'#111827', cursor:confirming?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', opacity:confirming?0.7:1 }}>
+            {confirming
+              ? <><div style={{ width:'14px', height:'14px', border:'2px solid #111827', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/> Processing...</>
+              : <><Check style={{ width:'15px', height:'15px' }}/> Use Photo</>
+            }
           </button>
         </div>
         <style>{`input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:#00DBC5;cursor:pointer;border:2px solid #1a1f25;} input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#00DBC5;cursor:pointer;border:2px solid #1a1f25;}`}</style>
