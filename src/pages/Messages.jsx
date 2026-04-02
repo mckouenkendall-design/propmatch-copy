@@ -215,7 +215,7 @@ function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
         img.onerror = (e) => rej(new Error('img load failed'));
         img.src = blobUrl;
       });
-      URL.revokeObjectURL(blobUrl);
+      // NOTE: revoke AFTER canvas draw, not before — revoking early can free image data
 
       // Step 3: Draw to canvas
       step = `canvas draw (naturalW=${image.naturalWidth} naturalH=${image.naturalHeight} cappx=${JSON.stringify(cappx)})`;
@@ -233,6 +233,8 @@ function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
       } else {
         ctx.drawImage(image, 0, 0, 400, 400);
       }
+
+      URL.revokeObjectURL(blobUrl);
 
       // Step 4: toBlob
       step = 'toBlob';
