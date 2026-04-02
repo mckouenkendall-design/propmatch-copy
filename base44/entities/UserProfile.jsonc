@@ -85,6 +85,10 @@
     "profile_photo_url": {
       "type": "string"
     },
+    "logo_url": {
+      "type": "string",
+      "description": "Agent or brokerage logo URL for PDF exports"
+    },
     "selected_plan": {
       "type": "string"
     },
