@@ -1020,7 +1020,7 @@ export default function Matches() {
       const groups = (post.visibility_groups || '').split(',').map(s=>s.trim()).filter(Boolean);
       return groups.some(gId => myGroupIds.has(gId));
     }
-    if (v === 'private') return post.visibility_recipient_email === user?.email;
+    if (v === 'private') return (post.visibility_recipient_email || '').split(',').map(s=>s.trim()).includes(user?.email);
     return false;
   }, [myBrokerageId, myGroupIds, user?.email]);
 
