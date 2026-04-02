@@ -167,7 +167,7 @@ function PostDetailModal({ post, postType, onClose }) {
 // ── Group Chat Crop Modal ──────────────────────────────────────────────────────
 function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(0.5);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
   const onCropComplete = useCallback((_, cappx) => setCroppedAreaPixels(cappx), []);
@@ -195,14 +195,15 @@ function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
         </div>
         <div style={{ position:'relative', width:'320px', height:'320px', borderRadius:'8px', overflow:'hidden', background:'#000' }}>
           <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={1} cropShape="round" showGrid={false}
+            minZoom={0.4} maxZoom={3}
             cropSize={{ width:240, height:240 }}
             onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete}
             style={{ containerStyle:{ borderRadius:'8px' }, cropAreaStyle:{ border:'2.5px solid #00DBC5', color:'rgba(0,0,0,0.55)' } }}/>
         </div>
         <div style={{ width:'100%', display:'flex', alignItems:'center', gap:'12px' }}>
           <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', flexShrink:0 }}>Zoom</span>
-          <input type="range" min={1} max={3} step={0.01} value={zoom} onChange={e => setZoom(parseFloat(e.target.value))}
-            style={{ flex:1, height:'4px', appearance:'none', borderRadius:'2px', outline:'none', cursor:'pointer', background:`linear-gradient(to right, #00DBC5 0%, #00DBC5 ${((zoom-1)/2)*100}%, rgba(255,255,255,0.15) ${((zoom-1)/2)*100}%, rgba(255,255,255,0.15) 100%)` }}/>
+          <input type="range" min={0.4} max={3} step={0.01} value={zoom} onChange={e => setZoom(parseFloat(e.target.value))}
+            style={{ flex:1, height:'4px', appearance:'none', borderRadius:'2px', outline:'none', cursor:'pointer', background:`linear-gradient(to right, #00DBC5 0%, #00DBC5 ${((zoom-0.4)/2.6)*100}%, rgba(255,255,255,0.15) ${((zoom-0.4)/2.6)*100}%, rgba(255,255,255,0.15) 100%)` }}/>
           <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', minWidth:'30px', textAlign:'right' }}>{zoom.toFixed(1)}x</span>
         </div>
         <div style={{ display:'flex', gap:'12px', width:'100%' }}>
@@ -537,8 +538,11 @@ export default function Messages() {
                     onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background=isSelected?`${LAVENDER}10`:'transparent'; }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
                       <div style={{ position:'relative' }}>
-                        <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:`${LAVENDER}20`, border:`1px solid ${LAVENDER}40`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                          <Users style={{ width:'18px', height:'18px', color:LAVENDER }}/>
+                        <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:`${LAVENDER}20`, border:`1px solid ${LAVENDER}40`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+                          {item.photo_url
+                            ? <img src={item.photo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                            : <Users style={{ width:'18px', height:'18px', color:LAVENDER }}/>
+                          }
                         </div>
                         {unread > 0 && (
                           <div style={{ position:'absolute', top:'-2px', right:'-2px', width:'16px', height:'16px', borderRadius:'50%', background:LAVENDER, display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid #0E1318' }}>
