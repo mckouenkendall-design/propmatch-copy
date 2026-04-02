@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, Briefcase, Phone, Mail, Building, Award, Loader2, Check, X } from 'lucide-react';
+import { Camera, Briefcase, Phone, Mail, Building, Award, Loader2, Check, X, Upload, ImageIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 const ACCENT = '#00DBC5';
@@ -147,6 +147,129 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
 }
 
 // ── Main Profile Page ─────────────────────────────────────────────────────────
+
+// ─── Logo Uploader with background removal ────────────────────────────────────
+function removeBackground(imgElement, tolerance = 30) {
+  return new Promise(resolve => {
+    const canvas = document.createElement('canvas');
+    canvas.width = imgElement.naturalWidth;
+    canvas.height = imgElement.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imgElement, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    const w = canvas.width, h = canvas.height;
+
+    // Sample background color from corners
+    const corners = [
+      [0, 0], [w-1, 0], [0, h-1], [w-1, h-1],
+      [Math.floor(w/2), 0], [0, Math.floor(h/2)],
+    ];
+    let rSum=0, gSum=0, bSum=0;
+    corners.forEach(([x, y]) => {
+      const i = (y * w + x) * 4;
+      rSum += data[i]; gSum += data[i+1]; bSum += data[i+2];
+    });
+    const bgR = Math.round(rSum/corners.length);
+    const bgG = Math.round(gSum/corners.length);
+    const bgB = Math.round(bSum/corners.length);
+
+    // Replace pixels matching background color
+    for (let i = 0; i < data.length; i += 4) {
+      const dr = Math.abs(data[i] - bgR);
+      const dg = Math.abs(data[i+1] - bgG);
+      const db = Math.abs(data[i+2] - bgB);
+      if (dr + dg + db < tolerance * 3) {
+        data[i+3] = 0; // make transparent
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+    resolve(canvas.toDataURL('image/png'));
+  });
+}
+
+function LogoUploader({ currentUrl, onSave, onRemove }) {
+  const [processing, setProcessing] = React.useState(false);
+  const [preview, setPreview] = React.useState(null); // pending preview before save
+  const ACCENT = '#00DBC5';
+
+  const handleFile = async (file) => {
+    if (!file) return;
+    setProcessing(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      onSave(file_url);
+      setPreview(null);
+    } catch { console.error('Upload failed'); }
+    finally { setProcessing(false); }
+  };
+
+  const handleRemoveBg = async () => {
+    if (!currentUrl) return;
+    setProcessing(true);
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = async () => {
+        const dataUrl = await removeBackground(img);
+        // Convert dataUrl to file and upload
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], 'logo-transparent.png', { type: 'image/png' });
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        onSave(file_url);
+        setProcessing(false);
+      };
+      img.onerror = () => { setProcessing(false); };
+      img.src = currentUrl;
+    } catch { setProcessing(false); }
+  };
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap' }}>
+        {/* Preview box */}
+        <div style={{ width:'140px', height:'56px', background:'rgba(255,255,255,0.04)', border:`1px dashed ${currentUrl?ACCENT+'60':'rgba(255,255,255,0.15)'}`, borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', flexShrink:0 }}>
+          {currentUrl
+            ? <img src={currentUrl} alt="Logo" style={{ maxHeight:'44px', maxWidth:'128px', objectFit:'contain' }} />
+            : <ImageIcon style={{ width:'22px', height:'22px', color:'rgba(255,255,255,0.2)' }} />
+          }
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+          <label htmlFor="logo-upload" style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'7px 13px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'7px', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.75)', whiteSpace:'nowrap' }}>
+            <Upload style={{ width:'12px', height:'12px' }} />
+            {currentUrl ? 'Replace' : 'Upload Logo'}
+          </label>
+          <input id="logo-upload" type="file" accept="image/*" style={{ display:'none' }}
+            onChange={e => handleFile(e.target.files?.[0])} />
+
+          {currentUrl && (
+            <button type="button" onClick={handleRemoveBg} disabled={processing}
+              style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'7px 13px', background:`${ACCENT}12`, border:`1px solid ${ACCENT}30`, borderRadius:'7px', cursor:processing?'not-allowed':'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:ACCENT, whiteSpace:'nowrap', opacity:processing?0.6:1 }}>
+              {processing
+                ? <><Loader2 style={{ width:'12px', height:'12px', animation:'spin 1s linear infinite' }} /> Removing…</>
+                : <>✨ Remove Background</>
+              }
+            </button>
+          )}
+
+          {currentUrl && (
+            <button type="button" onClick={onRemove}
+              style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'7px 13px', background:'transparent', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'7px', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', whiteSpace:'nowrap' }}>
+              <X style={{ width:'11px', height:'11px' }} /> Remove
+            </button>
+          )}
+        </div>
+      </div>
+      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.28)', margin:0 }}>
+        Upload your logo · Click "Remove Background" to auto-strip white/solid backgrounds · PNG with transparent background looks best on PDFs
+      </p>
+    </div>
+  );
+}
+
 export default function Profile() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
@@ -157,7 +280,7 @@ export default function Profile() {
   const [cropSrc, setCropSrc] = useState(null);
   const [formData, setFormData] = useState({
     full_name: '', username: '', contact_email: '', phone: '',
-    state: '', brokerage_name: '', brokerage_address: '', bio: '',
+    state: '', brokerage_name: '', brokerage_address: '', bio: '', logo_url: '',
     years_experience: '', specialties: '', certifications: '',
     languages: '', linkedin: '', website: '', instagram: '',
     tiktok: '', facebook: '', profile_photo_url: '',
@@ -173,6 +296,7 @@ export default function Profile() {
         state: user.state || '',
         brokerage_name: user.brokerage_name || '',
         brokerage_address: user.brokerage_address || '',
+        logo_url: user.logo_url || '',
         bio: user.bio || '',
         years_experience: user.years_experience || '',
         specialties: user.specialties || '',
@@ -212,6 +336,7 @@ export default function Profile() {
         state: data.state,
         brokerage_name: data.brokerage_name,
         brokerage_address: data.brokerage_address,
+        logo_url: data.logo_url,
         bio: data.bio,
         years_experience: data.years_experience ? Number(data.years_experience) : null,
         specialties: data.specialties,
@@ -437,6 +562,38 @@ export default function Profile() {
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Brokerage Address</Label>
                   <Input disabled={!editing} value={formData.brokerage_address} onChange={e => setFormData({ ...formData, brokerage_address: e.target.value })} placeholder="123 Main St, City, State 12345" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                 </div>
+                {/* Logo / Branding */}
+                <div>
+                  <Label style={{ color: 'rgba(255,255,255,0.7)', display:'flex', alignItems:'center', gap:'6px' }}>
+                    <ImageIcon style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>
+                    Your Logo <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>(shown on exported PDFs)</span>
+                  </Label>
+                  <div style={{ marginTop:'8px', display:'flex', alignItems:'center', gap:'14px' }}>
+                    {formData.logo_url ? (
+                      <div style={{ position:'relative', height:'50px', padding:'6px 12px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'8px', display:'flex', alignItems:'center' }}>
+                        <img src={formData.logo_url} alt="Logo" style={{ height:'38px', maxWidth:'160px', objectFit:'contain' }} />
+                        {editing && (
+                          <button type="button" onClick={() => setFormData(p => ({ ...p, logo_url: '' }))}
+                            style={{ position:'absolute', top:'-6px', right:'-6px', width:'18px', height:'18px', borderRadius:'50%', background:'rgba(239,68,68,0.9)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                            <X style={{ width:'10px', height:'10px', color:'white' }} />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ width:'120px', height:'50px', background:'rgba(255,255,255,0.03)', border:'1px dashed rgba(255,255,255,0.15)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        <ImageIcon style={{ width:'20px', height:'20px', color:'rgba(255,255,255,0.2)' }} />
+                      </div>
+                    )}
+                    {editing && (
+                      <LogoUploader
+                        currentUrl={formData.logo_url}
+                        onSave={url => setFormData(p => ({ ...p, logo_url: url }))}
+                        onRemove={() => setFormData(p => ({ ...p, logo_url: '' }))}
+                      />
+                    )}
+                  </div>
+                </div>
+
                 <div>
                   <Label style={{ color: 'rgba(255,255,255,0.7)' }}>Employing Broker ID <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>(Read-only)</span></Label>
                   <Input disabled value={user?.employing_broker_id || ''} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }} />
