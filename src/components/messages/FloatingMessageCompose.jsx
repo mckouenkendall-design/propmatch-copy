@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { X, Send, Loader2 } from 'lucide-react';
+import { X, Send, Loader2, Search, Check, Users, Fish, ChevronDown } from 'lucide-react';
 import { getScoreLabel } from '@/utils/matchScore';
 import { useAuth } from '@/lib/AuthContext';
 import { createNotification } from '@/utils/notifications';
@@ -19,245 +19,406 @@ const CTA_ENDINGS = [
   "I have a client who may be very interested — can we get on a call?",
   "Feel free to reach out anytime — I'm happy to answer any questions.",
   "Looking forward to potentially working together on this one.",
-  "Let me know if the details look right and we can take the next step.",
-  "Would love to hear your thoughts and see if we can make this work.",
-  "Does your client have any flexibility on the requirements?",
-  "Happy to provide any additional information you might need.",
 ];
 
-function randomCTA() {
-  return CTA_ENDINGS[Math.floor(Math.random() * CTA_ENDINGS.length)];
-}
-
-function priceStr(post, isListing) {
-  const tx = post?.transaction_type, pp = post?.price_period;
-  const u = isListing
-    ? (tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':'')
-    : (pp==='per_month'?'/mo':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
-  if (isListing) {
-    const num = parseFloat(post?.price);
-    if (!num) return null;
-    return `$${num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2})}${u}`;
-  }
-  const fmt = (n) => { const num=parseFloat(n); if(!n||isNaN(num))return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
-  const lo=fmt(post?.min_price), hi=fmt(post?.max_price);
-  if(lo&&hi) return `$${lo}–$${hi}${u}`;
-  if(hi) return `Up to $${hi}${u}`;
-  if(lo) return `From $${lo}${u}`;
-  return null;
-}
-
 export default function FloatingMessageCompose({
-  recipientProfile,  // UserProfile of the person being messaged
-  recipientEmail,    // fallback email if no profile
-  myPost,            // the user's own listing or requirement (if match context)
-  matchPost,         // the other person's post (if match context)
-  matchResult,       // result from calculateMatchScore (if match context)
+  recipientProfile,
+  recipientEmail: recipientEmailProp,
+  myPost,
+  matchPost,
+  matchResult,
   onClose,
 }) {
-  const navigate       = useNavigate();
-  const queryClient    = useQueryClient();
   const { user: currentUser } = useAuth();
-  const [text, setText]       = useState('');
-  const [aiLoading, setAiLoad] = useState(false);
+  const navigate   = useNavigate();
+  const queryClient = useQueryClient();
 
-  const recipientName  = recipientProfile?.full_name || recipientEmail || 'Agent';
-  const recipientEmail_ = recipientProfile?.contact_email || recipientEmail || recipientProfile?.user_email;
-  const photo          = recipientProfile?.profile_photo_url;
-  const isMatchContext = !!(myPost && matchPost && matchResult);
+  // ── Recipients ─────────────────────────────────────────────────────────────
+  // Multi-mode: multiple agents or fish tanks
+  const [multiMode, setMultiMode]           = useState(false);
+  const [searchQuery, setSearchQuery]       = useState('');
+  const [selectedEmails, setSelectedEmails] = useState([]); // for multi-select
+  const [selectedTankIds, setSelectedTankIds] = useState([]); // fish tank ids
+  const [showTanks, setShowTanks]           = useState(false);
+  const [sendSeparately, setSendSeparately] = useState(false);
+  const [text, setText]                     = useState('');
+  const [generating, setGenerating]         = useState(false);
+  const [sendMode, setSendMode]             = useState('idle'); // idle | sending | done
 
-  // ── Build AI message ──────────────────────────────────────────────────────
-  const buildPrompt = useCallback(() => {
-    const myName     = currentUser?.full_name || 'a PropMatch agent';
-    const myCompany  = currentUser?.brokerage_name || '';
-    const myIsListing = !!myPost?.size_sqft || myPost?.postType === 'listing';
-    const listing    = myIsListing ? myPost : matchPost;
-    const requirement= myIsListing ? matchPost : myPost;
-    const score      = matchResult?.totalScore;
-    const label      = getScoreLabel(score) || '';
-    const lPrice     = priceStr(listing, true) || 'price not listed';
-    const rPrice     = priceStr(requirement, false) || 'budget not listed';
-    const lSize      = listing?.size_sqft ? `${parseFloat(listing.size_sqft).toLocaleString()} SF` : 'size not listed';
-    const lLoc       = [listing?.city, listing?.state].filter(Boolean).join(', ') || 'location not listed';
-    const breakdown  = matchResult?.breakdown?.map(b => `${b.category}: ${b.score}%`).join(', ') || '';
-    const cta        = randomCTA();
+  // Single recipient (passed in from match modal etc.)
+  const recipientEmail_ = recipientEmailProp || recipientProfile?.contact_email || recipientProfile?.user_email;
 
-    return `Write a short, friendly, conversational real estate agent-to-agent message. Plain text only. No bullet points. No dashes of any kind. No em dashes. No hyphens used as dashes.
+  // Load all profiles for recipient search
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['all-user-profiles'],
+    queryFn: () => base44.entities.UserProfile.list(),
+  });
 
-Sender: ${myName}${myCompany ? ' from ' + myCompany : ''}
-Recipient: ${recipientName}
-Match strength: ${score}% ${label}
-${myIsListing ? 'Sender has a listing' : 'Sender has a requirement'}: ${listing?.title || ''}, priced at ${lPrice}, ${lSize}, located in ${lLoc}
-${myIsListing ? 'Recipient has a requirement' : 'Recipient has a listing'}: ${requirement?.title || ''}, budget ${rPrice}
+  // Load user's fish tanks
+  const { data: myTankMemberships = [] } = useQuery({
+    queryKey: ['my-tank-memberships', currentUser?.email],
+    queryFn: () => base44.entities.GroupMember.filter({ user_email: currentUser?.email }),
+    enabled: !!currentUser?.email,
+  });
+  const { data: allTanks = [] } = useQuery({
+    queryKey: ['all-groups'],
+    queryFn: () => base44.entities.Group.list(),
+  });
+  const myTankIds = new Set(myTankMemberships.map(m => m.group_id));
+  const myTanks = allTanks.filter(t => myTankIds.has(t.id));
 
-Write exactly 3 sentences:
-1. Greeting by first name, introduce yourself and your company naturally. Example: "Hi [first name], this is [my name] from [company]."
-2. Say you noticed a ${label} match between your ${myIsListing ? 'listing' : 'requirement'} and theirs, briefly describe what you have and what they are looking for in plain conversational terms, like you are texting a colleague. IMPORTANT: always use digits for numbers, never spell them out. Write "$20.50/SF/yr" not "twenty dollars and fifty cents per square foot per year". Write "1,100 SF" not "one thousand one hundred square feet".
-3. End with this call to action word for word: "${cta}"
+  // Filtered profiles for search (exclude self)
+  const filteredProfiles = allProfiles.filter(p =>
+    p.user_email !== currentUser?.email &&
+    (p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     p.user_email?.toLowerCase().includes(searchQuery.toLowerCase()))
+  ).slice(0, 20);
 
-Do not use em dashes, hyphens as dashes, or any special punctuation. Always write numbers as digits. Keep it under 80 words. Sound like a real person, not a robot.`;
-  }, [currentUser, myPost, matchPost, matchResult, recipientName]);
-
+  // ── AI message generation ──────────────────────────────────────────────────
   const generateMessage = useCallback(async () => {
-    if (!isMatchContext) return;
-    setAiLoad(true);
+    if (!myPost || !matchPost || !matchResult) return;
+    setGenerating(true);
+    const { totalScore, breakdown } = matchResult;
+    const label = getScoreLabel(totalScore) || '';
+    const myIsListing = myPost.postType === 'listing' || !!myPost.size_sqft;
+    const listing = myIsListing ? myPost : matchPost;
+    const req = myIsListing ? matchPost : myPost;
+    const lp = parseFloat(listing.price);
+    const ls = parseFloat(listing.size_sqft);
+    const isLease = listing.transaction_type === 'lease' || listing.transaction_type === 'sublease';
+    const monthly = isLease && lp && ls ? `$${Math.round((lp*ls)/12).toLocaleString()}/mo` : null;
+    const annual = isLease && lp && ls ? `$${Math.round(lp*ls).toLocaleString()}/yr` : null;
+    const topCategories = [...breakdown].sort((a,b) => b.score-a.score).slice(0,2).map(b => b.category).join(' and ');
+    const cta = CTA_ENDINGS[Math.floor(Math.random()*CTA_ENDINGS.length)];
+    const prompt = `You are a commercial real estate agent writing a brief, professional first message to another agent about a potential match.
+
+Match details:
+- Your ${myIsListing?'listing':'requirement'}: ${myPost.title}
+- Their ${myIsListing?'requirement':'listing'}: ${matchPost.title}
+- Match score: ${totalScore}% (${label})
+${monthly?`- Monthly total: ${monthly}`:''}${annual?`\n- Annual total: ${annual}`:''}
+- Strongest alignment: ${topCategories}
+
+Write 2-3 sentences maximum. Be conversational and specific. Reference actual numbers. End with exactly this sentence: "${cta}"
+Rules: no bullet points, no em dashes, no markdown. Plain conversational text only.`;
     try {
-      const response = await base44.functions.invoke('generateAIText', { prompt: buildPrompt(), maxTokens: 300 });
-      const result = response.data;
-      if (result?.text) setText(result.text.trim().replace(/—/g, ',').replace(/ - /g, ', '));
-    } catch {
-      // silently fail — user can type their own message
-    } finally {
-      setAiLoad(false);
-    }
-  }, [isMatchContext, buildPrompt]);
+      const r = await base44.functions.invoke('generateAIText', { prompt, maxTokens: 200 });
+      const t = r.data?.text?.trim() || '';
+      setText(t.replace(/\u2014/g, ','));
+    } catch { setText(`Hi! I came across your ${myIsListing?'requirement':'listing'} and I think there could be a match. ${cta}`); }
+    finally { setGenerating(false); }
+  }, [myPost, matchPost, matchResult]);
 
-  useEffect(() => { generateMessage(); }, []);
+  useEffect(() => {
+    if (myPost && matchPost && matchResult) generateMessage();
+  }, []);
 
-  // ── Send ──────────────────────────────────────────────────────────────────
+  // ── Send logic ─────────────────────────────────────────────────────────────
   const sendMutation = useMutation({
     mutationFn: async () => {
-      if (!text.trim()) return;
-      const myEmail   = currentUser?.email;
-      const theirEmail = recipientEmail_;
+      const myEmail = currentUser?.email;
+      const myName = currentUser?.full_name || myEmail?.split('@')[0] || 'Agent';
+      const msgText = text.trim();
+      const now = new Date().toISOString();
 
-      // Find or create conversation
-      const [ex1, ex2] = await Promise.all([
-        base44.entities.Conversation.filter({ participant_1: myEmail, participant_2: theirEmail }),
-        base44.entities.Conversation.filter({ participant_1: theirEmail, participant_2: myEmail }),
-      ]);
-      const existing = [...ex1, ...ex2];
-      let convoId;
-
-      if (existing.length > 0) {
-        convoId = existing[0].id;
-      } else {
-        const convo = await base44.entities.Conversation.create({
-          participant_1: myEmail,
-          participant_2: theirEmail,
-          last_message: text.trim().slice(0, 80),
-          last_message_time: new Date().toISOString(),
-          unread_by_1: 0,
-          unread_by_2: 1,
-        });
-        convoId = convo.id;
+      // ── FISH TANK SENDS (always separate, one per tank) ──
+      if (selectedTankIds.length > 0) {
+        for (const tankId of selectedTankIds) {
+          await base44.entities.GroupPost.create({
+            group_id: tankId,
+            author_email: myEmail,
+            author_name: myName,
+            content: msgText,
+            post_type: 'text',
+            media_urls: [], file_urls: [], file_names: [],
+            comment_count: 0, reaction_counts: '{}',
+          });
+        }
+        return { type: 'tanks', count: selectedTankIds.length };
       }
 
-      // Send message
-      await base44.entities.Message.create({
-        conversation_id: convoId,
-        sender_email: myEmail,
-        content: text.trim(),
-        attachment_url: '',
-        attachment_type: '',
-        sent_at: new Date().toISOString(),
-        post_id: '',
-        post_type: '',
+      const recipients = multiMode
+        ? selectedEmails.filter(Boolean)
+        : [recipientEmail_].filter(Boolean);
+
+      if (recipients.length === 0) throw new Error('No recipients selected');
+
+      // ── SEND SEPARATELY — individual DMs ──
+      if (!multiMode || sendSeparately || recipients.length === 1) {
+        for (const email of recipients) {
+          const [ex1, ex2] = await Promise.all([
+            base44.entities.Conversation.filter({ participant_1: myEmail, participant_2: email }),
+            base44.entities.Conversation.filter({ participant_1: email, participant_2: myEmail }),
+          ]);
+          const existing = [...ex1, ...ex2];
+          let convoId;
+          if (existing.length > 0) {
+            convoId = existing[0].id;
+          } else {
+            const convo = await base44.entities.Conversation.create({
+              participant_1: myEmail, participant_2: email,
+              last_message: msgText.slice(0, 80),
+              last_message_time: now,
+              unread_by_1: 0, unread_by_2: 1,
+            });
+            convoId = convo.id;
+          }
+          await base44.entities.Message.create({
+            conversation_id: convoId, sender_email: myEmail,
+            content: msgText, attachment_url: '', attachment_type: '',
+            sent_at: now, post_id: '', post_type: '',
+          });
+          await base44.entities.Conversation.update(convoId, {
+            last_message: msgText.slice(0, 80),
+            last_message_time: now,
+            unread_by_2: (existing[0]?.unread_by_2 || 0) + 1,
+          });
+          const senderName = currentUser?.full_name || currentUser?.email?.split('@')[0] || 'An agent';
+          await createNotification(base44, email, 'new_message', `New message from ${senderName}`, msgText.slice(0,100), { senderEmail: myEmail, linkType: 'inbox', linkId: convoId });
+        }
+        return { type: 'separate', count: recipients.length };
+      }
+
+      // ── CREATE / FIND GROUP CHAT ──
+      const participantEmails = [myEmail, ...recipients];
+      const sortedEmails = [...participantEmails].sort().join(',');
+      const allGroupConvos = await base44.entities.GroupConversation.list('-last_message_time', 200);
+      const existingGroup = allGroupConvos.find(gc => {
+        try {
+          const p = JSON.parse(gc.participant_emails || '[]').sort().join(',');
+          return p === sortedEmails;
+        } catch { return false; }
       });
 
-      // Update conversation preview
-      await base44.entities.Conversation.update(convoId, {
-        last_message: text.trim().slice(0, 80),
-        last_message_time: new Date().toISOString(),
-        unread_by_2: (existing[0]?.unread_by_2 || 0) + 1,
+      let groupConvoId;
+      if (existingGroup) {
+        groupConvoId = existingGroup.id;
+      } else {
+        const groupName = recipients.map(e => {
+          const p = allProfiles.find(pr => pr.user_email === e);
+          return p?.full_name || e.split('@')[0];
+        }).concat([myName]).join(', ');
+        const gc = await base44.entities.GroupConversation.create({
+          name: groupName,
+          participant_emails: JSON.stringify(participantEmails),
+          created_by: myEmail,
+          last_message: msgText.slice(0, 80),
+          last_message_time: now,
+          last_message_sender: myName,
+          unread_counts: JSON.stringify(Object.fromEntries(recipients.map(e => [e, 1]))),
+        });
+        groupConvoId = gc.id;
+      }
+
+      await base44.entities.GroupMessage.create({
+        group_conversation_id: groupConvoId,
+        sender_email: myEmail, sender_name: myName,
+        content: msgText, attachment_url: '', attachment_type: '',
       });
 
-      // Notify the recipient
-      const senderName = currentUser?.full_name || currentUser?.email?.split('@')[0] || 'An agent';
-      await createNotification(
-        base44,
-        theirEmail,
-        'new_message',
-        `New message from ${senderName}`,
-        text.trim().slice(0, 100),
-        { senderEmail: myEmail, linkType: 'inbox', linkId: convoId }
-      );
+      await base44.entities.GroupConversation.update(groupConvoId, {
+        last_message: msgText.slice(0, 80),
+        last_message_time: now,
+        last_message_sender: myName,
+      });
 
-      return convoId;
+      return { type: 'group', groupConvoId, isNew: !existingGroup };
     },
-    onSuccess: (convoId) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['group-convos'] });
       onClose();
-      navigate('/Messages', { state: { openConvoId: convoId } });
+      if (result?.type === 'group') {
+        navigate('/Messages', { state: { openGroupConvoId: result.groupConvoId } });
+      } else if (result?.type === 'separate' && !multiMode) {
+        // navigate to inbox for single DM
+        navigate('/Messages');
+      }
     },
   });
 
+  // ── Smart send button label ────────────────────────────────────────────────
+  const getSendLabel = () => {
+    if (selectedTankIds.length > 0) return `Post to ${selectedTankIds.length} Fish Tank${selectedTankIds.length>1?'s':''}`;
+    if (!multiMode || selectedEmails.length === 0) return 'Send';
+    if (sendSeparately || selectedEmails.length === 1) return `Send Separately (${selectedEmails.length})`;
+    // Check if group already exists
+    return `Create Group (${selectedEmails.length + 1})`;
+  };
+
+  const canSend = text.trim() && (
+    selectedTankIds.length > 0 ||
+    (multiMode ? selectedEmails.length > 0 : !!recipientEmail_)
+  );
+
+  const toggleEmail = (email) => {
+    setSelectedEmails(prev =>
+      prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]
+    );
+  };
+
+  const toggleTank = (id) => {
+    setSelectedTankIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+    if (!selectedTankIds.includes(id)) setSelectedEmails([]);
+  };
+
   return (
-    <div
-      style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', backdropFilter:'blur(4px)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}
-      onClick={onClose}
-    >
-      <div
-        style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'18px', width:'100%', maxWidth:'680px', overflow:'hidden', boxShadow:'0 32px 80px rgba(0,0,0,0.6)' }}
-        onClick={e => e.stopPropagation()}
-      >
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', backdropFilter:'blur(4px)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'20px', width:'100%', maxWidth:'680px', boxShadow:'0 32px 80px rgba(0,0,0,0.6)', overflow:'hidden' }}>
+
         {/* Header */}
-        <div style={{ padding:'16px 18px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', gap:'12px' }}>
-          {/* Recipient avatar */}
-          <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:ACCENT, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'16px', fontWeight:700 }}>
-            {photo ? <img src={photo} alt={recipientName} style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : recipientName[0]?.toUpperCase()}
-          </div>
-          <div style={{ flex:1 }}>
-            <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'15px', fontWeight:500, color:'white', margin:0 }}>
-              Message {recipientName}
-            </p>
-            {isMatchContext && matchResult && (
-              <div style={{ display:'flex', alignItems:'center', gap:'6px', marginTop:'2px' }}>
-                <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:getColorForScore(matchResult.totalScore) }}/>
-                <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.45)' }}>
-                  {matchResult.totalScore}% match · {getScoreLabel(matchResult.totalScore)}
-                </span>
-              </div>
+        <div style={{ padding:'18px 22px', borderBottom:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div>
+            <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'17px', fontWeight:500, color:'white', margin:'0 0 2px' }}>
+              {selectedTankIds.length > 0 ? 'Post to Fish Tanks' : multiMode ? 'Send to Multiple' : 'Send Message'}
+            </h3>
+            {!multiMode && recipientProfile && (
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.4)', margin:0 }}>
+                To: {recipientProfile?.full_name || recipientEmail_}
+              </p>
             )}
           </div>
-          <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'6px', cursor:'pointer', display:'flex', flexShrink:0 }}>
-            <X style={{ width:'15px', height:'15px', color:'rgba(255,255,255,0.5)' }}/>
-          </button>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+            {/* Multi-mode toggle */}
+            <button onClick={() => { setMultiMode(!multiMode); setSelectedEmails([]); setSelectedTankIds([]); setShowTanks(false); }}
+              style={{ display:'flex', alignItems:'center', gap:'5px', padding:'5px 10px', background:multiMode?`${LAVENDER}15`:'rgba(255,255,255,0.06)', border:`1px solid ${multiMode?LAVENDER+'40':'rgba(255,255,255,0.1)'}`, borderRadius:'7px', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:multiMode?LAVENDER:'rgba(255,255,255,0.5)' }}>
+              <Users style={{ width:'12px', height:'12px' }}/> Multi
+            </button>
+            <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'6px', cursor:'pointer', display:'flex' }}>
+              <X style={{ width:'16px', height:'16px', color:'rgba(255,255,255,0.5)' }}/>
+            </button>
+          </div>
         </div>
 
-        {/* Body */}
-        <div style={{ padding:'16px 18px' }}>
-          {isMatchContext && (
-            <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'10px' }}>
-              <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:ACCENT }}/>
-              <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.35)' }}>
-                {aiLoading ? 'Drafting intro message…' : 'AI-drafted intro — edit freely'}
-              </span>
-              {aiLoading && <Loader2 style={{ width:'11px', height:'11px', color:ACCENT, animation:'spin 1s linear infinite' }}/>}
-              <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+        {/* Multi-select recipient area */}
+        {multiMode && (
+          <div style={{ padding:'14px 22px', borderBottom:'1px solid rgba(255,255,255,0.07)', background:'rgba(255,255,255,0.02)' }}>
+            {/* Fish Tank selector */}
+            <div style={{ marginBottom:'10px' }}>
+              <button onClick={() => setShowTanks(!showTanks)}
+                style={{ display:'flex', alignItems:'center', gap:'6px', padding:'6px 12px', background:selectedTankIds.length>0?`${ACCENT}15`:'rgba(255,255,255,0.05)', border:`1px solid ${selectedTankIds.length>0?ACCENT+'40':'rgba(255,255,255,0.1)'}`, borderRadius:'8px', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:selectedTankIds.length>0?ACCENT:'rgba(255,255,255,0.5)' }}>
+                <Fish style={{ width:'12px', height:'12px' }}/> 
+                {selectedTankIds.length > 0 ? `${selectedTankIds.length} Fish Tank${selectedTankIds.length>1?'s':''} selected` : 'Select Fish Tanks'}
+                <ChevronDown style={{ width:'11px', height:'11px' }}/>
+              </button>
+              {showTanks && myTanks.length > 0 && (
+                <div style={{ marginTop:'6px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'8px', display:'flex', flexDirection:'column', gap:'4px' }}>
+                  <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.3)', margin:'0 0 4px' }}>Posts to tanks are sent separately — no group chat created</p>
+                  {myTanks.map(t => (
+                    <button key={t.id} onClick={() => toggleTank(t.id)}
+                      style={{ display:'flex', alignItems:'center', gap:'8px', padding:'7px 10px', background:selectedTankIds.includes(t.id)?`${ACCENT}12`:'transparent', border:`1px solid ${selectedTankIds.includes(t.id)?ACCENT+'30':'rgba(255,255,255,0.06)'}`, borderRadius:'6px', cursor:'pointer', textAlign:'left' }}>
+                      {selectedTankIds.includes(t.id) && <Check style={{ width:'12px', height:'12px', color:ACCENT, flexShrink:0 }}/>}
+                      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white' }}>{t.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {/* Agent search */}
+            {selectedTankIds.length === 0 && (
+              <>
+                {selectedEmails.length > 0 && (
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:'6px', marginBottom:'8px' }}>
+                    {selectedEmails.map(email => {
+                      const p = allProfiles.find(pr => pr.user_email === email);
+                      return (
+                        <span key={email} style={{ display:'flex', alignItems:'center', gap:'5px', padding:'3px 8px', background:`${LAVENDER}15`, border:`1px solid ${LAVENDER}30`, borderRadius:'20px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:LAVENDER }}>
+                          {p?.full_name || email.split('@')[0]}
+                          <button onClick={() => toggleEmail(email)} style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, display:'flex' }}>
+                            <X style={{ width:'10px', height:'10px', color:LAVENDER }}/>
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <div style={{ position:'relative' }}>
+                  <Search style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', width:'13px', height:'13px', color:'rgba(255,255,255,0.3)' }}/>
+                  <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search agents by name or email..."
+                    style={{ width:'100%', padding:'8px 8px 8px 30px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white', outline:'none', boxSizing:'border-box' }}/>
+                </div>
+                {searchQuery && (
+                  <div style={{ maxHeight:'160px', overflowY:'auto', marginTop:'6px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'8px' }}>
+                    {filteredProfiles.length === 0 ? (
+                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.3)', padding:'12px', margin:0 }}>No agents found</p>
+                    ) : filteredProfiles.map(p => (
+                      <div key={p.user_email} onClick={() => { toggleEmail(p.user_email); setSearchQuery(''); }}
+                        style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.05)', background:selectedEmails.includes(p.user_email)?`${LAVENDER}08`:'transparent' }}
+                        onMouseEnter={e => e.currentTarget.style.background=`${LAVENDER}08`}
+                        onMouseLeave={e => e.currentTarget.style.background=selectedEmails.includes(p.user_email)?`${LAVENDER}08`:'transparent'}>
+                        <div style={{ width:'28px', height:'28px', borderRadius:'50%', background:ACCENT, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'11px', fontWeight:700 }}>
+                          {p.profile_photo_url ? <img src={p.profile_photo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : p.full_name?.[0]?.toUpperCase() || '?'}
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'white', margin:0 }}>{p.full_name || p.user_email}</p>
+                          {p.brokerage_name && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:0 }}>{p.brokerage_name}</p>}
+                        </div>
+                        {selectedEmails.includes(p.user_email) && <Check style={{ width:'14px', height:'14px', color:LAVENDER, flexShrink:0 }}/>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Send separately toggle — only show when multiple selected */}
+                {selectedEmails.length > 1 && (
+                  <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'10px' }}>
+                    <button onClick={() => setSendSeparately(!sendSeparately)}
+                      style={{ width:'36px', height:'20px', borderRadius:'10px', background:sendSeparately?ACCENT:'rgba(255,255,255,0.15)', border:'none', cursor:'pointer', position:'relative', transition:'all 0.2s', flexShrink:0 }}>
+                      <div style={{ width:'16px', height:'16px', borderRadius:'50%', background:'white', position:'absolute', top:'2px', left:sendSeparately?'18px':'2px', transition:'left 0.2s' }}/>
+                    </button>
+                    <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.5)' }}>
+                      {sendSeparately ? 'Send Separately (individual DMs to each person)' : 'Create Group Chat (one thread with everyone)'}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Message input */}
+        <div style={{ padding:'18px 22px' }}>
+          {generating ? (
+            <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'14px', background:'rgba(255,255,255,0.04)', borderRadius:'10px', marginBottom:'14px' }}>
+              <Loader2 style={{ width:'15px', height:'15px', color:ACCENT, animation:'spin 1s linear infinite', flexShrink:0 }}/>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.5)', margin:0 }}>Generating your intro message...</p>
+            </div>
+          ) : (
+            <textarea value={text} onChange={e => setText(e.target.value)}
+              placeholder="Type your message..."
+              rows={6}
+              style={{ width:'100%', padding:'14px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'white', lineHeight:1.65, outline:'none', resize:'none', boxSizing:'border-box' }}/>
           )}
 
-          <textarea
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder={aiLoading ? '' : isMatchContext ? 'Generating your intro message…' : 'Type a message…'}
-            rows={10}
-            style={{ width:'100%', padding:'12px 14px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'white', outline:'none', resize:'none', lineHeight:1.6, boxSizing:'border-box', opacity: aiLoading ? 0.5 : 1 }}
-          />
-
-          <div style={{ display:'flex', justifyContent:'flex-end', gap:'8px', marginTop:'12px' }}>
-            <button onClick={onClose}
-              style={{ padding:'9px 18px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.6)', cursor:'pointer' }}>
-              Cancel
-            </button>
-            <button
-              onClick={() => sendMutation.mutate()}
-              disabled={!text.trim() || sendMutation.isPending}
-              style={{ display:'flex', alignItems:'center', gap:'7px', padding:'9px 20px', background:text.trim()?ACCENT:'rgba(255,255,255,0.08)', border:'none', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:600, color:text.trim()?'#111827':'rgba(255,255,255,0.3)', cursor:text.trim()?'pointer':'not-allowed', transition:'all 0.15s' }}>
-              {sendMutation.isPending ? <Loader2 style={{ width:'13px', height:'13px', animation:'spin 1s linear infinite' }}/> : <Send style={{ width:'13px', height:'13px' }}/>}
-              Send & Open Inbox
-            </button>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'12px' }}>
+            <div style={{ display:'flex', gap:'8px' }}>
+              {myPost && matchPost && (
+                <button onClick={generateMessage} disabled={generating}
+                  style={{ padding:'7px 12px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.5)', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px' }}>
+                  ✨ Regenerate
+                </button>
+              )}
+            </div>
+            <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+              <button onClick={onClose}
+                style={{ padding:'8px 16px', background:'transparent', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.5)', cursor:'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={() => sendMutation.mutate()} disabled={!canSend || sendMutation.isPending}
+                style={{ display:'flex', alignItems:'center', gap:'6px', padding:'9px 20px', background:canSend?ACCENT:'rgba(255,255,255,0.08)', border:'none', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:700, color:canSend?'#111827':'rgba(255,255,255,0.3)', cursor:canSend?'pointer':'not-allowed' }}>
+                {sendMutation.isPending ? <Loader2 style={{ width:'14px', height:'14px', animation:'spin 1s linear infinite' }}/> : <Send style={{ width:'14px', height:'14px' }}/>}
+                {sendMutation.isPending ? 'Sending...' : getSendLabel()}
+              </button>
+            </div>
           </div>
         </div>
       </div>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
-}
-
-function getColorForScore(score) {
-  if (score >= 80) return '#10b981';
-  if (score >= 60) return '#00DBC5';
-  if (score >= 40) return '#f97316';
-  return '#6b7280';
 }
