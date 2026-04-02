@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import {
   Send, Plus, Paperclip, X, Search, MessageCircle,
-  FileText, Image, File, ChevronLeft, Building2, ExternalLink
+  FileText, Image, File, ChevronLeft, Building2, ExternalLink, Users
 } from 'lucide-react';
 import StartConversationModal from '@/components/messages/StartConversationModal';
 import AgentContactModal from '@/components/shared/AgentContactModal';
@@ -179,6 +179,9 @@ export default function Messages() {
   const fileInputRef   = useRef(null);
 
   // ── Data queries ──────────────────────────────────────────────────────────
+  const [selectedConvoType, setSelectedConvoType] = useState('dm'); // 'dm' | 'group'
+  const [selectedGroupConvoId, setSelectedGroupConvoId] = useState(null);
+
   const { data: conversations = [] } = useQuery({
     queryKey: ['conversations', user?.email],
     queryFn: () => base44.entities.Conversation.filter({ participant_1: user?.email })
@@ -188,11 +191,33 @@ export default function Messages() {
     refetchInterval: 5000,
   });
 
+  const { data: allGroupConvos = [] } = useQuery({
+    queryKey: ['group-convos'],
+    queryFn: () => base44.entities.GroupConversation.list('-last_message_time', 200),
+    enabled: !!user?.email,
+    refetchInterval: 5000,
+  });
+
+  const myGroupConvos = useMemo(() => {
+    return allGroupConvos.filter(gc => {
+      try { const p = JSON.parse(gc.participant_emails || '[]'); return p.includes(user?.email); }
+      catch { return false; }
+    });
+  }, [allGroupConvos, user?.email]);
+
   const { data: messages = [] } = useQuery({
     queryKey: ['messages', selectedConvoId],
     queryFn: () => base44.entities.Message.filter({ conversation_id: selectedConvoId })
       .then(msgs => msgs.sort((a,b) => new Date(a.sent_at) - new Date(b.sent_at))),
-    enabled: !!selectedConvoId,
+    enabled: !!selectedConvoId && selectedConvoType === 'dm',
+    refetchInterval: 3000,
+  });
+
+  const { data: groupMessages = [] } = useQuery({
+    queryKey: ['group-messages', selectedGroupConvoId],
+    queryFn: () => base44.entities.GroupMessage.filter({ group_conversation_id: selectedGroupConvoId })
+      .then(msgs => msgs.sort((a,b) => new Date(a.created_date) - new Date(b.created_date))),
+    enabled: !!selectedGroupConvoId && selectedConvoType === 'group',
     refetchInterval: 3000,
   });
 
@@ -215,11 +240,21 @@ export default function Messages() {
 
   // ── Selected conversation helpers ─────────────────────────────────────────
   const selectedConvo = conversations.find(c => c.id === selectedConvoId);
+  const selectedGroupConvo = myGroupConvos.find(gc => gc.id === selectedGroupConvoId);
+
   const otherEmail = selectedConvo
     ? (selectedConvo.participant_1 === user?.email ? selectedConvo.participant_2 : selectedConvo.participant_1)
     : null;
   const otherProfile = otherEmail ? profileMap[otherEmail] : null;
   const otherName = otherProfile?.full_name || otherEmail || 'Agent';
+
+  const groupParticipants = useMemo(() => {
+    if (!selectedGroupConvo) return [];
+    try { return JSON.parse(selectedGroupConvo.participant_emails || '[]').filter(e => e !== user?.email); }
+    catch { return []; }
+  }, [selectedGroupConvo, user?.email]);
+
+  const activeMessages = selectedConvoType === 'group' ? groupMessages : messages;
 
   // ── Posts shared in this conversation ─────────────────────────────────────
   const sharedPosts = useMemo(() =>
@@ -229,32 +264,61 @@ export default function Messages() {
   // ── Send message ──────────────────────────────────────────────────────────
   const sendMutation = useMutation({
     mutationFn: async ({ text, attachment, postId, postType }) => {
-      if (!selectedConvoId) return;
-      await base44.entities.Message.create({
-        conversation_id: selectedConvoId,
-        sender_email: user?.email,
-        content: text || '',
-        attachment_url: attachment?.url || '',
-        attachment_type: attachment?.type || '',
-        sent_at: new Date().toISOString(),
-        post_id: postId || '',
-        post_type: postType || '',
-      });
-      await base44.entities.Conversation.update(selectedConvoId, {
-        last_message: text || (attachment ? `📎 ${attachment.name}` : 'Shared a post'),
-        last_message_time: new Date().toISOString(),
-      });
+      if (selectedConvoType === 'group' && selectedGroupConvoId) {
+        const senderName = profileMap[user?.email]?.full_name || user?.email?.split('@')[0] || 'Agent';
+        await base44.entities.GroupMessage.create({
+          group_conversation_id: selectedGroupConvoId,
+          sender_email: user?.email,
+          sender_name: senderName,
+          content: text || '',
+          attachment_url: attachment?.url || '',
+          attachment_type: attachment?.type || '',
+        });
+        const preview = text || (attachment ? `📎 ${attachment.name}` : '');
+        const unreadCounts = (() => { try { return JSON.parse(selectedGroupConvo?.unread_counts || '{}'); } catch { return {}; } })();
+        const participants = groupParticipants;
+        participants.forEach(e => { unreadCounts[e] = (unreadCounts[e] || 0) + 1; });
+        await base44.entities.GroupConversation.update(selectedGroupConvoId, {
+          last_message: preview,
+          last_message_time: new Date().toISOString(),
+          last_message_sender: senderName,
+          unread_counts: JSON.stringify(unreadCounts),
+        });
+      } else {
+        if (!selectedConvoId) return;
+        await base44.entities.Message.create({
+          conversation_id: selectedConvoId,
+          sender_email: user?.email,
+          content: text || '',
+          attachment_url: attachment?.url || '',
+          attachment_type: attachment?.type || '',
+          sent_at: new Date().toISOString(),
+          post_id: postId || '',
+          post_type: postType || '',
+        });
+        await base44.entities.Conversation.update(selectedConvoId, {
+          last_message: text || (attachment ? `📎 ${attachment.name}` : 'Shared a post'),
+          last_message_time: new Date().toISOString(),
+        });
+      }
     },
     onSuccess: () => {
       setMessageText('');
       setPendingAttachment(null);
-      queryClient.invalidateQueries({ queryKey: ['messages', selectedConvoId] });
-      queryClient.invalidateQueries({ queryKey: ['conversations', user?.email] });
+      if (selectedConvoType === 'group') {
+        queryClient.invalidateQueries({ queryKey: ['group-messages', selectedGroupConvoId] });
+        queryClient.invalidateQueries({ queryKey: ['group-convos'] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['messages', selectedConvoId] });
+        queryClient.invalidateQueries({ queryKey: ['conversations', user?.email] });
+      }
     },
   });
 
   const handleSend = () => {
     if (!messageText.trim() && !pendingAttachment) return;
+    if (selectedConvoType === 'group' && !selectedGroupConvoId) return;
+    if (selectedConvoType === 'dm' && !selectedConvoId) return;
     sendMutation.mutate({ text: messageText.trim(), attachment: pendingAttachment });
   };
 
@@ -279,6 +343,11 @@ export default function Messages() {
   useEffect(() => {
     if (location.state?.openConvoId) {
       setSelectedConvoId(location.state.openConvoId);
+      setSelectedConvoType('dm');
+    }
+    if (location.state?.openGroupConvoId) {
+      setSelectedGroupConvoId(location.state.openGroupConvoId);
+      setSelectedConvoType('group');
     }
   }, [location.state]);
 
@@ -299,7 +368,21 @@ export default function Messages() {
     return name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
+  const filteredGroupConvos = myGroupConvos.filter(gc => {
+    return gc.name?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  // Merge and sort all conversations by last message time
+  const allConvos = [
+    ...filteredConvos.map(c => ({ ...c, _type: 'dm' })),
+    ...filteredGroupConvos.map(gc => ({ ...gc, _type: 'group' })),
+  ].sort((a, b) => new Date(b.last_message_time || 0) - new Date(a.last_message_time || 0));
+
   const myUnread = (c) => c.participant_1 === user?.email ? c.unread_by_1 : c.unread_by_2;
+  const groupUnread = (gc) => {
+    try { const u = JSON.parse(gc.unread_counts || '{}'); return u[user?.email] || 0; }
+    catch { return 0; }
+  };
 
   // ── Attachment icon ───────────────────────────────────────────────────────
   const AttachmentDisplay = ({ url, type, name }) => {
@@ -337,7 +420,7 @@ export default function Messages() {
 
         {/* Conversation List */}
         <div style={{ flex:1, overflowY:'auto' }}>
-          {filteredConvos.length === 0 ? (
+          {allConvos.length === 0 ? (
             <div style={{ padding:'40px 20px', textAlign:'center' }}>
               <MessageCircle style={{ width:'32px', height:'32px', color:`${ACCENT}30`, margin:'0 auto 12px', display:'block' }}/>
               <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.3)', margin:0 }}>No conversations yet</p>
@@ -347,14 +430,49 @@ export default function Messages() {
               </button>
             </div>
           ) : (
-            filteredConvos.map(convo => {
-              const other   = convo.participant_1 === user?.email ? convo.participant_2 : convo.participant_1;
+            allConvos.map(item => {
+              const isGroup = item._type === 'group';
+              const isSelected = isGroup ? item.id === selectedGroupConvoId : item.id === selectedConvoId;
+
+              if (isGroup) {
+                const unread = groupUnread(item);
+                return (
+                  <div key={`g-${item.id}`} onClick={() => { setSelectedGroupConvoId(item.id); setSelectedConvoId(null); setSelectedConvoType('group'); setActiveTab('chat'); }}
+                    style={{ padding:'14px 16px', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.04)', background:isSelected?`${LAVENDER}10`:'transparent', borderLeft:isSelected?`3px solid ${LAVENDER}`:'3px solid transparent', transition:'all 0.15s' }}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background='rgba(255,255,255,0.04)'; }}
+                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background=isSelected?`${LAVENDER}10`:'transparent'; }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                      <div style={{ position:'relative' }}>
+                        <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:`${LAVENDER}20`, border:`1px solid ${LAVENDER}40`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                          <Users style={{ width:'18px', height:'18px', color:LAVENDER }}/>
+                        </div>
+                        {unread > 0 && (
+                          <div style={{ position:'absolute', top:'-2px', right:'-2px', width:'16px', height:'16px', borderRadius:'50%', background:LAVENDER, display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid #0E1318' }}>
+                            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, color:'white' }}>{unread > 9 ? '9+' : unread}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'2px' }}>
+                          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:unread>0?700:500, color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'160px' }}>{item.name}</span>
+                          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', flexShrink:0 }}>{timeAgo(item.last_message_time)}</span>
+                        </div>
+                        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:unread>0?'rgba(255,255,255,0.65)':'rgba(255,255,255,0.35)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                          {item.last_message_sender ? `${item.last_message_sender}: ` : ''}{item.last_message || 'No messages yet'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // DM conversation
+              const other   = item.participant_1 === user?.email ? item.participant_2 : item.participant_1;
               const profile = profileMap[other];
               const name    = profile?.full_name || other || 'Agent';
-              const unread  = myUnread(convo);
-              const isSelected = convo.id === selectedConvoId;
+              const unread  = myUnread(item);
               return (
-                <div key={convo.id} onClick={() => { setSelectedConvoId(convo.id); setActiveTab('chat'); }}
+                <div key={item.id} onClick={() => { setSelectedConvoId(item.id); setSelectedGroupConvoId(null); setSelectedConvoType('dm'); setActiveTab('chat'); }}
                   style={{ padding:'14px 16px', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.04)', background:isSelected?'rgba(0,219,197,0.07)':'transparent', borderLeft:isSelected?`3px solid ${ACCENT}`:'3px solid transparent', transition:'all 0.15s' }}
                   onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background='rgba(255,255,255,0.04)'; }}
                   onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background='transparent'; }}>
@@ -369,17 +487,16 @@ export default function Messages() {
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'2px' }}>
-                        <span
-                          onClick={e => { e.stopPropagation(); setViewingAgent({ profile, email: other }); }}
+                        <span onClick={e => { e.stopPropagation(); setViewingAgent({ profile, email: other }); }}
                           style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:unread>0?700:500, color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'160px', cursor:'pointer' }}
                           onMouseEnter={e => e.currentTarget.style.color=ACCENT}
                           onMouseLeave={e => e.currentTarget.style.color='white'}>
                           {name}
                         </span>
-                        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', flexShrink:0 }}>{timeAgo(convo.last_message_time)}</span>
+                        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', flexShrink:0 }}>{timeAgo(item.last_message_time)}</span>
                       </div>
                       <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:unread>0?'rgba(255,255,255,0.65)':'rgba(255,255,255,0.35)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                        {convo.last_message || 'No messages yet'}
+                        {item.last_message || 'No messages yet'}
                       </p>
                     </div>
                   </div>
@@ -391,53 +508,77 @@ export default function Messages() {
       </div>
 
       {/* ── Right Panel — Thread ── */}
-      {selectedConvo ? (
+      {(selectedConvo || selectedGroupConvo) ? (
         <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
           {/* Thread header */}
           <div style={{ padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', gap:'12px', background:'#0E1318', flexShrink:0 }}>
-            <Avatar profile={otherProfile} name={otherName} size={38}/>
-            <div style={{ flex:1 }}>
-              <p onClick={() => setViewingAgent({ profile: otherProfile, email: otherEmail })}
-              style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:500, color:'white', margin:0, cursor:'pointer', textDecoration:'underline', textDecorationColor:'rgba(255,255,255,0.2)' }}
-              onMouseEnter={e => e.currentTarget.style.color=ACCENT}
-              onMouseLeave={e => e.currentTarget.style.color='white'}>
-              {otherName}
-            </p>
-              {otherProfile?.brokerage_name && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>{otherProfile.brokerage_name}</p>}
+            {selectedConvoType === 'group' ? (
+              <div style={{ width:'38px', height:'38px', borderRadius:'50%', background:`${LAVENDER}20`, border:`1px solid ${LAVENDER}40`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <Users style={{ width:'18px', height:'18px', color:LAVENDER }}/>
+              </div>
+            ) : (
+              <Avatar profile={otherProfile} name={otherName} size={38}/>
+            )}
+            <div style={{ flex:1, minWidth:0 }}>
+              {selectedConvoType === 'group' ? (
+                <>
+                  <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:500, color:'white', margin:0 }}>{selectedGroupConvo?.name}</p>
+                  <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.35)', margin:0 }}>
+                    {groupParticipants.map(e => profileMap[e]?.full_name || e).join(', ')}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p onClick={() => setViewingAgent({ profile: otherProfile, email: otherEmail })}
+                    style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:500, color:'white', margin:0, cursor:'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.color=ACCENT}
+                    onMouseLeave={e => e.currentTarget.style.color='white'}>
+                    {otherName}
+                  </p>
+                  {otherProfile?.brokerage_name && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>{otherProfile.brokerage_name}</p>}
+                </>
+              )}
             </div>
-            {/* Tabs */}
-            <div style={{ display:'flex', background:'rgba(255,255,255,0.05)', borderRadius:'8px', padding:'3px', gap:'2px' }}>
-              {[{k:'chat',l:'Chat'},{k:'posts',l:`Posts${sharedPosts.length>0?` (${sharedPosts.length})`:''}`}].map(t => (
-                <button key={t.k} onClick={() => setActiveTab(t.k)}
-                  style={{ padding:'6px 14px', background:activeTab===t.k?'rgba(255,255,255,0.1)':'transparent', border:'none', borderRadius:'6px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color:activeTab===t.k?'white':'rgba(255,255,255,0.45)', cursor:'pointer', whiteSpace:'nowrap' }}>
-                  {t.l}
-                </button>
-              ))}
-            </div>
+            {selectedConvoType === 'dm' && (
+              <div style={{ display:'flex', background:'rgba(255,255,255,0.05)', borderRadius:'8px', padding:'3px', gap:'2px' }}>
+                {[{k:'chat',l:'Chat'},{k:'posts',l:`Posts${sharedPosts.length>0?` (${sharedPosts.length})`:''}`}].map(t => (
+                  <button key={t.k} onClick={() => setActiveTab(t.k)}
+                    style={{ padding:'6px 14px', background:activeTab===t.k?'rgba(255,255,255,0.1)':'transparent', border:'none', borderRadius:'6px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color:activeTab===t.k?'white':'rgba(255,255,255,0.45)', cursor:'pointer', whiteSpace:'nowrap' }}>
+                    {t.l}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* ── CHAT TAB ── */}
           {activeTab === 'chat' && (
             <>
               <div style={{ flex:1, overflowY:'auto', padding:'20px' }}>
-                {messages.length === 0 ? (
+                {activeMessages.length === 0 ? (
                   <div style={{ textAlign:'center', padding:'60px 20px' }}>
                     <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.3)' }}>No messages yet. Say hello!</p>
                   </div>
                 ) : (
-                  messages.map((msg, i) => {
+                  activeMessages.map((msg, i) => {
                     const isMe = msg.sender_email === user?.email;
                     const senderProfile = profileMap[msg.sender_email];
-                    const showAvatar = !isMe && (i === 0 || messages[i-1]?.sender_email !== msg.sender_email);
+                    const senderName = senderProfile?.full_name || msg.sender_name || msg.sender_email?.split('@')[0] || 'Agent';
+                    const prevMsg = activeMessages[i-1];
+                    const showSenderLabel = selectedConvoType === 'group' && !isMe && prevMsg?.sender_email !== msg.sender_email;
+                    const timestamp = msg.sent_at || msg.created_date;
                     return (
                       <div key={msg.id || i} style={{ display:'flex', flexDirection:isMe?'row-reverse':'row', alignItems:'flex-end', gap:'8px', marginBottom:'10px' }}>
                         {!isMe && (
                           <div style={{ width:'28px', flexShrink:0 }}>
-                            {showAvatar && <Avatar profile={senderProfile} name={otherName} size={28}/>}
+                            {(i === 0 || prevMsg?.sender_email !== msg.sender_email) && <Avatar profile={senderProfile} name={senderName} size={28}/>}
                           </div>
                         )}
                         <div style={{ maxWidth:'65%' }}>
+                          {showSenderLabel && (
+                            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:'0 0 3px 4px' }}>{senderName}</p>
+                          )}
                           {msg.content && (
                             <div style={{ padding:'10px 14px', background:isMe?ACCENT:'rgba(255,255,255,0.08)', borderRadius:isMe?'16px 16px 4px 16px':'16px 16px 16px 4px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:isMe?'#111827':'white', lineHeight:1.5, wordBreak:'break-word' }}>
                               {msg.content}
@@ -450,7 +591,7 @@ export default function Messages() {
                             </div>
                           )}
                           <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.25)', margin:'3px 4px 0', textAlign:isMe?'right':'left' }}>
-                            {timeAgo(msg.sent_at)}
+                            {timeAgo(timestamp)}
                           </p>
                         </div>
                       </div>
@@ -483,7 +624,7 @@ export default function Messages() {
                     placeholder="Type a message..."
                     rows={1}
                     style={{ flex:1, padding:'10px 14px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'white', outline:'none', resize:'none', lineHeight:1.5, maxHeight:'120px', overflowY:'auto' }}/>
-                  <button onClick={handleSend} disabled={!messageText.trim() && !pendingAttachment}
+                  <button onClick={handleSend} disabled={(!messageText.trim() && !pendingAttachment) || sendMutation.isPending}
                     style={{ background:ACCENT, border:'none', borderRadius:'8px', padding:'9px 12px', cursor:'pointer', display:'flex', alignItems:'center', flexShrink:0, opacity:(!messageText.trim()&&!pendingAttachment)?0.4:1 }}>
                     <Send style={{ width:'15px', height:'15px', color:'#111827' }}/>
                   </button>
