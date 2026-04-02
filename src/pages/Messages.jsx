@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import Cropper from 'react-easy-crop';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
@@ -163,6 +164,61 @@ function PostDetailModal({ post, postType, onClose }) {
 }
 
 // ─── Main Messages Page ───────────────────────────────────────────────────────
+// ── Group Chat Crop Modal ──────────────────────────────────────────────────────
+function GroupCropModal({ imageSrc, onConfirm, onCancel }) {
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+  const onCropComplete = useCallback((_, cappx) => setCroppedAreaPixels(cappx), []);
+
+  const handleConfirm = async () => {
+    if (!croppedAreaPixels) return;
+    try {
+      const image = new Image();
+      image.src = imageSrc;
+      await new Promise(res => { image.onload = res; });
+      const canvas = document.createElement('canvas');
+      canvas.width = 400; canvas.height = 400;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, croppedAreaPixels.x, croppedAreaPixels.y, croppedAreaPixels.width, croppedAreaPixels.height, 0, 0, 400, 400);
+      canvas.toBlob(blob => { if (blob) onConfirm(blob); }, 'image/jpeg', 0.92);
+    } catch (e) { console.error('Crop error:', e); }
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.88)', backdropFilter:'blur(6px)', zIndex:9500, display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}>
+      <div style={{ background:'#1a1f25', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'20px', padding:'28px', display:'flex', flexDirection:'column', alignItems:'center', gap:'20px', maxWidth:'420px', width:'100%' }}>
+        <div style={{ textAlign:'center' }}>
+          <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'20px', fontWeight:500, color:'white', margin:'0 0 4px' }}>Group Photo</h2>
+          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.4)', margin:0 }}>Drag to reposition · Use the slider to zoom</p>
+        </div>
+        <div style={{ position:'relative', width:'320px', height:'320px', borderRadius:'8px', overflow:'hidden', background:'#000' }}>
+          <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={1} cropShape="round" showGrid={false}
+            cropSize={{ width:240, height:240 }}
+            onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete}
+            style={{ containerStyle:{ borderRadius:'8px' }, cropAreaStyle:{ border:'2.5px solid #00DBC5', color:'rgba(0,0,0,0.55)' } }}/>
+        </div>
+        <div style={{ width:'100%', display:'flex', alignItems:'center', gap:'12px' }}>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', flexShrink:0 }}>Zoom</span>
+          <input type="range" min={1} max={3} step={0.01} value={zoom} onChange={e => setZoom(parseFloat(e.target.value))}
+            style={{ flex:1, height:'4px', appearance:'none', borderRadius:'2px', outline:'none', cursor:'pointer', background:`linear-gradient(to right, #00DBC5 0%, #00DBC5 ${((zoom-1)/2)*100}%, rgba(255,255,255,0.15) ${((zoom-1)/2)*100}%, rgba(255,255,255,0.15) 100%)` }}/>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', minWidth:'30px', textAlign:'right' }}>{zoom.toFixed(1)}x</span>
+        </div>
+        <div style={{ display:'flex', gap:'12px', width:'100%' }}>
+          <button onClick={onCancel} style={{ flex:1, padding:'11px', background:'transparent', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.6)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
+            <X style={{ width:'15px', height:'15px' }}/> Cancel
+          </button>
+          <button onClick={handleConfirm} style={{ flex:1, padding:'11px', background:'#00DBC5', border:'none', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:600, color:'#111827', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
+            <Check style={{ width:'15px', height:'15px' }}/> Use Photo
+          </button>
+        </div>
+        <style>{`input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:#00DBC5;cursor:pointer;border:2px solid #1a1f25;} input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#00DBC5;cursor:pointer;border:2px solid #1a1f25;}`}</style>
+      </div>
+    </div>
+  );
+}
+
 export default function Messages() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -179,6 +235,7 @@ export default function Messages() {
   const [groupNameDraft, setGroupNameDraft]     = useState('');
   const [showGroupMembers, setShowGroupMembers] = useState(false);
   const [uploadingGroupPhoto, setUploadingGroupPhoto] = useState(false);
+  const [groupCropSrc, setGroupCropSrc]             = useState(null); // raw image for crop modal
   const groupPhotoInputRef = React.useRef(null);
   const messagesEndRef = useRef(null);
   const fileInputRef   = useRef(null);
@@ -410,17 +467,26 @@ export default function Messages() {
     setEditingGroupName(false);
   };
 
-  const handleGroupPhotoUpload = async (e) => {
+  const handleGroupPhotoUpload = (e) => {
     const file = e.target.files?.[0];
-    if (!file || !selectedGroupConvoId) return;
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setGroupCropSrc(reader.result);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleGroupCropConfirm = async (blob) => {
+    if (!selectedGroupConvoId) return;
+    setGroupCropSrc(null);
     setUploadingGroupPhoto(true);
     try {
+      const file = new File([blob], 'group-photo.jpg', { type: 'image/jpeg' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       await base44.entities.GroupConversation.update(selectedGroupConvoId, { photo_url: file_url });
       queryClient.invalidateQueries({ queryKey: ['group-convos'] });
-    } catch {}
+    } catch (err) { console.error('Group photo upload error:', err); }
     setUploadingGroupPhoto(false);
-    e.target.value = '';
   };
 
   return (
@@ -761,6 +827,15 @@ export default function Messages() {
             New Conversation
           </button>
         </div>
+      )}
+
+      {/* Group photo crop modal */}
+      {groupCropSrc && (
+        <GroupCropModal
+          imageSrc={groupCropSrc}
+          onConfirm={handleGroupCropConfirm}
+          onCancel={() => setGroupCropSrc(null)}
+        />
       )}
 
       {/* Modals */}
