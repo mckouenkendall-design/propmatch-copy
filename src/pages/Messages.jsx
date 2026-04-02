@@ -680,10 +680,19 @@ export default function Messages() {
           currentUser={user}
           profiles={allProfiles}
           onClose={() => setShowNewConvo(false)}
-          onCreated={(convoId) => {
+          onCreated={(convoId, type) => {
             setShowNewConvo(false);
-            queryClient.invalidateQueries({ queryKey: ['conversations', user?.email] });
-            setSelectedConvoId(convoId);
+            if (type === 'group') {
+              queryClient.invalidateQueries({ queryKey: ['group-convos'] });
+              setSelectedGroupConvoId(convoId);
+              setSelectedConvoId(null);
+              setSelectedConvoType('group');
+            } else {
+              queryClient.invalidateQueries({ queryKey: ['conversations', user?.email] });
+              setSelectedConvoId(convoId);
+              setSelectedGroupConvoId(null);
+              setSelectedConvoType('dm');
+            }
           }}
         />
       )}
