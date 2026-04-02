@@ -40,27 +40,35 @@ function CropModal({ imageSrc, onConfirm, onCancel }) {
 
   const handleConfirm = async () => {
     const cappx = croppedAreaPixelsRef.current;
-    if (!cappx) return;
     try {
-      // Set listener BEFORE src to guarantee onload fires
+      // Use blob URL for reliable canvas loading (data URLs can fail in canvas context)
+      const originalBlob = await fetch(imageSrc).then(r => r.blob());
+      const blobUrl = URL.createObjectURL(originalBlob);
       const image = await new Promise((res, rej) => {
         const img = new Image();
-        img.addEventListener('load', () => res(img));
-        img.addEventListener('error', rej);
-        img.src = imageSrc;
+        img.onload  = () => res(img);
+        img.onerror = rej;
+        img.src = blobUrl;
       });
       const canvas = document.createElement('canvas');
-      canvas.width = 400;
-      canvas.height = 400;
+      canvas.width = 400; canvas.height = 400;
       const ctx = canvas.getContext('2d');
-      // Clamp — negative/out-of-bounds coords from low zoom cause silent canvas failure
-      const sx = Math.max(0, Math.round(cappx.x));
-      const sy = Math.max(0, Math.round(cappx.y));
-      const sw = Math.min(Math.round(cappx.width),  image.naturalWidth  - sx);
-      const sh = Math.min(Math.round(cappx.height), image.naturalHeight - sy);
-      if (sw <= 0 || sh <= 0) { onConfirm(null); return; }
-      ctx.drawImage(image, sx, sy, sw, sh, 0, 0, 400, 400);
-      canvas.toBlob((blob) => { if (blob) onConfirm(blob); }, 'image/jpeg', 0.92);
+      if (cappx && image.naturalWidth > 0) {
+        const sx = Math.max(0, Math.round(cappx.x));
+        const sy = Math.max(0, Math.round(cappx.y));
+        const sw = Math.min(Math.round(cappx.width),  image.naturalWidth  - sx);
+        const sh = Math.min(Math.round(cappx.height), image.naturalHeight - sy);
+        ctx.drawImage(image, sx > 0 ? sx : 0, sy > 0 ? sy : 0, sw > 0 ? sw : image.naturalWidth, sh > 0 ? sh : image.naturalHeight, 0, 0, 400, 400);
+      } else {
+        ctx.drawImage(image, 0, 0, 400, 400);
+      }
+      URL.revokeObjectURL(blobUrl);
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+      if (blob && blob.size > 100) {
+        onConfirm(blob);
+      } else {
+        onConfirm(originalBlob);
+      }
     } catch (e) {
       console.error('Crop error:', e);
     }
