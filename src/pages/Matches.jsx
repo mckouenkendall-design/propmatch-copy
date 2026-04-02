@@ -493,19 +493,46 @@ function HighlightedText({ text }) {
 // ─── Photo Lightbox ───────────────────────────────────────────────────────────
 function PhotoLightbox({ photos, onClose }) {
   const [idx, setIdx] = useState(0);
-  const list = Array.isArray(photos) ? photos : [photos].filter(Boolean);
+  const list = Array.isArray(photos) ? photos : (photos ? [photos] : []);
   if (!list.length) return null;
+  const prev = (e) => { e.stopPropagation(); setIdx(i => (i-1+list.length)%list.length); };
+  const next = (e) => { e.stopPropagation(); setIdx(i => (i+1)%list.length); };
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.95)', zIndex:400, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }} onClick={onClose}>
-      <div style={{ position:'relative', maxWidth:'90vw', maxHeight:'80vh' }} onClick={e => e.stopPropagation()}>
-        <img src={list[idx]} alt={`Photo ${idx+1}`} style={{ maxWidth:'90vw', maxHeight:'80vh', objectFit:'contain', borderRadius:'8px' }}/>
-        {list.length > 1 && (<>
-          <button onClick={() => setIdx(i => (i-1+list.length)%list.length)} style={{ position:'absolute', left:'-50px', top:'50%', transform:'translateY(-50%)', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:'50%', width:'40px', height:'40px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><ChevronLeft style={{ width:'18px', height:'18px', color:'white' }}/></button>
-          <button onClick={() => setIdx(i => (i+1)%list.length)} style={{ position:'absolute', right:'-50px', top:'50%', transform:'translateY(-50%)', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:'50%', width:'40px', height:'40px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><ChevronRight style={{ width:'18px', height:'18px', color:'white' }}/></button>
-        </>)}
-        <div style={{ position:'absolute', bottom:'-36px', left:'50%', transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.5)' }}>{list.length > 1 ? `${idx+1} / ${list.length}` : ''}</div>
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.96)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center' }}
+      onClick={onClose}>
+      {/* Prev arrow */}
+      {list.length > 1 && (
+        <button onClick={prev} style={{ position:'absolute', left:'20px', top:'50%', transform:'translateY(-50%)', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'50%', width:'48px', height:'48px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', zIndex:2, flexShrink:0 }}
+          onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.22)'}
+          onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.12)'}>
+          <ChevronLeft style={{ width:'22px', height:'22px', color:'white' }}/>
+        </button>
+      )}
+      {/* Image */}
+      <div onClick={e=>e.stopPropagation()} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'16px', maxWidth:'calc(100vw - 140px)', maxHeight:'90vh' }}>
+        <img src={list[idx]} alt={`Photo ${idx+1}`} style={{ maxWidth:'100%', maxHeight:'80vh', objectFit:'contain', borderRadius:'10px', boxShadow:'0 8px 40px rgba(0,0,0,0.6)' }}/>
+        {list.length > 1 && (
+          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+            {list.map((_,i)=>(
+              <button key={i} onClick={e=>{e.stopPropagation();setIdx(i);}}
+                style={{ width:i===idx?'24px':'8px', height:'8px', borderRadius:'4px', background:i===idx?ACCENT:'rgba(255,255,255,0.3)', border:'none', cursor:'pointer', transition:'all 0.2s', padding:0 }}/>
+            ))}
+          </div>
+        )}
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', margin:0 }}>{list.length > 1 ? `${idx+1} of ${list.length}` : ''}</p>
       </div>
-      <button onClick={onClose} style={{ position:'absolute', top:'20px', right:'20px', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:'8px', padding:'8px', cursor:'pointer' }}><X style={{ width:'18px', height:'18px', color:'white' }}/></button>
+      {/* Next arrow */}
+      {list.length > 1 && (
+        <button onClick={next} style={{ position:'absolute', right:'20px', top:'50%', transform:'translateY(-50%)', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'50%', width:'48px', height:'48px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', zIndex:2, flexShrink:0 }}
+          onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.22)'}
+          onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.12)'}>
+          <ChevronRight style={{ width:'22px', height:'22px', color:'white' }}/>
+        </button>
+      )}
+      {/* Close */}
+      <button onClick={onClose} style={{ position:'absolute', top:'20px', right:'20px', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:'8px', padding:'8px', cursor:'pointer', display:'flex' }}>
+        <X style={{ width:'18px', height:'18px', color:'white' }}/>
+      </button>
     </div>
   );
 }
