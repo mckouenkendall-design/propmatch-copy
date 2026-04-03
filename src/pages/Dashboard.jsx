@@ -33,7 +33,7 @@ export default function Dashboard() {
   const {data:allListings=[]}     =useQuery({queryKey:['cc-all-listings'],    queryFn:()=>base44.entities.Listing.list('-created_date',80)});
   const {data:allRequirements=[]} =useQuery({queryKey:['cc-all-reqs'],        queryFn:()=>base44.entities.Requirement.list('-created_date',80)});
   const {data:myProfile}          =useQuery({queryKey:['cc-profile'],         queryFn:()=>base44.entities.UserProfile.filter({user_email:user?.email}).then(r=>r[0])});
-  const {data:notifications=[]}   =useQuery({queryKey:['cc-notifications'],   queryFn:()=>base44.entities.Notification.filter({recipient_email:user?.email})});
+  const {data:notifications=[]}   =useQuery({queryKey:['cc-notifications'],   queryFn:()=>base44.entities.Notification.filter({user_email:user?.email})});
 
   const firstName=myProfile?.full_name?.split(' ')[0]||user?.email?.split('@')[0]||'there';
 
