@@ -1,58 +1,40 @@
-// ─── Notification Helper ─────────────────────────────────────────────────────
-// Call this from anywhere in the app to create a notification for a user.
-// Usage: await createNotification(base44, recipientEmail, 'new_message', 'New Message', 'You have a new message from X', { linkType: 'inbox' })
+// ─── Notification Helper — matches REAL PropMatch Copy schema ─────────────────
+// Real fields: user_email, type, title, body, link, read, related_id
+// Real type enum: "match", "message", "subscription", "announcement", "event", "group_post"
 
-export async function createNotification(base44Client, recipientEmail, type, title, message, options = {}) {
-  if (!recipientEmail) return;
+export async function createNotification(base44Client, userEmail, type, title, body, options = {}) {
+  if (!userEmail) return;
   try {
     await base44Client.entities.Notification.create({
-      recipient_email: recipientEmail,
-      sender_email:    options.senderEmail  || null,
+      user_email: userEmail,
       type,
       title,
-      message,
-      read:     false,
-      critical: options.critical  || false,
-      link_type: options.linkType || null,
-      link_id:   options.linkId   || null,
-      metadata:  options.metadata ? JSON.stringify(options.metadata) : null,
+      body: body || '',
+      link: options.link || null,
+      read: false,
+      related_id: options.relatedId || null,
     });
   } catch (e) {
     console.warn('Notification create failed:', e);
   }
 }
 
-// Navigation helper — maps link_type to a route path
-export function resolveNotificationLink(notification) {
-  const { link_type, link_id } = notification;
-  switch (link_type) {
-    case 'matches':  return '/Matches';
-    case 'inbox':    return link_id ? `/Messages` : '/Messages';
-    case 'settings': return '/Settings';
-    case 'pricing':  return '/Settings';
-    case 'inventory': return '/Inventory';
-    default:         return null;
-  }
-}
-
-// Notification type → icon emoji
+// Icon per type
 export const NOTIF_ICONS = {
-  new_match:            '🎯',
-  new_message:          '💬',
-  match_followup:       '⏰',
-  broker_removed:       '🚫',
-  subscription_expired: '💳',
-  subscription_expiring:'⭐',
-  general:              '🔔',
+  match:        '🎯',
+  message:      '💬',
+  subscription: '💳',
+  announcement: '📣',
+  event:        '📅',
+  group_post:   '🐟',
 };
 
-// Notification type → accent color
+// Color per type
 export const NOTIF_COLORS = {
-  new_match:            '#00DBC5',
-  new_message:          '#34d399',
-  match_followup:       '#00DBC5',
-  broker_removed:       '#ef4444',
-  subscription_expired: '#f59e0b',
-  subscription_expiring:'#f59e0b',
-  general:              'rgba(255,255,255,0.4)',
+  match:        '#00DBC5',
+  message:      '#34d399',
+  subscription: '#f59e0b',
+  announcement: '#ef4444',
+  event:        '#60a5fa',
+  group_post:   '#818cf8',
 };
