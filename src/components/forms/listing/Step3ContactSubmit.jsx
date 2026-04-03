@@ -28,7 +28,7 @@ function SectionTitle({ children }) {
 }
 
 const VISIBILITY_OPTIONS = [
-  { value: 'public',    label: 'Public',               desc: 'Visible to all users on PropMatch — recommended for the highest chance of a match' },
+  { value: 'public',    label: 'Public',               desc: 'Visible to all users on PropMatch. Recommended for the highest chance of a match' },
   { value: 'team',      label: 'Fishtank(s)',           desc: 'Only members of selected networking groups' },
   { value: 'brokerage', label: 'Brokerage Only',        desc: 'Only users sharing your Brokerage ID' },
   { value: 'private',   label: 'Private (Invite Only)', desc: 'Direct access link sent to a specific person' },
@@ -164,19 +164,16 @@ function PrivateRecipientPicker({ value, onChange, currentUserEmail }) {
 // ─── Visibility Confirmation Modal ───────────────────────────────────────────
 const VISIBILITY_MESSAGES = {
   team: {
-    icon: '🐟',
     title: 'Fish Tank Visibility',
     body: "This post will only be visible to members of the Fish Tank(s) you selected. It will not appear in public search, it will not show in your brokerage's listings/requirements, and agents outside those tanks will not be able to find or match with it.",
     storageKey: 'pm_vis_confirm_team_dismissed',
   },
   brokerage: {
-    icon: '🏢',
     title: 'Brokerage Only Visibility',
     body: "This post will only be visible to agents who share your Brokerage ID. It will not appear in public search, it will not show in any Fish Tanks, and agents outside your brokerage will not be able to find or match with it.",
     storageKey: 'pm_vis_confirm_brokerage_dismissed',
   },
   private: {
-    icon: '🔒',
     title: 'Private Post',
     body: "This post will only be visible to the specific person(s) you selected. No one else on PropMatch will see it, it won't show publicly, and it won't appear in any Fish Tank or brokerage listings/requirements.",
     storageKey: 'pm_vis_confirm_private_dismissed',
@@ -197,11 +194,8 @@ function VisibilityConfirmModal({ visibilityType, onConfirm, onCancel }) {
       onClick={onCancel}>
       <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'20px', width:'100%', maxWidth:'440px', padding:'28px', boxShadow:'0 24px 60px rgba(0,0,0,0.5)' }}
         onClick={e => e.stopPropagation()}>
-        {/* Icon + Title */}
-        <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px' }}>
-          <div style={{ width:'44px', height:'44px', borderRadius:'12px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0 }}>
-            {info.icon}
-          </div>
+        {/* Title */}
+        <div style={{ marginBottom:'16px' }}>
           <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'17px', fontWeight:600, color:'white', margin:0 }}>{info.title}</h3>
         </div>
         {/* Body */}
@@ -232,11 +226,15 @@ function VisibilityConfirmModal({ visibilityType, onConfirm, onCancel }) {
 
 export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoading, editMode }) {
   const [termsAccepted, setTermsAccepted]           = useState(true);
+  const [showTermsModal, setShowTermsModal]           = useState(false);
   const [groupsDropdownOpen, setGroupsDropdownOpen] = useState(false);
   const [groupSearchInput, setGroupSearchInput]     = useState('');
   const [currentUserEmail, setCurrentUserEmail]     = useState(null);
   const [showSaveTemplate, setShowSaveTemplate]     = useState(false);
   const [pendingVisibility, setPendingVisibility]     = useState(null); // visibility type awaiting confirmation
+  const [showSubmitVisibilityModal, setShowSubmitVisibilityModal] = useState(false); // show on Post/Save click
+  const [showGroupChoice, setShowGroupChoice]         = useState(false); // send separately vs group chat
+  const [existingGroupChat, setExistingGroupChat]     = useState(null); // {id, name} if group exists
 
   useEffect(() => {
     async function prefill() {
@@ -273,16 +271,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
   };
 
   const handleVisibilitySelect = (value) => {
-    if (value === 'public') {
-      update({ visibility: value });
-      return;
-    }
-    if (isDismissed(value)) {
-      update({ visibility: value });
-      return;
-    }
-    // Store pending and show modal
-    setPendingVisibility(value);
+    update({ visibility: value });
   };
   const filteredGroups = userGroups.filter(g => g.name.toLowerCase().includes(groupSearchInput.toLowerCase()));
 
@@ -299,6 +288,36 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [groupsDropdownOpen]);
+
+  const handleSubmitClick = async () => {
+    const vis = data.visibility || 'public';
+    // Check if visibility warning needs to show first
+    if (vis !== 'public' && !isDismissed(vis) && !showSubmitVisibilityModal) {
+      setShowSubmitVisibilityModal(true);
+      return;
+    }
+    // Private with multiple recipients — check for existing group chat
+    if (vis === 'private') {
+      const recipients = (data.visibility_recipient_email || '').split(',').map(s => s.trim()).filter(Boolean);
+      if (recipients.length > 1) {
+        // Look for existing group chat with exactly these people
+        try {
+          const myEmail = currentUserEmail;
+          const participantEmails = [myEmail, ...recipients];
+          const sortedKey = [...participantEmails].sort().join(',');
+          const myGCs = await base44.entities.GroupConversation.filter({ created_by: myEmail });
+          const found = myGCs.find(gc => {
+            try { return JSON.parse(gc.participant_emails || '[]').sort().join(',') === sortedKey; }
+            catch { return false; }
+          });
+          setExistingGroupChat(found ? { id: found.id, name: found.name } : null);
+        } catch { setExistingGroupChat(null); }
+        setShowGroupChoice(true);
+        return;
+      }
+    }
+    onSubmit();
+  };
 
   return (
     <div className="space-y-6" onClick={e => e.stopPropagation()}>
@@ -388,8 +407,8 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
 
       {/* Terms + Submit */}
       <div className="pt-2 space-y-4">
-        <label className="flex items-start gap-3 cursor-pointer" onClick={() => !editMode && setTermsAccepted(!termsAccepted)}>
-          <div style={{ marginTop: '2px', width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0, border: `2px solid ${termsAccepted ? ACCENT : 'rgba(255,255,255,0.25)'}`, background: termsAccepted ? ACCENT : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: editMode ? 'default' : 'pointer' }}>
+        <label className="flex items-start gap-3 cursor-pointer" onClick={() => setTermsAccepted(!termsAccepted)}>
+          <div style={{ marginTop: '2px', width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0, border: `2px solid ${termsAccepted ? ACCENT : 'rgba(255,255,255,0.25)'}`, background: termsAccepted ? ACCENT : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: 'pointer' }}>
             {termsAccepted && (
               <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="2 7 5.5 10.5 12 3.5" />
@@ -398,9 +417,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
           </div>
           <span className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>
             By posting, I confirm the information provided is accurate and agree to the{' '}
-            <a href="/Terms" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: ACCENT, textDecoration: 'underline', textUnderlineOffset: '2px' }}>
-              PropMatch Terms of Service
-            </a>
+            <span onClick={e => { e.stopPropagation(); setShowTermsModal(true); }} style={{ color: ACCENT, textDecoration: 'underline', textUnderlineOffset: '2px', cursor:'pointer' }}>PropMatch Terms of Service</span>
             . I understand that other PropMatch users may contact me directly via email, phone, or in-app messaging based on this post.
           </span>
         </label>
@@ -421,12 +438,73 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
       </div>
 
       {/* Visibility confirmation modal */}
-      {pendingVisibility && (
+      {showSubmitVisibilityModal && (
         <VisibilityConfirmModal
-          visibilityType={pendingVisibility}
-          onConfirm={() => { update({ visibility: pendingVisibility }); setPendingVisibility(null); }}
-          onCancel={() => setPendingVisibility(null)}
+          visibilityType={data.visibility || 'public'}
+          onConfirm={() => {
+            setShowSubmitVisibilityModal(false);
+            // After confirming visibility, check if we still need group choice
+            const recipients = (data.visibility_recipient_email || '').split(',').map(s => s.trim()).filter(Boolean);
+            if ((data.visibility || 'public') === 'private' && recipients.length > 1) {
+              setShowGroupChoice(true);
+            } else {
+              onSubmit();
+            }
+          }}
+          onCancel={() => setShowSubmitVisibilityModal(false)}
         />
+      )}
+
+      {showGroupChoice && (() => {
+        const recipients = (data.visibility_recipient_email || '').split(',').map(s => s.trim()).filter(Boolean);
+        return (
+          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(6px)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}>
+            <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'20px', width:'100%', maxWidth:'400px', padding:'28px', boxShadow:'0 24px 60px rgba(0,0,0,0.5)' }}>
+              <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'17px', fontWeight:600, color:'white', margin:'0 0 8px' }}>Send to {recipients.length} people</h3>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.5)', margin:'0 0 20px', lineHeight:1.6 }}>
+                How would you like to send this post to {recipients.length} recipients?
+              </p>
+              <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                <button onClick={() => { setShowGroupChoice(false); onSubmit({ sendMode: existingGroupChat ? 'existing_group' : 'create_group', groupId: existingGroupChat?.id }); }}
+                  style={{ width:'100%', padding:'13px', background:ACCENT, border:'none', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:700, color:'#111827', cursor:'pointer', textAlign:'left' }}>
+                  {existingGroupChat ? `Send to "${existingGroupChat.name}"` : 'Create Group Chat'}
+                </button>
+                <button onClick={() => { setShowGroupChoice(false); onSubmit({ sendMode: 'separately' }); }}
+                  style={{ width:'100%', padding:'13px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'white', cursor:'pointer', textAlign:'left' }}>
+                  Send Separately — individual DM to each person
+                </button>
+                <button onClick={() => setShowGroupChoice(false)}
+                  style={{ width:'100%', padding:'10px', background:'transparent', border:'none', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.35)', cursor:'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {showTermsModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.8)', backdropFilter:'blur(6px)', zIndex:10000, display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}>
+          <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'20px', width:'100%', maxWidth:'600px', maxHeight:'80vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            <div style={{ padding:'18px 22px', borderBottom:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+              <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'17px', fontWeight:600, color:'white', margin:0 }}>PropMatch Terms of Service</h3>
+              <button onClick={() => setShowTermsModal(false)} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'5px', cursor:'pointer', display:'flex' }}>
+                <X style={{ width:'15px', height:'15px', color:'rgba(255,255,255,0.5)' }}/>
+              </button>
+            </div>
+            <div style={{ flex:1, overflowY:'auto', padding:'22px' }}>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.6)', lineHeight:1.8 }}>
+                By posting on PropMatch, you confirm that all information provided is accurate to the best of your knowledge. You understand that other PropMatch users may contact you directly via email, phone, or in-app messaging based on your post. You agree not to post false, misleading, or fraudulent listings or requirements. PropMatch reserves the right to remove any post that violates these terms. Your use of PropMatch constitutes acceptance of these terms. For full terms and conditions, visit prop-match.ai/terms.
+              </p>
+            </div>
+            <div style={{ padding:'16px 22px', borderTop:'1px solid rgba(255,255,255,0.07)', flexShrink:0 }}>
+              <button onClick={() => { setTermsAccepted(true); setShowTermsModal(false); }}
+                style={{ width:'100%', padding:'11px', background:'#00DBC5', border:'none', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:700, color:'#111827', cursor:'pointer' }}>
+                I Agree
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showSaveTemplate && (
