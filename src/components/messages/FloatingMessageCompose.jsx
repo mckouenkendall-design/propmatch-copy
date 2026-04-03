@@ -174,7 +174,7 @@ Rules: no bullet points, no em dashes, no markdown. Plain conversational text on
             unread_by_2: (existing[0]?.unread_by_2 || 0) + 1,
           });
           const senderName = currentUser?.full_name || currentUser?.email?.split('@')[0] || 'An agent';
-          await createNotification(base44, email, 'new_message', `New message from ${senderName}`, msgText.slice(0,100), { senderEmail: myEmail, linkType: 'inbox', linkId: convoId });
+          await createNotification(base44, email, 'message', `New message from ${senderName}`, msgText.slice(0,100), { link: '/Messages', relatedId: convoId });
         }
         return { type: 'separate', count: recipients.length };
       }
