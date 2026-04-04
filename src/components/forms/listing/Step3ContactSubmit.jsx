@@ -305,10 +305,13 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
           const myEmail = currentUserEmail;
           const participantEmails = [myEmail, ...recipients];
           const sortedKey = [...participantEmails].sort().join(',');
-          const myGCs = await base44.entities.GroupConversation.filter({ created_by: myEmail });
-          const found = myGCs.find(gc => {
-            try { return JSON.parse(gc.participant_emails || '[]').sort().join(',') === sortedKey; }
-            catch { return false; }
+          // Search all group convos, not just ones I created
+          const allGCs = await base44.entities.GroupConversation.filter({});
+          const found = allGCs.find(gc => {
+            try {
+              const parts = JSON.parse(gc.participant_emails || '[]');
+              return parts.sort().join(',') === sortedKey;
+            } catch { return false; }
           });
           setExistingGroupChat(found ? { id: found.id, name: found.name } : null);
         } catch { setExistingGroupChat(null); }
@@ -471,7 +474,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
                 </button>
                 <button onClick={() => { setShowGroupChoice(false); onSubmit({ sendMode: 'separately' }); }}
                   style={{ width:'100%', padding:'13px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'white', cursor:'pointer', textAlign:'left' }}>
-                  Send Separately — individual DM to each person
+                  Send Separately - individual DM to each person
                 </button>
                 <button onClick={() => setShowGroupChoice(false)}
                   style={{ width:'100%', padding:'10px', background:'transparent', border:'none', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.35)', cursor:'pointer' }}>
