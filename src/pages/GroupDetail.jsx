@@ -3,7 +3,6 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Users, Lock, Globe, MessageSquare, Building2, Calendar, UserCheck, Settings, LogOut, UserPlus, Edit2, Save, X } from 'lucide-react';
@@ -88,6 +87,19 @@ export default function GroupDetail() {
         await base44.entities.Group.update(groupId, { member_count: (group?.member_count || 0) + 1 });
       }
       return newMembership;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-membership', groupId, currentUser?.email] });
+      queryClient.invalidateQueries({ queryKey: ['group-members', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+    },
+  });
+
+  // Accept an invite (pending record already exists — just update status to active)
+  const acceptInviteMutation = useMutation({
+    mutationFn: async () => {
+      await base44.entities.GroupMember.update(membership.id, { status: 'active' });
+      await base44.entities.Group.update(groupId, { member_count: (group?.member_count || 0) + 1 });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-membership', groupId, currentUser?.email] });
@@ -194,9 +206,16 @@ export default function GroupDetail() {
               </Button>
             )}
             {isPending && (
-              <Badge style={{ background: 'rgba(251,191,36,0.15)', color: '#FBB936', border: '1px solid rgba(251,191,36,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <UserCheck style={{ width: '14px', height: '14px' }} /> Pending Approval
-              </Badge>
+              <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+                <Button onClick={() => acceptInviteMutation.mutate()} disabled={acceptInviteMutation.isPending}
+                  style={{ background: ACCENT, color: '#111827', display:'flex', alignItems:'center', gap:'6px' }}>
+                  <UserCheck style={{ width:'14px', height:'14px' }}/> Accept Invite
+                </Button>
+                <button onClick={() => leaveMutation.mutate()} disabled={leaveMutation.isPending}
+                  style={{ padding:'8px 14px', background:'transparent', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.5)', cursor:'pointer' }}>
+                  Decline
+                </button>
+              </div>
             )}
             {isMember && !isAdmin && (
               <button
@@ -222,7 +241,7 @@ export default function GroupDetail() {
           <Lock style={{ width: '48px', height: '48px', color: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
           <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: 500, color: 'white', marginBottom: '8px' }}>This is a Private Fish Tank</h3>
           <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>
-            {isPending ? 'Your request to join is pending approval.' : 'Request to join to view the content.'}
+            {isPending ? 'You have been invited to join this Fish Tank. Accept above to get access.' : 'Request to join to view the content.'}
           </p>
         </div>
       ) : (
@@ -265,7 +284,7 @@ export default function GroupDetail() {
               <GroupEvents groupId={groupId} currentUser={currentUser} />
             )}
             {activeTab === 'members' && (
-              <GroupMembers groupId={groupId} currentUserRole={currentUserRole} />
+              <GroupMembers groupId={groupId} groupName={group?.name} currentUserRole={currentUserRole} currentUser={currentUser} />
             )}
             {activeTab === 'about' && (
               <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '24px' }}>
