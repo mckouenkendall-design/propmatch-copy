@@ -23,7 +23,7 @@ function Avatar({ profile, displayName, size = 36 }) {
 }
 
 // ─── Invite Modal ─────────────────────────────────────────────────────────────
-function InviteModal({ groupId, groupName, currentUserEmail, existingMemberEmails, allProfiles, onClose }) {
+function InviteModal({ groupId, groupName, groupType, currentUserEmail, existingMemberEmails, allProfiles, onClose }) {
   const [query, setQuery]     = useState('');
   const [selected, setSelected] = useState(null);
   const [sending, setSending]  = useState(false);
@@ -48,20 +48,23 @@ function InviteModal({ groupId, groupName, currentUserEmail, existingMemberEmail
     if (!selected) return;
     setSending(true);
     try {
-      // Create a pending GroupMember record
+      // Public group: immediately active. Private: pending (still needs admin approval after accept)
+      const inviteStatus = groupType === 'private' ? 'pending' : 'active';
       await base44.entities.GroupMember.create({
         group_id: groupId,
         user_email: selected.user_email,
         user_name: selected.full_name || selected.user_email,
         role: 'member',
-        status: 'pending',
+        status: inviteStatus,
       });
       // Send notification to invited person
       await base44.entities.Notification.create({
         user_email: selected.user_email,
         type: 'announcement',
         title: `You've been invited to join ${groupName || 'a Fish Tank'}`,
-        body: 'Click to view and accept the invite.',
+        body: groupType === 'private'
+          ? 'Click to view and accept. An admin will approve your request.'
+          : 'Click to view and accept to join immediately.',
         link: '/Groups',
         read: false,
       });
@@ -150,7 +153,7 @@ function InviteModal({ groupId, groupName, currentUserEmail, existingMemberEmail
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function GroupMembers({ groupId, groupName, currentUserRole, currentUser }) {
+export default function GroupMembers({ groupId, groupName, groupType, currentUserRole, currentUser }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [viewingAgent, setViewingAgent]  = useState(null); // { profile, email }
@@ -291,7 +294,7 @@ export default function GroupMembers({ groupId, groupName, currentUserRole, curr
 
       {/* Modals */}
       {showInvite && (
-        <InviteModal groupId={groupId} groupName={groupName}
+        <InviteModal groupId={groupId} groupName={groupName} groupType={groupType}
           currentUserEmail={currentUser?.email}
           existingMemberEmails={existingMemberEmails}
           allProfiles={userProfiles}
