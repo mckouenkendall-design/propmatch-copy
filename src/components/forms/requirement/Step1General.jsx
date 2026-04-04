@@ -77,6 +77,9 @@ function NumericInput({ value, onChange, placeholder, style, className }) {
 export default function ReqStep1({ data, update, onNext }) {
   const types = data.property_category === 'commercial' ? COMMERCIAL_TYPES : RESIDENTIAL_TYPES;
 
+  const ACRES_TO_SQFT = 43560;
+  const isLand = data.property_type === 'land' || data.property_type === 'land_residential';
+
   // Required: property_type, at least one preferred area, transaction_type
   const hasPrice = !!(data.min_price || data.max_price);
 
@@ -118,18 +121,48 @@ export default function ReqStep1({ data, update, onNext }) {
         />
       </div>
 
-      {/* Size Range */}
+      {/* Size Range — SF for most, Acreage for land */}
       <div className="space-y-1.5">
-        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Size Range (SF)</Label>
-        <div className="flex items-center gap-3">
-          <NumericInput placeholder="Min" value={data.min_size_sqft || ''}
-            onChange={v => update({ min_size_sqft: v })} className="flex-1"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
-          <span className="font-medium flex-shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }}>–</span>
-          <NumericInput placeholder="Max" value={data.max_size_sqft || ''}
-            onChange={v => update({ max_size_sqft: v })} className="flex-1"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
-        </div>
+        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>{isLand ? 'Acreage Range' : 'Size Range (SF)'}</Label>
+        {isLand ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 space-y-1">
+                <NumericInput placeholder="Min acres" step={0.01}
+                  value={data.min_size_sqft ? (parseFloat(data.min_size_sqft) / ACRES_TO_SQFT).toFixed(2) : ''}
+                  onChange={v => update({ min_size_sqft: parseFloat(v) * ACRES_TO_SQFT })}
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: '100%' }} />
+                {data.min_size_sqft && (
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    ≈ {Math.round(parseFloat(data.min_size_sqft)).toLocaleString()} SF
+                  </p>
+                )}
+              </div>
+              <span className="font-medium flex-shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }}>–</span>
+              <div className="flex-1 space-y-1">
+                <NumericInput placeholder="Max acres" step={0.01}
+                  value={data.max_size_sqft ? (parseFloat(data.max_size_sqft) / ACRES_TO_SQFT).toFixed(2) : ''}
+                  onChange={v => update({ max_size_sqft: parseFloat(v) * ACRES_TO_SQFT })}
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: '100%' }} />
+                {data.max_size_sqft && (
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    ≈ {Math.round(parseFloat(data.max_size_sqft)).toLocaleString()} SF
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <NumericInput placeholder="Min" value={data.min_size_sqft || ''}
+              onChange={v => update({ min_size_sqft: v })} className="flex-1"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+            <span className="font-medium flex-shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }}>–</span>
+            <NumericInput placeholder="Max" value={data.max_size_sqft || ''}
+              onChange={v => update({ max_size_sqft: v })} className="flex-1"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+          </div>
+        )}
       </div>
 
       {/* Transaction Type */}
