@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -225,6 +226,8 @@ function VisibilityConfirmModal({ visibilityType, onConfirm, onCancel }) {
 }
 
 export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoading, editMode }) {
+  const { user } = useAuth();
+  const currentUserEmail = user?.email || '';
   const [termsAccepted, setTermsAccepted]           = useState(true);
   const [showTermsModal, setShowTermsModal]           = useState(false);
   const [groupsDropdownOpen, setGroupsDropdownOpen] = useState(false);
