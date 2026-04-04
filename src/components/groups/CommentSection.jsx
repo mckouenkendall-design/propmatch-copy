@@ -26,8 +26,9 @@ function Avatar({ profile, name, size = 28 }) {
   );
 }
 
-function CommentComposer({ onSubmit, placeholder = 'Write a comment...', autoFocus = false }) {
-  const [text, setText] = useState('');
+// ─── Composer ─────────────────────────────────────────────────────────────────
+function CommentComposer({ onSubmit, placeholder = 'Write a comment...', autoFocus = false, initialText = '' }) {
+  const [text, setText] = useState(initialText);
   const [attachment, setAttachment] = useState(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
@@ -89,9 +90,32 @@ function CommentComposer({ onSubmit, placeholder = 'Write a comment...', autoFoc
   );
 }
 
-function CommentBubble({ comment, profileMap, currentUser, postId, groupId, postType, allComments, queryClient }) {
+// ─── Single comment bubble (used for both top-level and replies) ──────────────
+function CommentBubble({ comment, size = 'normal' }) {
+  const isNormal = size === 'normal';
+  return (
+    <div style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'10px', padding: isNormal ? '8px 12px' : '7px 11px' }}>
+      {comment.content && (
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize: isNormal ? '13px' : '13px', color:'rgba(255,255,255,0.8)', margin:0, lineHeight:1.5, whiteSpace:'pre-wrap' }}>{comment.content}</p>
+      )}
+      {comment.attachment_url && (
+        <div style={{ marginTop:'6px' }}>
+          {comment.attachment_type === 'image'
+            ? <img src={comment.attachment_url} alt="" style={{ maxWidth:'200px', maxHeight:'140px', borderRadius:'6px', objectFit:'cover', cursor:'pointer', display:'block' }} onClick={() => window.open(comment.attachment_url, '_blank')}/>
+            : <a href={comment.attachment_url} target="_blank" rel="noreferrer" style={{ display:'flex', alignItems:'center', gap:'6px', fontSize:'12px', color:ACCENT, textDecoration:'none', padding:'4px 9px', background:'rgba(0,219,197,0.08)', borderRadius:'6px', width:'fit-content', marginTop:'4px' }}>
+                <Paperclip style={{ width:'11px', height:'11px' }}/>{comment.attachment_name || 'Attachment'}
+              </a>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Top-level comment with flat reply thread ─────────────────────────────────
+function CommentThread({ comment, allComments, currentUser, profileMap, postId, groupId, postType, postAuthorEmail, queryClient }) {
   const [showReplies, setShowReplies] = useState(false);
-  const [showReplyBox, setShowReplyBox] = useState(false);
+  const [replyTo, setReplyTo] = useState(null); // { email, username, name } of person being replied to
+
   const replies = allComments.filter(c => c.parent_comment_id === comment.id);
   const profile = profileMap?.[comment.author_email];
   const isMe = comment.author_email === currentUser?.email;
@@ -102,56 +126,87 @@ function CommentBubble({ comment, profileMap, currentUser, postId, groupId, post
   });
 
   const addReply = useMutation({
-    mutationFn: ({ content, attachmentUrl, attachmentType, attachmentName }) =>
-      base44.entities.GroupComment.create({
+    mutationFn: async ({ content, attachmentUrl, attachmentType, attachmentName, mentionEmail, mentionName }) => {
+      await base44.entities.GroupComment.create({
         post_id: postId, post_type: postType, group_id: groupId,
         author_email: currentUser?.email || '',
         author_name: currentUser?.full_name || currentUser?.email || 'Member',
-        content, parent_comment_id: comment.id,
+        content,
+        parent_comment_id: comment.id, // always points to top-level comment
         ...(attachmentUrl && { attachment_url: attachmentUrl, attachment_type: attachmentType, attachment_name: attachmentName }),
-      }),
+      });
+      // Notify the person being replied to (if not replying to yourself)
+      if (mentionEmail && mentionEmail !== currentUser?.email) {
+        try {
+          await base44.entities.Notification.create({
+            user_email: mentionEmail,
+            type: 'group_post',
+            title: `${currentUser?.full_name || 'Someone'} replied to your comment`,
+            body: content.slice(0, 80),
+            link: '/Groups',
+            read: false,
+          });
+        } catch {}
+      }
+      // Also notify the post author if different from replier and from mention target
+      if (postAuthorEmail && postAuthorEmail !== currentUser?.email && postAuthorEmail !== mentionEmail) {
+        try {
+          await base44.entities.Notification.create({
+            user_email: postAuthorEmail,
+            type: 'group_post',
+            title: `${currentUser?.full_name || 'Someone'} commented on your post`,
+            body: content.slice(0, 80),
+            link: '/Groups',
+            read: false,
+          });
+        } catch {}
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', postId] });
-      setShowReplyBox(false);
+      setReplyTo(null);
       setShowReplies(true);
     },
   });
+
+  const getUsername = (email) => {
+    const p = profileMap?.[email];
+    return p?.username ? `@${p.username}` : p?.full_name || email.split('@')[0];
+  };
 
   return (
     <div style={{ display:'flex', gap:'8px', alignItems:'flex-start' }}>
       <Avatar profile={profile} name={comment.author_name} size={28}/>
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'10px', padding:'8px 12px' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'3px' }}>
-            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:600, color:'white' }}>
-              {profile?.full_name || comment.author_name || 'Member'}
-            </span>
-            <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-              <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>{timeAgo(comment.created_date)}</span>
-              {isMe && (
-                <button onClick={() => deleteComment.mutate(comment.id)}
-                  style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.2)' }}
-                  onMouseEnter={e => e.currentTarget.style.color='#ef4444'}
-                  onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.2)'}>Delete</button>
-              )}
-            </div>
+        {/* Header */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'3px' }}>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:600, color:'white' }}>
+            {profile?.full_name || comment.author_name || 'Member'}
+            {profile?.username && <span style={{ color:'rgba(255,255,255,0.35)', fontWeight:400, marginLeft:'5px' }}>@{profile.username}</span>}
+          </span>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>{timeAgo(comment.created_date)}</span>
+            {isMe && (
+              <button onClick={() => deleteComment.mutate(comment.id)}
+                style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.2)' }}
+                onMouseEnter={e => e.currentTarget.style.color='#ef4444'}
+                onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.2)'}>Delete</button>
+            )}
           </div>
-          {comment.content && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.8)', margin:0, lineHeight:1.5 }}>{comment.content}</p>}
-          {comment.attachment_url && (
-            <div style={{ marginTop:'6px' }}>
-              {comment.attachment_type === 'image'
-                ? <img src={comment.attachment_url} alt="" style={{ maxWidth:'200px', maxHeight:'140px', borderRadius:'6px', objectFit:'cover', cursor:'pointer', display:'block' }} onClick={() => window.open(comment.attachment_url, '_blank')}/>
-                : <a href={comment.attachment_url} target="_blank" rel="noreferrer" style={{ display:'flex', alignItems:'center', gap:'6px', fontSize:'12px', color:ACCENT, textDecoration:'none', padding:'5px 10px', background:'rgba(0,219,197,0.08)', borderRadius:'6px', width:'fit-content', marginTop:'4px' }}>
-                    <Paperclip style={{ width:'12px', height:'12px' }}/>{comment.attachment_name || 'Attachment'}
-                  </a>}
-            </div>
-          )}
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:'12px', marginTop:'4px', paddingLeft:'4px' }}>
-          <button onClick={() => setShowReplyBox(!showReplyBox)}
+
+        {/* Bubble */}
+        <CommentBubble comment={comment} size="normal"/>
+
+        {/* Actions */}
+        <div style={{ display:'flex', alignItems:'center', gap:'12px', marginTop:'4px', paddingLeft:'2px' }}>
+          <button
+            onClick={() => setReplyTo(replyTo?.email === comment.author_email ? null : { email: comment.author_email, name: profile?.full_name || comment.author_name, username: profile?.username })}
             style={{ background:'transparent', border:'none', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', padding:0 }}
             onMouseEnter={e => e.currentTarget.style.color=ACCENT}
-            onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.35)'}>Reply</button>
+            onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.35)'}>
+            Reply
+          </button>
           {replies.length > 0 && (
             <button onClick={() => setShowReplies(!showReplies)}
               style={{ display:'flex', alignItems:'center', gap:'3px', background:'transparent', border:'none', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', padding:0 }}
@@ -162,39 +217,56 @@ function CommentBubble({ comment, profileMap, currentUser, postId, groupId, post
             </button>
           )}
         </div>
-        {showReplyBox && (
-          <div style={{ marginTop:'6px' }}>
-            <CommentComposer autoFocus placeholder={`Reply to ${profile?.full_name || comment.author_name}...`}
-              onSubmit={async (data) => addReply.mutateAsync(data)}/>
+
+        {/* Reply composer */}
+        {replyTo && (
+          <div style={{ marginTop:'8px' }}>
+            <CommentComposer
+              autoFocus
+              initialText={`${getUsername(replyTo.email)} `}
+              placeholder={`Replying to ${replyTo.name}...`}
+              onSubmit={async (data) => addReply.mutateAsync({ ...data, mentionEmail: replyTo.email, mentionName: replyTo.name })}
+            />
           </div>
         )}
+
+        {/* Flat reply thread — all replies same size, no nesting */}
         {showReplies && replies.length > 0 && (
           <div style={{ marginTop:'8px', paddingLeft:'12px', borderLeft:'2px solid rgba(255,255,255,0.08)', display:'flex', flexDirection:'column', gap:'8px' }}>
             {replies.map(reply => {
-              const rp = profileMap?.[reply.author_email];
-              const rMe = reply.author_email === currentUser?.email;
+              const rProfile = profileMap?.[reply.author_email];
+              const rIsMe = reply.author_email === currentUser?.email;
               return (
                 <div key={reply.id} style={{ display:'flex', gap:'7px', alignItems:'flex-start' }}>
-                  <Avatar profile={rp} name={reply.author_name} size={24}/>
-                  <div style={{ flex:1, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'8px', padding:'6px 10px' }}>
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'2px' }}>
-                      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:600, color:'white' }}>{rp?.full_name || reply.author_name}</span>
+                  <Avatar profile={rProfile} name={reply.author_name} size={28}/>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'3px' }}>
+                      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:600, color:'white' }}>
+                        {rProfile?.full_name || reply.author_name}
+                        {rProfile?.username && <span style={{ color:'rgba(255,255,255,0.35)', fontWeight:400, marginLeft:'5px' }}>@{rProfile.username}</span>}
+                      </span>
                       <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
                         <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>{timeAgo(reply.created_date)}</span>
-                        {rMe && <button onClick={() => deleteComment.mutate(reply.id)}
-                          style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.2)' }}
-                          onMouseEnter={e => e.currentTarget.style.color='#ef4444'}
-                          onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.2)'}>Delete</button>}
+                        {rIsMe && (
+                          <button onClick={() => deleteComment.mutate(reply.id)}
+                            style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.2)' }}
+                            onMouseEnter={e => e.currentTarget.style.color='#ef4444'}
+                            onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.2)'}>Delete</button>
+                        )}
                       </div>
                     </div>
-                    {reply.content && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.75)', margin:0, lineHeight:1.5 }}>{reply.content}</p>}
-                    {reply.attachment_url && (
-                      reply.attachment_type === 'image'
-                        ? <img src={reply.attachment_url} alt="" style={{ maxWidth:'160px', borderRadius:'5px', objectFit:'cover', cursor:'pointer', marginTop:'4px', display:'block' }} onClick={() => window.open(reply.attachment_url, '_blank')}/>
-                        : <a href={reply.attachment_url} target="_blank" rel="noreferrer" style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'11px', color:ACCENT, textDecoration:'none', marginTop:'4px' }}>
-                            <Paperclip style={{ width:'10px', height:'10px' }}/>{reply.attachment_name || 'Attachment'}
-                          </a>
-                    )}
+                    {/* Same size bubble as top-level */}
+                    <CommentBubble comment={reply} size="normal"/>
+                    {/* Reply to a reply — @mentions and adds to same thread */}
+                    <div style={{ marginTop:'4px', paddingLeft:'2px' }}>
+                      <button
+                        onClick={() => setReplyTo(replyTo?.email === reply.author_email ? null : { email: reply.author_email, name: rProfile?.full_name || reply.author_name, username: rProfile?.username })}
+                        style={{ background:'transparent', border:'none', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', padding:0 }}
+                        onMouseEnter={e => e.currentTarget.style.color=ACCENT}
+                        onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.35)'}>
+                        Reply
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -206,7 +278,8 @@ function CommentBubble({ comment, profileMap, currentUser, postId, groupId, post
   );
 }
 
-export default function CommentSection({ postId, postType = 'group_post', groupId, currentUser, profileMap }) {
+// ─── Main export ──────────────────────────────────────────────────────────────
+export default function CommentSection({ postId, postType = 'group_post', groupId, currentUser, profileMap, postAuthorEmail }) {
   const [expanded, setExpanded] = useState(false);
   const queryClient = useQueryClient();
 
@@ -222,19 +295,34 @@ export default function CommentSection({ postId, postType = 'group_post', groupI
   const topLevel = allComments.filter(c => !c.parent_comment_id);
 
   const addComment = useMutation({
-    mutationFn: ({ content, attachmentUrl, attachmentType, attachmentName }) =>
-      base44.entities.GroupComment.create({
+    mutationFn: async ({ content, attachmentUrl, attachmentType, attachmentName }) => {
+      await base44.entities.GroupComment.create({
         post_id: postId, post_type: postType, group_id: groupId,
         author_email: currentUser?.email || '',
         author_name: currentUser?.full_name || currentUser?.email || 'Member',
         content,
         ...(attachmentUrl && { attachment_url: attachmentUrl, attachment_type: attachmentType, attachment_name: attachmentName }),
-      }),
+      });
+      // Notify post author
+      if (postAuthorEmail && postAuthorEmail !== currentUser?.email) {
+        try {
+          await base44.entities.Notification.create({
+            user_email: postAuthorEmail,
+            type: 'group_post',
+            title: `${currentUser?.full_name || 'Someone'} commented on your post`,
+            body: content.slice(0, 80),
+            link: '/Groups',
+            read: false,
+          });
+        } catch {}
+      }
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', postId] }),
   });
 
+  const totalCount = allComments.length;
   const label = !expanded
-    ? (allComments.length > 0 ? `${allComments.length} comment${allComments.length !== 1 ? 's' : ''}` : 'Comment')
+    ? (totalCount > 0 ? `${totalCount} comment${totalCount !== 1 ? 's' : ''}` : 'Comment')
     : 'Hide comments';
 
   return (
@@ -249,16 +337,19 @@ export default function CommentSection({ postId, postType = 'group_post', groupI
       </button>
 
       {expanded && (
-        <div style={{ marginTop:'10px', display:'flex', flexDirection:'column', gap:'10px' }}>
+        <div style={{ marginTop:'10px', display:'flex', flexDirection:'column', gap:'12px' }}>
           {isLoading ? (
             <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.3)', margin:0 }}>Loading...</p>
           ) : topLevel.length === 0 ? (
-            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.25)', margin:0 }}>No comments yet.</p>
+            <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.25)', margin:0 }}>No comments yet. Be the first!</p>
           ) : topLevel.map(comment => (
-            <CommentBubble key={comment.id} comment={comment} profileMap={profileMap}
-              currentUser={currentUser} postId={postId} groupId={groupId} postType={postType}
-              allComments={allComments} queryClient={queryClient}/>
+            <CommentThread key={comment.id} comment={comment} allComments={allComments}
+              currentUser={currentUser} profileMap={profileMap}
+              postId={postId} groupId={groupId} postType={postType}
+              postAuthorEmail={postAuthorEmail} queryClient={queryClient}/>
           ))}
+
+          {/* New top-level comment */}
           <div style={{ display:'flex', gap:'8px', alignItems:'flex-start' }}>
             <Avatar profile={profileMap?.[currentUser?.email]} name={currentUser?.full_name || 'Me'} size={28}/>
             <div style={{ flex:1 }}>
