@@ -366,7 +366,7 @@ function DiscussionPostCard({ post, currentUser, authorProfile, profileMap, grou
         </div>
 
         {/* Comments */}
-        <CommentSection postId={post.id} postType="group_post" groupId={groupId} currentUser={currentUser} profileMap={profileMap}/>
+        <CommentSection postId={post.id} postType="group_post" groupId={groupId} currentUser={currentUser} profileMap={profileMap} postAuthorEmail={post.author_email}/>
       </div>
     </div>
   );
