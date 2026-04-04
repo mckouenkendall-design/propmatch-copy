@@ -76,15 +76,29 @@ export default function GroupDetail() {
 
   const joinMutation = useMutation({
     mutationFn: async () => {
+      const isPrivate = group?.group_type === 'private';
       const newMembership = await base44.entities.GroupMember.create({
         group_id: groupId,
         user_email: currentUser.email,
         user_name: currentUser.full_name || currentUser.email,
         role: 'member',
-        status: group?.group_type === 'private' ? 'pending' : 'active',
+        status: isPrivate ? 'pending' : 'active',
       });
-      if (group?.group_type !== 'private') {
+      if (!isPrivate) {
         await base44.entities.Group.update(groupId, { member_count: (group?.member_count || 0) + 1 });
+      } else {
+        // Notify admins of join request
+        const admins = await base44.entities.GroupMember.filter({ group_id: groupId, role: 'admin' });
+        await Promise.all(admins.map(admin =>
+          base44.entities.Notification.create({
+            user_email: admin.user_email,
+            type: 'announcement',
+            title: `${currentUser?.full_name || 'Someone'} wants to join ${group?.name || 'your Fish Tank'}`,
+            body: 'Go to Members to approve or decline.',
+            link: '/Groups',
+            read: false,
+          }).catch(() => {})
+        ));
       }
       return newMembership;
     },
@@ -95,11 +109,30 @@ export default function GroupDetail() {
     },
   });
 
-  // Accept an invite (pending record already exists — just update status to active)
+  // Accept an invite:
+  // - Public group: immediately active
+  // - Private group: stays pending, needs admin approval (same as clicking Join on private)
   const acceptInviteMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.GroupMember.update(membership.id, { status: 'active' });
-      await base44.entities.Group.update(groupId, { member_count: (group?.member_count || 0) + 1 });
+      if (group?.group_type === 'private') {
+        // Already pending — just leave it, notify admins
+        // Find admins and notify them
+        const allMembers = await base44.entities.GroupMember.filter({ group_id: groupId, role: 'admin' });
+        await Promise.all(allMembers.map(admin =>
+          base44.entities.Notification.create({
+            user_email: admin.user_email,
+            type: 'announcement',
+            title: `${currentUser?.full_name || 'Someone'} wants to join ${group?.name || 'your Fish Tank'}`,
+            body: 'Go to Members to approve or decline.',
+            link: '/Groups',
+            read: false,
+          }).catch(() => {})
+        ));
+      } else {
+        // Public: set active immediately
+        await base44.entities.GroupMember.update(membership.id, { status: 'active' });
+        await base44.entities.Group.update(groupId, { member_count: (group?.member_count || 0) + 1 });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-membership', groupId, currentUser?.email] });
@@ -209,7 +242,7 @@ export default function GroupDetail() {
               <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
                 <Button onClick={() => acceptInviteMutation.mutate()} disabled={acceptInviteMutation.isPending}
                   style={{ background: ACCENT, color: '#111827', display:'flex', alignItems:'center', gap:'6px' }}>
-                  <UserCheck style={{ width:'14px', height:'14px' }}/> Accept Invite
+                  <UserCheck style={{ width:'14px', height:'14px' }}/> {group?.group_type === 'private' ? 'Request to Join' : 'Accept Invite'}
                 </Button>
                 <button onClick={() => leaveMutation.mutate()} disabled={leaveMutation.isPending}
                   style={{ padding:'8px 14px', background:'transparent', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.5)', cursor:'pointer' }}>
@@ -241,7 +274,7 @@ export default function GroupDetail() {
           <Lock style={{ width: '48px', height: '48px', color: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
           <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: 500, color: 'white', marginBottom: '8px' }}>This is a Private Fish Tank</h3>
           <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>
-            {isPending ? 'You have been invited to join this Fish Tank. Accept above to get access.' : 'Request to join to view the content.'}
+            {isPending ? (group?.group_type === 'private' ? 'Your request is pending admin approval.' : 'You have a pending invite — accept above to join.') : 'Request to join to view the content.'}
           </p>
         </div>
       ) : (
@@ -284,7 +317,7 @@ export default function GroupDetail() {
               <GroupEvents groupId={groupId} currentUser={currentUser} />
             )}
             {activeTab === 'members' && (
-              <GroupMembers groupId={groupId} groupName={group?.name} currentUserRole={currentUserRole} currentUser={currentUser} />
+              <GroupMembers groupId={groupId} groupName={group?.name} groupType={group?.group_type} currentUserRole={currentUserRole} currentUser={currentUser} />
             )}
             {activeTab === 'about' && (
               <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '24px' }}>
