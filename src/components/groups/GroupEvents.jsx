@@ -246,7 +246,7 @@ function EventCard({ event, currentUser, hostProfile, profileMap, groupId, onRsv
             </button>
           )}
         </div>
-        <CommentSection postId={event.id} groupId={groupId} currentUser={currentUser} profileMap={profileMap}/>
+        <CommentSection postId={event.id} postType="group_event" groupId={groupId} currentUser={currentUser} profileMap={profileMap} postAuthorEmail={event.host_email}/>
       </div>
     </div>
   );
