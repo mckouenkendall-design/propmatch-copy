@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import StartConversationModal from '@/components/messages/StartConversationModal';
 import AgentContactModal from '@/components/shared/AgentContactModal';
+import { calculateMatchScore, getScoreColor } from '@/utils/matchScore';
+import { useNavigate } from 'react-router-dom';
 
 const ACCENT   = '#00DBC5';
 const LAVENDER = '#818cf8';
@@ -38,45 +40,135 @@ function Avatar({ profile, name, size = 40 }) {
   );
 }
 
-// ─── Shared Post Card (listing or requirement shared in chat) ─────────────────
-function SharedPostCard({ postId, postType, allListings, allRequirements, onClick }) {
+// ─── Shared Post Card ─────────────────────────────────────────────────────────
+function useMatchInfo(post, postType, allListings, allRequirements, myEmail) {
+  return React.useMemo(() => {
+    if (!post || !myEmail) return null;
+    const isListing = postType === 'listing';
+    if (isListing) {
+      // Check my requirements against this listing
+      const myReqs = allRequirements.filter(r => r.created_by === myEmail || r.contact_agent_email === myEmail);
+      let best = null;
+      myReqs.forEach(req => {
+        try {
+          const result = calculateMatchScore(post, req);
+          if (result.score >= 30 && (!best || result.score > best.score)) {
+            best = { score: result.score, requirementId: req.id };
+          }
+        } catch {}
+      });
+      return best;
+    } else {
+      // Check my listings against this requirement
+      const myListings = allListings.filter(l => l.created_by === myEmail || l.contact_agent_email === myEmail);
+      let best = null;
+      myListings.forEach(listing => {
+        try {
+          const result = calculateMatchScore(listing, post);
+          if (result.score >= 30 && (!best || result.score > best.score)) {
+            best = { score: result.score, listingId: listing.id };
+          }
+        } catch {}
+      });
+      return best;
+    }
+  }, [post, postType, allListings, allRequirements, myEmail]);
+}
+
+function fmtPrice(post, isListing) {
+  const fmt = (n) => { const num=parseFloat(n); if(!n||isNaN(num))return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
+  const tx=post.transaction_type, pp=post.price_period;
+  const u=isListing?(tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':''):(pp==='per_month'?'/mo':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
+  if(isListing){if(post.price_is_tbd)return'TBD';const f=fmt(post.price);return f?`$${f}${u}`:null;}
+  const lo=fmt(post.min_price),hi=fmt(post.max_price);
+  if(lo&&hi)return`$${lo}–$${hi}${u}`;
+  if(hi)return`Up to $${hi}${u}`;
+  if(lo)return`From $${lo}${u}`;
+  return null;
+}
+
+function fmtCities(post) {
+  let c = post.cities;
+  if (typeof c === 'string') { try { c = JSON.parse(c); } catch { c = [c]; } }
+  return Array.isArray(c) ? c.join(', ') : (c || '');
+}
+
+function Chip({ children, color }) {
+  return (
+    <span style={{ padding:'2px 8px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'5px', fontFamily:"'Inter',sans-serif", fontSize:'11px', color:color||'rgba(255,255,255,0.55)', textTransform:'capitalize', whiteSpace:'nowrap' }}>
+      {children}
+    </span>
+  );
+}
+
+function SharedPostCard({ postId, postType, allListings, allRequirements, myEmail, onClick }) {
   const post = postType === 'listing'
     ? allListings.find(l => l.id === postId)
     : allRequirements.find(r => r.id === postId);
-
   if (!post) return null;
+
   const isListing = postType === 'listing';
   const color = isListing ? ACCENT : LAVENDER;
-
-  const price = (() => {
-    const fmt = (n) => { const num = parseFloat(n); if (!n||isNaN(num)) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
-    const tx = post.transaction_type, pp = post.price_period;
-    const u = isListing
-      ? (tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':'')
-      : (pp==='per_month'?'/mo':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
-    if (isListing) { const f=fmt(post.price); return f?`$${f}${u}`:null; }
-    const lo=fmt(post.min_price),hi=fmt(post.max_price);
-    if(lo&&hi) return `$${lo}–$${hi}${u}`;
-    if(hi) return `Up to $${hi}${u}`;
-    if(lo) return `From $${lo}${u}`;
+  const match = useMatchInfo(post, postType, allListings, allRequirements, myEmail);
+  const price = fmtPrice(post, isListing);
+  const location = isListing ? [post.city, post.state].filter(Boolean).join(', ') : fmtCities(post);
+  const propType = (post.property_type||'').replace(/_/g,' ');
+  const txType   = (post.transaction_type||'').replace(/_/g,' ');
+  const agentName = post.contact_agent_name || post.company_name || '';
+  const sizeLabel = (() => {
+    if (isListing && post.size_sqft) return `${parseFloat(post.size_sqft).toLocaleString()} SF`;
+    if (!isListing && (post.min_size_sqft || post.max_size_sqft)) {
+      const lo = post.min_size_sqft ? `${parseFloat(post.min_size_sqft).toLocaleString()}` : '0';
+      const hi = post.max_size_sqft ? `${parseFloat(post.max_size_sqft).toLocaleString()}` : '∞';
+      return `${lo}–${hi} SF`;
+    }
     return null;
   })();
 
   return (
-    <div onClick={() => onClick && onClick(post, postType)}
-      style={{ background:`${color}08`, border:`1px solid ${color}25`, borderRadius:'10px', padding:'12px', cursor:'pointer', transition:'all 0.15s', maxWidth:'280px' }}
-      onMouseEnter={e => { e.currentTarget.style.background=`${color}14`; e.currentTarget.style.borderColor=`${color}45`; }}
-      onMouseLeave={e => { e.currentTarget.style.background=`${color}08`; e.currentTarget.style.borderColor=`${color}25`; }}>
-      <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
-        <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:color }}/>
-        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color }}>{isListing?'Listing':'Requirement'}</span>
-        <ExternalLink style={{ width:'10px', height:'10px', color:'rgba(255,255,255,0.3)', marginLeft:'auto' }}/>
+    <div onClick={() => onClick && onClick(post, postType, match)}
+      style={{ background:'#0E1318', border:`1.5px solid ${match ? ACCENT+'60' : color+'30'}`, borderRadius:'12px', padding:'14px', cursor:'pointer', transition:'all 0.15s', maxWidth:'320px', minWidth:'240px', boxShadow: match ? `0 0 0 1px ${ACCENT}20` : 'none' }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = match ? ACCENT+'90' : color+'55'; e.currentTarget.style.background='rgba(255,255,255,0.03)'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = match ? ACCENT+'60' : color+'30'; e.currentTarget.style.background='#0E1318'; }}>
+
+      {/* Header row */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'8px' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+          <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:color, flexShrink:0 }}/>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color }}>{isListing?'Listing':'Requirement'}</span>
+        </div>
+        {match && (
+          <div style={{ display:'flex', alignItems:'center', gap:'4px', padding:'2px 8px', background:`${ACCENT}18`, border:`1px solid ${ACCENT}40`, borderRadius:'20px' }}>
+            <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:ACCENT }}/>
+            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, color:ACCENT }}>{match.score}% Match</span>
+          </div>
+        )}
       </div>
-      <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'13px', fontWeight:500, color:'white', margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{post.title}</p>
-      {price && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:700, color, margin:0 }}>{price}</p>}
-      {(isListing ? post.city : post.cities?.join?.(', ')) && (
-        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:'2px 0 0' }}>
-          {isListing ? [post.city, post.state].filter(Boolean).join(', ') : (() => { let c=post.cities; if(typeof c==='string'){try{c=JSON.parse(c);}catch{c=[c];}} return Array.isArray(c)?c.join(', '):c; })()}
+
+      {/* Title */}
+      <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'14px', fontWeight:600, color:'white', margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{post.title || `${propType} ${txType}`}</p>
+
+      {/* Price */}
+      {price && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'16px', fontWeight:700, color, margin:'0 0 8px' }}>{price}</p>}
+
+      {/* Chips */}
+      <div style={{ display:'flex', flexWrap:'wrap', gap:'4px', marginBottom:'8px' }}>
+        {propType && <Chip>{propType}</Chip>}
+        {txType && <Chip>{txType}</Chip>}
+        {sizeLabel && <Chip color='rgba(255,255,255,0.7)'>{sizeLabel}</Chip>}
+      </div>
+
+      {/* Location */}
+      {location && (
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+          📍 {location}
+        </p>
+      )}
+
+      {/* Agent */}
+      {agentName && (
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.3)', margin:'3px 0 0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+          {agentName}
         </p>
       )}
     </div>
@@ -84,77 +176,119 @@ function SharedPostCard({ postId, postType, allListings, allRequirements, onClic
 }
 
 // ─── Post Detail Modal (non-match) ────────────────────────────────────────────
-function PostDetailModal({ post, postType, onClose }) {
+function PostDetailModal({ post, postType, match, onClose }) {
+  const navigate = useNavigate();
   if (!post) return null;
   const isListing = postType === 'listing';
   const color = isListing ? ACCENT : LAVENDER;
-
-  const pd = (() => { if (!post.property_details) return {}; if (typeof post.property_details==='string'){try{return JSON.parse(post.property_details);}catch{return {};}} return post.property_details; })();
-
-  const price = (() => {
-    const fmt = (n) => { const num=parseFloat(n); if(!n||isNaN(num))return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
-    const tx=post.transaction_type,pp=post.price_period;
-    const u=isListing?(tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':''):(pp==='per_month'?'/mo':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
-    if(isListing){const f=fmt(post.price);return f?`$${f}${u}`:null;}
-    const lo=fmt(post.min_price),hi=fmt(post.max_price);
-    if(lo&&hi)return `$${lo}–$${hi}${u}`;
-    if(hi)return `Up to $${hi}${u}`;
-    if(lo)return `From $${lo}${u}`;
-    return null;
-  })();
+  const price = fmtPrice(post, isListing);
+  const location = isListing ? [post.city, post.state].filter(Boolean).join(', ') : fmtCities(post);
+  const pd = (() => { if (!post.property_details) return {}; try { return typeof post.property_details === 'string' ? JSON.parse(post.property_details) : post.property_details; } catch { return {}; } })();
+  const scoreColor = match ? getScoreColor(match.score) : null;
 
   const DetailRow = ({ label, value }) => {
-    if (!value) return null;
+    if (!value && value !== 0) return null;
     return (
-      <div style={{ display:'flex', justifyContent:'space-between', padding:'7px 0', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)' }}>{label}</span>
-        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'white', fontWeight:500, textAlign:'right', maxWidth:'60%', wordBreak:'break-word' }}>{value}</span>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', padding:'7px 0', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.4)', flexShrink:0, marginRight:'12px', textTransform:'capitalize' }}>{label.replace(/_/g,' ')}</span>
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.8)', fontWeight:500, textAlign:'right', wordBreak:'break-word', textTransform:'capitalize' }}>{String(value)}</span>
       </div>
     );
   };
 
+  const Section = ({ title, children }) => (
+    <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'10px', padding:'12px 14px', marginBottom:'10px' }}>
+      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.3)', margin:'0 0 8px' }}>{title}</p>
+      {children}
+    </div>
+  );
+
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', backdropFilter:'blur(6px)', zIndex:300, display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'20px', overflowY:'auto' }}
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', backdropFilter:'blur(8px)', zIndex:300, display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'20px', overflowY:'auto' }}
       onClick={onClose}>
-      <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'18px', width:'100%', maxWidth:'560px', overflow:'hidden', marginBottom:'20px' }}
+      <div style={{ background:'#0E1318', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'20px', width:'100%', maxWidth:'580px', overflow:'hidden', marginBottom:'20px' }}
         onClick={e => e.stopPropagation()}>
-        <div style={{ padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-            <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:color }}/>
-            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color }}>{isListing?'Listing':'Requirement'}</span>
+
+        {/* Header */}
+        <div style={{ padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between', background: match ? `linear-gradient(135deg, ${ACCENT}08, transparent)` : 'transparent' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+            <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:color }}/>
+            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color }}>{isListing?'Listing':'Requirement'}</span>
+            {match && (
+              <div style={{ display:'flex', alignItems:'center', gap:'5px', padding:'3px 10px', background:`${ACCENT}18`, border:`1px solid ${ACCENT}40`, borderRadius:'20px' }}>
+                <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:scoreColor||ACCENT }}/>
+                <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, color:scoreColor||ACCENT }}>{match.score}% Match</span>
+              </div>
+            )}
           </div>
           <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'5px', cursor:'pointer', display:'flex' }}>
             <X style={{ width:'15px', height:'15px', color:'rgba(255,255,255,0.5)' }}/>
           </button>
         </div>
+
         <div style={{ padding:'20px' }}>
-          <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'20px', fontWeight:500, color:'white', margin:'0 0 6px' }}>{post.title}</h2>
-          {price && <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'22px', fontWeight:700, color, marginBottom:'14px' }}>{price}</div>}
+          {/* Title + Price */}
+          <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'20px', fontWeight:600, color:'white', margin:'0 0 6px' }}>{post.title}</h2>
+          {price && <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'24px', fontWeight:700, color, marginBottom:'12px' }}>{price}</div>}
+
+          {/* Tags */}
           <div style={{ display:'flex', flexWrap:'wrap', gap:'6px', marginBottom:'16px' }}>
             {[
-              [post.city, post.state].filter(Boolean).join(', ') || ((() => { let c=post.cities; if(typeof c==='string'){try{c=JSON.parse(c);}catch{c=[c];}} return Array.isArray(c)?c.join(', '):c; })()),
               post.property_type?.replace(/_/g,' '),
-              post.transaction_type,
+              post.transaction_type?.replace(/_/g,' '),
               post.status,
+              post.property_category,
             ].filter(Boolean).map((v,i) => (
-              <span key={i} style={{ padding:'3px 10px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.6)', textTransform:'capitalize' }}>{v}</span>
+              <span key={i} style={{ padding:'3px 10px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.65)', textTransform:'capitalize' }}>{v}</span>
             ))}
           </div>
-          <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'10px', padding:'12px', marginBottom:'14px' }}>
-            <DetailRow label="Size" value={post.size_sqft ? `${parseFloat(post.size_sqft).toLocaleString()} SF` : ((post.min_size_sqft||post.max_size_sqft) ? `${post.min_size_sqft||0}–${post.max_size_sqft||'∞'} SF` : null)}/>
+
+          {/* Match CTA */}
+          {match && (
+            <button onClick={() => { onClose(); navigate('/Matches'); }}
+              style={{ width:'100%', padding:'12px', background:`linear-gradient(135deg, ${ACCENT}20, ${ACCENT}10)`, border:`1px solid ${ACCENT}40`, borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:600, color:ACCENT, cursor:'pointer', marginBottom:'14px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>
+              <ExternalLink style={{ width:'15px', height:'15px' }}/> View Full Match Details in My Matches
+            </button>
+          )}
+
+          {/* Core Details */}
+          <Section title="Property Details">
+            <DetailRow label="Location" value={location}/>
             <DetailRow label="Address" value={post.address}/>
             <DetailRow label="Zip Code" value={post.zip_code}/>
+            {isListing
+              ? <DetailRow label="Size" value={post.size_sqft ? `${parseFloat(post.size_sqft).toLocaleString()} SF` : null}/>
+              : <DetailRow label="Size Range" value={(post.min_size_sqft||post.max_size_sqft) ? `${post.min_size_sqft?parseFloat(post.min_size_sqft).toLocaleString():'Any'} – ${post.max_size_sqft?parseFloat(post.max_size_sqft).toLocaleString():'Any'} SF` : null}/>
+            }
             <DetailRow label="Lease Type" value={post.lease_type?.replace(/_/g,' ')}/>
-            <DetailRow label="Timeline" value={post.timeline?.replace(/_/g,' ')}/>
-            {Object.entries(pd).slice(0,12).map(([k,v]) => typeof v === 'string' || typeof v === 'number' ? (
-              <DetailRow key={k} label={k.replace(/_/g,' ')} value={String(v)}/>
-            ) : null)}
-          </div>
+            <DetailRow label="Lease Period" value={post.price_period?.replace(/_/g,' ')}/>
+          </Section>
+
+          {/* Property-specific details */}
+          {Object.keys(pd).length > 0 && (
+            <Section title="Additional Details">
+              {Object.entries(pd)
+                .filter(([,v]) => v !== null && v !== '' && v !== false && !Array.isArray(v) && typeof v !== 'object')
+                .slice(0, 16)
+                .map(([k, v]) => <DetailRow key={k} label={k} value={String(v)}/>)}
+            </Section>
+          )}
+
+          {/* Description / Notes */}
           {(post.description || post.notes) && (
-            <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'10px', padding:'12px' }}>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:'rgba(255,255,255,0.3)', margin:'0 0 8px' }}>Notes</p>
+            <Section title="Notes">
               <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.65)', lineHeight:1.7, margin:0 }}>{post.description||post.notes}</p>
-            </div>
+            </Section>
+          )}
+
+          {/* Agent / Contact */}
+          {(post.contact_agent_name || post.contact_agent_email || post.company_name) && (
+            <Section title="Listed By">
+              <DetailRow label="Agent" value={post.contact_agent_name}/>
+              <DetailRow label="Company" value={post.company_name}/>
+              <DetailRow label="Email" value={post.contact_agent_email}/>
+              <DetailRow label="Phone" value={post.contact_agent_phone}/>
+            </Section>
           )}
         </div>
       </div>
@@ -684,7 +818,7 @@ export default function Messages() {
                           {msg.attachment_url && <AttachmentDisplay url={msg.attachment_url} type={msg.attachment_type} name={msg.attachment_url.split('/').pop()}/>}
                           {msg.post_id && msg.post_type && (
                             <div style={{ marginTop:'6px' }}>
-                              <SharedPostCard postId={msg.post_id} postType={msg.post_type} allListings={allListings} allRequirements={allRequirements} onClick={(post, type) => setViewingPost({ post, postType: type })}/>
+                              <SharedPostCard postId={msg.post_id} postType={msg.post_type} allListings={allListings} allRequirements={allRequirements} myEmail={user?.email} onClick={(post, type, match) => setViewingPost({ post, postType: type, match })}/>
                             </div>
                           )}
                           <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.25)', margin:'3px 4px 0', textAlign:isMe?'right':'left' }}>
@@ -748,7 +882,7 @@ export default function Messages() {
                           {profileMap[msg.sender_email]?.full_name || msg.sender_email} · {timeAgo(msg.sent_at)}
                         </span>
                       </div>
-                      <SharedPostCard postId={msg.post_id} postType={msg.post_type} allListings={allListings} allRequirements={allRequirements} onClick={(post, type) => setViewingPost({ post, postType: type })}/>
+                      <SharedPostCard postId={msg.post_id} postType={msg.post_type} allListings={allListings} allRequirements={allRequirements} myEmail={user?.email} onClick={(post, type, match) => setViewingPost({ post, postType: type, match })}/>
                     </div>
                   ))}
                 </div>
@@ -795,7 +929,7 @@ export default function Messages() {
       )}
 
       {viewingPost && (
-        <PostDetailModal post={viewingPost.post} postType={viewingPost.postType} onClose={() => setViewingPost(null)}/>
+        <PostDetailModal post={viewingPost.post} postType={viewingPost.postType} match={viewingPost.match} onClose={() => setViewingPost(null)}/>
       )}
       {viewingAgent && (
         <AgentContactModal profile={viewingAgent.profile} email={viewingAgent.email} onClose={() => setViewingAgent(null)}/>
