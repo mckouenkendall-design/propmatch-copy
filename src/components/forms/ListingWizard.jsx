@@ -133,7 +133,7 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       }
       const postId   = listing?.id || data.id;
       const postType = 'listing';
-      const myEmail  = data.contact_agent_email || user?.email || '';
+      const myEmail  = user?.email || data.contact_agent_email || '';
       const myName   = data.contact_agent_name  || user?.full_name || user?.email || 'Agent';
       const recipients = (data.visibility_recipient_email || '')
         .split(',').map(s => s.trim()).filter(Boolean);
