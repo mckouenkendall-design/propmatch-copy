@@ -457,11 +457,22 @@ export default function ReqStep3({ data, update, onSubmit, isLoading, editMode }
       {showSubmitVisibilityModal && (
         <VisibilityConfirmModal
           visibilityType={data.visibility || 'public'}
-          onConfirm={() => {
+          onConfirm={async () => {
             setShowSubmitVisibilityModal(false);
-            // After confirming visibility, check if we still need group choice
             const recipients = (data.visibility_recipient_email || '').split(',').map(s => s.trim()).filter(Boolean);
             if ((data.visibility || 'public') === 'private' && recipients.length > 1) {
+              try {
+                const participantEmails = [currentUserEmail, ...recipients];
+                const sortedKey = [...participantEmails].sort().join(',');
+                const allGCs = await base44.entities.GroupConversation.filter({});
+                const found = allGCs.find(gc => {
+                  try {
+                    const parts = JSON.parse(gc.participant_emails || '[]');
+                    return parts.sort().join(',') === sortedKey;
+                  } catch { return false; }
+                });
+                setExistingGroupChat(found ? { id: found.id, name: found.name } : null);
+              } catch { setExistingGroupChat(null); }
               setShowGroupChoice(true);
             } else {
               onSubmit();
