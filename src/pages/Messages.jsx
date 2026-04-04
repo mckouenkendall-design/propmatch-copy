@@ -263,9 +263,13 @@ export default function Messages() {
   const activeMessages = selectedConvoType === 'group' ? groupMessages : messages;
 
   // ── Posts shared in this conversation ─────────────────────────────────────
-  const sharedPosts = useMemo(() =>
-    messages.filter(m => m.post_id && m.post_type),
-    [messages]);
+  const sharedPosts = useMemo(() => {
+    if (selectedConvoType === 'group') {
+      return groupMessages.filter(m => m.post_id && m.post_type);
+    }
+    return messages.filter(m => m.post_id && m.post_type);
+  },
+    [messages, groupMessages, selectedConvoType]);
 
   // ── Send message ──────────────────────────────────────────────────────────
   const sendMutation = useMutation({
@@ -633,7 +637,7 @@ export default function Messages() {
               )}
             </div>
 
-            {selectedConvoType === 'dm' && (
+            {(selectedConvoType === 'dm' || selectedConvoType === 'group') && (
               <div style={{ display:'flex', background:'rgba(255,255,255,0.05)', borderRadius:'8px', padding:'3px', gap:'2px' }}>
                 {[{k:'chat',l:'Chat'},{k:'posts',l:`Posts${sharedPosts.length>0?` (${sharedPosts.length})`:''}`}].map(t => (
                   <button key={t.k} onClick={() => setActiveTab(t.k)}
