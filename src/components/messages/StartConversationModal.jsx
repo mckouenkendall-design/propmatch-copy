@@ -154,7 +154,6 @@ export default function StartConversationModal({ currentUser, profiles, onClose,
     if (selected.length < 2) { setExistingGroupName(null); return; }
     const check = async () => {
       try {
-        const myEmail = profiles.find(p => p.user_email !== undefined)?.user_email;
         if (!myEmail) return;
         const participantEmails = [myEmail, ...selected.map(p => p.user_email)];
         const sortedKey = [...participantEmails].sort().join(',');
@@ -167,7 +166,7 @@ export default function StartConversationModal({ currentUser, profiles, onClose,
       } catch { setExistingGroupName(null); }
     };
     check();
-  }, [selected]);
+  }, [selected, myEmail]);
 
   const btnLabel = () => {
     if (loading) return 'Opening...';
