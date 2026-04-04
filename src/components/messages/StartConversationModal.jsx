@@ -118,11 +118,11 @@ export default function StartConversationModal({ currentUser, profiles, onClose,
       const participantEmails = [myEmail, ...selected.map(p => p.user_email)];
       const sortedKey = [...participantEmails].sort().join(',');
 
-      // Check if group already exists — filter by created_by first then check participants
+      // Check if group already exists — search all group convos by participant match
       let existingGroup = null;
       try {
-        const myGCs = await base44.entities.GroupConversation.filter({ created_by: myEmail });
-        existingGroup = myGCs.find(gc => {
+        const allGCs = await base44.entities.GroupConversation.filter({});
+        existingGroup = allGCs.find(gc => {
           try { return JSON.parse(gc.participant_emails || '[]').sort().join(',') === sortedKey; }
           catch { return false; }
         });
@@ -147,10 +147,33 @@ export default function StartConversationModal({ currentUser, profiles, onClose,
     } finally { setLoading(false); }
   };
 
+  const [existingGroupName, setExistingGroupName] = React.useState(null);
+
+  // Check for existing group chat as user selects people
+  React.useEffect(() => {
+    if (selected.length < 2) { setExistingGroupName(null); return; }
+    const check = async () => {
+      try {
+        const myEmail = profiles.find(p => p.user_email !== undefined)?.user_email;
+        if (!myEmail) return;
+        const participantEmails = [myEmail, ...selected.map(p => p.user_email)];
+        const sortedKey = [...participantEmails].sort().join(',');
+        const allGCs = await base44.entities.GroupConversation.filter({});
+        const found = allGCs.find(gc => {
+          try { return JSON.parse(gc.participant_emails || '[]').sort().join(',') === sortedKey; }
+          catch { return false; }
+        });
+        setExistingGroupName(found ? found.name : null);
+      } catch { setExistingGroupName(null); }
+    };
+    check();
+  }, [selected]);
+
   const btnLabel = () => {
     if (loading) return 'Opening...';
     if (selected.length === 0) return 'Select an agent';
     if (selected.length === 1) return `Message ${selected[0].full_name || selected[0].user_email}`;
+    if (existingGroupName) return `Message "${existingGroupName}"`;
     return `Create Group Chat (${selected.length + 1} people)`;
   };
 
