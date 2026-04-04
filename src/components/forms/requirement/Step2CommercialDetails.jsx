@@ -527,8 +527,6 @@ function LandRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Size Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Min Acreage"><Num field="min_acres" placeholder="e.g. 2.0" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max Acreage"><Num field="max_acres" placeholder="e.g. 10.0" step="0.1" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Road Frontage (ft)"><Num field="min_frontage" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
       </div>
       <ToggleGroup label="Entitlements Needed" value={details.entitlements_needed || ''} onChange={v => setDetail('entitlements_needed', v)}
