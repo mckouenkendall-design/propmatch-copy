@@ -653,7 +653,7 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
       )}
 
       <div className="flex justify-end pt-2">
-        <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: ACCENT }}>
+        <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: '#00DBC5' }}>
           Next <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
