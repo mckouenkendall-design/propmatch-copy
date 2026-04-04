@@ -166,14 +166,16 @@ export default function ListStep1({ data, update, onNext }) {
     data.property_type &&
     data.size_sqft &&
     data.transaction_type &&
-    data.price &&
+    (data.price || data.price_is_tbd) &&
     data.city &&
     data.state &&
     data.zip_code
   );
 
 
-  const isTBD = !!data.price_is_tbd;
+  const isTBD   = !!data.price_is_tbd;
+  const isLand  = data.property_type === 'land' || data.property_type === 'land_residential';
+  const ACRES_TO_SQFT = 43560;
   const handleTBD = () => {
     if (isTBD) {
       update({ price_is_tbd: false, price: '' });
@@ -202,12 +204,20 @@ export default function ListStep1({ data, update, onNext }) {
         </div>
       </div>
 
-      {/* Size (SF) */}
+      {/* Size — SF for most, Acreage for land */}
       <div className="space-y-1.5">
-        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Size (SF)<Req /></Label>
-        <NumericInput value={data.size_sqft || ''} onChange={v => update({ size_sqft: v })}
-          placeholder="5,000"
+        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>{isLand ? 'Acreage' : 'Size (SF)'}<Req /></Label>
+        <NumericInput
+          value={isLand ? (data.size_sqft ? (parseFloat(data.size_sqft) / ACRES_TO_SQFT).toFixed(2) : '') : (data.size_sqft || '')}
+          onChange={v => update({ size_sqft: isLand ? (parseFloat(v) * ACRES_TO_SQFT) : v })}
+          placeholder={isLand ? 'e.g. 5.00' : '5,000'}
+          step={isLand ? 0.01 : 1}
           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+        {isLand && data.size_sqft && (
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>
+            Approx. {Math.round(parseFloat(data.size_sqft)).toLocaleString()} SF
+          </p>
+        )}
       </div>
 
       {/* Transaction Type */}
@@ -284,13 +294,13 @@ export default function ListStep1({ data, update, onNext }) {
       {/* Commercial Sale */}
       {isCommercial && showSalePrice && (
         <div className="space-y-1.5">
-          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Total Purchase Price ($)</Label>
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>{isLand ? 'Asking Price ($)' : 'Total Purchase Price ($)'}</Label>
           <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
             {isTBD ? (
               <div style={{ flex:1, padding:'9px 14px', background:'rgba(0,219,197,0.08)', border:`1px solid ${ACCENT}40`, borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:ACCENT, fontWeight:600 }}>Price: TBD</div>
             ) : (
               <NumericInput value={data.price || ''} onChange={v => update({ price: v })}
-                placeholder="e.g. 1,250,000"
+                placeholder={isLand ? 'e.g. 450,000' : 'e.g. 1,250,000'}
                 style={{ flex:1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
             )}
             <button type="button" onClick={handleTBD}
@@ -298,6 +308,14 @@ export default function ListStep1({ data, update, onNext }) {
               TBD
             </button>
           </div>
+          {isLand && !isTBD && data.price && data.size_sqft && (
+            <div className="mt-2 p-3 rounded-lg text-sm space-y-1" style={{ backgroundColor: 'rgba(0,219,197,0.08)', border: '1px solid rgba(0,219,197,0.2)' }}>
+              <p className="font-medium" style={{ color: ACCENT }}>Land pricing breakdown:</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>Acreage: <strong>{(parseFloat(data.size_sqft) / ACRES_TO_SQFT).toFixed(2)} acres</strong></p>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>Price per acre: <strong>${(parseFloat(data.price) / (parseFloat(data.size_sqft) / ACRES_TO_SQFT)).toLocaleString('en-US', { maximumFractionDigits: 0 })}/acre</strong></p>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>Price per SF: <strong>${(parseFloat(data.price) / parseFloat(data.size_sqft)).toFixed(2)}/SF</strong></p>
+            </div>
+          )}
         </div>
       )}
 
