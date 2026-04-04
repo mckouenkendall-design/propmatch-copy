@@ -232,23 +232,21 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
   const [showTermsModal, setShowTermsModal]           = useState(false);
   const [groupsDropdownOpen, setGroupsDropdownOpen] = useState(false);
   const [groupSearchInput, setGroupSearchInput]     = useState('');
-  const [currentUserEmail, setCurrentUserEmail]     = useState(null);
   const [showSaveTemplate, setShowSaveTemplate]     = useState(false);
-  const [pendingVisibility, setPendingVisibility]     = useState(null); // visibility type awaiting confirmation
-  const [showSubmitVisibilityModal, setShowSubmitVisibilityModal] = useState(false); // show on Post/Save click
-  const [showGroupChoice, setShowGroupChoice]         = useState(false); // send separately vs group chat
-  const [existingGroupChat, setExistingGroupChat]     = useState(null); // {id, name} if group exists
+  const [pendingVisibility, setPendingVisibility]     = useState(null);
+  const [showSubmitVisibilityModal, setShowSubmitVisibilityModal] = useState(false);
+  const [showGroupChoice, setShowGroupChoice]         = useState(false);
+  const [existingGroupChat, setExistingGroupChat]     = useState(null);
 
   useEffect(() => {
     async function prefill() {
-      const user = await base44.auth.me();
-      if (!user) return;
-      setCurrentUserEmail(user.email);
+      const u = await base44.auth.me();
+      if (!u) return;
       const patch = {};
-      if (!data.contact_agent_name  && user.full_name)      patch.contact_agent_name  = user.full_name;
-      if (!data.contact_agent_email && user.email)          patch.contact_agent_email = user.email;
-      if (!data.contact_agent_phone && user.phone)          patch.contact_agent_phone = user.phone;
-      if (!data.company_name        && user.brokerage_name) patch.company_name        = user.brokerage_name;
+      if (!data.contact_agent_name  && u.full_name)      patch.contact_agent_name  = u.full_name;
+      if (!data.contact_agent_email && u.email)          patch.contact_agent_email = u.email;
+      if (!data.contact_agent_phone && u.phone)          patch.contact_agent_phone = u.phone;
+      if (!data.company_name        && u.brokerage_name) patch.company_name        = u.brokerage_name;
       if (Object.keys(patch).length > 0) update(patch);
     }
     prefill();
@@ -261,7 +259,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
       const memberships = await base44.entities.GroupMember.filter({ user_email: currentUserEmail, status: 'active' });
       const groupIds = memberships.map(m => m.group_id);
       if (groupIds.length === 0) return [];
-      const groups = await base44.entities.Group.list();
+      const groups = await base44.entities.Group.filter({});
       return groups.filter(g => groupIds.includes(g.id));
     },
     enabled: !!currentUserEmail,
