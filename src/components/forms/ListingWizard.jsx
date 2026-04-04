@@ -123,10 +123,56 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
   };
 
   const saveMutation = useMutation({
-    mutationFn: (data) => {
+    mutationFn: async ({ data, sendMode, groupId }) => {
       const submitData = prepareSubmitData(data);
-      if (editMode && data.id) return base44.entities.Listing.update(data.id, submitData);
-      return base44.entities.Listing.create(submitData);
+      let listing;
+      if (editMode && data.id) {
+        listing = await base44.entities.Listing.update(data.id, submitData);
+      } else {
+        listing = await base44.entities.Listing.create(submitData);
+      }
+      const postId   = listing?.id || data.id;
+      const postType = 'listing';
+      const myEmail  = data.contact_agent_email || user?.email || '';
+      const myName   = data.contact_agent_name  || user?.full_name || user?.email || 'Agent';
+      const recipients = (data.visibility_recipient_email || '')
+        .split(',').map(s => s.trim()).filter(Boolean);
+
+      if (sendMode === 'separately' && recipients.length > 0) {
+        // Create a DM Conversation + Message for each recipient
+        for (const email of recipients) {
+          try {
+            // Find or create conversation
+            const existing = await base44.entities.Conversation.filter({ participant_1: myEmail, participant_2: email });
+            const existing2 = existing.length ? existing : await base44.entities.Conversation.filter({ participant_1: email, participant_2: myEmail });
+            let convoId;
+            if (existing2.length) {
+              convoId = existing2[0].id;
+            } else {
+              const convo = await base44.entities.Conversation.create({ participant_1: myEmail, participant_2: email, last_message: 'Shared a listing', last_message_time: new Date().toISOString(), unread_by_1: 0, unread_by_2: 1 });
+              convoId = convo.id;
+            }
+            await base44.entities.Message.create({ conversation_id: convoId, sender_email: myEmail, content: 'Shared a listing', post_id: postId, post_type: postType, sent_at: new Date().toISOString() });
+          } catch (e) { console.error('Send separately error:', e); }
+        }
+      } else if (sendMode === 'create_group' && recipients.length > 0) {
+        // Create a new GroupConversation + GroupMessage
+        const participantEmails = [myEmail, ...recipients];
+        const gc = await base44.entities.GroupConversation.create({
+          name: recipients.map(e => e.split('@')[0]).join(', '),
+          participant_emails: JSON.stringify(participantEmails),
+          created_by: myEmail,
+          last_message: 'Shared a listing',
+          last_message_time: new Date().toISOString(),
+          last_message_sender: myName,
+        });
+        await base44.entities.GroupMessage.create({ group_conversation_id: gc.id, sender_email: myEmail, sender_name: myName, content: 'Shared a listing', post_id: postId, post_type: postType });
+      } else if (sendMode === 'existing_group' && groupId) {
+        // Send to existing GroupConversation
+        await base44.entities.GroupMessage.create({ group_conversation_id: groupId, sender_email: myEmail, sender_name: myName, content: 'Shared a listing', post_id: postId, post_type: postType });
+        await base44.entities.GroupConversation.update(groupId, { last_message: 'Shared a listing', last_message_time: new Date().toISOString(), last_message_sender: myName });
+      }
+      return listing;
     },
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ['my-listings'] });
@@ -214,7 +260,7 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
                 <ListStep3ContactSubmit
                   data={formData}
                   update={update}
-                  onSubmit={() => saveMutation.mutate(formData)}
+                  onSubmit={(opts) => saveMutation.mutate({ data: formData, sendMode: opts?.sendMode, groupId: opts?.groupId })}
                   isLoading={saveMutation.isPending}
                   editMode={editMode}
                 />
