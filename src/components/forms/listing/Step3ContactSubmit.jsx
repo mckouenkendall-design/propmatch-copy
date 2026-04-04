@@ -429,7 +429,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
             Save as Template
           </Button>
 
-          <Button onClick={onSubmit} disabled={isLoading || !termsAccepted} className="gap-2 px-6"
+          <Button onClick={handleSubmitClick} disabled={isLoading || !termsAccepted} className="gap-2 px-6"
             style={{ backgroundColor: (termsAccepted && !isLoading) ? ACCENT : 'rgba(255,255,255,0.3)', color: 'white' }}>
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             {editMode ? 'Save Changes' : 'Post Listing'}
