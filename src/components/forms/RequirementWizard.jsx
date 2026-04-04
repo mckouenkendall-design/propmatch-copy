@@ -95,26 +95,61 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   };
 
   const saveMutation = useMutation({
-    mutationFn: (data) => {
+    mutationFn: async ({ data, sendMode, groupId }) => {
       const errors = validate(data);
       if (errors.length > 0) throw new Error(errors.join('\n'));
       const submitData = prepareSubmitData(data);
-      if (editMode && data.id) return base44.entities.Requirement.update(data.id, submitData);
-      return base44.entities.Requirement.create(submitData);
+      let requirement;
+      if (editMode && data.id) {
+        requirement = await base44.entities.Requirement.update(data.id, submitData);
+      } else {
+        requirement = await base44.entities.Requirement.create(submitData);
+      }
+      const postId   = requirement?.id || data.id;
+      const postType = 'requirement';
+      const myEmail  = user?.email || '';
+      const myName   = user?.full_name || user?.email || 'Agent';
+      const recipients = (data.visibility_recipient_email || '')
+        .split(',').map(s => s.trim()).filter(Boolean);
+
+      if (sendMode === 'separately' && recipients.length > 0) {
+        for (const email of recipients) {
+          try {
+            const existing = await base44.entities.Conversation.filter({ participant_1: myEmail, participant_2: email });
+            const existing2 = existing.length ? existing : await base44.entities.Conversation.filter({ participant_1: email, participant_2: myEmail });
+            let convoId;
+            if (existing2.length) {
+              convoId = existing2[0].id;
+            } else {
+              const convo = await base44.entities.Conversation.create({ participant_1: myEmail, participant_2: email, last_message: 'Shared a requirement', last_message_time: new Date().toISOString(), unread_by_1: 0, unread_by_2: 1 });
+              convoId = convo.id;
+            }
+            await base44.entities.Message.create({ conversation_id: convoId, sender_email: myEmail, content: 'Shared a requirement', post_id: postId, post_type: postType, sent_at: new Date().toISOString() });
+          } catch (e) { console.error('Send separately error:', e); }
+        }
+      } else if (sendMode === 'create_group' && recipients.length > 0) {
+        const participantEmails = [myEmail, ...recipients];
+        const gc = await base44.entities.GroupConversation.create({
+          name: recipients.map(e => e.split('@')[0]).join(', '),
+          participant_emails: JSON.stringify(participantEmails),
+          created_by: myEmail,
+          last_message: 'Shared a requirement',
+          last_message_time: new Date().toISOString(),
+          last_message_sender: myName,
+        });
+        await base44.entities.GroupMessage.create({ group_conversation_id: gc.id, sender_email: myEmail, sender_name: myName, content: 'Shared a requirement', post_id: postId, post_type: postType });
+      } else if (sendMode === 'existing_group' && groupId) {
+        await base44.entities.GroupMessage.create({ group_conversation_id: groupId, sender_email: myEmail, sender_name: myName, content: 'Shared a requirement', post_id: postId, post_type: postType });
+        await base44.entities.GroupConversation.update(groupId, { last_message: 'Shared a requirement', last_message_time: new Date().toISOString(), last_message_sender: myName });
+      }
+      return requirement;
     },
     onSuccess: (...args) => {
-      setSubmitError(null);
       queryClient.invalidateQueries({ queryKey: ['my-requirements'] });
       onSuccess?.(...args);
     },
     onError: (err) => {
-      const raw = err.message || 'Something went wrong. Please try again.';
-      setSubmitError(raw
-        .replace(/min_size_sqft/g, 'Minimum size (SF)').replace(/max_size_sqft/g, 'Maximum size (SF)')
-        .replace(/min_price/g, 'Minimum price').replace(/max_price/g, 'Maximum budget')
-        .replace(/min_bedrooms/g, 'Minimum bedrooms').replace(/min_bathrooms/g, 'Minimum bathrooms')
-        .replace(/property_type/g, 'Property type').replace(/transaction_type/g, 'Transaction type')
-        .replace(/Input should be a valid number, unable to parse string as a number/g, 'must be a number'));
+      alert('Could not save requirement: ' + (err?.message || 'Unknown error'));
     },
   });
 
@@ -194,7 +229,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
                 <ReqStep3
                   data={formData}
                   update={update}
-                  onSubmit={() => saveMutation.mutate(formData)}
+                  onSubmit={(opts) => saveMutation.mutate({ data: formData, sendMode: opts?.sendMode, groupId: opts?.groupId })}
                   isLoading={saveMutation.isPending}
                   editMode={editMode}
                 />
