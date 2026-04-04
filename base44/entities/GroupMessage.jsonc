@@ -25,6 +25,14 @@
     "attachment_type": {
       "type": "string",
       "description": "Optional type of attachment (e.g. image, pdf, doc)"
+    },
+    "post_id": {
+      "type": "string",
+      "description": "Optional ID of a listing or requirement shared in this message"
+    },
+    "post_type": {
+      "type": "string",
+      "description": "Optional type of post shared \u2014 either listing or requirement"
     }
   },
   "required": [
