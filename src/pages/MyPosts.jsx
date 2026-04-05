@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Search, Plus, Trash2, Loader2, FileText, Eye, Bookmark, Share2 } from 'lucide-react';
 import DealPost from '../components/dashboard/DealPost';
@@ -8,19 +9,22 @@ import CreatePostModal from '../components/dashboard/CreatePostModal';
 const ACCENT = '#00DBC5';
 
 export default function MyPosts() {
+  const { user } = useAuth();
   const [filter, setFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: listings = [], isLoading: loadingListings } = useQuery({
-    queryKey: ['my-listings'],
-    queryFn: () => base44.entities.Listing.list('-created_date'),
+    queryKey: ['my-listings', user?.email],
+    queryFn: () => base44.entities.Listing.filter({ created_by: user?.email }, '-created_date'),
+    enabled: !!user?.email,
   });
 
   const { data: requirements = [], isLoading: loadingRequirements } = useQuery({
-    queryKey: ['my-requirements'],
-    queryFn: () => base44.entities.Requirement.list('-created_date'),
+    queryKey: ['my-requirements', user?.email],
+    queryFn: () => base44.entities.Requirement.filter({ created_by: user?.email }, '-created_date'),
+    enabled: !!user?.email,
   });
 
   const allPosts = [
@@ -138,8 +142,7 @@ export default function MyPosts() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredPosts.map(post => {
-            const isListing = post.postType === 'listing';
-            const color = isListing ? ACCENT : '#818cf8';
+            const isOwner = post.created_by === user?.email;
             const views  = post.view_count  || 0;
             const saves  = post.save_count  || 0;
             const shares = post.share_count || 0;
@@ -164,26 +167,29 @@ export default function MyPosts() {
                     <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: shares > 0 ? 600 : 400 }}>{shares.toLocaleString()} {shares === 1 ? 'share' : 'shares'}</span>
                   </div>
                 </div>
-                <button
-                  data-delete
-                  onClick={() => handleDelete(post)}
-                  disabled={deletingId === post.id}
-                  style={{
-                    position: 'absolute', top: '14px', right: '14px',
-                    padding: '7px', background: 'rgba(14,19,24,0.9)', backdropFilter: 'blur(4px)',
-                    border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px',
-                    cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    opacity: 0, transition: 'all 0.15s', color: 'rgba(255,255,255,0.5)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
-                >
-                  {deletingId === post.id
-                    ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
-                    : <Trash2 style={{ width: '15px', height: '15px' }} />
-                  }
-                </button>
+                {/* Delete button — only shown for posts you own */}
+                {isOwner && (
+                  <button
+                    data-delete
+                    onClick={() => handleDelete(post)}
+                    disabled={deletingId === post.id}
+                    style={{
+                      position: 'absolute', top: '14px', right: '14px',
+                      padding: '7px', background: 'rgba(14,19,24,0.9)', backdropFilter: 'blur(4px)',
+                      border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px',
+                      cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: 0, transition: 'all 0.15s', color: 'rgba(255,255,255,0.5)',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                  >
+                    {deletingId === post.id
+                      ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
+                      : <Trash2 style={{ width: '15px', height: '15px' }} />
+                    }
+                  </button>
+                )}
               </div>
             );
           })}
