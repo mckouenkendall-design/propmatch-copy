@@ -1027,11 +1027,15 @@ export default function Matches() {
   const visibleListings     = React.useMemo(() => allListings.filter(l => l.created_by === user?.email || isVisibleToMe(l)),     [allListings,     isVisibleToMe, user?.email]);
   const visibleRequirements = React.useMemo(() => allRequirements.filter(r => r.created_by === user?.email || isVisibleToMe(r)), [allRequirements, isVisibleToMe, user?.email]);
   const listingGroups=useMemo(()=>myListings.map(listing=>{
-    const matches=visibleRequirements.filter(r=>r.created_by!==user?.email).map(req=>{const r=calculateMatchScore(listing,req);return r.isMatch?{listing,requirement:req,...r}:null;}).filter(Boolean).sort((a,b)=>b.totalScore-a.totalScore);
+    const myEmails=[user?.email,user?.contact_email].filter(Boolean);
+    const otherReqs=visibleRequirements.filter(r=>r.created_by!==user?.email);
+    const matches=otherReqs.map(req=>{const r=calculateMatchScore(listing,req);return r.isMatch?{listing,requirement:req,...r}:null;}).filter(Boolean).sort((a,b)=>b.totalScore-a.totalScore);
     return matches.length?{myPost:{...listing,postType:'listing'},matches}:null;
   }).filter(Boolean),[myListings,visibleRequirements,user?.email]);
   const requirementGroups=useMemo(()=>myRequirements.map(req=>{
-    const matches=visibleListings.filter(l=>l.created_by!==user?.email).map(listing=>{const r=calculateMatchScore(listing,req);return r.isMatch?{listing,requirement:req,...r}:null;}).filter(Boolean).sort((a,b)=>b.totalScore-a.totalScore);
+    const myEmails=[user?.email,user?.contact_email].filter(Boolean);
+    const otherListings=visibleListings.filter(l=>!myEmails.includes(l.contact_agent_email)&&!myEmails.includes(l.created_by));
+    const matches=otherListings.map(listing=>{const r=calculateMatchScore(listing,req);return r.isMatch?{listing,requirement:req,...r}:null;}).filter(Boolean).sort((a,b)=>b.totalScore-a.totalScore);
     return matches.length?{myPost:{...req,postType:'requirement'},matches}:null;
   }).filter(Boolean),[myRequirements,visibleListings,user?.email]);
   const currentGroups=useMemo(()=>{
