@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
 import { User, Settings, LogOut } from 'lucide-react';
 import {
   DropdownMenu,
@@ -31,8 +30,10 @@ export default function TopNav() {
     { label: 'Insights',       path: '/Insights'  },
   ];
 
+  const { logout } = useAuth();
+
   const handleLogout = async () => {
-    await base44.auth.logout('/Landing');
+    await logout();
   };
 
   const displayName = user?.full_name || user?.email?.split('@')[0] || 'User';

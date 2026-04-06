@@ -1,11 +1,13 @@
+import { supabase } from '@/api/supabaseClient';
+
 // ─── Notification Helper — matches REAL PropMatch Copy schema ─────────────────
 // Real fields: user_email, type, title, body, link, read, related_id
 // Real type enum: "match", "message", "subscription", "announcement", "event", "group_post"
 
-export async function createNotification(base44Client, userEmail, type, title, body, options = {}) {
+export async function createNotification(userEmail, type, title, body, options = {}) {
   if (!userEmail) return;
   try {
-    await base44Client.entities.Notification.create({
+    await supabase.from('Notification').insert({
       user_email: userEmail,
       type,
       title,

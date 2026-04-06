@@ -1,7 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { appParams } from '@/lib/app-params';
-import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { supabase } from '@/api/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -15,15 +13,26 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAppState();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await checkUserAuth(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const fetchUserProfile = async (email) => {
     if (!email) return null;
     try {
-      const results = await base44.entities.UserProfile.list();
-      if (!results || results.length === 0) return null;
-      const match = results.find(r => r.user_email === email);
-      return match || null;
+      const { data, error } = await supabase.from('UserProfile').select('*').eq('user_email', email).single();
+      if (error) {
+        console.error('UserProfile fetch error:', error);
+        return null;
+      }
+      return data;
     } catch (e) {
       console.error('UserProfile fetch error:', e);
       return null;
@@ -34,38 +43,39 @@ export const AuthProvider = ({ children }) => {
     if (!profile) {
       return {
         ...authUser,
-        full_name: authUser.full_name || authUser.name || '',
-        brokerage_id: authUser.brokerage_id || authUser.employing_broker_id || '',
+        full_name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || '',
+        brokerage_id: authUser.user_metadata?.brokerage_id || authUser.user_metadata?.employing_broker_id || '',
       };
     }
     return {
       ...authUser,
-      full_name: profile.full_name || authUser.full_name || authUser.name || '',
-      username: profile.username || authUser.username || '',
-      contact_email: profile.contact_email || authUser.contact_email || authUser.email || '',
-      phone: profile.phone || authUser.phone || '',
-      state: profile.state || authUser.state || '',
-      user_type: profile.user_type || authUser.user_type || '',
-      brokerage_name: profile.brokerage_name || authUser.brokerage_name || '',
-      brokerage_address: profile.brokerage_address || authUser.brokerage_address || '',
-      employing_broker_id: profile.employing_broker_id || authUser.employing_broker_id || '',
-      license_number: profile.license_number || authUser.license_number || '',
-      verification_status: profile.verification_status || authUser.verification_status || '',
-      property_categories: profile.property_categories || authUser.property_categories || [],
-      transaction_types: profile.transaction_types || authUser.transaction_types || [],
-      bio: profile.bio || authUser.bio || '',
-      years_experience: profile.years_experience || authUser.years_experience || '',
-      specialties: profile.specialties || authUser.specialties || '',
-      certifications: profile.certifications || authUser.certifications || '',
-      languages: profile.languages || authUser.languages || '',
-      linkedin: profile.linkedin || authUser.linkedin || '',
-      website: profile.website || authUser.website || '',
-      instagram: profile.instagram || authUser.instagram || '',
-      tiktok: profile.tiktok || authUser.tiktok || '',
-      facebook: profile.facebook || authUser.facebook || '',
-      profile_photo_url: profile.profile_photo_url || authUser.profile_photo_url || '',
-      selected_plan: profile.selected_plan || authUser.selected_plan || '',
-      brokerage_id: profile.employing_broker_id || authUser.brokerage_id || authUser.employing_broker_id || '',
+      full_name: profile.full_name || authUser.user_metadata?.full_name || authUser.user_metadata?.name || '',
+      username: profile.username || authUser.user_metadata?.username || '',
+      contact_email: profile.contact_email || authUser.email,
+      phone: profile.phone || authUser.user_metadata?.phone || '',
+      state: profile.state || authUser.user_metadata?.state || '',
+      user_type: profile.user_type || authUser.user_metadata?.user_type || '',
+      brokerage_name: profile.brokerage_name || authUser.user_metadata?.brokerage_name || '',
+      brokerage_address: profile.brokerage_address || authUser.user_metadata?.brokerage_address || '',
+      employing_broker_id: profile.employing_broker_id || authUser.user_metadata?.employing_broker_id || '',
+      license_number: profile.license_number || authUser.user_metadata?.license_number || '',
+      verification_status: profile.verification_status || authUser.user_metadata?.verification_status || '',
+      property_categories: profile.property_categories || authUser.user_metadata?.property_categories || [],
+      transaction_types: profile.transaction_types || authUser.user_metadata?.transaction_types || [],
+      bio: profile.bio || authUser.user_metadata?.bio || '',
+      years_experience: profile.years_experience || authUser.user_metadata?.years_experience || '',
+      specialties: profile.specialties || authUser.user_metadata?.specialties || '',
+      certifications: profile.certifications || authUser.user_metadata?.certifications || '',
+      languages: profile.languages || authUser.user_metadata?.languages || '',
+      linkedin: profile.linkedin || authUser.user_metadata?.linkedin || '',
+      website: profile.website || authUser.user_metadata?.website || '',
+      instagram: profile.instagram || authUser.user_metadata?.instagram || '',
+      tiktok: profile.tiktok || authUser.user_metadata?.tiktok || '',
+      facebook: profile.facebook || authUser.user_metadata?.facebook || '',
+      profile_photo_url: profile.profile_photo_url || authUser.user_metadata?.profile_photo_url || '',
+      selected_plan: profile.selected_plan || authUser.user_metadata?.selected_plan || '',
+      brokerage_id: profile.employing_broker_id || authUser.user_metadata?.brokerage_id || authUser.user_metadata?.employing_broker_id || '',
+      theme: profile.theme || authUser.user_metadata?.theme || 'dark',
       _profileId: profile.id,
     };
   };
@@ -74,54 +84,31 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
-
-      const appClient = createAxiosClient({
-        baseURL: `/api/apps/public`,
-        headers: { 'X-App-Id': appParams.appId },
-        token: appParams.token,
-        interceptResponses: true
-      });
-
-      try {
-        const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
-        setAppPublicSettings(publicSettings);
-        if (appParams.token) {
-          await checkUserAuth();
-        } else {
-          setIsLoadingAuth(false);
-          setIsAuthenticated(false);
-        }
-        setIsLoadingPublicSettings(false);
-      } catch (appError) {
-        console.error('App state check failed:', appError);
-        if (appError.status === 403 && appError.data?.extra_data?.reason) {
-          const reason = appError.data.extra_data.reason;
-          if (reason === 'auth_required') {
-            setAuthError({ type: 'auth_required', message: 'Authentication required' });
-          } else if (reason === 'user_not_registered') {
-            setAuthError({ type: 'user_not_registered', message: 'User not registered for this app' });
-          } else {
-            setAuthError({ type: reason, message: appError.message });
-          }
-        } else {
-          setAuthError({ type: 'unknown', message: appError.message || 'Failed to load app' });
-        }
-        setIsLoadingPublicSettings(false);
-        setIsLoadingAuth(false);
-      }
+      // Assume appPublicSettings not needed for Supabase
+      setAppPublicSettings({});
+      await checkUserAuth();
+      setIsLoadingPublicSettings(false);
     } catch (error) {
-      console.error('Unexpected error:', error);
-      setAuthError({ type: 'unknown', message: error.message || 'An unexpected error occurred' });
+      console.error('App state check failed:', error);
+      setAuthError({ type: 'unknown', message: error.message || 'Failed to load app' });
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
     }
   };
 
-  const checkUserAuth = async () => {
+  const checkUserAuth = async (authUser) => {
     try {
       setIsLoadingAuth(true);
-      const authUser = await base44.auth.me();
-      const profile = await fetchUserProfile(authUser?.email);
+      if (!authUser) {
+        const { data: { user } } = await supabase.auth.getUser();
+        authUser = user;
+      }
+      if (!authUser) {
+        setIsAuthenticated(false);
+        setIsLoadingAuth(false);
+        return;
+      }
+      const profile = await fetchUserProfile(authUser.email);
       const mergedUser = buildMergedUser(authUser, profile);
       setUser(mergedUser);
       setIsAuthenticated(true);
@@ -131,12 +118,12 @@ export const AuthProvider = ({ children }) => {
       const isOnRootOrLanding = pathname === '/';
 
       if (isOnRootOrLanding && authUser) {
-        const needsOnboarding = !authUser.user_type && !(profile?.user_type);
+        const needsOnboarding = !authUser.user_metadata?.user_type && !(profile?.user_type);
         if (needsOnboarding) {
           // New user — show them the landing page first, CTA will take them to Onboarding
           window.location.href = '/Landing';
         } else {
-          const userType = profile?.user_type || authUser.user_type;
+          const userType = profile?.user_type || authUser.user_metadata?.user_type;
           const defaultPage = userType === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
           window.location.href = defaultPage;
         }
@@ -153,7 +140,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUser = async () => {
     try {
-      const authUser = await base44.auth.me();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
       const profile = await fetchUserProfile(authUser?.email);
       const mergedUser = buildMergedUser(authUser, profile);
       setUser(mergedUser);
@@ -162,18 +149,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (shouldRedirect = true) => {
+  const logout = async (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
+    await supabase.auth.signOut();
     if (shouldRedirect) {
-      base44.auth.logout(window.location.href);
-    } else {
-      base44.auth.logout();
+      window.location.href = '/Landing';
     }
   };
 
-  const navigateToLogin = () => {
-    base44.auth.redirectToLogin(window.location.href);
+  const navigateToLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.href
+      }
+    });
   };
 
   return (

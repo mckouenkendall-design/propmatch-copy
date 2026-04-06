@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 
 const ACCENT = '#00DBC5';
@@ -70,7 +70,7 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
       }
 
       try {
-        const allRoster = await base44.entities.BrokerageRoster.list();
+        const { data: allRoster } = await supabase.from('BrokerageRoster').select('*');
         const match = allRoster.find(r =>
           r.employing_broker_number === user.employing_broker_id &&
           r.agent_license === user.license_number &&

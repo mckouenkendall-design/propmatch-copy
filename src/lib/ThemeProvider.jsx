@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 
 const ThemeContext = createContext();
 
@@ -26,19 +26,25 @@ export const ThemeProvider = ({ children }) => {
 
   // Sync theme with user preferences
   useEffect(() => {
-    if (!isLoadingAuth && user) {
-      // If user has a theme preference, use it
+    const syncTheme = async () => {
+      if (!user) return;
       if (user.theme) {
         setTheme(user.theme);
       } else {
-        // If no theme is set, default to dark and save it
         setTheme('dark');
-        base44.auth.updateMe({ theme: 'dark' }).catch(err => {
-          console.error('Failed to set default theme:', err);
-        });
+        if (user._profileId) {
+          try {
+            await supabase.from('UserProfile').update({ theme: 'dark' }).eq('id', user._profileId);
+          } catch (error) {
+            console.error('Failed to save default theme:', error);
+          }
+        }
       }
+    };
+
+    if (!isLoadingAuth && user) {
+      syncTheme();
     } else if (!isLoadingAuth && !user) {
-      // Not logged in - default to dark
       setTheme('dark');
     }
   }, [user, isLoadingAuth]);
@@ -61,9 +67,9 @@ export const ThemeProvider = ({ children }) => {
   const updateTheme = async (newTheme) => {
     setTheme(newTheme);
     
-    if (user) {
+    if (user && user._profileId) {
       try {
-        await base44.auth.updateMe({ theme: newTheme });
+        await supabase.from('UserProfile').update({ theme: newTheme }).eq('id', user._profileId);
       } catch (error) {
         console.error('Failed to save theme preference:', error);
       }

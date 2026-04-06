@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
 import AddTeamModal from '@/components/broker/AddTeamModal';
 
 const ACCENT = '#00DBC5';
@@ -188,11 +187,18 @@ const REFERRAL_OPTIONS = [
 ];
 
 function HowDidYouHearScreen({ onNext }) {
+  const { user } = useAuth();
   const [selected, setSelected] = useState(null);
 
   const handleNext = async () => {
     if (!selected) return;
-    try { await base44.auth.updateMe({ referral_source: selected }); } catch (e) {}
+    try {
+      if (user._profileId) {
+        await supabase.from('UserProfile').update({ referral_source: selected }).eq('id', user._profileId);
+      }
+    } catch {
+      // ignore
+    }
     onNext();
   };
 
@@ -236,10 +242,17 @@ function HowDidYouHearScreen({ onNext }) {
 
 // ─── Screen 2: Theme picker ─────────────────────────────────────────────────────
 function ThemeScreen({ onNext }) {
+  const { user } = useAuth();
   const [selectedTheme, setSelectedTheme] = useState('dark');
 
   const handleNext = async () => {
-    try { await base44.auth.updateMe({ theme_preference: selectedTheme }); } catch (e) {}
+    try {
+      if (user._profileId) {
+        await supabase.from('UserProfile').update({ theme_preference: selectedTheme }).eq('id', user._profileId);
+      }
+    } catch {
+      // ignore
+    }
     onNext();
   };
 
@@ -586,15 +599,14 @@ export default function PostOnboarding({ isBroker = false }) {
       
       // Check if they have a brokerage subscription
       try {
-        const userProfile = await base44.auth.me();
-        if (userProfile.selected_plan === 'brokerage' && userProfile.brokerage_seats) {
+        if (user.selected_plan === 'brokerage' && user.brokerage_seats) {
           setBrokerInfo({
-            totalSeats: userProfile.brokerage_seats,
-            brokerEmail: userProfile.email,
-            brokerName: userProfile.full_name,
-            brokerageName: userProfile.brokerage_name,
-            employingBrokerNumber: userProfile.employing_broker_id,
-            stripeSubscriptionId: userProfile.stripe_subscription_id,
+            totalSeats: user.brokerage_seats,
+            brokerEmail: user.email,
+            brokerName: user.full_name,
+            brokerageName: user.brokerage_name,
+            employingBrokerNumber: user.employing_broker_id,
+            stripeSubscriptionId: user.stripe_subscription_id,
           });
           setShowAddTeam(true);
         }
