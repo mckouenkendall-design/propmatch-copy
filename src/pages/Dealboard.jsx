@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Building2, Search, Filter, Plus, MoreVertical } from 'lucide-react';
@@ -18,17 +19,20 @@ const STAGES = [
 
 export default function Dealboard() {
   const { user } = useAuth();
+  const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState('all');
 
   const { data: listings = [] } = useQuery({
-    queryKey: ['dealboard-listings'],
-    queryFn: () => base44.entities.Listing.list('-created_date'),
+    queryKey: ['dealboard-listings', user?.email],
+    queryFn: () => base44.entities.Listing.filter({ created_by: user?.email }, '-created_date'),
+    enabled: !!user?.email,
   });
 
   const { data: requirements = [] } = useQuery({
-    queryKey: ['dealboard-requirements'],
-    queryFn: () => base44.entities.Requirement.list('-created_date'),
+    queryKey: ['dealboard-requirements', user?.email],
+    queryFn: () => base44.entities.Requirement.filter({ created_by: user?.email }, '-created_date'),
+    enabled: !!user?.email,
   });
 
   const allDeals = [
