@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
+import { useAuth as _useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { X, Search, FileText, Building2, Home, FolderOpen, ChevronRight } from 'lucide-react';
 
@@ -10,12 +13,14 @@ const TYPE_COLORS = { listing: ACCENT, requirement: LAVENDER };
 const CAT_ICONS   = { commercial: Building2, residential: Home };
 
 export default function LoadTemplateModal({ onClose, onLoad }) {
+  const { user } = useAuth();
   const [search, setSearch]           = useState('');
   const [openFolder, setOpenFolder]   = useState(null);
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['templates'],
-    queryFn: () => base44.entities.Template.list('-created_date', 200),
+    queryFn: () => base44.entities.Template.filter({ created_by: user?.email }, '-created_date'),
+    enabled: !!user?.email,
   });
 
   const filtered = templates.filter(t =>
