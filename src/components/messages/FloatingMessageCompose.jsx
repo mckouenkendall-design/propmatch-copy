@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { X, Send, Loader2, Search, Check, Users, Fish, ChevronDown } from 'lucide-react';
 import { getScoreLabel } from '@/utils/matchScore';
 import { useAuth } from '@/lib/AuthContext';
@@ -51,18 +51,18 @@ export default function FloatingMessageCompose({
   // Load all profiles for recipient search
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => supabase.from('user_profiles').select('*'),
   });
 
   // Load user's fish tanks
   const { data: myTankMemberships = [] } = useQuery({
     queryKey: ['my-tank-memberships', currentUser?.email],
-    queryFn: () => base44.entities.GroupMember.filter({ user_email: currentUser?.email }),
+    queryFn: () => supabase.from('group_members').select('*').eq('user_email', currentUser?.email),
     enabled: !!currentUser?.email,
   });
   const { data: allTanks = [] } = useQuery({
     queryKey: ['all-groups'],
-    queryFn: () => base44.entities.Group.list(),
+    queryFn: () => supabase.from('groups').select('*'),
   });
   const myTankIds = new Set(myTankMemberships.map(m => m.group_id));
   const myTanks = allTanks.filter(t => myTankIds.has(t.id));
@@ -102,7 +102,7 @@ ${monthly?`- Monthly total: ${monthly}`:''}${annual?`\n- Annual total: ${annual}
 Write 2-3 sentences maximum. Be conversational and specific. Reference actual numbers. End with exactly this sentence: "${cta}"
 Rules: no bullet points, no em dashes, no markdown. Plain conversational text only.`;
     try {
-      const r = await base44.functions.invoke('generateAIText', { prompt, maxTokens: 200 });
+      const r = await supabase.functions.invoke('generateAIText', { body: { prompt, maxTokens: 200 } });
       const t = r.data?.text?.trim() || '';
       setText(t.replace(/\u2014/g, ','));
     } catch { setText(`Hi! I came across your ${myIsListing?'requirement':'listing'} and I think there could be a match. ${cta}`); }
@@ -124,7 +124,7 @@ Rules: no bullet points, no em dashes, no markdown. Plain conversational text on
       // ── FISH TANK SENDS (always separate, one per tank) ──
       if (selectedTankIds.length > 0) {
         for (const tankId of selectedTankIds) {
-          await base44.entities.GroupPost.create({
+          await supabase.from('group_posts').insert({
             group_id: tankId,
             author_email: myEmail,
             author_name: myName,
@@ -132,7 +132,7 @@ Rules: no bullet points, no em dashes, no markdown. Plain conversational text on
             post_type: 'text',
             media_urls: [], file_urls: [], file_names: [],
             comment_count: 0, reaction_counts: '{}',
-          });
+          }).select();
         }
         return { type: 'tanks', count: selectedTankIds.length };
       }
@@ -147,15 +147,15 @@ Rules: no bullet points, no em dashes, no markdown. Plain conversational text on
       if (!multiMode || sendSeparately || recipients.length === 1) {
         for (const email of recipients) {
           const [ex1, ex2] = await Promise.all([
-            base44.entities.Conversation.filter({ participant_1: myEmail, participant_2: email }),
-            base44.entities.Conversation.filter({ participant_1: email, participant_2: myEmail }),
+            supabase.from('conversations').select('*').eq('participant_1', myEmail).eq('participant_2', email),
+            supabase.from('conversations').select('*').eq('participant_1', email).eq('participant_2', myEmail),
           ]);
           const existing = [...ex1, ...ex2];
           let convoId;
           if (existing.length > 0) {
             convoId = existing[0].id;
           } else {
-            const convo = await base44.entities.Conversation.create({
+            const convo = await supabase.from('conversations').insert({
               participant_1: myEmail, participant_2: email,
               last_message: msgText.slice(0, 80),
               last_message_time: now,
@@ -163,16 +163,16 @@ Rules: no bullet points, no em dashes, no markdown. Plain conversational text on
             });
             convoId = convo.id;
           }
-          await base44.entities.Message.create({
+          await supabase.from('messages').insert({
             conversation_id: convoId, sender_email: myEmail,
             content: msgText, attachment_url: '', attachment_type: '',
             sent_at: now, post_id: '', post_type: '',
-          });
-          await base44.entities.Conversation.update(convoId, {
+          }).select();
+          await supabase.from('conversations').update({
             last_message: msgText.slice(0, 80),
             last_message_time: now,
             unread_by_2: (existing[0]?.unread_by_2 || 0) + 1,
-          });
+          }).eq('id', convoId).select();
           const senderName = currentUser?.full_name || currentUser?.email?.split('@')[0] || 'An agent';
           await createNotification(email, 'message', `New message from ${senderName}`, msgText.slice(0,100), { link: '/Messages', relatedId: convoId });
         }
@@ -184,7 +184,7 @@ Rules: no bullet points, no em dashes, no markdown. Plain conversational text on
       const sortedEmails = [...participantEmails].sort().join(',');
       let existingGroup = null;
       try {
-        const myGCs = await base44.entities.GroupConversation.filter({ created_by: myEmail });
+        const myGCs = await supabase.from('group_conversations').select('*').eq('created_by', myEmail);
         existingGroup = myGCs.find(gc => {
           try {
             const p = JSON.parse(gc.participant_emails || '[]').sort().join(',');
@@ -201,7 +201,7 @@ Rules: no bullet points, no em dashes, no markdown. Plain conversational text on
           const p = allProfiles.find(pr => pr.user_email === e);
           return p?.full_name || e.split('@')[0];
         }).concat([myName]).join(', ');
-        const gc = await base44.entities.GroupConversation.create({
+        const gc = await supabase.from('group_conversations').insert({
           name: groupName,
           participant_emails: JSON.stringify(participantEmails),
           created_by: myEmail,
@@ -213,17 +213,17 @@ Rules: no bullet points, no em dashes, no markdown. Plain conversational text on
         groupConvoId = gc.id;
       }
 
-      await base44.entities.GroupMessage.create({
+      await supabase.from('group_messages').insert({
         group_conversation_id: groupConvoId,
         sender_email: myEmail, sender_name: myName,
         content: msgText, attachment_url: '', attachment_type: '',
-      });
+      }).select();
 
-      await base44.entities.GroupConversation.update(groupConvoId, {
+      await supabase.from('group_conversations').update({
         last_message: msgText.slice(0, 80),
         last_message_time: now,
         last_message_sender: myName,
-      });
+      }).eq('id', groupConvoId).select();
 
       return { type: 'group', groupConvoId, isNew: !existingGroup };
     },

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import {
   Building2, Search, TrendingUp, X, Mail, Phone, MessageCircle,
@@ -794,7 +794,7 @@ REQUIREMENT: Seeking ${PT[requirement.property_type]||requirement.property_type}
 MATCH SCORE: ${totalScore}% (${getScoreLabel(totalScore)||'no label'})
 SCORE BREAKDOWN: ${bStr}\n\nRules:\n1. Be concise and analytical. Reference actual numbers.\n2. Wrap listing-specific values like this: {{L:value}}\n3. Wrap requirement-specific values like this: {{R:value}}\n4. Highlight the strongest alignment and any gaps.\n5. End with a clear call to action for why these agents should connect.\n6. Write in second person to the listing agent.\n7. Plain prose only. No markdown, bullets, headers, or em dashes.\n8. Use ONLY the numbers provided above.`;
   },[listing,requirement,matchResult]);
-  const run=useCallback(async()=>{setLoad(true);setError(null);try{const r=await base44.functions.invoke('generateAIText',{prompt,maxTokens:800});const t=r.data;setText((t?.text?.trim()||'No breakdown generated.').replace(/\u2014/g,',').replace(/ - /g,', '));}catch(e){setError('Unable to generate breakdown. Please try again.');}finally{setLoad(false);}},[ prompt]);
+  const run=useCallback(async()=>{setLoad(true);setError(null);try{const r=await supabase.functions.invoke('generateAIText', { body: {prompt,maxTokens:800} });const t=r.data;setText((t?.text?.trim()||'No breakdown generated.').replace(/\u2014/g,',').replace(/ - /g,', '));}catch(e){setError('Unable to generate breakdown. Please try again.');}finally{setLoad(false);}},[ prompt]);
   useEffect(()=>{run();},[run]);
   if(loading)return(<div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'60px 40px', gap:'16px' }}><style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style><Loader2 style={{ width:'28px', height:'28px', color:ACCENT, animation:'spin 1s linear infinite' }}/><p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.4)', margin:0 }}>Analyzing this match\u2026</p></div>);
   if(error)return(<div style={{ padding:'40px', textAlign:'center' }}><p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.45)', margin:'0 0 16px', lineHeight:1.6 }}>{error}</p><button onClick={run} style={{ padding:'8px 20px', background:ACCENT, border:'none', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:600, color:'#111827', cursor:'pointer' }}>Try Again</button></div>);
@@ -1000,12 +1000,12 @@ export default function Matches() {
   const showSaved = location.state?.showSaved;
   useEffect(()=>{if(showSaved)setFilterSaved(true);},[showSaved]);
   const savedHook=useSavedMatches(user?.email);
-  const {data:myListings=[]}      =useQuery({queryKey:['my-listings',user?.email],              queryFn:()=>base44.entities.Listing.filter({created_by:user?.email}),enabled:!!user?.email});
-  const {data:myRequirements=[]}  =useQuery({queryKey:['my-requirements',user?.email],          queryFn:()=>base44.entities.Requirement.filter({created_by:user?.email}),enabled:!!user?.email});
-  const {data:allListings=[]}     =useQuery({queryKey:['all-listings-matches',user?.email],     queryFn:()=>base44.entities.Listing.list('-created_date',200),enabled:!!user?.email});
-  const {data:allRequirements=[]} =useQuery({queryKey:['all-requirements-matches',user?.email], queryFn:()=>base44.entities.Requirement.list('-created_date',200),enabled:!!user?.email});
-  const {data:allProfiles=[]}     =useQuery({queryKey:['all-user-profiles',user?.email],        queryFn:()=>base44.entities.UserProfile.list(),enabled:!!user?.email});
-  const {data:myMemberships=[]}   =useQuery({queryKey:['my-memberships',user?.email], queryFn:()=>base44.entities.GroupMember.filter({user_email:user?.email}), enabled:!!user?.email});
+  const {data:myListings=[]}      =useQuery({queryKey:['my-listings',user?.email],              queryFn:()=>supabase.from('listings').select('*').eq('created_by', user?.email),enabled:!!user?.email});
+  const {data:myRequirements=[]}  =useQuery({queryKey:['my-requirements',user?.email],          queryFn:()=>supabase.from('requirements').select('*').eq('created_by', user?.email),enabled:!!user?.email});
+  const {data:allListings=[]}     =useQuery({queryKey:['all-listings-matches',user?.email],     queryFn:()=>supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(200),enabled:!!user?.email});
+  const {data:allRequirements=[]} =useQuery({queryKey:['all-requirements-matches',user?.email], queryFn:()=>supabase.from('requirements').select('*').order('created_at', { ascending: false }).limit(200),enabled:!!user?.email});
+  const {data:allProfiles=[]}     =useQuery({queryKey:['all-user-profiles',user?.email],        queryFn:()=>supabase.from('user_profiles').select('*'),enabled:!!user?.email});
+  const {data:myMemberships=[]}   =useQuery({queryKey:['my-memberships',user?.email], queryFn:()=>supabase.from('group_members').select('*').eq('user_email', user?.email), enabled:!!user?.email});
   const profileMap=Object.fromEntries(allProfiles.map(p=>[p.user_email,p]));
   const myProfile=profileMap[user?.email];
   const myBrokerageId=myProfile?.brokerage_id||user?.employing_broker_id||'';

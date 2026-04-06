@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { Search, FileText, Building2, Home, Trash2, Pencil, Check, X, FolderOpen, ChevronDown, ChevronRight, Loader2, Play } from 'lucide-react';
 import ListingWizard from '@/components/forms/ListingWizard';
 import RequirementWizard from '@/components/forms/RequirementWizard';
@@ -92,18 +92,18 @@ export default function MyTemplates() {
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['templates'],
-    queryFn: () => base44.entities.Template.filter({ created_by: user?.email }, '-created_date'),
+    queryFn: () => supabase.from('templates').select('*').eq('created_by', user?.email).order('created_at', { ascending: false }),
     enabled: !!user?.email,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id) => { setDeletingId(id); await base44.entities.Template.delete(id); },
+    mutationFn: async (id) => { setDeletingId(id); await supabase.from('templates').delete().eq('id', id); },
     onSuccess: () => { setDeletingId(null); queryClient.invalidateQueries({ queryKey:['templates'] }); },
     onError: () => setDeletingId(null),
   });
 
   const renameMutation = useMutation({
-    mutationFn: ({ id, name }) => base44.entities.Template.update(id, { name }),
+    mutationFn: ({ id, name }) => supabase.from('templates').update({ name }).eq('id', id).select(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey:['templates'] }),
   });
 

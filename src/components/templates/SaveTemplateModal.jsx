@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { X, BookmarkCheck, FolderOpen, FolderPlus, Check, Loader2 } from 'lucide-react';
 
 const ACCENT = '#00DBC5';
@@ -18,7 +18,7 @@ export default function SaveTemplateModal({ formData, templateType, onClose }) {
   // Load existing templates to derive folder list
   const { data: templates = [] } = useQuery({
     queryKey: ['templates'],
-    queryFn: () => base44.entities.Template.filter({ created_by: user?.email }, '-created_date'),
+    queryFn: () => supabase.from('templates').select('*').eq('created_by', user?.email).order('created_at', { ascending: false }),
     enabled: !!user?.email,
   });
 
@@ -33,7 +33,7 @@ export default function SaveTemplateModal({ formData, templateType, onClose }) {
       : (selectedFolder || 'General');
     setSaving(true);
     try {
-      await base44.entities.Template.create({
+      await supabase.from('templates').insert({
         name: name.trim(),
         folder,
         template_type: templateType,

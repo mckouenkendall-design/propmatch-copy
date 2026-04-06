@@ -1,5 +1,5 @@
+import { supabase, uploadFile } from '@/api/supabaseClient';
 import React, { useState, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Image, Paperclip, BarChart2, Calendar, Loader2, X, Send, ChevronDown, ChevronUp } from 'lucide-react';
@@ -54,12 +54,12 @@ export default function GroupDiscussion({ groupId, currentUser }) {
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['group-posts', groupId],
-    queryFn: () => base44.entities.GroupPost.filter({ group_id: groupId }, '-created_date'),
+    queryFn: () => supabase.from('group_posts').select('*').eq('group_id', groupId).order('created_at', { ascending: false }),
   });
 
   const { data: userProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => supabase.from('user_profiles').select('*'),
   });
   const profileMap = Object.fromEntries(userProfiles.map(p => [p.user_email, p]));
 
@@ -68,12 +68,12 @@ export default function GroupDiscussion({ groupId, currentUser }) {
       const mediaUrls = [], fileUrls = [], fileNames = [];
       for (const file of mediaFiles) {
         setUploadingMedia(true);
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await uploadFile(file);
         mediaUrls.push(file_url);
       }
       for (const file of attachFiles) {
         setUploadingMedia(true);
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await uploadFile(file);
         fileUrls.push(file_url); fileNames.push(file.name);
       }
       setUploadingMedia(false);
@@ -92,7 +92,7 @@ export default function GroupDiscussion({ groupId, currentUser }) {
         postData.poll_options = JSON.stringify(opts);
         postData.poll_votes = JSON.stringify(Object.fromEntries(opts.map((_,i) => [i, []])));
       }
-      return base44.entities.GroupPost.create(postData);
+      return supabase.from('group_posts').insert(postData).select();
     },
     onSuccess: () => {
       setPostText(''); setMediaFiles([]); setAttachFiles([]);
@@ -108,7 +108,7 @@ export default function GroupDiscussion({ groupId, currentUser }) {
       Object.keys(votes).forEach(key => { votes[key] = (votes[key] || []).filter(e => e !== currentUser?.email); });
       if (!votes[optionIndex]) votes[optionIndex] = [];
       votes[optionIndex].push(currentUser?.email);
-      return base44.entities.GroupPost.update(post.id, { poll_votes: JSON.stringify(votes) });
+      return supabase.from('group_posts').update({ poll_votes: JSON.stringify(votes) }).eq('id', post.id).select();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-posts', groupId] }),
   });
@@ -123,13 +123,13 @@ export default function GroupDiscussion({ groupId, currentUser }) {
       } else {
         counts[emoji] = [...counts[emoji], currentUser?.email];
       }
-      return base44.entities.GroupPost.update(post.id, { reaction_counts: JSON.stringify(counts) });
+      return supabase.from('group_posts').update({ reaction_counts: JSON.stringify(counts) }).eq('id', post.id).select();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-posts', groupId] }),
   });
 
   const deletePostMutation = useMutation({
-    mutationFn: (postId) => base44.entities.GroupPost.delete(postId),
+    mutationFn: (postId) => supabase.from('group_posts').delete().eq('id', postId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-posts', groupId] }),
   });
 

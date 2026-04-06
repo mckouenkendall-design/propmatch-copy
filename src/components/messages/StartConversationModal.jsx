@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { Search, X, Users } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -100,16 +100,16 @@ export default function StartConversationModal({ currentUser, profiles, onClose,
         // Single — regular DM
         const email = selected[0].user_email;
         const [ex1, ex2] = await Promise.all([
-          base44.entities.Conversation.filter({ participant_1: myEmail, participant_2: email }),
-          base44.entities.Conversation.filter({ participant_1: email, participant_2: myEmail }),
+          supabase.from('conversations').select('*').eq('participant_1', myEmail).eq('participant_2', email),
+          supabase.from('conversations').select('*').eq('participant_1', email).eq('participant_2', myEmail),
         ]);
         const existing = [...ex1, ...ex2];
         if (existing.length > 0) { onCreated(existing[0].id, 'dm'); return; }
-        const convo = await base44.entities.Conversation.create({
+        const convo = await supabase.from('conversations').insert({
           participant_1: myEmail, participant_2: email,
           last_message: '', last_message_time: now,
           unread_by_1: 0, unread_by_2: 0,
-        });
+        }).select();
         onCreated(convo.id, 'dm');
         return;
       }
@@ -121,7 +121,7 @@ export default function StartConversationModal({ currentUser, profiles, onClose,
       // Check if group already exists — search all group convos by participant match
       let existingGroup = null;
       try {
-        const allGCs = await base44.entities.GroupConversation.filter({});
+        const allGCs = await supabase.from('group_conversations').select('*');
         existingGroup = allGCs.find(gc => {
           try { return JSON.parse(gc.participant_emails || '[]').sort().join(',') === sortedKey; }
           catch { return false; }
@@ -133,7 +133,7 @@ export default function StartConversationModal({ currentUser, profiles, onClose,
       const myName = profiles.find(p => p.user_email === myEmail)?.full_name || myEmail?.split('@')[0] || 'Me';
       const groupName = [...selected.map(p => p.full_name || p.user_email.split('@')[0]), myName].join(', ');
 
-      const gc = await base44.entities.GroupConversation.create({
+      const gc = await supabase.from('group_conversations').insert({
         name: groupName,
         participant_emails: JSON.stringify(participantEmails),
         created_by: myEmail,
@@ -157,7 +157,7 @@ export default function StartConversationModal({ currentUser, profiles, onClose,
         if (!myEmail) return;
         const participantEmails = [myEmail, ...selected.map(p => p.user_email)];
         const sortedKey = [...participantEmails].sort().join(',');
-        const allGCs = await base44.entities.GroupConversation.filter({});
+        const allGCs = await supabase.from('group_conversations').select('*');
         const found = allGCs.find(gc => {
           try { return JSON.parse(gc.participant_emails || '[]').sort().join(',') === sortedKey; }
           catch { return false; }

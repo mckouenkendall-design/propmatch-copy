@@ -34,7 +34,7 @@ export const ThemeProvider = ({ children }) => {
         setTheme('dark');
         if (user._profileId) {
           try {
-            await supabase.from('UserProfile').update({ theme: 'dark' }).eq('id', user._profileId);
+            await supabase.from('user_profiles').update({ theme: 'dark' }).eq('id', user._profileId);
           } catch (error) {
             console.error('Failed to save default theme:', error);
           }
@@ -69,7 +69,7 @@ export const ThemeProvider = ({ children }) => {
     
     if (user && user._profileId) {
       try {
-        await supabase.from('UserProfile').update({ theme: newTheme }).eq('id', user._profileId);
+        await supabase.from('user_profiles').update({ theme: newTheme }).eq('id', user._profileId);
       } catch (error) {
         console.error('Failed to save theme preference:', error);
       }

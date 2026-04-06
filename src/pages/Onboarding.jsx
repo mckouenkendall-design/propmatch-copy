@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import PostOnboarding from '@/components/onboarding/PostOnboarding';
 import PaymentScreen from '@/components/onboarding/PaymentScreen';
@@ -317,11 +317,11 @@ export default function Onboarding() {
     const email = user?.email;
     if (!email) return;
     try {
-      const existing = await base44.entities.UserProfile.filter({ user_email: email });
+      const existing = await supabase.from('user_profiles').select('*').eq('user_email', email);
       if (existing && existing.length > 0) {
-        await base44.entities.UserProfile.update(existing[0].id, profileData);
+        await supabase.from('user_profiles').update(profileData).eq('id', existing[0].id).select();
       } else {
-        await base44.entities.UserProfile.create({ user_email: email, ...profileData });
+        await supabase.from('user_profiles').insert({ user_email: email, ...profileData }).select();
       }
     } catch (e) {
       console.error('Failed to save UserProfile:', e);
@@ -339,7 +339,7 @@ export default function Onboarding() {
     }
 
     try {
-      const existingUsers = await base44.entities.UserProfile.filter({ username: step1.username.trim() });
+      const existingUsers = await supabase.from('user_profiles').select('*').eq('username', step1.username.trim());
       if (existingUsers.length > 0) {
         setErrors({ username: 'This username is already taken. Please choose another.' });
         return;
@@ -362,7 +362,7 @@ export default function Onboarding() {
 
     // Also try auth.updateMe as a best-effort backup
     try {
-      await base44.auth.updateMe({
+      await supabase.auth.updateUser({ data: {
         full_name: step1.fullName,
         name: step1.fullName,
         username: step1.username.trim(),
@@ -370,7 +370,7 @@ export default function Onboarding() {
         employing_broker_id: step1.employingBrokerId,
         license_number: step1.licenseNumber,
         verification_status: 'format_verified',
-      });
+      }});
     } catch (e) {}
 
     setErrors({});
@@ -386,10 +386,10 @@ export default function Onboarding() {
     });
 
     try {
-      await base44.auth.updateMe({
+      await supabase.auth.updateUser({ data: {
         property_categories: step2.propertyCategories,
         transaction_types: step2.transactionTypes,
-      });
+      } });
     } catch (e) {}
 
     setShowPayment(true);
@@ -415,11 +415,11 @@ export default function Onboarding() {
         onComplete={async (plan, rosterData) => {
           await saveToUserProfile({ selected_plan: plan });
           try {
-            await base44.auth.updateMe({
+            await supabase.auth.updateUser({ data: {
               selected_plan: plan,
               broker_sponsored: plan === 'broker_sponsored',
               roster_broker_email: rosterData?.broker_email || null,
-            });
+            } });
           } catch (e) {}
           setShowPayment(false);
           setShowPostOnboarding(true);

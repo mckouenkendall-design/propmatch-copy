@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { useTheme } from '@/lib/ThemeProvider';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -124,13 +124,13 @@ export default function Settings() {
 
   const { data: invoiceData, isLoading: loadingInvoices } = useQuery({
     queryKey: ['invoices', user?.email],
-    queryFn: () => base44.functions.invoke('getInvoices', {}),
+    queryFn: () => supabase.functions.invoke('getInvoices', { body: {} }),
     enabled: !!user?.stripe_customer_id,
   });
   const invoices = invoiceData?.data?.invoices || invoiceData?.invoices || [];
 
   const getProfile = async () => {
-    const all = await base44.entities.UserProfile.list();
+    const all = await supabase.from('user_profiles').select('*');
     return all.find(p => p.user_email === user?.email) || null;
   };
 
@@ -138,12 +138,12 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (!profile) { toast({ title: 'Profile not found', variant: 'destructive' }); return; }
-      await base44.entities.UserProfile.update(profile.id, {
+      await supabase.from('user_profiles').update({
         email_notifications: emailNotifications,
         match_alerts: matchAlerts,
         group_notifications: groupNotifications,
         message_notifications: messageNotifications,
-      });
+      }).eq('id', profile.id).select();
       await refreshUser();
       toast({ title: 'Notification preferences saved' });
     } catch {
@@ -155,7 +155,7 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (!profile) { toast({ title: 'Profile not found', variant: 'destructive' }); return; }
-      await base44.entities.UserProfile.update(profile.id, { language });
+      await supabase.from('user_profiles').update({ language }).eq('id', profile.id).select();
       await refreshUser();
       toast({ title: 'Preferences saved' });
     } catch {
@@ -167,9 +167,9 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (!profile) return;
-      await base44.entities.UserProfile.update(profile.id, {
+      await supabase.from('user_profiles').update({
         billing_cycle: annual ? 'annual' : 'monthly',
-      });
+      }).eq('id', profile.id).select();
       setIsAnnual(annual);
       await refreshUser();
       toast({ title: `Switched to ${annual ? 'annual' : 'monthly'} billing. Takes effect at next renewal.` });
@@ -182,7 +182,7 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (!profile) return;
-      await base44.entities.UserProfile.update(profile.id, { auto_renew: val });
+      await supabase.from('user_profiles').update({ auto_renew: val }).eq('id', profile.id).select();
       setAutoRenew(val);
       await refreshUser();
       toast({ title: `Auto-renew ${val ? 'enabled' : 'disabled'}` });
@@ -195,11 +195,11 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (!profile) return;
-      await base44.entities.UserProfile.update(profile.id, {
+      await supabase.from('user_profiles').update({
         selected_plan: 'free',
         subscription_status: 'cancelled',
         cancellation_reason: reason,
-      });
+      }).eq('id', profile.id).select();
       await refreshUser();
       setShowCancelStep2(false);
       setCancelDone(true);
@@ -213,13 +213,13 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (profile) {
-        await base44.entities.UserProfile.update(profile.id, {
+        await supabase.from('user_profiles').update({
           user_type: 'principal_broker',
           selected_plan: plan,
           subscription_status: 'active',
-        });
+        }).eq('id', profile.id).select();
       }
-      await base44.auth.updateMe({ user_type: 'principal_broker' });
+      await supabase.auth.updateUser({ data: { user_type: 'principal_broker' } });
       await refreshUser();
       setShowPaymentScreen(false);
       toast({ title: 'Role updated — you are now a Principal Broker' });
@@ -228,7 +228,7 @@ export default function Settings() {
     }
   };
 
-  const handleLogout = async () => { await base44.auth.logout('/Landing'); };
+  const handleLogout = async () => { await await supabase.auth.signOut(); if (typeof window !== 'undefined') { window.location.href = '/Landing'; }; };
 
   const planLabel = () => {
     if (!user?.selected_plan || user.selected_plan === 'free') return 'Free';
@@ -550,9 +550,9 @@ export default function Settings() {
                 <Shield style={{ width: '24px', height: '24px', color: ACCENT, marginBottom: '12px' }} />
                 <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 500, color: 'white', margin: '0 0 8px' }}>Password Management</h3>
                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: '0 0 16px' }}>
-                  Password changes are managed through Base44's authentication system.
+                  Password changes are managed through Supabase's authentication system.
                 </p>
-                <Button variant="outline" style={{ borderColor: ACCENT, color: ACCENT }} onClick={() => window.open('https://app.base44.com/account/security', '_blank')}>
+                <Button variant="outline" style={{ borderColor: ACCENT, color: ACCENT }} onClick={() => window.open('https://supabase.com/dashboard/project/_/auth/users', '_blank')}>
                   Manage Password →
                 </Button>
               </div>

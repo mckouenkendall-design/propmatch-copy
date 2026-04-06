@@ -1,5 +1,5 @@
+import { supabase, uploadFile } from '@/api/supabaseClient';
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,7 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await uploadFile(file);
       update({ cover_image_url: file_url });
     } catch (err) {
       console.error('Upload failed:', err);
@@ -43,16 +43,16 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
 
   const mutation = useMutation({
     mutationFn: async (data) => {
-      const user = await base44.auth.me();
-      const group = await base44.entities.Group.create({ ...data, member_count: 1, status: 'active' });
+      const user = await supabase.auth.getUser().then(r => r.data.user);
+      const group = await supabase.from('groups').insert({ ...data, member_count: 1, status: 'active' }).select();
       // Auto-join creator as admin
-      await base44.entities.GroupMember.create({
+      await supabase.from('group_members').insert({
         group_id: group.id,
         user_email: user.email,
         user_name: user.full_name,
         role: 'admin',
         status: 'active',
-      });
+      }).select();
       return group;
     },
     onSuccess: (group) => {

@@ -1,5 +1,5 @@
+import { supabase, uploadFile } from '@/api/supabaseClient';
 import React, { useState, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Send, MessageSquare, ChevronDown, ChevronUp, Paperclip, X, File } from 'lucide-react';
 
@@ -47,7 +47,7 @@ function CommentComposer({ onSubmit, placeholder = 'Write a comment...', autoFoc
     let url = null, aType = null, aName = null;
     if (attachment) {
       try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: attachment.file });
+        const { file_url } = await uploadFile(attachment.file );
         url = file_url; aType = attachment.type; aName = attachment.name;
       } catch (e) { console.error('Upload failed:', e); }
     }
@@ -121,13 +121,13 @@ function CommentThread({ comment, allComments, currentUser, profileMap, postId, 
   const isMe = comment.author_email === currentUser?.email;
 
   const deleteComment = useMutation({
-    mutationFn: (id) => base44.entities.GroupComment.delete(id),
+    mutationFn: (id) => supabase.from('group_comments').delete().eq('id', id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', postId] }),
   });
 
   const addReply = useMutation({
     mutationFn: async ({ content, attachmentUrl, attachmentType, attachmentName, mentionEmail, mentionName }) => {
-      await base44.entities.GroupComment.create({
+      await supabase.from('group_comments').insert({
         post_id: postId, post_type: postType, group_id: groupId,
         author_email: currentUser?.email || '',
         author_name: currentUser?.full_name || currentUser?.email || 'Member',
@@ -138,7 +138,7 @@ function CommentThread({ comment, allComments, currentUser, profileMap, postId, 
       // Notify the person being replied to (if not replying to yourself)
       if (mentionEmail && mentionEmail !== currentUser?.email) {
         try {
-          await base44.entities.Notification.create({
+          await supabase.from('notifications').insert({
             user_email: mentionEmail,
             type: 'group_post',
             title: `${currentUser?.full_name || 'Someone'} replied to your comment`,
@@ -151,7 +151,7 @@ function CommentThread({ comment, allComments, currentUser, profileMap, postId, 
       // Also notify the post author if different from replier and from mention target
       if (postAuthorEmail && postAuthorEmail !== currentUser?.email && postAuthorEmail !== mentionEmail) {
         try {
-          await base44.entities.Notification.create({
+          await supabase.from('notifications').insert({
             user_email: postAuthorEmail,
             type: 'group_post',
             title: `${currentUser?.full_name || 'Someone'} commented on your post`,
@@ -285,9 +285,11 @@ export default function CommentSection({ postId, postType = 'group_post', groupI
 
   const { data: allComments = [], isLoading } = useQuery({
     queryKey: ['comments', postId],
-    queryFn: () => base44.entities.GroupComment
-      .filter({ post_id: postId })
-      .then(r => r.sort((a,b) => new Date(a.created_date) - new Date(b.created_date))),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('group_comments').select('*').eq('post_id', postId);
+      if (error) throw error;
+      return data.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+    },
     enabled: expanded,
     refetchInterval: expanded ? 10000 : false,
   });
@@ -296,7 +298,7 @@ export default function CommentSection({ postId, postType = 'group_post', groupI
 
   const addComment = useMutation({
     mutationFn: async ({ content, attachmentUrl, attachmentType, attachmentName }) => {
-      await base44.entities.GroupComment.create({
+      await supabase.from('group_comments').insert({
         post_id: postId, post_type: postType, group_id: groupId,
         author_email: currentUser?.email || '',
         author_name: currentUser?.full_name || currentUser?.email || 'Member',
@@ -306,7 +308,7 @@ export default function CommentSection({ postId, postType = 'group_post', groupI
       // Notify post author
       if (postAuthorEmail && postAuthorEmail !== currentUser?.email) {
         try {
-          await base44.entities.Notification.create({
+          await supabase.from('notifications').insert({
             user_email: postAuthorEmail,
             type: 'group_post',
             title: `${currentUser?.full_name || 'Someone'} commented on your post`,

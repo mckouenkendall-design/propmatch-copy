@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Search, Plus, Trash2, Loader2, LayoutGrid, List, Eye, Bookmark, Share2, Pencil } from 'lucide-react';
@@ -144,8 +144,8 @@ export default function Inventory() {
   const qc = useQueryClient();
   const location = useLocation();
 
-  const { data: listings     = [], isLoading: loadL } = useQuery({ queryKey:['inv-listings'],     queryFn:() => base44.entities.Listing.list('-created_date') });
-  const { data: requirements = [], isLoading: loadR } = useQuery({ queryKey:['inv-requirements'], queryFn:() => base44.entities.Requirement.list('-created_date') });
+  const { data: listings     = [], isLoading: loadL } = useQuery({ queryKey:['inv-listings'],     queryFn:() => supabase.from('listings').select('*').order('created_at', { ascending: false }) });
+  const { data: requirements = [], isLoading: loadR } = useQuery({ queryKey:['inv-requirements'], queryFn:() => supabase.from('requirements').select('*').order('created_at', { ascending: false }) });
 
   useEffect(()=>{
     const id = location.state?.openPostId;
@@ -163,11 +163,11 @@ export default function Inventory() {
     setDeletingId(post.id);
     try {
       if (post.postType === 'listing') {
-        await base44.entities.Listing.delete(post.id);
+        await supabase.from('listings').delete().eq('id', post.id);
         qc.invalidateQueries({ queryKey:['inv-listings'] });
         qc.invalidateQueries({ queryKey:['listings'] });
       } else {
-        await base44.entities.Requirement.delete(post.id);
+        await supabase.from('requirements').delete().eq('id', post.id);
         qc.invalidateQueries({ queryKey:['inv-requirements'] });
         qc.invalidateQueries({ queryKey:['requirements'] });
       }

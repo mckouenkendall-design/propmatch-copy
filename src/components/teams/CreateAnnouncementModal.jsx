@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,7 @@ export default function CreateAnnouncementModal({ onClose }) {
   const [content, setContent] = useState('');
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.TeamAnnouncement.create(data),
+    mutationFn: (data) => supabase.from('team_announcements').insert(data).select(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teamAnnouncements'] });
       toast({ title: 'Announcement posted successfully' });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,7 @@ export default function AddTeamModal({
     mutationFn: async (agentsList) => {
       // Create roster entries for all agents
       const promises = agentsList.map(agent => 
-        base44.entities.BrokerageRoster.create({
+        supabase.from('brokerage_roster').insert({
           broker_email: brokerEmail,
           broker_name: brokerName,
           brokerage_name: brokerageName,

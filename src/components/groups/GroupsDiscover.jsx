@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { Users, MapPin } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -9,7 +9,7 @@ const ACCENT = '#00DBC5';
 export default function GroupsDiscover({ myGroupIds = [], groups }) {
   const { data: fetchedGroups = [] } = useQuery({
     queryKey: ['all-groups'],
-    queryFn: () => base44.entities.Group.filter({ status: 'active' }, '-created_date'),
+    queryFn: () => supabase.from('groups').select('*').eq('status', 'active').order('created_at', { ascending: false }),
     enabled: !groups,
   });
 

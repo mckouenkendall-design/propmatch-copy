@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { Radio, ExternalLink, Search } from 'lucide-react';
 
 const ACCENT = '#00DBC5';
@@ -49,8 +49,8 @@ export default function NewsWire() {
     if(idx != null && PLACEHOLDER_ARTICLES[idx]) setOpenArticle(PLACEHOLDER_ARTICLES[idx]);
   },[location.state?.openIndex]);
 
-  // When NewsArticle entity is created in Base44, swap this for a real query:
-  // const { data: articles = [] } = useQuery({ queryKey:['news-articles'], queryFn:()=>base44.entities.NewsArticle.list('-published_date', 50) });
+  // When NewsArticle entity is created in Supabase, swap this for a real query:
+  // const { data: articles = [] } = useQuery({ queryKey:['news-articles'], queryFn:()=>supabase.from('newsarticle').select('*').order('created_at', { ascending: false }).limit(50) });
   const articles = PLACEHOLDER_ARTICLES;
 
   const categories = ['All', ...Object.keys(CATEGORY_COLORS)];

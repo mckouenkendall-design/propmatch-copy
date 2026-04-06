@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -177,7 +177,7 @@ export default function Teams() {
 
   const { data: allListings = [] } = useQuery({
     queryKey: ['allListings'],
-    queryFn: () => base44.entities.Listing.list(),
+    queryFn: () => supabase.from('listings').select('*'),
     enabled: !!user?.brokerage_id,
   });
 
@@ -188,7 +188,7 @@ export default function Teams() {
 
   const { data: allRequirements = [] } = useQuery({
     queryKey: ['allRequirements'],
-    queryFn: () => base44.entities.Requirement.list(),
+    queryFn: () => supabase.from('requirements').select('*'),
     enabled: !!user?.brokerage_id,
   });
 
@@ -224,7 +224,7 @@ export default function Teams() {
 
   const { data: announcements = [] } = useQuery({
     queryKey: ['teamAnnouncements', user?.brokerage_id],
-    queryFn: () => base44.entities.TeamAnnouncement.filter({ brokerage_id: user?.brokerage_id }),
+    queryFn: () => supabase.from('team_announcements').select('*').eq('brokerage_id', user?.brokerage_id),
     enabled: !!user?.brokerage_id,
   });
 
@@ -236,7 +236,7 @@ export default function Teams() {
 
   const { data: calls = [] } = useQuery({
     queryKey: ['teamCalls', user?.brokerage_id],
-    queryFn: () => base44.entities.TeamCall.filter({ brokerage_id: user?.brokerage_id }),
+    queryFn: () => supabase.from('team_calls').select('*').eq('brokerage_id', user?.brokerage_id),
     enabled: !!user?.brokerage_id,
   });
 
@@ -246,7 +246,7 @@ export default function Teams() {
 
   const { data: resources = [] } = useQuery({
     queryKey: ['teamResources', user?.brokerage_id],
-    queryFn: () => base44.entities.TeamResource.filter({ brokerage_id: user?.brokerage_id }),
+    queryFn: () => supabase.from('team_resources').select('*').eq('brokerage_id', user?.brokerage_id),
     enabled: !!user?.brokerage_id,
   });
 

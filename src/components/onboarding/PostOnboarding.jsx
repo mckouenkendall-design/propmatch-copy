@@ -194,7 +194,7 @@ function HowDidYouHearScreen({ onNext }) {
     if (!selected) return;
     try {
       if (user._profileId) {
-        await supabase.from('UserProfile').update({ referral_source: selected }).eq('id', user._profileId);
+        await supabase.from('user_profiles').update({ referral_source: selected }).eq('id', user._profileId);
       }
     } catch {
       // ignore
@@ -248,7 +248,7 @@ function ThemeScreen({ onNext }) {
   const handleNext = async () => {
     try {
       if (user._profileId) {
-        await supabase.from('UserProfile').update({ theme_preference: selectedTheme }).eq('id', user._profileId);
+        await supabase.from('user_profiles').update({ theme_preference: selectedTheme }).eq('id', user._profileId);
       }
     } catch {
       // ignore

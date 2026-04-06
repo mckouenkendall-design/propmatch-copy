@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Plus, Grid3x3, List, Search, MapPin, DollarSign, X, Mail, Phone, MessageCircle, Pencil } from 'lucide-react';
 import CreatePostModal from '@/components/dashboard/CreatePostModal';
@@ -99,16 +99,16 @@ export default function Requirements() {
 
   const { data: requirements = [] } = useQuery({
     queryKey: ['my-requirements-page', user?.email],
-    queryFn: () => base44.entities.Requirement.filter({ created_by: user?.email }, '-created_date'),
+    queryFn: () => supabase.from('requirements').select('*').eq('created_by', user?.email).order('created_at', { ascending: false }),
     enabled: !!user?.email,
   });
   const { data: myListings = [] } = useQuery({
     queryKey: ['my-listings'],
-    queryFn: () => base44.entities.Listing.filter({ created_by: user?.email }),
+    queryFn: () => supabase.from('listings').select('*').eq('created_by', user?.email),
   });
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => supabase.from('user_profiles').select('*'),
   });
 
   const profileMap = Object.fromEntries(allProfiles.map(p => [p.user_email, p]));

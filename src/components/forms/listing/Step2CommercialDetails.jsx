@@ -1,3 +1,4 @@
+import { supabase, uploadFile } from '@/api/supabaseClient';
 import React, { useRef, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -5,7 +6,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
 import { ArrowRight, Upload, FileText, X, TrendingUp, Building } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 
 const ACCENT = '#00DBC5';
 
@@ -102,7 +102,7 @@ function FileUpload({ label, accept, field, details, setDetail, hint }) {
     setUploading(true);
     try {
       const uploaded = await Promise.all(
-        Array.from(files).map(file => base44.integrations.Core.UploadFile({ file }).then(r => r.file_url))
+        Array.from(files).map(file => uploadFile(file).then(r => r.file_url))
       );
       if (field === 'photo_url') {
         const combined = [...urls, ...uploaded];

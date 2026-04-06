@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Check, Loader2, ChevronDown, Bookmark, Search, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 import SaveTemplateModal from '@/components/templates/SaveTemplateModal';
 
@@ -67,7 +67,7 @@ function PrivateRecipientPicker({ value, onChange, currentUserEmail }) {
 
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles-picker'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => supabase.from('user_profiles').select('*'),
   });
 
   // People you already have conversations with — shown first
@@ -76,8 +76,8 @@ function PrivateRecipientPicker({ value, onChange, currentUserEmail }) {
     queryFn: async () => {
       if (!currentUserEmail) return [];
       const [c1, c2] = await Promise.all([
-        base44.entities.Conversation.filter({ participant_1: currentUserEmail }),
-        base44.entities.Conversation.filter({ participant_2: currentUserEmail }),
+        supabase.from('conversations').select('*').eq('participant_1', currentUserEmail),
+        supabase.from('conversations').select('*').eq('participant_2', currentUserEmail),
       ]);
       return [...c1, ...c2];
     },
@@ -240,7 +240,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
 
   useEffect(() => {
     async function prefill() {
-      const u = await base44.auth.me();
+      const u = await supabase.auth.getUser().then(r => r.data.user);
       if (!u) return;
       const patch = {};
       if (!data.contact_agent_name  && u.full_name)      patch.contact_agent_name  = u.full_name;
@@ -256,10 +256,10 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
     queryKey: ['userGroups', currentUserEmail],
     queryFn: async () => {
       if (!currentUserEmail) return [];
-      const memberships = await base44.entities.GroupMember.filter({ user_email: currentUserEmail, status: 'active' });
+      const memberships = await supabase.from('group_members').select('*').eq('user_email', currentUserEmail).eq('status', 'active');
       const groupIds = memberships.map(m => m.group_id);
       if (groupIds.length === 0) return [];
-      const groups = await base44.entities.Group.filter({});
+      const groups = await supabase.from('groups').select('*');
       return groups.filter(g => groupIds.includes(g.id));
     },
     enabled: !!currentUserEmail,
@@ -307,7 +307,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
           const participantEmails = [myEmail, ...recipients];
           const sortedKey = [...participantEmails].sort().join(',');
           // Search all group convos, not just ones I created
-          const allGCs = await base44.entities.GroupConversation.filter({});
+          const allGCs = await supabase.from('group_conversations').select('*');
           const found = allGCs.find(gc => {
             try {
               const parts = JSON.parse(gc.participant_emails || '[]');
@@ -453,7 +453,7 @@ export default function ListStep3ContactSubmit({ data, update, onSubmit, isLoadi
               try {
                 const participantEmails = [currentUserEmail, ...recipients];
                 const sortedKey = [...participantEmails].sort().join(',');
-                const allGCs = await base44.entities.GroupConversation.filter({});
+                const allGCs = await supabase.from('group_conversations').select('*');
                 const found = allGCs.find(gc => {
                   try {
                     const parts = JSON.parse(gc.participant_emails || '[]');

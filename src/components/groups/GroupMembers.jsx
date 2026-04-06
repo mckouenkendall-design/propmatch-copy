@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Crown, Shield, UserCheck, UserX, UserPlus, Search, X, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -50,15 +50,15 @@ function InviteModal({ groupId, groupName, groupType, currentUserEmail, existing
     try {
       // Public group: immediately active. Private: pending (still needs admin approval after accept)
       const inviteStatus = groupType === 'private' ? 'pending' : 'active';
-      await base44.entities.GroupMember.create({
+      await supabase.from('group_members').insert({
         group_id: groupId,
         user_email: selected.user_email,
         user_name: selected.full_name || selected.user_email,
         role: 'member',
         status: inviteStatus,
-      });
+      }).select();
       // Send notification to invited person
-      await base44.entities.Notification.create({
+      await supabase.from('notifications').insert({
         user_email: selected.user_email,
         type: 'announcement',
         title: `You've been invited to join ${groupName || 'a Fish Tank'}`,
@@ -67,7 +67,7 @@ function InviteModal({ groupId, groupName, groupType, currentUserEmail, existing
           : 'Click to view and accept to join immediately.',
         link: '/Groups',
         read: false,
-      });
+      }).select();
       queryClient.invalidateQueries({ queryKey: ['group-members', groupId] });
       setSent(true);
     } catch (e) { console.error('Invite failed:', e); }
@@ -161,12 +161,12 @@ export default function GroupMembers({ groupId, groupName, groupType, currentUse
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ['group-members', groupId],
-    queryFn: () => base44.entities.GroupMember.filter({ group_id: groupId }),
+    queryFn: () => supabase.from('group_members').select('*').eq('group_id', groupId),
   });
 
   const { data: userProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => base44.entities.UserProfile.filter({}),
+    queryFn: () => supabase.from('user_profiles').select('*'),
   });
 
   const profileMap = Object.fromEntries(userProfiles.map(p => [p.user_email, p]));
@@ -178,12 +178,12 @@ export default function GroupMembers({ groupId, groupName, groupType, currentUse
   };
 
   const approveMutation = useMutation({
-    mutationFn: (id) => base44.entities.GroupMember.update(id, { status: 'active' }),
+    mutationFn: (id) => supabase.from('group_members').update({ status: 'active' }).eq('id', id).select(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-members', groupId] }),
   });
 
   const removeMutation = useMutation({
-    mutationFn: (id) => base44.entities.GroupMember.delete(id),
+    mutationFn: (id) => supabase.from('group_members').delete().eq('id', id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-members', groupId] }),
   });
 

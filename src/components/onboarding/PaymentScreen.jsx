@@ -70,7 +70,7 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
       }
 
       try {
-        const { data: allRoster } = await supabase.from('BrokerageRoster').select('*');
+        const allRoster = await supabase.from('brokerage_roster').select('*');
         const match = allRoster.find(r =>
           r.employing_broker_number === user.employing_broker_id &&
           r.agent_license === user.license_number &&
@@ -110,11 +110,11 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
 
     setLoading(true);
     try {
-      const response = await base44.functions.invoke('createCheckoutSession', {
+      const response = await supabase.functions.invoke('createCheckoutSession', { body: {
         plan: selected,
         billing: isAnnual ? 'annual' : 'monthly',
         agentCount: selected === 'brokerage' ? agentCount : 1,
-      });
+      } });
 
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;

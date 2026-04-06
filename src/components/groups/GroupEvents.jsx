@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Plus, Calendar, MapPin, Video, Clock, Users, ExternalLink, Trash2, Mail, Phone, Building } from 'lucide-react';
@@ -27,13 +27,13 @@ export default function GroupEvents({ groupId, currentUser }) {
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['group-events', groupId],
-    queryFn: () => base44.entities.GroupEvent.filter({ group_id: groupId }, 'start_datetime'),
+    queryFn: () => supabase.from('group_events').select('*').eq('group_id', groupId).order('start_datetime', { ascending: true }),
   });
 
   // Fetch profiles so EventCard can show host info
   const { data: userProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => supabase.from('user_profiles').select('*'),
   });
   const profileMap = Object.fromEntries(userProfiles.map(p => [p.user_email, p]));
 
@@ -43,13 +43,13 @@ export default function GroupEvents({ groupId, currentUser }) {
       const userEmail = currentUser?.email;
       const alreadyRsvpd = rsvpList.includes(userEmail);
       const updated = alreadyRsvpd ? rsvpList.filter(e => e !== userEmail) : [...rsvpList, userEmail];
-      return base44.entities.GroupEvent.update(event.id, { rsvp_list: JSON.stringify(updated) });
+      return supabase.from('group_events').update({ rsvp_list: JSON.stringify(updated) }).eq('id', event.id).select();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-events', groupId] }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (eventId) => base44.entities.GroupEvent.delete(eventId),
+    mutationFn: (eventId) => supabase.from('group_events').delete().eq('id', eventId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-events', groupId] }),
   });
 

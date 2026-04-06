@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,7 +43,7 @@ export default function GroupEventModal({ groupId, onClose, onSuccess, existingE
 
   useEffect(() => {
     async function prefill() {
-      const user = await base44.auth.me();
+      const user = await supabase.auth.getUser().then(r => r.data.user);
       if (!user) return;
       if (!form.host_email) update({ host_email: user.email, host_name: user.full_name });
       if (!form.contact_email) update({ contact_email: user.email });
@@ -64,8 +64,8 @@ export default function GroupEventModal({ groupId, onClose, onSuccess, existingE
         if (payload[k] === '') delete payload[k];
       });
       return existingEvent
-        ? base44.entities.GroupEvent.update(existingEvent.id, payload)
-        : base44.entities.GroupEvent.create(payload);
+        ? supabase.from('group_events').update(payload).eq('id', existingEvent.id).select()
+        : supabase.from('group_events').insert(payload).select();
     },
     onSuccess,
   });

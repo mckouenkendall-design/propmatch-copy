@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Search, Sparkles, X, Phone, Mail, User, MapPin, DollarSign, MessageCircle } from 'lucide-react';
 import { calculateMatchScore, getScoreColor, getScoreLabel } from '@/utils/matchScore';
@@ -301,26 +301,39 @@ export default function GroupListingsRequirements({ groupId, memberEmails, curre
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const unsubListing = base44.entities.Listing.subscribe(() => queryClient.invalidateQueries({ queryKey: ['group-listings'] }));
-    const unsubReq = base44.entities.Requirement.subscribe(() => queryClient.invalidateQueries({ queryKey: ['group-requirements'] }));
-    return () => { unsubListing(); unsubReq(); };
+    const listingChannel = supabase.channel('group_listings_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['group-listings'] });
+      })
+      .subscribe();
+
+    const requirementChannel = supabase.channel('group_requirements_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requirements' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['group-requirements'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(listingChannel);
+      supabase.removeChannel(requirementChannel);
+    };
   }, [queryClient]);
 
   const { data: listings = [] } = useQuery({
     queryKey: ['group-listings', groupId, memberEmails],
-    queryFn: () => base44.entities.Listing.list('-created_date'),
+    queryFn: () => supabase.from('listings').select('*').order('created_at', { ascending: false }),
     enabled: memberEmails.length > 0,
   });
 
   const { data: requirements = [] } = useQuery({
     queryKey: ['group-requirements', groupId, memberEmails],
-    queryFn: () => base44.entities.Requirement.list('-created_date'),
+    queryFn: () => supabase.from('requirements').select('*').order('created_at', { ascending: false }),
     enabled: memberEmails.length > 0,
   });
 
   const { data: userProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => supabase.from('user_profiles').select('*'),
   });
   const profileMap = Object.fromEntries(userProfiles.map(p => [p.user_email, p]));
 

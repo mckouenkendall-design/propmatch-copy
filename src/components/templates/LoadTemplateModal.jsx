@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { X, Search, FileText, Building2, Home, FolderOpen, ChevronRight } from 'lucide-react';
 
 const ACCENT = '#00DBC5';
@@ -17,7 +17,7 @@ export default function LoadTemplateModal({ onClose, onLoad }) {
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['templates'],
-    queryFn: () => base44.entities.Template.filter({ created_by: user?.email }, '-created_date'),
+    queryFn: () => supabase.from('templates').select('*').eq('created_by', user?.email).order('created_at', { ascending: false }),
     enabled: !!user?.email,
   });
 

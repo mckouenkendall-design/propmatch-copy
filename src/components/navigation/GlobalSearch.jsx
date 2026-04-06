@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { Search, Building2, Users, FileText, Calendar, MessageSquare, Megaphone, Loader2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -50,7 +50,7 @@ export default function GlobalSearch() {
       setIsLoading(true);
       setIsOpen(true);
       try {
-        const response = await base44.functions.invoke('aiSearch', { query });
+        const response = await supabase.functions.invoke('aiSearch', { body: { query } });
         setResults(response.data?.results || response.results || []);
       } catch {
         setResults([]);

@@ -1,7 +1,7 @@
+import { supabase, uploadFile } from '@/api/supabaseClient';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import {
   Send, Plus, Paperclip, X, Search, MessageCircle,
@@ -324,8 +324,8 @@ export default function Messages() {
 
   const { data: conversations = [] } = useQuery({
     queryKey: ['conversations', user?.email],
-    queryFn: () => base44.entities.Conversation.filter({ participant_1: user?.email })
-      .then(r1 => base44.entities.Conversation.filter({ participant_2: user?.email })
+    queryFn: () => supabase.from('conversations').select('*').eq('participant_1', user?.email)
+      .then(r1 => supabase.from('conversations').select('*').eq('participant_2', user?.email)
         .then(r2 => [...r1, ...r2].sort((a,b) => new Date(b.last_message_time) - new Date(a.last_message_time)))),
     enabled: !!user?.email,
     refetchInterval: 5000,
@@ -333,7 +333,7 @@ export default function Messages() {
 
   const { data: allGroupConvos = [] } = useQuery({
     queryKey: ['group-convos'],
-    queryFn: () => base44.entities.GroupConversation.filter({}).catch(() => []),
+    queryFn: () => supabase.from('group_conversations').select('*').catch(() => []),
     enabled: !!user?.email,
     refetchInterval: 5000,
   });
@@ -347,7 +347,7 @@ export default function Messages() {
 
   const { data: messages = [] } = useQuery({
     queryKey: ['messages', selectedConvoId],
-    queryFn: () => base44.entities.Message.filter({ conversation_id: selectedConvoId })
+    queryFn: () => supabase.from('messages').select('*').eq('conversation_id', selectedConvoId)
       .then(msgs => msgs.sort((a,b) => new Date(a.sent_at) - new Date(b.sent_at))),
     enabled: !!selectedConvoId && selectedConvoType === 'dm',
     refetchInterval: 3000,
@@ -355,7 +355,7 @@ export default function Messages() {
 
   const { data: groupMessages = [] } = useQuery({
     queryKey: ['group-messages', selectedGroupConvoId],
-    queryFn: () => base44.entities.GroupMessage.filter({ group_conversation_id: selectedGroupConvoId })
+    queryFn: () => supabase.from('group_messages').select('*').eq('group_conversation_id', selectedGroupConvoId)
       .then(msgs => msgs.sort((a,b) => new Date(a.created_date) - new Date(b.created_date))),
     enabled: !!selectedGroupConvoId && selectedConvoType === 'group',
     refetchInterval: 3000,
@@ -363,17 +363,17 @@ export default function Messages() {
 
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => supabase.from('user_profiles').select('*'),
   });
 
   const { data: allListings = [] } = useQuery({
     queryKey: ['all-listings-messages'],
-    queryFn: () => base44.entities.Listing.list('-created_date', 200),
+    queryFn: () => supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(200),
   });
 
   const { data: allRequirements = [] } = useQuery({
     queryKey: ['all-requirements-messages'],
-    queryFn: () => base44.entities.Requirement.list('-created_date', 200),
+    queryFn: () => supabase.from('requirements').select('*').order('created_at', { ascending: false }).limit(200),
   });
 
   const profileMap = Object.fromEntries(allProfiles.map(p => [p.user_email, p]));
@@ -410,27 +410,27 @@ export default function Messages() {
     mutationFn: async ({ text, attachment, postId, postType }) => {
       if (selectedConvoType === 'group' && selectedGroupConvoId) {
         const senderName = profileMap[user?.email]?.full_name || user?.email?.split('@')[0] || 'Agent';
-        await base44.entities.GroupMessage.create({
+        await supabase.from('group_messages').insert({
           group_conversation_id: selectedGroupConvoId,
           sender_email: user?.email,
           sender_name: senderName,
           content: text || '',
           attachment_url: attachment?.url || '',
           attachment_type: attachment?.type || '',
-        });
+        }).select();
         const preview = text || (attachment ? `📎 ${attachment.name}` : '');
         const unreadCounts = (() => { try { return JSON.parse(selectedGroupConvo?.unread_counts || '{}'); } catch { return {}; } })();
         const participants = groupParticipants;
         participants.forEach(e => { unreadCounts[e] = (unreadCounts[e] || 0) + 1; });
-        await base44.entities.GroupConversation.update(selectedGroupConvoId, {
+        await supabase.from('group_conversations').update({
           last_message: preview,
           last_message_time: new Date().toISOString(),
           last_message_sender: senderName,
           unread_counts: JSON.stringify(unreadCounts),
-        });
+        }).eq('id', selectedGroupConvoId).select();
       } else {
         if (!selectedConvoId) return;
-        await base44.entities.Message.create({
+        await supabase.from('messages').insert({
           conversation_id: selectedConvoId,
           sender_email: user?.email,
           content: text || '',
@@ -440,10 +440,10 @@ export default function Messages() {
           post_id: postId || '',
           post_type: postType || '',
         });
-        await base44.entities.Conversation.update(selectedConvoId, {
+        await supabase.from('conversations').update({
           last_message: text || (attachment ? `📎 ${attachment.name}` : 'Shared a post'),
           last_message_time: new Date().toISOString(),
-        });
+        }).eq('id', selectedConvoId).select();
       }
     },
     onSuccess: () => {
@@ -501,7 +501,7 @@ export default function Messages() {
     const isP1 = selectedConvo.participant_1 === user?.email;
     const unreadKey = isP1 ? 'unread_by_1' : 'unread_by_2';
     if (selectedConvo[unreadKey] > 0) {
-      base44.entities.Conversation.update(selectedConvoId, { [unreadKey]: 0 });
+      supabase.from('conversations').update({ [unreadKey]: 0 }).eq('id', selectedConvoId).select();
     }
   }, [selectedConvoId]);
 
@@ -543,7 +543,7 @@ export default function Messages() {
   const saveGroupName = async () => {
     if (!groupNameDraft.trim() || !selectedGroupConvoId) return;
     try {
-      await base44.entities.GroupConversation.update(selectedGroupConvoId, { name: groupNameDraft.trim() });
+      await supabase.from('group_conversations').update({ name: groupNameDraft.trim() }).eq('id', selectedGroupConvoId).select();
       queryClient.invalidateQueries({ queryKey: ['group-convos'] });
     } catch {}
     setEditingGroupName(false);
@@ -555,8 +555,8 @@ export default function Messages() {
     e.target.value = '';
     setUploadingGroupPhoto(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.entities.GroupConversation.update(selectedGroupConvoId, { photo_url: file_url });
+      const { file_url } = await uploadFile(file);
+      await supabase.from('group_conversations').update({ photo_url: file_url }).eq('id', selectedGroupConvoId).select();
       await queryClient.refetchQueries({ queryKey: ['group-convos'] });
     } catch (err) { console.error('Group photo upload error:', err); }
     setUploadingGroupPhoto(false);

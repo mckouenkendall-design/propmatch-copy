@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 
 const NAV_LINKS = [
   { label: 'Features', href: 'features' },
@@ -70,7 +70,7 @@ export default function LandingNav() {
               </button>
             ))}
             <button
-              onClick={() => base44.auth.redirectToLogin()}
+              onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } })}
               style={{
                 fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
                 textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -135,7 +135,7 @@ export default function LandingNav() {
             </button>
           ))}
           <button
-            onClick={() => { setMenuOpen(false); base44.auth.redirectToLogin(); }}
+            onClick={() => { setMenuOpen(false); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } }); }}
             style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: '#111827', background: 'transparent', border: `1px solid ${ACCENT}`, padding: '12px 22px', borderRadius: '6px', cursor: 'pointer', textAlign: 'center' }}>
             Sign In
           </button>

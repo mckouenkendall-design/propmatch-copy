@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Eye, Bookmark, Share2, Radio, BookOpen, ChevronRight } from 'lucide-react';
 
@@ -47,8 +47,8 @@ export default function Insights() {
   const {user}=useAuth();
   const navigate=useNavigate();
 
-  const {data:myListings=[]}     =useQuery({queryKey:['ins-listings'],  queryFn:()=>base44.entities.Listing.filter({created_by:user?.email})});
-  const {data:myRequirements=[]} =useQuery({queryKey:['ins-reqs'],      queryFn:()=>base44.entities.Requirement.filter({created_by:user?.email})});
+  const {data:myListings=[]}     =useQuery({queryKey:['ins-listings'],  queryFn:()=>supabase.from('listings').select('*').eq('created_by', user?.email)});
+  const {data:myRequirements=[]} =useQuery({queryKey:['ins-reqs'],      queryFn:()=>supabase.from('requirements').select('*').eq('created_by', user?.email)});
 
   const allPosts=[...myListings,...myRequirements];
   const views  =allPosts.reduce((s,p)=>s+(p.view_count ||0),0);

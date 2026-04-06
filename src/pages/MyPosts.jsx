@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Search, Plus, Trash2, Loader2, FileText, Eye, Bookmark, Share2 } from 'lucide-react';
@@ -17,13 +17,13 @@ export default function MyPosts() {
 
   const { data: listings = [], isLoading: loadingListings } = useQuery({
     queryKey: ['my-listings', user?.email],
-    queryFn: () => base44.entities.Listing.filter({ created_by: user?.email }, '-created_date'),
+    queryFn: () => supabase.from('listings').select('*').eq('created_by', user?.email).order('created_at', { ascending: false }),
     enabled: !!user?.email,
   });
 
   const { data: requirements = [], isLoading: loadingRequirements } = useQuery({
     queryKey: ['my-requirements', user?.email],
-    queryFn: () => base44.entities.Requirement.filter({ created_by: user?.email }, '-created_date'),
+    queryFn: () => supabase.from('requirements').select('*').eq('created_by', user?.email).order('created_at', { ascending: false }),
     enabled: !!user?.email,
   });
 
@@ -41,11 +41,11 @@ export default function MyPosts() {
     setDeletingId(post.id);
     try {
       if (post.postType === 'listing') {
-        await base44.entities.Listing.delete(post.id);
+        await supabase.from('listings').delete().eq('id', post.id);
         queryClient.invalidateQueries({ queryKey: ['my-listings'] });
         queryClient.invalidateQueries({ queryKey: ['listings'] });
       } else {
-        await base44.entities.Requirement.delete(post.id);
+        await supabase.from('requirements').delete().eq('id', post.id);
         queryClient.invalidateQueries({ queryKey: ['my-requirements'] });
         queryClient.invalidateQueries({ queryKey: ['requirements'] });
       }

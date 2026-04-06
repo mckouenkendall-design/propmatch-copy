@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, X, Check } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { NOTIF_ICONS, NOTIF_COLORS } from '@/utils/notifications';
@@ -60,7 +60,7 @@ export default function NotificationBell() {
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications', user?.email],
-    queryFn:  () => base44.entities.Notification.filter({ recipient_email: user?.email })
+    queryFn:  () => supabase.from('notifications').select('*').eq('recipient_email', user?.email)
       .then(r => r.sort((a,b) => new Date(b.created_date) - new Date(a.created_date))),
     enabled:  !!user?.email,
     refetchInterval: 30000,
@@ -69,14 +69,14 @@ export default function NotificationBell() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markRead = useMutation({
-    mutationFn: (id) => base44.entities.Notification.update(id, { read: true }),
+    mutationFn: (id) => supabase.from('notifications').update({ read: true }).eq('id', id).select(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', user?.email] }),
   });
 
   const markAllRead = useMutation({
     mutationFn: async () => {
       const unread = notifications.filter(n => !n.read);
-      await Promise.all(unread.map(n => base44.entities.Notification.update(n.id, { read: true })));
+      await Promise.all(unread.map(n => supabase.from('notifications').update({ read: true }).eq('id', n.id).select()));
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', user?.email] }),
   });

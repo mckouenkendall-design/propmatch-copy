@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search as SearchIcon } from 'lucide-react';
@@ -12,7 +12,7 @@ import CreateGroupModal from '@/components/groups/CreateGroupModal';
 const ACCENT = '#00DBC5';
 
 export default function Groups() {
-  // Use useAuth() so we get the merged UserProfile data — not raw Base44 auth
+  // Use useAuth() so we get the merged UserProfile data — not raw Supabase auth
   const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,16 +21,13 @@ export default function Groups() {
 
   const { data: myMemberships = [] } = useQuery({
     queryKey: ['my-memberships', user?.email],
-    queryFn: () => base44.entities.GroupMember.filter({ 
-      user_email: user.email, 
-      status: 'active' 
-    }),
+    queryFn: () => supabase.from('group_members').select('*').eq('user_email', user.email).eq('status', 'active'),
     enabled: !!user,
   });
 
   const { data: allGroups = [] } = useQuery({
     queryKey: ['all-groups'],
-    queryFn: () => base44.entities.Group.filter({ status: 'active' }, '-created_date'),
+    queryFn: () => supabase.from('groups').select('*').eq('status', 'active').order('created_at', { ascending: false }),
   });
 
   const myGroupIds = myMemberships.map(m => m.group_id);

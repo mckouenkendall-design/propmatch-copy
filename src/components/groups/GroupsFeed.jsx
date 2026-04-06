@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Rss, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -15,7 +15,7 @@ export default function GroupsFeed({ myGroupIds = [] }) {
       if (myGroupIds.length === 0) return [];
       const allPosts = await Promise.all(
         myGroupIds.map(gid =>
-          base44.entities.GroupPost.filter({ group_id: gid }, '-created_date', 20)
+          supabase.from('group_posts').select('*').eq('group_id', gid).order('created_at', { ascending: false }).limit(20)
         )
       );
       return allPosts.flat().sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
@@ -25,21 +25,26 @@ export default function GroupsFeed({ myGroupIds = [] }) {
 
   // Real-time updates
   useEffect(() => {
-    const unsub = base44.entities.GroupPost.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['groups-feed'] });
-    });
-    return unsub;
+    const channel = supabase.channel('group_posts_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_posts' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['groups-feed'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [queryClient]);
 
   const { data: groups = [] } = useQuery({
     queryKey: ['groups'],
-    queryFn: () => base44.entities.Group.filter({ status: 'active' }, '-created_date'),
+    queryFn: () => supabase.from('groups').select('*').eq('status', 'active').order('created_at', { ascending: false }),
   });
 
   // Fetch all UserProfiles so we can show profile photos
   const { data: userProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => supabase.from('user_profiles').select('*'),
   });
 
   const profileMap = Object.fromEntries(userProfiles.map(p => [p.user_email, p]));

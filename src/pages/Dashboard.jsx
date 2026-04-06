@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Building2, Search, TrendingUp, MessageCircle, Bell, BookmarkCheck, ChevronRight, FileText, ArrowUpRight } from 'lucide-react';
 import { calculateMatchScore, getScoreColor, getScoreLabel } from '@/utils/matchScore';
@@ -28,12 +28,12 @@ export default function Dashboard() {
   const {user}=useAuth();
   const navigate=useNavigate();
 
-  const {data:myListings=[]}      =useQuery({queryKey:['cc-my-listings'],     queryFn:()=>base44.entities.Listing.filter({created_by:user?.email})});
-  const {data:myRequirements=[]}  =useQuery({queryKey:['cc-my-reqs'],         queryFn:()=>base44.entities.Requirement.filter({created_by:user?.email})});
-  const {data:allListings=[]}     =useQuery({queryKey:['cc-all-listings'],    queryFn:()=>base44.entities.Listing.list('-created_date',80)});
-  const {data:allRequirements=[]} =useQuery({queryKey:['cc-all-reqs'],        queryFn:()=>base44.entities.Requirement.list('-created_date',80)});
-  const {data:myProfile}          =useQuery({queryKey:['cc-profile'],         queryFn:()=>base44.entities.UserProfile.filter({user_email:user?.email}).then(r=>r[0])});
-  const {data:notifications=[]}   =useQuery({queryKey:['cc-notifications'],   queryFn:()=>base44.entities.Notification.filter({user_email:user?.email})});
+  const {data:myListings=[]}      =useQuery({queryKey:['cc-my-listings'],     queryFn:()=>supabase.from('listings').select('*').eq('created_by', user?.email)});
+  const {data:myRequirements=[]}  =useQuery({queryKey:['cc-my-reqs'],         queryFn:()=>supabase.from('requirements').select('*').eq('created_by', user?.email)});
+  const {data:allListings=[]}     =useQuery({queryKey:['cc-all-listings'],    queryFn:()=>supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(80)});
+  const {data:allRequirements=[]} =useQuery({queryKey:['cc-all-reqs'],        queryFn:()=>supabase.from('requirements').select('*').order('created_at', { ascending: false }).limit(80)});
+  const {data:myProfile}          =useQuery({queryKey:['cc-profile'],         queryFn:()=>supabase.from('user_profiles').select('*').eq('user_email', user?.email).then(r=>r[0])});
+  const {data:notifications=[]}   =useQuery({queryKey:['cc-notifications'],   queryFn:()=>supabase.from('notifications').select('*').eq('user_email', user?.email)});
 
   const firstName=myProfile?.full_name?.split(' ')[0]||user?.email?.split('@')[0]||'there';
 

@@ -1,6 +1,6 @@
+import { supabase, uploadFile } from '@/api/supabaseClient';
 import React, { useState, useRef } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +26,7 @@ export default function ShareResourceModal({ onClose }) {
   const [uploading, setUploading] = useState(false);
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.TeamResource.create(data),
+    mutationFn: (data) => supabase.from('team_resources').insert(data).select(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teamResources'] });
       toast({ title: 'Resource shared successfully' });
@@ -49,7 +49,7 @@ export default function ShareResourceModal({ onClose }) {
     if (!title.trim() || !file) return;
 
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await uploadFile(file);
     setUploading(false);
 
     createMutation.mutate({

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Users, Building2, Activity, Plus, X, ChevronDown, ChevronUp, MessageSquare, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,7 +24,7 @@ function AddAgentModal({ broker, onClose, onSuccess }) {
     setSearching(true);
     setFound(null);
     try {
-      const allProfiles = await base44.entities.UserProfile.list();
+      const allProfiles = await supabase.from('user_profiles').select('*');
       const match = allProfiles.find(p =>
         p.employing_broker_id === broker.employing_broker_id &&
         p.license_number === licenseNumber.trim()
@@ -41,7 +41,7 @@ function AddAgentModal({ broker, onClose, onSuccess }) {
     setLoading(true);
     try {
       // Check if already on roster
-      const existing = await base44.entities.BrokerageRoster.list();
+      const existing = await supabase.from('brokerage_roster').select('*');
       const alreadyAdded = existing.find(r =>
         r.employing_broker_number === broker.employing_broker_id &&
         r.agent_license === licenseNumber.trim() &&
@@ -54,7 +54,7 @@ function AddAgentModal({ broker, onClose, onSuccess }) {
       }
 
       // Create roster entry
-      await base44.entities.BrokerageRoster.create({
+      await supabase.from('brokerage_roster').insert({
         broker_email: broker.contact_email || broker.email,
         broker_name: broker.full_name || '',
         brokerage_name: broker.brokerage_name || '',
@@ -69,9 +69,9 @@ function AddAgentModal({ broker, onClose, onSuccess }) {
       // This handles Stripe pause + banked days calculation + UserProfile update
       // + notification (via onSubscriptionChanged trigger)
       if (found && found !== 'not_found') {
-        await base44.functions.invoke('pauseSubscription', {
+        await supabase.functions.invoke('pauseSubscription', { body: {
           agent_user_email: found.user_email,
-        });
+        } });
       }
 
       queryClient.invalidateQueries({ queryKey: ['broker-roster'] });
@@ -176,13 +176,13 @@ function AgentRow({ profile, rosterEntry, onMessage, onRemove }) {
 
   const { data: agentListings = [] } = useQuery({
     queryKey: ['agent-listings', profile?.user_email],
-    queryFn: () => base44.entities.Listing.filter({ created_by: profile.user_email }),
+    queryFn: () => supabase.from('listings').select('*').eq('created_by', profile.user_email),
     enabled: !!profile?.user_email && expanded,
   });
 
   const { data: agentRequirements = [] } = useQuery({
     queryKey: ['agent-requirements', profile?.user_email],
-    queryFn: () => base44.entities.Requirement.filter({ created_by: profile.user_email }),
+    queryFn: () => supabase.from('requirements').select('*').eq('created_by', profile.user_email),
     enabled: !!profile?.user_email && expanded,
   });
 
@@ -275,7 +275,7 @@ export default function BrokerDashboard() {
   const { data: rosterEntries = [] } = useQuery({
     queryKey: ['broker-roster'],
     queryFn: async () => {
-      const all = await base44.entities.BrokerageRoster.list();
+      const all = await supabase.from('brokerage_roster').select('*');
       return all.filter(r => r.employing_broker_number === user?.employing_broker_id);
     },
     enabled: !!user?.employing_broker_id,
@@ -283,7 +283,7 @@ export default function BrokerDashboard() {
 
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => supabase.from('user_profiles').select('*'),
   });
 
   const activeEntries = rosterEntries.filter(r => r.status === 'active');
@@ -307,14 +307,14 @@ export default function BrokerDashboard() {
   const removeMutation = useMutation({
     mutationFn: async ({ entry, profile }) => {
       // Mark roster entry as inactive
-      await base44.entities.BrokerageRoster.update(entry.id, { status: 'inactive' });
+      await supabase.from('brokerage_roster').update({ status: 'inactive' }).eq('id', entry.id).select();
 
       if (profile?.user_email) {
         // Call resumeSubscription — handles Stripe resume + banked days + UserProfile update
         // + notification (via onSubscriptionChanged trigger when selected_plan changes)
-        await base44.functions.invoke('resumeSubscription', {
+        await supabase.functions.invoke('resumeSubscription', { body: {
           agent_user_email: profile.user_email,
-        });
+        } });
       }
     },
     onSuccess: () => {

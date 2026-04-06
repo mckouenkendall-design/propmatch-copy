@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, X, Trash2 } from 'lucide-react';
@@ -80,14 +80,14 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       created_by: data.created_by || user?.email,
     };
 
-    // Auto-default lease_type so Base44 never sees a blank required field
+    // Auto-default lease_type so Supabase never sees a blank required field
     const isLease = submitData.transaction_type === 'lease' || submitData.transaction_type === 'sublease';
     if (isLease && !submitData.lease_type) {
       submitData.lease_type = 'full_service_gross';
     }
 
     // Strip any field that is null, undefined, or empty string
-    // Base44 rejects null/undefined on string fields like lease_sub
+    // Supabase rejects null/undefined on string fields like lease_sub
     const optionalStringFields = ['lease_sub', 'lease_type', 'address', 'description', 'visibility_groups', 'visibility_recipient_email'];
     optionalStringFields.forEach(f => {
       if (submitData[f] === null || submitData[f] === undefined || submitData[f] === '') {
@@ -127,9 +127,9 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       const submitData = prepareSubmitData(data);
       let listing;
       if (editMode && data.id) {
-        listing = await base44.entities.Listing.update(data.id, submitData);
+        listing = await supabase.from('listings').update(submitData).eq('id', data.id).select();
       } else {
-        listing = await base44.entities.Listing.create(submitData);
+        listing = await supabase.from('listings').insert(submitData).select();
       }
       const postId   = listing?.id || data.id;
       const postType = 'listing';
@@ -143,22 +143,22 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
         for (const email of recipients) {
           try {
             // Find or create conversation
-            const existing = await base44.entities.Conversation.filter({ participant_1: myEmail, participant_2: email });
-            const existing2 = existing.length ? existing : await base44.entities.Conversation.filter({ participant_1: email, participant_2: myEmail });
+            const existing = await supabase.from('conversations').select('*').eq('participant_1', myEmail).eq('participant_2', email);
+            const existing2 = existing.length ? existing : await supabase.from('conversations').select('*').eq('participant_1', email).eq('participant_2', myEmail);
             let convoId;
             if (existing2.length) {
               convoId = existing2[0].id;
             } else {
-              const convo = await base44.entities.Conversation.create({ participant_1: myEmail, participant_2: email, last_message: 'Shared a listing', last_message_time: new Date().toISOString(), unread_by_1: 0, unread_by_2: 1 });
+              const convo = await supabase.from('conversations').insert({ participant_1: myEmail, participant_2: email, last_message: 'Shared a listing', last_message_time: new Date().toISOString(), unread_by_1: 0, unread_by_2: 1 });
               convoId = convo.id;
             }
-            await base44.entities.Message.create({ conversation_id: convoId, sender_email: myEmail, content: 'Shared a listing', post_id: postId, post_type: postType, sent_at: new Date().toISOString() });
+            await supabase.from('messages').insert({ conversation_id: convoId, sender_email: myEmail, content: 'Shared a listing', post_id: postId, post_type: postType, sent_at: new Date().toISOString() });
           } catch (e) { console.error('Send separately error:', e); }
         }
       } else if (sendMode === 'create_group' && recipients.length > 0) {
         // Create a new GroupConversation + GroupMessage
         const participantEmails = [myEmail, ...recipients];
-        const gc = await base44.entities.GroupConversation.create({
+        const gc = await supabase.from('group_conversations').insert({
           name: recipients.map(e => e.split('@')[0]).join(', '),
           participant_emails: JSON.stringify(participantEmails),
           created_by: myEmail,
@@ -166,11 +166,11 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
           last_message_time: new Date().toISOString(),
           last_message_sender: myName,
         });
-        await base44.entities.GroupMessage.create({ group_conversation_id: gc.id, sender_email: myEmail, sender_name: myName, content: 'Shared a listing', post_id: postId, post_type: postType });
+        await supabase.from('group_messages').insert({ group_conversation_id: gc.id, sender_email: myEmail, sender_name: myName, content: 'Shared a listing', post_id: postId, post_type: postType }).select();
       } else if (sendMode === 'existing_group' && groupId) {
         // Send to existing GroupConversation
-        await base44.entities.GroupMessage.create({ group_conversation_id: groupId, sender_email: myEmail, sender_name: myName, content: 'Shared a listing', post_id: postId, post_type: postType });
-        await base44.entities.GroupConversation.update(groupId, { last_message: 'Shared a listing', last_message_time: new Date().toISOString(), last_message_sender: myName });
+        await supabase.from('group_messages').insert({ group_conversation_id: groupId, sender_email: myEmail, sender_name: myName, content: 'Shared a listing', post_id: postId, post_type: postType }).select();
+        await supabase.from('group_conversations').update({ last_message: 'Shared a listing', last_message_time: new Date().toISOString(), last_message_sender: myName }).eq('id', groupId).select();
       }
       return listing;
     },
@@ -185,7 +185,7 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => base44.entities.Listing.delete(formData.id),
+    mutationFn: () => supabase.from('listings').delete().eq('id', formData.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-listings'] });
       onSuccess?.();

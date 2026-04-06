@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ export default function GroupDetail() {
   const params = new URLSearchParams(window.location.search);
   const groupId = params.get('id');
   const [activeTab, setActiveTab] = useState('discussion');
-  // Use useAuth() so we get the merged UserProfile data — not raw Base44 auth
+  // Use useAuth() so we get the merged UserProfile data — not raw Supabase auth
   const { user: currentUser } = useAuth();
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [editingAbout, setEditingAbout] = useState(false);
@@ -39,7 +39,7 @@ export default function GroupDetail() {
 
   const { data: group, isLoading: loadingGroup } = useQuery({
     queryKey: ['group', groupId],
-    queryFn: () => base44.entities.Group.filter({ id: groupId }).then(r => r[0]),
+    queryFn: () => supabase.from('groups').select('*').eq('id', groupId).then(r => r[0]),
     enabled: !!groupId,
   });
 
@@ -52,21 +52,21 @@ export default function GroupDetail() {
 
   const { data: membership } = useQuery({
     queryKey: ['my-membership', groupId, currentUser?.email],
-    queryFn: () => base44.entities.GroupMember.filter({ group_id: groupId, user_email: currentUser.email })
+    queryFn: () => supabase.from('group_members').select('*').eq('group_id', groupId).eq('user_email', currentUser.email)
       .then(r => r[0] || null),
     enabled: !!groupId && !!currentUser,
   });
 
   const { data: allMembers = [] } = useQuery({
     queryKey: ['group-members', groupId],
-    queryFn: () => base44.entities.GroupMember.filter({ group_id: groupId, status: 'active' }),
+    queryFn: () => supabase.from('group_members').select('*').eq('group_id', groupId).eq('status', 'active'),
     enabled: !!groupId,
   });
 
   const memberEmails = allMembers.map(m => m.user_email);
 
   const updateGroupMutation = useMutation({
-    mutationFn: (data) => base44.entities.Group.update(groupId, data),
+    mutationFn: (data) => supabase.from('groups').update(data).eq('id', groupId).select(),
     onSuccess: () => {
       queryClient.invalidateQueries(['group', groupId]);
       toast({ title: 'Fish tank updated successfully' });
@@ -77,27 +77,27 @@ export default function GroupDetail() {
   const joinMutation = useMutation({
     mutationFn: async () => {
       const isPrivate = group?.group_type === 'private';
-      const newMembership = await base44.entities.GroupMember.create({
+      const newMembership = await supabase.from('group_members').insert({
         group_id: groupId,
         user_email: currentUser.email,
         user_name: currentUser.full_name || currentUser.email,
         role: 'member',
         status: isPrivate ? 'pending' : 'active',
-      });
+      }).select();
       if (!isPrivate) {
-        await base44.entities.Group.update(groupId, { member_count: (group?.member_count || 0) + 1 });
+        await supabase.from('groups').update({ member_count: (group?.member_count || 0) + 1 }).eq('id', groupId).select();
       } else {
         // Notify admins of join request
-        const admins = await base44.entities.GroupMember.filter({ group_id: groupId, role: 'admin' });
+        const admins = await supabase.from('group_members').select('*').eq('group_id', groupId).eq('role', 'admin');
         await Promise.all(admins.map(admin =>
-          base44.entities.Notification.create({
+          supabase.from('notifications').insert({
             user_email: admin.user_email,
             type: 'announcement',
             title: `${currentUser?.full_name || 'Someone'} wants to join ${group?.name || 'your Fish Tank'}`,
             body: 'Go to Members to approve or decline.',
             link: '/Groups',
             read: false,
-          }).catch(() => {})
+          }).select().catch(() => {})
         ));
       }
       return newMembership;
@@ -117,21 +117,21 @@ export default function GroupDetail() {
       if (group?.group_type === 'private') {
         // Already pending — just leave it, notify admins
         // Find admins and notify them
-        const allMembers = await base44.entities.GroupMember.filter({ group_id: groupId, role: 'admin' });
+        const allMembers = await supabase.from('group_members').select('*').eq('group_id', groupId).eq('role', 'admin');
         await Promise.all(allMembers.map(admin =>
-          base44.entities.Notification.create({
+          supabase.from('notifications').insert({
             user_email: admin.user_email,
             type: 'announcement',
             title: `${currentUser?.full_name || 'Someone'} wants to join ${group?.name || 'your Fish Tank'}`,
             body: 'Go to Members to approve or decline.',
             link: '/Groups',
             read: false,
-          }).catch(() => {})
+          }).select().catch(() => {})
         ));
       } else {
         // Public: set active immediately
-        await base44.entities.GroupMember.update(membership.id, { status: 'active' });
-        await base44.entities.Group.update(groupId, { member_count: (group?.member_count || 0) + 1 });
+        await supabase.from('group_members').update({ status: 'active' }).eq('id', membership.id).select();
+        await supabase.from('groups').update({ member_count: (group?.member_count || 0) + 1 }).eq('id', groupId).select();
       }
     },
     onSuccess: () => {
@@ -143,8 +143,8 @@ export default function GroupDetail() {
 
   const leaveMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.GroupMember.delete(membership.id);
-      await base44.entities.Group.update(groupId, { member_count: Math.max(0, (group?.member_count || 1) - 1) });
+      await supabase.from('group_members').delete().eq('id', membership.id);
+      await supabase.from('groups').update({ member_count: Math.max(0, (group?.member_count || 1) - 1) }).eq('id', groupId).select();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-membership', groupId, currentUser?.email] });
@@ -376,17 +376,17 @@ function AddAdminModal({ groupId, onClose }) {
 
   const addAdminMutation = useMutation({
     mutationFn: async () => {
-      const existing = await base44.entities.GroupMember.filter({ group_id: groupId, user_email: email });
+      const existing = await supabase.from('group_members').select('*').eq('group_id', groupId).eq('user_email', email);
       if (existing.length > 0) {
-        await base44.entities.GroupMember.update(existing[0].id, { role: 'admin' });
+        await supabase.from('group_members').update({ role: 'admin' }).eq('id', existing[0].id).select();
       } else {
-        await base44.entities.GroupMember.create({
+        await supabase.from('group_members').insert({
           group_id: groupId,
           user_email: email,
           user_name: email,
           role: 'admin',
           status: 'active',
-        });
+        }).select();
       }
     },
     onSuccess: () => {

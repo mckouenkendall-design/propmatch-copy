@@ -1,7 +1,7 @@
+import { supabase, uploadFile } from '@/api/supabaseClient';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -219,7 +219,7 @@ function LogoUploader({ currentUrl, onSave, onRemove, editing = true, onAutoSave
     if (!file) return;
     setProcessing(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await uploadFile(file);
       onSave(file_url);
       if (onAutoSave) await onAutoSave(file_url);
       setPreview(null);
@@ -238,7 +238,7 @@ function LogoUploader({ currentUrl, onSave, onRemove, editing = true, onAutoSave
         const res = await fetch(dataUrl);
         const blob = await res.blob();
         const file = new File([blob], 'logo-transparent.png', { type: 'image/png' });
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await uploadFile(file);
         onSave(file_url);
         if (onAutoSave) await onAutoSave(file_url);
         setProcessing(false);
@@ -314,7 +314,7 @@ export default function Profile() {
     if (!user?.email) return;
     const load = async () => {
       try {
-        const profiles = await base44.entities.UserProfile.filter({ user_email: user.email });
+        const profiles = await supabase.from('user_profiles').select('*').eq('user_email', user.email);
         const profile = profiles?.[0] || {};
         setFormData({
           full_name: user.full_name || '',
@@ -372,14 +372,14 @@ export default function Profile() {
 
       // Username uniqueness check
       if (data.username) {
-        const allProfiles = await base44.entities.UserProfile.list();
+        const allProfiles = await supabase.from('user_profiles').select('*');
         const conflict = allProfiles.find(
           p => p.username && p.username.toLowerCase() === data.username.toLowerCase() && p.user_email !== email
         );
         if (conflict) throw new Error('USERNAME_TAKEN');
       }
 
-      const existing = await base44.entities.UserProfile.filter({ user_email: email });
+      const existing = await supabase.from('user_profiles').select('*').eq('user_email', email);
       const profileData = {
         user_email: email,
         full_name: data.full_name,
@@ -410,18 +410,18 @@ export default function Profile() {
         selected_plan: user.selected_plan || '',
       };
       if (existing && existing.length > 0) {
-        await base44.entities.UserProfile.update(existing[0].id, profileData);
+        await supabase.from('user_profiles').update(profileData).eq('id', existing[0].id).select();
       } else {
-        await base44.entities.UserProfile.create(profileData);
+        await supabase.from('user_profiles').insert(profileData).select();
       }
       try {
-        await base44.auth.updateMe({
+        await supabase.auth.updateUser({ data: {
           full_name: data.full_name,
           name: data.full_name,
           username: data.username,
           contact_email: data.contact_email,
           phone: data.phone,
-        });
+        } });
       } catch (e) { /* non-blocking */ }
     },
     onSuccess: async () => {
@@ -453,14 +453,14 @@ export default function Profile() {
     setUploadingPhoto(true);
     try {
       const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await uploadFile(file);
       const email = user?.email;
       if (email) {
-        const existing = await base44.entities.UserProfile.filter({ user_email: email });
+        const existing = await supabase.from('user_profiles').select('*').eq('user_email', email);
         if (existing && existing.length > 0) {
-          await base44.entities.UserProfile.update(existing[0].id, { profile_photo_url: file_url });
+          await supabase.from('user_profiles').update({ profile_photo_url: file_url }).eq('id', existing[0].id).select();
         } else {
-          await base44.entities.UserProfile.create({ user_email: email, profile_photo_url: file_url });
+          await supabase.from('user_profiles').insert({ user_email: email, profile_photo_url: file_url }).select();
         }
       }
       setFormData(prev => ({ ...prev, profile_photo_url: file_url }));
@@ -629,11 +629,11 @@ export default function Profile() {
                     onAutoSave={async (url) => {
                       const email = user?.email;
                       if (!email) return;
-                      const existing = await base44.entities.UserProfile.filter({ user_email: email });
+                      const existing = await supabase.from('user_profiles').select('*').eq('user_email', email);
                       if (existing?.length > 0) {
-                        await base44.entities.UserProfile.update(existing[0].id, { logo_url: url });
+                        await supabase.from('user_profiles').update({ logo_url: url }).eq('id', existing[0].id).select();
                       } else {
-                        await base44.entities.UserProfile.create({ user_email: email, logo_url: url });
+                        await supabase.from('user_profiles').insert({ user_email: email, logo_url: url }).select();
                       }
                     }}
                   />

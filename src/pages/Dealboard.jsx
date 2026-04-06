@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { Building2, Search, Filter, Plus, MoreVertical } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import CreatePostModal from '@/components/dashboard/CreatePostModal';
@@ -23,13 +23,13 @@ export default function Dealboard() {
 
   const { data: listings = [] } = useQuery({
     queryKey: ['dealboard-listings', user?.email],
-    queryFn: () => base44.entities.Listing.filter({ created_by: user?.email }, '-created_date'),
+    queryFn: () => supabase.from('listings').select('*').eq('created_by', user?.email).order('created_at', { ascending: false }),
     enabled: !!user?.email,
   });
 
   const { data: requirements = [] } = useQuery({
     queryKey: ['dealboard-requirements', user?.email],
-    queryFn: () => base44.entities.Requirement.filter({ created_by: user?.email }, '-created_date'),
+    queryFn: () => supabase.from('requirements').select('*').eq('created_by', user?.email).order('created_at', { ascending: false }),
     enabled: !!user?.email,
   });
 
