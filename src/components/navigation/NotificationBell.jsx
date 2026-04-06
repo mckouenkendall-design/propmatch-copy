@@ -60,7 +60,7 @@ export default function NotificationBell() {
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications', user?.email],
-    queryFn:  () => base44.entities.Notification.filter({ user_email: user?.email })
+    queryFn:  () => base44.entities.Notification.filter({ recipient_email: user?.email })
       .then(r => r.sort((a,b) => new Date(b.created_date) - new Date(a.created_date))),
     enabled:  !!user?.email,
     refetchInterval: 30000,
