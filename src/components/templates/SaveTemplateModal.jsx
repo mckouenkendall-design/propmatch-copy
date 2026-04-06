@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { X, BookmarkCheck, FolderOpen, FolderPlus, Check, Loader2 } from 'lucide-react';
 
 const ACCENT = '#00DBC5';
 
 export default function SaveTemplateModal({ formData, templateType, onClose }) {
+  const { user } = useAuth();
   const [name, setName]             = useState('');
   const [selectedFolder, setSelectedFolder] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -16,7 +18,8 @@ export default function SaveTemplateModal({ formData, templateType, onClose }) {
   // Load existing templates to derive folder list
   const { data: templates = [] } = useQuery({
     queryKey: ['templates'],
-    queryFn: () => base44.entities.Template.list('-created_date', 200),
+    queryFn: () => base44.entities.Template.filter({ created_by: user?.email }, '-created_date'),
+    enabled: !!user?.email,
   });
 
   const folders = [...new Set(
