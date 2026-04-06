@@ -1000,11 +1000,11 @@ export default function Matches() {
   const showSaved = location.state?.showSaved;
   useEffect(()=>{if(showSaved)setFilterSaved(true);},[showSaved]);
   const savedHook=useSavedMatches(user?.email);
-  const {data:myListings=[]}      =useQuery({queryKey:['my-listings'],              queryFn:()=>base44.entities.Listing.filter({created_by:user?.email})});
-  const {data:myRequirements=[]}  =useQuery({queryKey:['my-requirements'],          queryFn:()=>base44.entities.Requirement.filter({created_by:user?.email})});
-  const {data:allListings=[]}     =useQuery({queryKey:['all-listings-matches'],     queryFn:()=>base44.entities.Listing.list('-created_date',200)});
-  const {data:allRequirements=[]} =useQuery({queryKey:['all-requirements-matches'], queryFn:()=>base44.entities.Requirement.list('-created_date',200)});
-  const {data:allProfiles=[]}     =useQuery({queryKey:['all-user-profiles'],        queryFn:()=>base44.entities.UserProfile.list()});
+  const {data:myListings=[]}      =useQuery({queryKey:['my-listings',user?.email],              queryFn:()=>base44.entities.Listing.filter({created_by:user?.email}),enabled:!!user?.email});
+  const {data:myRequirements=[]}  =useQuery({queryKey:['my-requirements',user?.email],          queryFn:()=>base44.entities.Requirement.filter({created_by:user?.email}),enabled:!!user?.email});
+  const {data:allListings=[]}     =useQuery({queryKey:['all-listings-matches',user?.email],     queryFn:()=>base44.entities.Listing.list('-created_date',200),enabled:!!user?.email});
+  const {data:allRequirements=[]} =useQuery({queryKey:['all-requirements-matches',user?.email], queryFn:()=>base44.entities.Requirement.list('-created_date',200),enabled:!!user?.email});
+  const {data:allProfiles=[]}     =useQuery({queryKey:['all-user-profiles',user?.email],        queryFn:()=>base44.entities.UserProfile.list(),enabled:!!user?.email});
   const {data:myMemberships=[]}   =useQuery({queryKey:['my-memberships',user?.email], queryFn:()=>base44.entities.GroupMember.filter({user_email:user?.email}), enabled:!!user?.email});
   const profileMap=Object.fromEntries(allProfiles.map(p=>[p.user_email,p]));
   const myProfile=profileMap[user?.email];
