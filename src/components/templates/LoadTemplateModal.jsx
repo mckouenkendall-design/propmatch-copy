@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { useAuth } from '@/lib/AuthContext';
-import { useAuth as _useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { X, Search, FileText, Building2, Home, FolderOpen, ChevronRight } from 'lucide-react';
 
