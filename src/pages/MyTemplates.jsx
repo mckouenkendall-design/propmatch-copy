@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Search, FileText, Building2, Home, Trash2, Pencil, Check, X, FolderOpen, ChevronDown, ChevronRight, Loader2, Play } from 'lucide-react';
@@ -82,6 +83,7 @@ function TemplateCard({ template, onDelete, onRename, onUse, deleting }) {
 }
 
 export default function MyTemplates() {
+  const { user } = useAuth();
   const [search, setSearch]           = useState('');
   const [openFolders, setOpenFolders] = useState({});
   const [deletingId, setDeletingId]   = useState(null);
@@ -90,7 +92,8 @@ export default function MyTemplates() {
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['templates'],
-    queryFn: () => base44.entities.Template.list('-created_date', 200),
+    queryFn: () => base44.entities.Template.filter({ created_by: user?.email }, '-created_date'),
+    enabled: !!user?.email,
   });
 
   const deleteMutation = useMutation({
