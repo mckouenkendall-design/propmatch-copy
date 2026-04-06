@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
 import { Building2, Search, Filter, Plus, MoreVertical } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import CreatePostModal from '@/components/dashboard/CreatePostModal';
@@ -18,7 +17,6 @@ const STAGES = [
 ];
 
 export default function Dealboard() {
-  const { user } = useAuth();
   const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState('all');
