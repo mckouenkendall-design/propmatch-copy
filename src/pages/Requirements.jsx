@@ -98,8 +98,9 @@ export default function Requirements() {
   const [viewingRequirement, setViewingRequirement] = useState(null);
 
   const { data: requirements = [] } = useQuery({
-    queryKey: ['all-requirements'],
-    queryFn: () => base44.entities.Requirement.list('-created_date'),
+    queryKey: ['my-requirements-page', user?.email],
+    queryFn: () => base44.entities.Requirement.filter({ created_by: user?.email }, '-created_date'),
+    enabled: !!user?.email,
   });
   const { data: myListings = [] } = useQuery({
     queryKey: ['my-listings'],
