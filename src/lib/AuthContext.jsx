@@ -86,6 +86,16 @@ export const AuthProvider = ({ children }) => {
       setAuthError(null);
       // Assume appPublicSettings not needed for Supabase
       setAppPublicSettings({});
+
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        const hasAuthParams = url.searchParams.has('access_token') || url.searchParams.has('refresh_token') || url.hash.includes('access_token') || url.hash.includes('refresh_token');
+        if (hasAuthParams && supabase.auth.getSessionFromUrl) {
+          await supabase.auth.getSessionFromUrl({ storeSession: true });
+          window.history.replaceState({}, document.title, url.pathname + url.search);
+        }
+      }
+
       await checkUserAuth();
       setIsLoadingPublicSettings(false);
     } catch (error) {
