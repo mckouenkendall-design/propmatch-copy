@@ -70,7 +70,7 @@ export default function LandingNav() {
               </button>
             ))}
             <button
-              onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } })}
+              onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })}
               style={{
                 fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
                 textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -87,20 +87,21 @@ export default function LandingNav() {
             >
               Sign In
             </button>
-            <Link
-              to="/Onboarding"
+            <button
+              onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })}
               style={{
                 fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
                 textTransform: 'uppercase', letterSpacing: '0.05em',
                 color: '#111827', background: ACCENT,
                 padding: '9px 22px', borderRadius: '6px', textDecoration: 'none',
+                border: 'none', cursor: 'pointer',
                 transition: 'background 0.2s ease',
               }}
               onMouseEnter={e => e.currentTarget.style.background = '#00b8a7'}
               onMouseLeave={e => e.currentTarget.style.background = ACCENT}
             >
               Join PropMatch
-            </Link>
+            </button>
           </div>
 
           {/* Mobile menu button */}
@@ -135,15 +136,15 @@ export default function LandingNav() {
             </button>
           ))}
           <button
-            onClick={() => { setMenuOpen(false); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } }); }}
+            onClick={() => { setMenuOpen(false); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }}
             style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: '#111827', background: 'transparent', border: `1px solid ${ACCENT}`, padding: '12px 22px', borderRadius: '6px', cursor: 'pointer', textAlign: 'center' }}>
             Sign In
           </button>
-          <Link to="/Onboarding"
-            style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: '#111827', background: ACCENT, padding: '12px 22px', borderRadius: '6px', textDecoration: 'none', textAlign: 'center' }}
-            onClick={() => setMenuOpen(false)}>
+          <button
+            onClick={() => { setMenuOpen(false); supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }}
+            style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: '#111827', background: ACCENT, padding: '12px 22px', borderRadius: '6px', textDecoration: 'none', textAlign: 'center', border: 'none', cursor: 'pointer' }}>
             Join PropMatch
-          </Link>
+          </button>
         </div>
       )}
 

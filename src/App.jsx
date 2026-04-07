@@ -1,3 +1,4 @@
+import React from 'react'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -8,6 +9,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeProvider';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { supabase } from '@/api/supabaseClient';
 import Blog from './pages/Blog';
 import Careers from './pages/Careers';
 import Affiliate from './pages/Affiliate';
@@ -35,26 +37,61 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { user, isLoadingAuth, isLoadingPublicSettings } = useAuth();
+  const [hasProfile, setHasProfile] = React.useState(null);
+  const [checkedProfile, setCheckedProfile] = React.useState(false);
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  // Check if user has a profile and handle routing
+  React.useEffect(() => {
+    const checkProfile = async () => {
+      if (!user?.email) {
+        setHasProfile(null);
+        setCheckedProfile(true);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.from('user_profiles').select('user_email').eq('user_email', user.email).single();
+        setHasProfile(!error && !!data);
+      } catch (e) {
+        setHasProfile(false);
+      }
+      setCheckedProfile(true);
+    };
+
+    checkProfile();
+  }, [user?.email]);
+
+  // Handle routing based on auth state and profile
+  React.useEffect(() => {
+    if (!isLoadingAuth && checkedProfile) {
+      const pathname = window.location.pathname;
+      // Skip routing logic for public pages
+      if (['/Blog', '/Careers', '/Affiliate', '/Privacy', '/Terms', '/AboutUs'].includes(pathname)) return;
+
+      if (!user) {
+        // No user — stay on or redirect to landing
+        if (pathname !== '/') window.location.href = '/';
+      } else if (!hasProfile) {
+        // User exists but no profile — go to onboarding
+        if (pathname !== '/Onboarding') window.location.href = '/Onboarding';
+      } else {
+        // User exists with profile — go to dashboard if on landing
+        if (pathname === '/' || pathname === '/Landing') {
+          const defaultPage = user.user_type === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
+          window.location.href = defaultPage;
+        }
+      }
+    }
+  }, [isLoadingAuth, checkedProfile, user, hasProfile]);
+
+  // Show loading spinner while checking auth or profile
+  if (isLoadingPublicSettings || isLoadingAuth || !checkedProfile) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
       </div>
     );
-  }
-
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    }
   }
 
   // Render the main app

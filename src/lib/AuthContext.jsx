@@ -113,21 +113,6 @@ export const AuthProvider = ({ children }) => {
       setUser(mergedUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
-
-      const pathname = window.location.pathname;
-      const isOnRootOrLanding = pathname === '/';
-
-      if (isOnRootOrLanding && authUser) {
-        const needsOnboarding = !authUser.user_metadata?.user_type && !(profile?.user_type);
-        if (needsOnboarding) {
-          // New user — show them the landing page first, CTA will take them to Onboarding
-          window.location.href = '/Landing';
-        } else {
-          const userType = profile?.user_type || authUser.user_metadata?.user_type;
-          const defaultPage = userType === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
-          window.location.href = defaultPage;
-        }
-      }
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
@@ -154,7 +139,7 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     await supabase.auth.signOut();
     if (shouldRedirect) {
-      window.location.href = '/Landing';
+      window.location.href = '/';
     }
   };
 
