@@ -602,11 +602,11 @@ export default function PostOnboarding({ isBroker = false }) {
         if (user.selected_plan === 'brokerage' && user.brokerage_seats) {
           setBrokerInfo({
             totalSeats: user.brokerage_seats,
-            brokerEmail: user.email,
-            brokerName: user.full_name,
-            brokerageName: user.brokerage_name,
-            employingBrokerNumber: user.employing_broker_id,
-            stripeSubscriptionId: user.stripe_subscription_id,
+            brokerEmail: user?.email,
+            brokerName: user?.full_name,
+            brokerageName: user?.brokerage_name,
+            employingBrokerNumber: user?.employing_broker_id,
+            stripeSubscriptionId: user?.stripe_subscription_id,
           });
           setShowAddTeam(true);
         }

@@ -39,7 +39,7 @@ export default function GroupEvents({ groupId, currentUser }) {
 
   const rsvpMutation = useMutation({
     mutationFn: async (event) => {
-      const rsvpList = JSON.parse(event.rsvp_list || '[]');
+      const rsvpList = (() => { try { return JSON.parse(event.rsvp_list || '[]'); } catch { return []; } })();
       const userEmail = currentUser?.email;
       const alreadyRsvpd = rsvpList.includes(userEmail);
       const updated = alreadyRsvpd ? rsvpList.filter(e => e !== userEmail) : [...rsvpList, userEmail];
@@ -107,7 +107,7 @@ export default function GroupEvents({ groupId, currentUser }) {
 }
 
 function EventCard({ event, currentUser, hostProfile, profileMap, groupId, onRsvp, onDelete, isPast }) {
-  const rsvpList = JSON.parse(event.rsvp_list || '[]');
+  const rsvpList = (() => { try { return JSON.parse(event.rsvp_list || '[]'); } catch { return []; } })();
   const isRsvpd = rsvpList.includes(currentUser?.email);
   const isHost = event.host_email === currentUser?.email;
   const color = EVENT_TYPE_COLORS[event.event_type] || '#9ca3af';

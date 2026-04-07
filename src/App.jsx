@@ -27,6 +27,7 @@ import Teams from './pages/Teams';
 import NewsWire from './pages/NewsWire';
 import BlogFeed from './pages/BlogFeed';
 import Insights from './pages/Insights';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -184,10 +185,12 @@ function App() {
     <AuthProvider>
       <ThemeProvider>
         <QueryClientProvider client={queryClientInstance}>
-          <Router>
-            <NavigationTracker />
-            <AuthenticatedApp />
-          </Router>
+          <ErrorBoundary>
+            <Router>
+              <NavigationTracker />
+              <AuthenticatedApp />
+            </Router>
+          </ErrorBoundary>
           <Toaster />
         </QueryClientProvider>
       </ThemeProvider>

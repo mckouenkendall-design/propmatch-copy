@@ -104,7 +104,7 @@ export default function GroupDiscussion({ groupId, currentUser }) {
 
   const voteMutation = useMutation({
     mutationFn: async ({ post, optionIndex }) => {
-      const votes = JSON.parse(post.poll_votes || '{}');
+      const votes = (() => { try { return JSON.parse(post.poll_votes || '{}'); } catch { return {}; } })();
       Object.keys(votes).forEach(key => { votes[key] = (votes[key] || []).filter(e => e !== currentUser?.email); });
       if (!votes[optionIndex]) votes[optionIndex] = [];
       votes[optionIndex].push(currentUser?.email);
@@ -273,8 +273,8 @@ function ActionButton({ icon, label, color, onClick, active }) {
 function DiscussionPostCard({ post, currentUser, authorProfile, profileMap, groupId, onDelete, onVote, onReact }) {
   const [showFull, setShowFull] = useState(false);
   const isAuthor = post.author_email === currentUser?.email;
-  const pollOptions = post.poll_options ? JSON.parse(post.poll_options) : [];
-  const pollVotes = post.poll_votes ? JSON.parse(post.poll_votes) : {};
+  const pollOptions = (() => { try { return post.poll_options ? JSON.parse(post.poll_options) : []; } catch { return []; } })();
+  const pollVotes = (() => { try { return post.poll_votes ? JSON.parse(post.poll_votes) : {}; } catch { return {}; } })();
   const totalVotes = Object.values(pollVotes).reduce((acc, arr) => acc + (arr?.length || 0), 0);
   const userVoted = Object.entries(pollVotes).find(([, voters]) => voters?.includes(currentUser?.email));
   const isLong = post.content?.length > 200;

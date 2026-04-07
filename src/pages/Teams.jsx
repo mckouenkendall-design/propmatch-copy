@@ -203,7 +203,7 @@ export default function Teams() {
   const brokerageMatchMap = useMemo(() => {
     if (!user?.email) return {};
     const map = {};
-    teamListings.filter(l => l.created_by !== user.email).forEach(listing => {
+    teamListings.filter(l => l.created_by !== user?.email).forEach(listing => {
       let best = null;
       myRequirements.forEach(req => {
         const r = calculateMatchScore(listing, req);
@@ -211,7 +211,7 @@ export default function Teams() {
       });
       if (best) map[listing.id] = best;
     });
-    teamRequirements.filter(r => r.created_by !== user.email).forEach(req => {
+    teamRequirements.filter(r => r.created_by !== user?.email).forEach(req => {
       let best = null;
       myListings.forEach(listing => {
         const r = calculateMatchScore(listing, req);

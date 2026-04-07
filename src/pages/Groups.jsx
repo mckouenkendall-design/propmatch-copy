@@ -21,8 +21,8 @@ export default function Groups() {
 
   const { data: myMemberships = [] } = useQuery({
     queryKey: ['my-memberships', user?.email],
-    queryFn: () => supabase.from('group_members').select('*').eq('user_email', user.email).eq('status', 'active'),
-    enabled: !!user,
+    queryFn: () => supabase.from('group_members').select('*').eq('user_email', user?.email).eq('status', 'active'),
+    enabled: !!user?.email,
   });
 
   const { data: allGroups = [] } = useQuery({

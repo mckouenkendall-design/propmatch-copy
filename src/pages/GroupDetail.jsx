@@ -52,9 +52,9 @@ export default function GroupDetail() {
 
   const { data: membership } = useQuery({
     queryKey: ['my-membership', groupId, currentUser?.email],
-    queryFn: () => supabase.from('group_members').select('*').eq('group_id', groupId).eq('user_email', currentUser.email)
+    queryFn: () => supabase.from('group_members').select('*').eq('group_id', groupId).eq('user_email', currentUser?.email)
       .then(r => r[0] || null),
-    enabled: !!groupId && !!currentUser,
+    enabled: !!groupId && !!currentUser?.email,
   });
 
   const { data: allMembers = [] } = useQuery({
@@ -79,8 +79,8 @@ export default function GroupDetail() {
       const isPrivate = group?.group_type === 'private';
       const newMembership = await supabase.from('group_members').insert({
         group_id: groupId,
-        user_email: currentUser.email,
-        user_name: currentUser.full_name || currentUser.email,
+        user_email: currentUser?.email,
+        user_name: currentUser?.full_name || currentUser?.email,
         role: 'member',
         status: isPrivate ? 'pending' : 'active',
       }).select();
