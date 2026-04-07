@@ -107,7 +107,7 @@ export default function Listings() {
   });
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => supabase.from('user_profiles').select('*'),
+    queryFn: () => supabase.from('profiles').select('*'),
   });
 
   const profileMap = Object.fromEntries(allProfiles.map(p => [p.user_email, p]));

@@ -59,7 +59,7 @@ export default function GroupDiscussion({ groupId, currentUser }) {
 
   const { data: userProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => supabase.from('user_profiles').select('*'),
+    queryFn: () => supabase.from('profiles').select('*'),
   });
   const profileMap = Object.fromEntries(userProfiles.map(p => [p.user_email, p]));
 

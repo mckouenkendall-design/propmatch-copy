@@ -363,7 +363,7 @@ export default function Messages() {
 
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => supabase.from('user_profiles').select('*'),
+    queryFn: () => supabase.from('profiles').select('*'),
   });
 
   const { data: allListings = [] } = useQuery({

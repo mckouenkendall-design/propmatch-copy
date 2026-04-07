@@ -51,7 +51,7 @@ export default function FloatingMessageCompose({
   // Load all profiles for recipient search
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => supabase.from('user_profiles').select('*'),
+    queryFn: () => supabase.from('profiles').select('*'),
   });
 
   // Load user's fish tanks

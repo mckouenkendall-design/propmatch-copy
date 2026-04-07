@@ -314,7 +314,7 @@ export default function Profile() {
     if (!user?.email) return;
     const load = async () => {
       try {
-        const profiles = await supabase.from('user_profiles').select('*').eq('user_email', user.email);
+        const profiles = await supabase.from('profiles').select('*').eq('user_email', user.email);
         const profile = profiles?.[0] || {};
         setFormData({
           full_name: user.full_name || '',
@@ -372,14 +372,14 @@ export default function Profile() {
 
       // Username uniqueness check
       if (data.username) {
-        const allProfiles = await supabase.from('user_profiles').select('*');
+        const allProfiles = await supabase.from('profiles').select('*');
         const conflict = allProfiles.find(
           p => p.username && p.username.toLowerCase() === data.username.toLowerCase() && p.user_email !== email
         );
         if (conflict) throw new Error('USERNAME_TAKEN');
       }
 
-      const existing = await supabase.from('user_profiles').select('*').eq('user_email', email);
+      const existing = await supabase.from('profiles').select('*').eq('user_email', email);
       const profileData = {
         user_email: email,
         full_name: data.full_name,
@@ -410,9 +410,9 @@ export default function Profile() {
         selected_plan: user.selected_plan || '',
       };
       if (existing && existing.length > 0) {
-        await supabase.from('user_profiles').update(profileData).eq('id', existing[0].id).select();
+        await supabase.from('profiles').update(profileData).eq('id', existing[0].id).select();
       } else {
-        await supabase.from('user_profiles').insert(profileData).select();
+        await supabase.from('profiles').insert(profileData).select();
       }
       try {
         await supabase.auth.updateUser({ data: {
@@ -456,11 +456,11 @@ export default function Profile() {
       const { file_url } = await uploadFile(file);
       const email = user?.email;
       if (email) {
-        const existing = await supabase.from('user_profiles').select('*').eq('user_email', email);
+        const existing = await supabase.from('profiles').select('*').eq('user_email', email);
         if (existing && existing.length > 0) {
-          await supabase.from('user_profiles').update({ profile_photo_url: file_url }).eq('id', existing[0].id).select();
+          await supabase.from('profiles').update({ profile_photo_url: file_url }).eq('id', existing[0].id).select();
         } else {
-          await supabase.from('user_profiles').insert({ user_email: email, profile_photo_url: file_url }).select();
+          await supabase.from('profiles').insert({ user_email: email, profile_photo_url: file_url }).select();
         }
       }
       setFormData(prev => ({ ...prev, profile_photo_url: file_url }));
@@ -629,11 +629,11 @@ export default function Profile() {
                     onAutoSave={async (url) => {
                       const email = user?.email;
                       if (!email) return;
-                      const existing = await supabase.from('user_profiles').select('*').eq('user_email', email);
+                      const existing = await supabase.from('profiles').select('*').eq('user_email', email);
                       if (existing?.length > 0) {
-                        await supabase.from('user_profiles').update({ logo_url: url }).eq('id', existing[0].id).select();
+                        await supabase.from('profiles').update({ logo_url: url }).eq('id', existing[0].id).select();
                       } else {
-                        await supabase.from('user_profiles').insert({ user_email: email, logo_url: url }).select();
+                        await supabase.from('profiles').insert({ user_email: email, logo_url: url }).select();
                       }
                     }}
                   />

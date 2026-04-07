@@ -317,11 +317,11 @@ export default function Onboarding() {
     const email = user?.email;
     if (!email) return;
     try {
-      const existing = await supabase.from('user_profiles').select('*').eq('user_email', email);
+      const existing = await supabase.from('profiles').select('*').eq('user_email', email);
       if (existing && existing.length > 0) {
-        await supabase.from('user_profiles').update(profileData).eq('id', existing[0].id).select();
+        await supabase.from('profiles').update(profileData).eq('id', existing[0].id).select();
       } else {
-        await supabase.from('user_profiles').insert({ user_email: email, ...profileData }).select();
+        await supabase.from('profiles').insert({ user_email: email, ...profileData }).select();
       }
     } catch (e) {
       console.error('Failed to save UserProfile:', e);
@@ -339,7 +339,7 @@ export default function Onboarding() {
     }
 
     try {
-      const existingUsers = await supabase.from('user_profiles').select('*').eq('username', step1.username.trim());
+      const existingUsers = await supabase.from('profiles').select('*').eq('username', step1.username.trim());
       if (existingUsers.length > 0) {
         setErrors({ username: 'This username is already taken. Please choose another.' });
         return;

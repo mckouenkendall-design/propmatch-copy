@@ -32,7 +32,7 @@ export default function Dashboard() {
   const {data:myRequirements=[]}  =useQuery({queryKey:['cc-my-reqs'],         queryFn:async()=> { const { data } = await supabase.from('requirements').select('*').eq('created_by', user?.email); return data; }, enabled: !!user?.email});
   const {data:allListings=[]}     =useQuery({queryKey:['cc-all-listings'],    queryFn:async()=> { const { data } = await supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(80); return data; }});
   const {data:allRequirements=[]} =useQuery({queryKey:['cc-all-reqs'],        queryFn:async()=> { const { data } = await supabase.from('requirements').select('*').order('created_at', { ascending: false }).limit(80); return data; }});
-  const {data:myProfile}          =useQuery({queryKey:['cc-profile'],         queryFn:async()=> { const { data } = await supabase.from('user_profiles').select('*').eq('user_email', user?.email); return data?.[0]; }, enabled: !!user?.email});
+  const {data:myProfile}          =useQuery({queryKey:['cc-profile'],         queryFn:async()=> { const { data } = await supabase.from('profiles').select('*').eq('user_email', user?.email); return data?.[0]; }, enabled: !!user?.email});
   const {data:notifications=[]}   =useQuery({queryKey:['cc-notifications'],   queryFn:async()=> { const { data } = await supabase.from('notifications').select('*').eq('user_email', user?.email); return data; }, enabled: !!user?.email});
 
   const firstName=myProfile?.full_name?.split(' ')[0]||user?.email?.split('@')[0]||'there';

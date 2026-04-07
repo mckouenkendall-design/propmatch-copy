@@ -24,7 +24,7 @@ function AddAgentModal({ broker, onClose, onSuccess }) {
     setSearching(true);
     setFound(null);
     try {
-      const allProfiles = await supabase.from('user_profiles').select('*');
+      const allProfiles = await supabase.from('profiles').select('*');
       const match = allProfiles.find(p =>
         p.employing_broker_id === broker.employing_broker_id &&
         p.license_number === licenseNumber.trim()
@@ -283,7 +283,7 @@ export default function BrokerDashboard() {
 
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles'],
-    queryFn: () => supabase.from('user_profiles').select('*'),
+    queryFn: () => supabase.from('profiles').select('*'),
   });
 
   const activeEntries = rosterEntries.filter(r => r.status === 'active');

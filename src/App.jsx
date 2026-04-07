@@ -52,7 +52,7 @@ const AuthenticatedApp = () => {
       }
 
       try {
-        const profile = await supabase.from('user_profiles').select('user_email').eq('user_email', user.email).single();
+        const profile = await supabase.from('profiles').select('user_email').eq('user_email', user.email).single();
         setHasProfile(!!profile);
       } catch (e) {
         setHasProfile(false);

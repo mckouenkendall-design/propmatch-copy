@@ -130,7 +130,7 @@ export default function Settings() {
   const invoices = invoiceData?.data?.invoices || invoiceData?.invoices || [];
 
   const getProfile = async () => {
-    const all = await supabase.from('user_profiles').select('*');
+    const all = await supabase.from('profiles').select('*');
     return all.find(p => p.user_email === user?.email) || null;
   };
 
@@ -138,7 +138,7 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (!profile) { toast({ title: 'Profile not found', variant: 'destructive' }); return; }
-      await supabase.from('user_profiles').update({
+      await supabase.from('profiles').update({
         email_notifications: emailNotifications,
         match_alerts: matchAlerts,
         group_notifications: groupNotifications,
@@ -155,7 +155,7 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (!profile) { toast({ title: 'Profile not found', variant: 'destructive' }); return; }
-      await supabase.from('user_profiles').update({ language }).eq('id', profile.id).select();
+      await supabase.from('profiles').update({ language }).eq('id', profile.id).select();
       await refreshUser();
       toast({ title: 'Preferences saved' });
     } catch {
@@ -167,7 +167,7 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (!profile) return;
-      await supabase.from('user_profiles').update({
+      await supabase.from('profiles').update({
         billing_cycle: annual ? 'annual' : 'monthly',
       }).eq('id', profile.id).select();
       setIsAnnual(annual);
@@ -182,7 +182,7 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (!profile) return;
-      await supabase.from('user_profiles').update({ auto_renew: val }).eq('id', profile.id).select();
+      await supabase.from('profiles').update({ auto_renew: val }).eq('id', profile.id).select();
       setAutoRenew(val);
       await refreshUser();
       toast({ title: `Auto-renew ${val ? 'enabled' : 'disabled'}` });
@@ -195,7 +195,7 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (!profile) return;
-      await supabase.from('user_profiles').update({
+      await supabase.from('profiles').update({
         selected_plan: 'free',
         subscription_status: 'cancelled',
         cancellation_reason: reason,
@@ -213,7 +213,7 @@ export default function Settings() {
     try {
       const profile = await getProfile();
       if (profile) {
-        await supabase.from('user_profiles').update({
+        await supabase.from('profiles').update({
           user_type: 'principal_broker',
           selected_plan: plan,
           subscription_status: 'active',

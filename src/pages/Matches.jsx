@@ -1004,7 +1004,7 @@ export default function Matches() {
   const {data:myRequirements=[]}  =useQuery({queryKey:['my-requirements',user?.email],          queryFn:async()=> { const { data } = await supabase.from('requirements').select('*').eq('created_by', user?.email); return data; },enabled:!!user?.email});
   const {data:allListings=[]}     =useQuery({queryKey:['all-listings-matches',user?.email],     queryFn:async()=> { const { data } = await supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(200); return data; },enabled:!!user?.email});
   const {data:allRequirements=[]} =useQuery({queryKey:['all-requirements-matches',user?.email], queryFn:async()=> { const { data } = await supabase.from('requirements').select('*').order('created_at', { ascending: false }).limit(200); return data; },enabled:!!user?.email});
-  const {data:allProfiles=[]}     =useQuery({queryKey:['all-user-profiles',user?.email],        queryFn:async()=> { const { data } = await supabase.from('user_profiles').select('*'); return data; },enabled:!!user?.email});
+  const {data:allProfiles=[]}     =useQuery({queryKey:['all-user-profiles',user?.email],        queryFn:async()=> { const { data } = await supabase.from('profiles').select('*'); return data; },enabled:!!user?.email});
   const {data:myMemberships=[]}   =useQuery({queryKey:['my-memberships',user?.email], queryFn:async()=> { const { data } = await supabase.from('group_members').select('*').eq('user_email', user?.email); return data; }, enabled:!!user?.email});
   const profileMap=Object.fromEntries(allProfiles.map(p=>[p.user_email,p]));
   const myProfile=profileMap[user?.email];

@@ -68,7 +68,7 @@ function PrivateRecipientPicker({ value, onChange, currentUserEmail }) {
 
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['all-user-profiles-picker'],
-    queryFn: () => supabase.from('user_profiles').select('*'),
+    queryFn: () => supabase.from('profiles').select('*'),
   });
 
   // People you already have conversations with — shown first

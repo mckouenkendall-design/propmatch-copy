@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   const fetchUserProfile = async (email) => {
     if (!email) return null;
     try {
-      const { data, error } = await supabase.from('user_profiles').select('*').eq('user_email', email).single();
+      const { data, error } = await supabase.from('profiles').select('*').eq('user_email', email).single();
       if (error) {
         console.error('UserProfile fetch error:', error);
         return null;
