@@ -47,8 +47,8 @@ export default function Insights() {
   const {user}=useAuth();
   const navigate=useNavigate();
 
-  const {data:myListings=[]}     =useQuery({queryKey:['ins-listings'],  queryFn:()=>supabase.from('listings').select('*').eq('created_by', user?.email)});
-  const {data:myRequirements=[]} =useQuery({queryKey:['ins-reqs'],      queryFn:()=>supabase.from('requirements').select('*').eq('created_by', user?.email)});
+  const {data:myListings=[]}     =useQuery({queryKey:['ins-listings'],  queryFn:async()=> { const { data } = await supabase.from('listings').select('*').eq('created_by', user?.email); return data; }});
+  const {data:myRequirements=[]} =useQuery({queryKey:['ins-reqs'],      queryFn:async()=> { const { data } = await supabase.from('requirements').select('*').eq('created_by', user?.email); return data; }});
 
   const allPosts=[...myListings,...myRequirements];
   const views  =allPosts.reduce((s,p)=>s+(p.view_count ||0),0);
