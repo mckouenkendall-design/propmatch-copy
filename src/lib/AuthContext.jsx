@@ -80,13 +80,13 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
     };
 
-    // Safety timeout - never show loading spinner for more than 5 seconds
+    // Safety timeout - never show loading spinner for more than 15 seconds
     const timeout = setTimeout(() => {
       if (isMounted && isLoadingAuth) {
         console.warn('Auth loading timed out');
         setIsLoadingAuth(false);
       }
-    }, 5000);
+    }, 15000);
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!isMounted) return;

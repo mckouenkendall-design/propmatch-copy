@@ -116,14 +116,20 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
         agentCount: selected === 'brokerage' ? agentCount : 1,
       } });
 
-      if (response.data.checkoutUrl) {
+      if (response?.data?.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
       } else {
+        // If no checkout URL returned, complete onboarding anyway
+        // User can set up payment later from Settings
+        setLoading(false);
         onComplete(selected);
       }
     } catch (error) {
       console.error('Checkout error:', error);
+      // Stripe checkout not available yet - complete onboarding anyway
+      // User can set up payment later from Settings
       setLoading(false);
+      onComplete(selected);
     }
   };
 

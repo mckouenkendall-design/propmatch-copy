@@ -69,7 +69,7 @@ const AuthenticatedApp = () => {
         setHasProfile(false);
         setCheckedProfile(true);
       }
-    }, 4000);
+    }, 10000);
 
     return () => clearTimeout(timeout);
   }, [user?.email, location.pathname]);
