@@ -53,7 +53,6 @@ const AuthenticatedApp = () => {
       }
 
       try {
-        // Use .limit(1) instead of .single() to avoid 406 errors
         const profiles = await supabase.from('profiles').select('user_email').eq('user_email', user.email).limit(1);
         setHasProfile(Array.isArray(profiles) && profiles.length > 0);
       } catch (e) {
@@ -63,7 +62,17 @@ const AuthenticatedApp = () => {
     };
 
     checkProfile();
-  }, [user?.email]);
+
+    // Safety timeout - never stay on loading screen forever
+    const timeout = setTimeout(() => {
+      if (!checkedProfile) {
+        setHasProfile(false);
+        setCheckedProfile(true);
+      }
+    }, 4000);
+
+    return () => clearTimeout(timeout);
+  }, [user?.email, location.pathname]);
 
   if (isLoadingAuth || !checkedProfile) {
     return (

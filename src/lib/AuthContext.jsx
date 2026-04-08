@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { supabase } from '@/api/supabaseClient';
 
 const AuthContext = createContext();
@@ -9,11 +9,11 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings] = useState({});
+  const initialLoadDone = useRef(false);
 
   const fetchUserProfile = async (email) => {
     if (!email) return null;
     try {
-      // Use .limit(1) instead of .single() to avoid 406 errors
       const profiles = await supabase.from('profiles').select('*').eq('user_email', email).limit(1);
       if (Array.isArray(profiles) && profiles.length > 0) return profiles[0];
       return null;
@@ -80,29 +80,51 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
     };
 
+    // Safety timeout - never show loading spinner for more than 5 seconds
+    const timeout = setTimeout(() => {
+      if (isMounted && isLoadingAuth) {
+        console.warn('Auth loading timed out');
+        setIsLoadingAuth(false);
+      }
+    }, 5000);
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!isMounted) return;
       if (session?.user) {
         await loadUser(session.user);
       }
+      initialLoadDone.current = true;
       if (isMounted) setIsLoadingAuth(false);
     }).catch((error) => {
       console.error('Session check failed:', error);
+      initialLoadDone.current = true;
       if (isMounted) setIsLoadingAuth(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return;
+
+      // Skip INITIAL_SESSION - getSession() above already handles it
+      if (event === 'INITIAL_SESSION') return;
+
       if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsAuthenticated(false);
-      } else if (session?.user) {
+      } else if (event === 'SIGNED_IN' && session?.user) {
         await loadUser(session.user);
+        if (isMounted && !initialLoadDone.current) {
+          initialLoadDone.current = true;
+          setIsLoadingAuth(false);
+        }
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        // Just update the auth user data, don't re-fetch profile
+        setUser(prev => prev ? { ...prev, ...session.user } : prev);
       }
     });
 
     return () => {
       isMounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);

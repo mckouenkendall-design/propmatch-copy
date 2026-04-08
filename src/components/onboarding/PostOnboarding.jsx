@@ -632,11 +632,11 @@ export default function PostOnboarding({ isBroker = false }) {
   const [screen, setScreen] = useState(SCREEN_CONFETTI);
 
   const goNext = () => {
-    if (screen >= LAST_SCREEN) { navigate('/Dashboard'); return; }
+    if (screen >= LAST_SCREEN) { window.location.href = '/Dashboard'; return; }
     setScreen(s => s + 1);
   };
 
-  const skipAll = () => navigate('/Dashboard');
+  const skipAll = () => window.location.href = '/Dashboard';
 
   const featureIndex = screen - FIRST_FEATURE;
 
