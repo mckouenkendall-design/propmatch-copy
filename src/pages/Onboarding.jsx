@@ -23,7 +23,7 @@ const STATE_RULES = {
   Washington:     { pattern: /^\d{6}$/, hint: '6 digits' },
   Nevada:         { pattern: /^\d{6}$/, hint: '6 digits' },
 };
-const DEFAULT_RULE = { pattern: /^[A-Za-z0-9]{5,12}$/, hint: '5–12 alphanumeric characters' };
+const DEFAULT_RULE = { pattern: /^[A-Za-z0-9]{5,12}$/, hint: '5-12 alphanumeric characters' };
 
 function validateLicenseField(value, state) {
   if (!value) return null;
@@ -286,11 +286,12 @@ const STEP1_INIT = { fullName: '', email: '', phone: '', username: '', state: ''
 const STEP2_INIT = { propertyCategories: [], catOther: '', transactionTypes: [], txOther: '' };
 
 export default function Onboarding() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [step, setStep] = useState(0);
   const [step1, setStep1] = useState(STEP1_INIT);
   const [step2, setStep2] = useState(STEP2_INIT);
   const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showPostOnboarding, setShowPostOnboarding] = useState(false);
   const navigate = useNavigate();
@@ -314,64 +315,70 @@ export default function Onboarding() {
 
   const canContinue = step === 0 ? !!step1Filled : step2Valid;
 
-  const saveToUserProfile = async (profileData) => {
+  const saveToProfile = async (profileData) => {
     const email = user?.email;
     if (!email) return;
     try {
-      // Use .limit(1) instead of .single() to avoid 406 errors with proxy wrapper
       const existing = await supabase.from('profiles').select('id').eq('user_email', email).limit(1);
-      
       if (Array.isArray(existing) && existing.length > 0 && existing[0].id) {
         await supabase.from('profiles').update(profileData).eq('id', existing[0].id);
       } else {
         await supabase.from('profiles').insert({ user_email: email, ...profileData });
       }
     } catch (e) {
-      console.error('Failed to save UserProfile:', e);
+      console.error('Failed to save profile:', e);
     }
   };
 
   const handleStep1Continue = async () => {
-    if (!step1Filled) return;
+    if (!step1Filled || saving) return;
+    setSaving(true);
 
-    const brokerError = step1.state ? validateLicenseField(step1.employingBrokerId, step1.state) : null;
-    const licenseError = step1.state ? validateLicenseField(step1.licenseNumber, step1.state) : null;
-    if (brokerError || licenseError) {
-      setErrors({ employingBrokerId: brokerError, licenseNumber: licenseError });
-      return;
-    }
-
-    // Check username uniqueness
     try {
-      const existingUsers = await supabase.from('profiles').select('user_email').eq('username', step1.username.trim());
-      if (Array.isArray(existingUsers) && existingUsers.length > 0) {
-        const isOurOwn = existingUsers.every(u => u.user_email === user?.email);
-        if (!isOurOwn) {
-          setErrors({ username: 'This username is already taken. Please choose another.' });
-          return;
-        }
+      const brokerError = step1.state ? validateLicenseField(step1.employingBrokerId, step1.state) : null;
+      const licenseError = step1.state ? validateLicenseField(step1.licenseNumber, step1.state) : null;
+      if (brokerError || licenseError) {
+        setErrors({ employingBrokerId: brokerError, licenseNumber: licenseError });
+        setSaving(false);
+        return;
       }
-    } catch (e) {
-      // If check fails, let them continue
-    }
 
-    // Save to user_profiles
-    await saveToUserProfile({
-      full_name: step1.fullName,
-      username: step1.username.trim(),
-      contact_email: step1.email,
-      phone: step1.phone,
-      state: step1.state,
-      user_type: step1.role === 'Principal Broker' ? 'principal_broker' : 'agent',
-      brokerage_name: step1.brokerageName,
-      employing_broker_id: step1.employingBrokerId,
-      license_number: step1.licenseNumber,
-      verification_status: 'format_verified',
-    });
+      // Check username uniqueness
+      try {
+        const existingUsers = await supabase.from('profiles').select('user_email').eq('username', step1.username.trim());
+        if (Array.isArray(existingUsers) && existingUsers.length > 0) {
+          const isOurOwn = existingUsers.every(u => u.user_email === user?.email);
+          if (!isOurOwn) {
+            setErrors({ username: 'This username is already taken. Please choose another.' });
+            setSaving(false);
+            return;
+          }
+        }
+      } catch (e) {
+        // If check fails, let them continue
+      }
 
-    // Also update auth metadata as backup
-    try {
-      await supabase.auth.updateUser({ data: {
+      // Save to profiles table (source of truth)
+      await saveToProfile({
+        full_name: step1.fullName,
+        username: step1.username.trim(),
+        contact_email: step1.email,
+        phone: step1.phone,
+        state: step1.state,
+        user_type: step1.role === 'Principal Broker' ? 'principal_broker' : 'agent',
+        brokerage_name: step1.brokerageName,
+        employing_broker_id: step1.employingBrokerId,
+        license_number: step1.licenseNumber,
+        verification_status: 'format_verified',
+      });
+
+      // Move to step 2 FIRST, before any auth updates
+      setErrors({});
+      setStep(1);
+      setSaving(false);
+
+      // Update auth metadata in background (do NOT await - prevents re-render race)
+      supabase.auth.updateUser({ data: {
         full_name: step1.fullName,
         name: step1.fullName,
         username: step1.username.trim(),
@@ -379,29 +386,36 @@ export default function Onboarding() {
         employing_broker_id: step1.employingBrokerId,
         license_number: step1.licenseNumber,
         verification_status: 'format_verified',
-      }});
-    } catch (e) {}
+      }}).catch(() => {});
 
-    setErrors({});
-    setStep(1);
+    } catch (e) {
+      console.error('Step 1 continue error:', e);
+      setSaving(false);
+    }
   };
 
   const handleStep2Continue = async () => {
-    if (!step2Valid) return;
-
-    await saveToUserProfile({
-      property_categories: step2.propertyCategories,
-      transaction_types: step2.transactionTypes,
-    });
+    if (!step2Valid || saving) return;
+    setSaving(true);
 
     try {
-      await supabase.auth.updateUser({ data: {
+      await saveToProfile({
         property_categories: step2.propertyCategories,
         transaction_types: step2.transactionTypes,
-      } });
-    } catch (e) {}
+      });
 
-    setShowPayment(true);
+      // Update auth metadata in background
+      supabase.auth.updateUser({ data: {
+        property_categories: step2.propertyCategories,
+        transaction_types: step2.transactionTypes,
+      }}).catch(() => {});
+
+      setSaving(false);
+      setShowPayment(true);
+    } catch (e) {
+      console.error('Step 2 continue error:', e);
+      setSaving(false);
+    }
   };
 
   const handleContinue = () => {
@@ -422,14 +436,12 @@ export default function Onboarding() {
         isBroker={isBroker}
         employingBrokerNumber={step1.employingBrokerId}
         onComplete={async (plan, rosterData) => {
-          await saveToUserProfile({ selected_plan: plan });
-          try {
-            await supabase.auth.updateUser({ data: {
-              selected_plan: plan,
-              broker_sponsored: plan === 'broker_sponsored',
-              roster_broker_email: rosterData?.broker_email || null,
-            } });
-          } catch (e) {}
+          await saveToProfile({ selected_plan: plan });
+          supabase.auth.updateUser({ data: {
+            selected_plan: plan,
+            broker_sponsored: plan === 'broker_sponsored',
+            roster_broker_email: rosterData?.broker_email || null,
+          }}).catch(() => {});
           setShowPayment(false);
           setShowPostOnboarding(true);
         }}
@@ -497,16 +509,16 @@ export default function Onboarding() {
                 ← Back
               </button>
             ) : <div />}
-            <button onClick={handleContinue} disabled={!canContinue}
+            <button onClick={handleContinue} disabled={!canContinue || saving}
               style={{
                 fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
                 textTransform: 'uppercase', letterSpacing: '0.05em',
-                color: canContinue ? '#111827' : 'rgba(255,255,255,0.2)',
-                background: canContinue ? ACCENT : 'rgba(255,255,255,0.06)',
+                color: canContinue && !saving ? '#111827' : 'rgba(255,255,255,0.2)',
+                background: canContinue && !saving ? ACCENT : 'rgba(255,255,255,0.06)',
                 border: 'none', borderRadius: '6px', padding: '12px 28px',
-                cursor: canContinue ? 'pointer' : 'not-allowed', transition: 'all 0.2s ease',
+                cursor: canContinue && !saving ? 'pointer' : 'not-allowed', transition: 'all 0.2s ease',
               }}>
-              Continue →
+              {saving ? 'Saving...' : 'Continue →'}
             </button>
           </div>
         </div>
