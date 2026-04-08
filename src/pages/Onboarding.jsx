@@ -99,7 +99,7 @@ const baseInputStyle = {
   transition: 'border-color 0.2s ease',
 };
 
-function StyledInput({ value, onChange, type = 'text', error, onFocusChange }) {
+function StyledInput({ value, onChange, type = 'text', error, onFocusChange, placeholder }) {
   const [focused, setFocused] = useState(false);
   return (
     <div>
@@ -107,6 +107,7 @@ function StyledInput({ value, onChange, type = 'text', error, onFocusChange }) {
         type={type}
         value={value}
         onChange={onChange}
+        placeholder={placeholder}
         onFocus={() => { setFocused(true); onFocusChange && onFocusChange(true); }}
         onBlur={() => { setFocused(false); onFocusChange && onFocusChange(false); }}
         style={{ ...baseInputStyle, borderColor: error ? '#EF4444' : focused ? ACCENT : 'rgba(255,255,255,0.12)' }}
@@ -317,11 +318,26 @@ export default function Onboarding() {
     const email = user?.email;
     if (!email) return;
     try {
-      const existing = await supabase.from('profiles').select('*').eq('user_email', email);
-      if (existing && existing.length > 0) {
-        await supabase.from('profiles').update(profileData).eq('id', existing[0].id).select();
+      // Check if profile already exists
+      const { data: existing, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_email', email)
+        .single();
+
+      if (existing && existing.id) {
+        // Update existing profile
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update(profileData)
+          .eq('id', existing.id);
+        if (updateError) console.error('Failed to update profile:', updateError);
       } else {
-        await supabase.from('profiles').insert({ user_email: email, ...profileData }).select();
+        // Insert new profile
+        const { error: insertError } = await supabase
+          .from('user_profiles')
+          .insert({ user_email: email, ...profileData });
+        if (insertError) console.error('Failed to insert profile:', insertError);
       }
     } catch (e) {
       console.error('Failed to save UserProfile:', e);
@@ -338,15 +354,26 @@ export default function Onboarding() {
       return;
     }
 
+    // Check username uniqueness
     try {
-      const existingUsers = await supabase.from('profiles').select('*').eq('username', step1.username.trim());
-      if (existingUsers.length > 0) {
-        setErrors({ username: 'This username is already taken. Please choose another.' });
-        return;
+      const { data: existingUsers, error } = await supabase
+        .from('user_profiles')
+        .select('user_email')
+        .eq('username', step1.username.trim());
+      
+      // If we found users with this username and they're not us
+      if (!error && existingUsers && existingUsers.length > 0) {
+        const isOurOwn = existingUsers.every(u => u.user_email === user?.email);
+        if (!isOurOwn) {
+          setErrors({ username: 'This username is already taken. Please choose another.' });
+          return;
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      // If check fails, let them continue
+    }
 
-    // Save to UserProfile entity — this is our source of truth
+    // Save to user_profiles — this is our source of truth
     await saveToUserProfile({
       full_name: step1.fullName,
       username: step1.username.trim(),
@@ -360,7 +387,7 @@ export default function Onboarding() {
       verification_status: 'format_verified',
     });
 
-    // Also try auth.updateMe as a best-effort backup
+    // Also update auth metadata as backup
     try {
       await supabase.auth.updateUser({ data: {
         full_name: step1.fullName,
@@ -435,7 +462,7 @@ export default function Onboarding() {
   return (
     <div style={{ minHeight: '100vh', background: '#080C10', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '24px 48px', display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
-        <Link to="/Landing" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="180" height="36">
             <g transform="translate(20,20)">
               <path d="M -16,0 Q 0,-7 16,0 Q 19,-1.5 22,-5 Q 20,-1 16,0 Q 19,1.5 22,5 Q 20,1 16,0 Q 0,7 -16,0 Z"
@@ -446,7 +473,7 @@ export default function Onboarding() {
             </text>
           </svg>
         </Link>
-        <Link to="/Landing"
+        <Link to="/"
           style={{ marginLeft: 'auto', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}
           onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
           onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
