@@ -4,7 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeProvider';
@@ -38,15 +38,18 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { user, isLoadingAuth, isLoadingPublicSettings } = useAuth();
+  const { user, isLoadingAuth } = useAuth();
   const [hasProfile, setHasProfile] = React.useState(null);
   const [checkedProfile, setCheckedProfile] = React.useState(false);
+  const location = useLocation();
 
-  // Check if user has a profile and handle routing
+  // Check if user has a profile — reset when user identity changes
   React.useEffect(() => {
+    setCheckedProfile(false);
+    setHasProfile(null);
+
     const checkProfile = async () => {
       if (!user?.email) {
-        setHasProfile(null);
         setCheckedProfile(true);
         return;
       }
@@ -63,36 +66,35 @@ const AuthenticatedApp = () => {
     checkProfile();
   }, [user?.email]);
 
-  // Handle routing based on auth state and profile
-  React.useEffect(() => {
-    if (!isLoadingAuth && checkedProfile) {
-      const pathname = window.location.pathname;
-      // Skip routing logic for public pages
-      if (['/Blog', '/Careers', '/Affiliate', '/Privacy', '/Terms', '/AboutUs'].includes(pathname)) return;
-
-      if (!user) {
-        // No user — stay on or redirect to landing
-        if (pathname !== '/') window.location.href = '/';
-      } else if (!hasProfile) {
-        // User exists but no profile — go to onboarding
-        if (pathname !== '/Onboarding') window.location.href = '/Onboarding';
-      } else {
-        // User exists with profile — go to dashboard if on landing
-        if (pathname === '/' || pathname === '/Landing') {
-          const defaultPage = user.user_type === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
-          window.location.href = defaultPage;
-        }
-      }
-    }
-  }, [isLoadingAuth, checkedProfile, user, hasProfile]);
-
   // Show loading spinner while checking auth or profile
-  if (isLoadingPublicSettings || isLoadingAuth || !checkedProfile) {
+  if (isLoadingAuth || !checkedProfile) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
       </div>
     );
+  }
+
+  const pathname = location.pathname;
+  const publicPages = ['/Blog', '/Careers', '/Affiliate', '/Privacy', '/Terms', '/AboutUs'];
+
+  // Apply routing rules only on non-public pages
+  if (!publicPages.includes(pathname)) {
+    // Not logged in — redirect to landing
+    if (!user && pathname !== '/') {
+      return <Navigate to="/" replace />;
+    }
+
+    // Logged in but no profile — redirect to onboarding
+    if (user && hasProfile === false && pathname !== '/Onboarding') {
+      return <Navigate to="/Onboarding" replace />;
+    }
+
+    // Logged in with profile on landing — redirect to dashboard
+    if (user && hasProfile && (pathname === '/' || pathname === '/Landing')) {
+      const defaultPage = user.user_type === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
+      return <Navigate to={defaultPage} replace />;
+    }
   }
 
   // Render the main app

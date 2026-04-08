@@ -7,34 +7,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
   const [authError, setAuthError] = useState(null);
-  const [appPublicSettings, setAppPublicSettings] = useState(null);
-
-  useEffect(() => {
-    checkAppState();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        await checkUserAuth(session.user);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+  const [appPublicSettings] = useState({});
 
   const fetchUserProfile = async (email) => {
     if (!email) return null;
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('user_email', email).single();
-      if (error) {
-        console.error('UserProfile fetch error:', error);
-        return null;
-      }
-      return data;
+      const profile = await supabase.from('profiles').select('*').eq('user_email', email).single();
+      return profile || null;
     } catch (e) {
-      console.error('UserProfile fetch error:', e);
       return null;
     }
   };
@@ -80,63 +61,52 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
-  const checkAppState = async () => {
-    try {
-      setIsLoadingPublicSettings(true);
-      setAuthError(null);
-      // Assume appPublicSettings not needed for Supabase
-      setAppPublicSettings({});
+  useEffect(() => {
+    let isMounted = true;
 
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        const hasAuthParams = url.searchParams.has('access_token') || url.searchParams.has('refresh_token') || url.hash.includes('access_token') || url.hash.includes('refresh_token');
-        if (hasAuthParams && supabase.auth.getSessionFromUrl) {
-          await supabase.auth.getSessionFromUrl({ storeSession: true });
-          window.history.replaceState({}, document.title, url.pathname + url.search);
-        }
-      }
-
-      await checkUserAuth();
-      setIsLoadingPublicSettings(false);
-    } catch (error) {
-      console.error('App state check failed:', error);
-      setAuthError({ type: 'unknown', message: error.message || 'Failed to load app' });
-      setIsLoadingPublicSettings(false);
-      setIsLoadingAuth(false);
-    }
-  };
-
-  const checkUserAuth = async (authUser) => {
-    try {
-      setIsLoadingAuth(true);
-      if (!authUser) {
-        const { data: { user } } = await supabase.auth.getUser();
-        authUser = user;
-      }
-      if (!authUser) {
-        setIsAuthenticated(false);
-        setIsLoadingAuth(false);
-        return;
-      }
+    const loadUser = async (authUser) => {
       const profile = await fetchUserProfile(authUser.email);
+      if (!isMounted) return;
       const mergedUser = buildMergedUser(authUser, profile);
       setUser(mergedUser);
       setIsAuthenticated(true);
-      setIsLoadingAuth(false);
-    } catch (error) {
-      console.error('User auth check failed:', error);
-      setIsLoadingAuth(false);
-      setIsAuthenticated(false);
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({ type: 'auth_required', message: 'Authentication required' });
+    };
+
+    // Use getSession() — it properly waits for Supabase v2 hash-token exchange
+    // unlike getUser() which can race ahead before the OAuth redirect tokens are processed
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!isMounted) return;
+      if (session?.user) {
+        await loadUser(session.user);
       }
-    }
-  };
+      if (isMounted) setIsLoadingAuth(false);
+    }).catch((error) => {
+      console.error('Session check failed:', error);
+      if (isMounted) setIsLoadingAuth(false);
+    });
+
+    // Listen for subsequent auth changes (sign-in, sign-out, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setIsAuthenticated(false);
+      } else if (session?.user) {
+        await loadUser(session.user);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const refreshUser = async () => {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      const profile = await fetchUserProfile(authUser?.email);
+      if (!authUser) return;
+      const profile = await fetchUserProfile(authUser.email);
       const mergedUser = buildMergedUser(authUser, profile);
       setUser(mergedUser);
     } catch (error) {
@@ -157,7 +127,7 @@ export const AuthProvider = ({ children }) => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.href
+        redirectTo: window.location.origin,
       }
     });
   };
@@ -167,12 +137,12 @@ export const AuthProvider = ({ children }) => {
       user,
       isAuthenticated,
       isLoadingAuth,
-      isLoadingPublicSettings,
+      isLoadingPublicSettings: false,
       authError,
       appPublicSettings,
       logout,
       navigateToLogin,
-      checkAppState,
+      checkAppState: refreshUser,
       refreshUser,
     }}>
       {children}
