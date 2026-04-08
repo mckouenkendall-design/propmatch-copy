@@ -318,18 +318,11 @@ export default function Onboarding() {
     const email = user?.email;
     if (!email) return;
     try {
-      // The proxy wrapper returns data directly, not {data, error}
-      // .single() throws on no match, so we use try/catch
-      let existingId = null;
-      try {
-        const existing = await supabase.from('user_profiles').select('id').eq('user_email', email).single();
-        if (existing && existing.id) existingId = existing.id;
-      } catch (e) {
-        // No existing profile found — that's fine, we'll insert
-      }
-
-      if (existingId) {
-        await supabase.from('user_profiles').update(profileData).eq('id', existingId);
+      // Use .limit(1) instead of .single() to avoid 406 errors with proxy wrapper
+      const existing = await supabase.from('user_profiles').select('id').eq('user_email', email).limit(1);
+      
+      if (Array.isArray(existing) && existing.length > 0 && existing[0].id) {
+        await supabase.from('user_profiles').update(profileData).eq('id', existing[0].id);
       } else {
         await supabase.from('user_profiles').insert({ user_email: email, ...profileData });
       }
@@ -351,8 +344,7 @@ export default function Onboarding() {
     // Check username uniqueness
     try {
       const existingUsers = await supabase.from('user_profiles').select('user_email').eq('username', step1.username.trim());
-      // The proxy returns an array directly
-      if (existingUsers && Array.isArray(existingUsers) && existingUsers.length > 0) {
+      if (Array.isArray(existingUsers) && existingUsers.length > 0) {
         const isOurOwn = existingUsers.every(u => u.user_email === user?.email);
         if (!isOurOwn) {
           setErrors({ username: 'This username is already taken. Please choose another.' });
