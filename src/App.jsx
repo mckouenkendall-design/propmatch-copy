@@ -54,7 +54,7 @@ const AuthenticatedApp = () => {
 
       try {
         // Use .limit(1) instead of .single() to avoid 406 errors
-        const profiles = await supabase.from('user_profiles').select('user_email').eq('user_email', user.email).limit(1);
+        const profiles = await supabase.from('profiles').select('user_email').eq('user_email', user.email).limit(1);
         setHasProfile(Array.isArray(profiles) && profiles.length > 0);
       } catch (e) {
         setHasProfile(false);

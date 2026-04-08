@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
     if (!email) return null;
     try {
       // Use .limit(1) instead of .single() to avoid 406 errors
-      const profiles = await supabase.from('user_profiles').select('*').eq('user_email', email).limit(1);
+      const profiles = await supabase.from('profiles').select('*').eq('user_email', email).limit(1);
       if (Array.isArray(profiles) && profiles.length > 0) return profiles[0];
       return null;
     } catch (e) {

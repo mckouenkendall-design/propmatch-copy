@@ -319,12 +319,12 @@ export default function Onboarding() {
     if (!email) return;
     try {
       // Use .limit(1) instead of .single() to avoid 406 errors with proxy wrapper
-      const existing = await supabase.from('user_profiles').select('id').eq('user_email', email).limit(1);
+      const existing = await supabase.from('profiles').select('id').eq('user_email', email).limit(1);
       
       if (Array.isArray(existing) && existing.length > 0 && existing[0].id) {
-        await supabase.from('user_profiles').update(profileData).eq('id', existing[0].id);
+        await supabase.from('profiles').update(profileData).eq('id', existing[0].id);
       } else {
-        await supabase.from('user_profiles').insert({ user_email: email, ...profileData });
+        await supabase.from('profiles').insert({ user_email: email, ...profileData });
       }
     } catch (e) {
       console.error('Failed to save UserProfile:', e);
@@ -343,7 +343,7 @@ export default function Onboarding() {
 
     // Check username uniqueness
     try {
-      const existingUsers = await supabase.from('user_profiles').select('user_email').eq('username', step1.username.trim());
+      const existingUsers = await supabase.from('profiles').select('user_email').eq('username', step1.username.trim());
       if (Array.isArray(existingUsers) && existingUsers.length > 0) {
         const isOurOwn = existingUsers.every(u => u.user_email === user?.email);
         if (!isOurOwn) {
