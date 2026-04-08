@@ -159,9 +159,31 @@ export default function Onboarding() {
     try {
       const existing = await supabase.from('profiles').select('id').eq('user_email', email).limit(1);
       if (Array.isArray(existing) && existing.length > 0 && existing[0].id) {
-        await supabase.from('profiles').update(profileData).eq('id', existing[0].id);
+        // Update - try all columns, silently ignore failures
+        try {
+          await supabase.from('profiles').update(profileData).eq('id', existing[0].id);
+        } catch (e) {
+          // If update fails (bad columns), try with safe columns only
+          const safe = {};
+          ['full_name','phone','brokerage_name','brokerage_id','license_number','theme'].forEach(k => {
+            if (profileData[k] !== undefined) safe[k] = profileData[k];
+          });
+          if (Object.keys(safe).length > 0) {
+            await supabase.from('profiles').update(safe).eq('id', existing[0].id);
+          }
+        }
       } else {
-        await supabase.from('profiles').insert({ user_email: email, ...profileData });
+        // Insert - try all columns first
+        try {
+          await supabase.from('profiles').insert({ user_email: email, ...profileData });
+        } catch (e) {
+          // If insert fails (bad columns), insert with only safe columns
+          const safe = { user_email: email, theme: 'dark' };
+          ['full_name','phone','brokerage_name','brokerage_id','license_number'].forEach(k => {
+            if (profileData[k] !== undefined) safe[k] = profileData[k];
+          });
+          await supabase.from('profiles').insert(safe);
+        }
       }
     } catch (e) {
       console.error('Failed to save profile:', e);
@@ -203,6 +225,7 @@ export default function Onboarding() {
         state: form.state,
         user_type: form.role === 'Principal Broker' ? 'principal_broker' : 'agent',
         brokerage_name: form.brokerageName,
+        brokerage_id: form.employingBrokerId,
         employing_broker_id: form.employingBrokerId,
         license_number: form.licenseNumber,
         verification_status: 'format_verified',
