@@ -110,17 +110,25 @@ export default function PaymentScreen({ isBroker, employingBrokerNumber, onCompl
 
     setLoading(true);
     try {
-      const response = await supabase.functions.invoke('createCheckoutSession', { body: {
-        plan: selected,
-        billing: isAnnual ? 'annual' : 'monthly',
-        agentCount: selected === 'brokerage' ? agentCount : 1,
-      } });
+      // Call our Vercel API route for Stripe checkout
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000));
+      const fetchPromise = fetch('/api/createCheckoutSession', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: selected,
+          billing: isAnnual ? 'annual' : 'monthly',
+          agentCount: selected === 'brokerage' ? agentCount : 1,
+          email: user?.email,
+        }),
+      }).then(r => r.json());
 
-      if (response?.data?.checkoutUrl) {
-        window.location.href = response.data.checkoutUrl;
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
+
+      if (response?.checkoutUrl) {
+        window.location.href = response.checkoutUrl;
       } else {
-        // If no checkout URL returned, complete onboarding anyway
-        // User can set up payment later from Settings
+        console.error('No checkout URL:', response);
         setLoading(false);
         onComplete(selected);
       }

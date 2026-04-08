@@ -56,23 +56,24 @@ const AuthenticatedApp = () => {
         const profiles = await supabase.from('profiles').select('user_email').eq('user_email', user.email).limit(1);
         setHasProfile(Array.isArray(profiles) && profiles.length > 0);
       } catch (e) {
-        setHasProfile(false);
+        // On error, assume profile exists (optimistic) to avoid wrong redirects
+        setHasProfile(true);
       }
       setCheckedProfile(true);
     };
 
     checkProfile();
 
-    // Safety timeout - never stay on loading screen forever
+    // Safety timeout - if profile check hangs, assume profile exists and let them through
     const timeout = setTimeout(() => {
       if (!checkedProfile) {
-        setHasProfile(false);
+        setHasProfile(user?.email ? true : false);
         setCheckedProfile(true);
       }
-    }, 10000);
+    }, 8000);
 
     return () => clearTimeout(timeout);
-  }, [user?.email, location.pathname]);
+  }, [user?.email]);
 
   if (isLoadingAuth || !checkedProfile) {
     return (
