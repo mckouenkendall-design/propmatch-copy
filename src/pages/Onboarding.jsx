@@ -41,42 +41,6 @@ const US_STATES = [
   'Virginia','Washington','West Virginia','Wisconsin','Wyoming',
 ];
 
-const STEPS_LABELS = ['Your Info', 'Your Practice'];
-
-function StepIndicator({ current }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '40px' }}>
-      {STEPS_LABELS.map((label, i) => (
-        <React.Fragment key={i}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            <div style={{
-              width: '32px', height: '32px', borderRadius: '50%',
-              background: i <= current ? ACCENT : 'rgba(255,255,255,0.08)',
-              border: `2px solid ${i <= current ? ACCENT : 'rgba(255,255,255,0.15)'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.3s ease',
-            }}>
-              {i < current ? (
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#111827" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="2 7 5.5 10.5 12 3.5" />
-                </svg>
-              ) : (
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500, color: i === current ? '#111827' : 'rgba(255,255,255,0.3)' }}>{i + 1}</span>
-              )}
-            </div>
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: i === current ? ACCENT : 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap' }}>
-              {label}
-            </span>
-          </div>
-          {i < STEPS_LABELS.length - 1 && (
-            <div style={{ flex: 1, height: '1px', background: i < current ? ACCENT : 'rgba(255,255,255,0.1)', margin: '0 12px', marginBottom: '28px', transition: 'background 0.3s ease' }} />
-          )}
-        </React.Fragment>
-      ))}
-    </div>
-  );
-}
-
 function FieldLabel({ children }) {
   return (
     <label style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '8px' }}>
@@ -144,15 +108,15 @@ function StyledSelect({ value, onChange, options, placeholder }) {
   );
 }
 
-function ToggleChip({ label, selected, onClick, disabled }) {
+function ToggleChip({ label, selected, onClick }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled}
+    <button type="button" onClick={onClick}
       style={{
         fontFamily: "'Inter', sans-serif", fontSize: '13px', padding: '9px 18px', borderRadius: '6px',
         border: `1px solid ${selected ? ACCENT : 'rgba(255,255,255,0.12)'}`,
-        background: selected ? 'rgba(0,219,197,0.1)' : disabled ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)',
-        color: selected ? ACCENT : disabled ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.5)',
-        cursor: disabled ? 'default' : 'pointer',
+        background: selected ? 'rgba(0,219,197,0.1)' : 'rgba(255,255,255,0.03)',
+        color: selected ? ACCENT : 'rgba(255,255,255,0.5)',
+        cursor: 'pointer',
         transition: 'all 0.2s ease', whiteSpace: 'nowrap',
       }}>
       {label}
@@ -167,129 +131,11 @@ function formatPhone(raw) {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
-function Step1({ data, setData, errors, setErrors }) {
-  const clearError = (field) => { if (errors[field]) setErrors(prev => ({ ...prev, [field]: null })); };
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div>
-        <FieldLabel>Full Name</FieldLabel>
-        <StyledInput value={data.fullName} onChange={e => { setData({ ...data, fullName: e.target.value }); clearError('fullName'); }} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-        <div>
-          <FieldLabel>Email</FieldLabel>
-          <StyledInput type="email" value={data.email} onChange={e => { setData({ ...data, email: e.target.value }); clearError('email'); }} />
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '6px 0 0', lineHeight: 1.5 }}>
-            This email will be visible to other agents for contact purposes.
-          </p>
-        </div>
-        <div>
-          <FieldLabel>Phone Number</FieldLabel>
-          <StyledInput type="tel" value={data.phone} onChange={e => { setData({ ...data, phone: formatPhone(e.target.value) }); clearError('phone'); }} />
-        </div>
-      </div>
-      <div>
-        <FieldLabel>Username</FieldLabel>
-        <StyledInput value={data.username} error={errors.username} onChange={e => { setData({ ...data, username: e.target.value }); clearError('username'); }} />
-      </div>
-      <div>
-        <FieldLabel>State</FieldLabel>
-        <StyledSelect value={data.state} onChange={e => { setData({ ...data, state: e.target.value }); clearError('state'); }} options={US_STATES} placeholder="Select your state" />
-      </div>
-      <div>
-        <FieldLabel>Role</FieldLabel>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {['Agent', 'Principal Broker'].map(role => (
-            <ToggleChip key={role} label={role} selected={data.role === role} onClick={() => { setData({ ...data, role }); clearError('role'); }} />
-          ))}
-        </div>
-      </div>
-      <div>
-        <FieldLabel>Brokerage Name</FieldLabel>
-        <StyledInput value={data.brokerageName} onChange={e => { setData({ ...data, brokerageName: e.target.value }); clearError('brokerageName'); }} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-        <div>
-          <FieldLabel>Employing Broker #</FieldLabel>
-          <StyledInput value={data.employingBrokerId} error={errors.employingBrokerId} onChange={e => { setData({ ...data, employingBrokerId: e.target.value }); clearError('employingBrokerId'); }} />
-        </div>
-        <div>
-          <FieldLabel>License No.</FieldLabel>
-          <StyledInput value={data.licenseNumber} error={errors.licenseNumber} onChange={e => { setData({ ...data, licenseNumber: e.target.value }); clearError('licenseNumber'); }} />
-        </div>
-      </div>
-      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.2)', margin: 0, lineHeight: 1.6 }}>
-        PropMatch is exclusively available to licensed real estate professionals. Your credentials are required for verification.
-      </p>
-    </div>
-  );
-}
-
-const CAT_OPTIONS = ['Residential', 'Commercial', 'Both', 'Other'];
-const TX_OPTIONS = ['Sales', 'Leasing', 'Rentals', 'All', 'Other'];
-
-function Step2({ data, setData }) {
-  const toggleCat = (cat) => {
-    const current = data.propertyCategories;
-    const next = current.includes(cat) ? current.filter(c => c !== cat) : [...current, cat];
-    setData({ ...data, propertyCategories: next, catOther: cat === 'Other' && current.includes('Other') ? '' : data.catOther });
-  };
-  const toggleTx = (tx) => {
-    if (tx === 'All') { setData({ ...data, transactionTypes: data.transactionTypes.includes('All') ? [] : ['All'], txOther: '' }); return; }
-    if (data.transactionTypes.includes('All')) return;
-    const current = data.transactionTypes;
-    const next = current.includes(tx) ? current.filter(t => t !== tx) : [...current, tx];
-    setData({ ...data, transactionTypes: next, txOther: tx === 'Other' && current.includes('Other') ? '' : data.txOther });
-  };
-  const allSelected = data.transactionTypes.includes('All');
-  const catOtherSelected = data.propertyCategories.includes('Other');
-  const txOtherSelected = data.transactionTypes.includes('Other');
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      <div>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.4)', margin: '0 0 14px' }}>
-          What property categories do you work in?
-        </p>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          {CAT_OPTIONS.map(cat => (
-            <ToggleChip key={cat} label={cat} selected={data.propertyCategories.includes(cat)} onClick={() => toggleCat(cat)} />
-          ))}
-        </div>
-        {catOtherSelected && (
-          <div style={{ marginTop: '12px' }}>
-            <FieldLabel>Please specify</FieldLabel>
-            <StyledInput value={data.catOther} onChange={e => setData({ ...data, catOther: e.target.value })} />
-          </div>
-        )}
-      </div>
-      <div>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.4)', margin: '0 0 14px' }}>
-          What transaction types do you handle?
-        </p>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          {TX_OPTIONS.map(tx => (
-            <ToggleChip key={tx} label={tx} selected={data.transactionTypes.includes(tx)} disabled={allSelected && tx !== 'All' && tx !== 'Other'} onClick={() => toggleTx(tx)} />
-          ))}
-        </div>
-        {txOtherSelected && !allSelected && (
-          <div style={{ marginTop: '12px' }}>
-            <FieldLabel>Please specify</FieldLabel>
-            <StyledInput value={data.txOther} onChange={e => setData({ ...data, txOther: e.target.value })} />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-const STEP1_INIT = { fullName: '', email: '', phone: '', username: '', state: '', role: '', brokerageName: '', employingBrokerId: '', licenseNumber: '' };
-const STEP2_INIT = { propertyCategories: [], catOther: '', transactionTypes: [], txOther: '' };
+const FORM_INIT = { fullName: '', email: '', phone: '', username: '', state: '', role: '', brokerageName: '', employingBrokerId: '', licenseNumber: '' };
 
 export default function Onboarding() {
   const { user, refreshUser } = useAuth();
-  const [step, setStep] = useState(0);
-  const [step1, setStep1] = useState(STEP1_INIT);
-  const [step2, setStep2] = useState(STEP2_INIT);
+  const [form, setForm] = useState(FORM_INIT);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -297,23 +143,15 @@ export default function Onboarding() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user?.email && !step1.email) {
-      setStep1(prev => ({ ...prev, email: user.email }));
+    if (user?.email && !form.email) {
+      setForm(prev => ({ ...prev, email: user.email }));
     }
   }, [user]);
 
-  const step1Filled = step1.fullName && step1.email && step1.phone && step1.username && step1.state &&
-    step1.role && step1.brokerageName && step1.employingBrokerId && step1.licenseNumber;
+  const allFilled = form.fullName && form.email && form.phone && form.username && form.state &&
+    form.role && form.brokerageName && form.employingBrokerId && form.licenseNumber;
 
-  const catOtherSelected = step2.propertyCategories.includes('Other');
-  const txOtherSelected = step2.transactionTypes.includes('Other');
-  const step2Valid =
-    step2.propertyCategories.length > 0 &&
-    (!catOtherSelected || step2.catOther.trim()) &&
-    step2.transactionTypes.length > 0 &&
-    (!txOtherSelected || step2.txOther.trim());
-
-  const canContinue = step === 0 ? !!step1Filled : step2Valid;
+  const clearError = (field) => { if (errors[field]) setErrors(prev => ({ ...prev, [field]: null })); };
 
   const saveToProfile = async (profileData) => {
     const email = user?.email;
@@ -330,13 +168,13 @@ export default function Onboarding() {
     }
   };
 
-  const handleStep1Continue = async () => {
-    if (!step1Filled || saving) return;
+  const handleContinue = async () => {
+    if (!allFilled || saving) return;
     setSaving(true);
 
     try {
-      const brokerError = step1.state ? validateLicenseField(step1.employingBrokerId, step1.state) : null;
-      const licenseError = step1.state ? validateLicenseField(step1.licenseNumber, step1.state) : null;
+      const brokerError = form.state ? validateLicenseField(form.employingBrokerId, form.state) : null;
+      const licenseError = form.state ? validateLicenseField(form.licenseNumber, form.state) : null;
       if (brokerError || licenseError) {
         setErrors({ employingBrokerId: brokerError, licenseNumber: licenseError });
         setSaving(false);
@@ -345,7 +183,7 @@ export default function Onboarding() {
 
       // Check username uniqueness
       try {
-        const existingUsers = await supabase.from('profiles').select('user_email').eq('username', step1.username.trim());
+        const existingUsers = await supabase.from('profiles').select('user_email').eq('username', form.username.trim());
         if (Array.isArray(existingUsers) && existingUsers.length > 0) {
           const isOurOwn = existingUsers.every(u => u.user_email === user?.email);
           if (!isOurOwn) {
@@ -354,89 +192,53 @@ export default function Onboarding() {
             return;
           }
         }
-      } catch (e) {
-        // If check fails, let them continue
-      }
+      } catch (e) {}
 
-      // Save to profiles table (source of truth)
+      // Save to profiles table
       await saveToProfile({
-        full_name: step1.fullName,
-        username: step1.username.trim(),
-        contact_email: step1.email,
-        phone: step1.phone,
-        state: step1.state,
-        user_type: step1.role === 'Principal Broker' ? 'principal_broker' : 'agent',
-        brokerage_name: step1.brokerageName,
-        employing_broker_id: step1.employingBrokerId,
-        license_number: step1.licenseNumber,
+        full_name: form.fullName,
+        username: form.username.trim(),
+        contact_email: form.email,
+        phone: form.phone,
+        state: form.state,
+        user_type: form.role === 'Principal Broker' ? 'principal_broker' : 'agent',
+        brokerage_name: form.brokerageName,
+        employing_broker_id: form.employingBrokerId,
+        license_number: form.licenseNumber,
         verification_status: 'format_verified',
       });
 
-      // Move to step 2 FIRST, before any auth updates
+      // Go to payment
       setErrors({});
-      setStep(1);
       setSaving(false);
-
-      // Update auth metadata in background (do NOT await - prevents re-render race)
-      supabase.auth.updateUser({ data: {
-        full_name: step1.fullName,
-        name: step1.fullName,
-        username: step1.username.trim(),
-        user_type: step1.role === 'Principal Broker' ? 'principal_broker' : 'agent',
-        employing_broker_id: step1.employingBrokerId,
-        license_number: step1.licenseNumber,
-        verification_status: 'format_verified',
-      }}).catch(() => {});
-
-    } catch (e) {
-      console.error('Step 1 continue error:', e);
-      setSaving(false);
-    }
-  };
-
-  const handleStep2Continue = async () => {
-    if (!step2Valid || saving) return;
-    setSaving(true);
-
-    try {
-      await saveToProfile({
-        property_categories: step2.propertyCategories,
-        transaction_types: step2.transactionTypes,
-      });
+      setShowPayment(true);
 
       // Update auth metadata in background
       supabase.auth.updateUser({ data: {
-        property_categories: step2.propertyCategories,
-        transaction_types: step2.transactionTypes,
+        full_name: form.fullName,
+        name: form.fullName,
+        username: form.username.trim(),
+        user_type: form.role === 'Principal Broker' ? 'principal_broker' : 'agent',
+        employing_broker_id: form.employingBrokerId,
+        license_number: form.licenseNumber,
+        verification_status: 'format_verified',
       }}).catch(() => {});
 
-      setSaving(false);
-      setShowPayment(true);
     } catch (e) {
-      console.error('Step 2 continue error:', e);
+      console.error('Continue error:', e);
       setSaving(false);
     }
   };
 
-  const handleContinue = () => {
-    if (step === 0) handleStep1Continue();
-    else if (step === 1) handleStep2Continue();
-  };
-
-  const isBroker = step1.role === 'Principal Broker';
-  const headings = ['Professional Credentials', 'Your Practice'];
-  const subheadings = [
-    'Your license and brokerage details are required to verify your credentials.',
-    "This helps us personalize your experience and understand who's joining the platform.",
-  ];
+  const isBroker = form.role === 'Principal Broker';
 
   if (showPayment) {
     return (
       <PaymentScreen
         isBroker={isBroker}
-        employingBrokerNumber={step1.employingBrokerId}
+        employingBrokerNumber={form.employingBrokerId}
         onComplete={async (plan, rosterData) => {
-          await saveToProfile({ selected_plan: plan });
+          saveToProfile({ selected_plan: plan }).catch(() => {});
           supabase.auth.updateUser({ data: {
             selected_plan: plan,
             broker_sponsored: plan === 'broker_sponsored',
@@ -486,37 +288,75 @@ export default function Onboarding() {
               display: 'inline-block', marginBottom: '20px',
             }}>Join PropMatch</span>
             <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300, fontSize: 'clamp(26px, 3.5vw, 38px)', color: '#FFFFFF', lineHeight: 1.15, margin: '0 0 10px' }}>
-              {headings[step]}
+              Professional Credentials
             </h1>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.35)', margin: 0, lineHeight: 1.6 }}>
-              {subheadings[step]}
+              Your license and brokerage details are required to verify your credentials.
             </p>
           </div>
 
-          <StepIndicator current={step} />
-
-          <div style={{ marginBottom: '32px' }}>
-            {step === 0 && <Step1 data={step1} setData={setStep1} errors={errors} setErrors={setErrors} />}
-            {step === 1 && <Step2 data={step2} setData={setStep2} />}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px' }}>
+            <div>
+              <FieldLabel>Full Name</FieldLabel>
+              <StyledInput value={form.fullName} onChange={e => { setForm({ ...form, fullName: e.target.value }); clearError('fullName'); }} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <FieldLabel>Email</FieldLabel>
+                <StyledInput type="email" value={form.email} onChange={e => { setForm({ ...form, email: e.target.value }); clearError('email'); }} />
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '6px 0 0', lineHeight: 1.5 }}>
+                  This email will be visible to other agents for contact purposes.
+                </p>
+              </div>
+              <div>
+                <FieldLabel>Phone Number</FieldLabel>
+                <StyledInput type="tel" value={form.phone} onChange={e => { setForm({ ...form, phone: formatPhone(e.target.value) }); clearError('phone'); }} />
+              </div>
+            </div>
+            <div>
+              <FieldLabel>Username</FieldLabel>
+              <StyledInput value={form.username} error={errors.username} onChange={e => { setForm({ ...form, username: e.target.value }); clearError('username'); }} />
+            </div>
+            <div>
+              <FieldLabel>State</FieldLabel>
+              <StyledSelect value={form.state} onChange={e => { setForm({ ...form, state: e.target.value }); clearError('state'); }} options={US_STATES} placeholder="Select your state" />
+            </div>
+            <div>
+              <FieldLabel>Role</FieldLabel>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {['Agent', 'Principal Broker'].map(role => (
+                  <ToggleChip key={role} label={role} selected={form.role === role} onClick={() => { setForm({ ...form, role }); clearError('role'); }} />
+                ))}
+              </div>
+            </div>
+            <div>
+              <FieldLabel>Brokerage Name</FieldLabel>
+              <StyledInput value={form.brokerageName} onChange={e => { setForm({ ...form, brokerageName: e.target.value }); clearError('brokerageName'); }} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <FieldLabel>Employing Broker #</FieldLabel>
+                <StyledInput value={form.employingBrokerId} error={errors.employingBrokerId} onChange={e => { setForm({ ...form, employingBrokerId: e.target.value }); clearError('employingBrokerId'); }} />
+              </div>
+              <div>
+                <FieldLabel>License No.</FieldLabel>
+                <StyledInput value={form.licenseNumber} error={errors.licenseNumber} onChange={e => { setForm({ ...form, licenseNumber: e.target.value }); clearError('licenseNumber'); }} />
+              </div>
+            </div>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.2)', margin: 0, lineHeight: 1.6 }}>
+              PropMatch is exclusively available to licensed real estate professionals. Your credentials are required for verification.
+            </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            {step > 0 ? (
-              <button onClick={() => setStep(step - 1)}
-                style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}>
-                ← Back
-              </button>
-            ) : <div />}
-            <button onClick={handleContinue} disabled={!canContinue || saving}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={handleContinue} disabled={!allFilled || saving}
               style={{
                 fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500,
                 textTransform: 'uppercase', letterSpacing: '0.05em',
-                color: canContinue && !saving ? '#111827' : 'rgba(255,255,255,0.2)',
-                background: canContinue && !saving ? ACCENT : 'rgba(255,255,255,0.06)',
+                color: allFilled && !saving ? '#111827' : 'rgba(255,255,255,0.2)',
+                background: allFilled && !saving ? ACCENT : 'rgba(255,255,255,0.06)',
                 border: 'none', borderRadius: '6px', padding: '12px 28px',
-                cursor: canContinue && !saving ? 'pointer' : 'not-allowed', transition: 'all 0.2s ease',
+                cursor: allFilled && !saving ? 'pointer' : 'not-allowed', transition: 'all 0.2s ease',
               }}>
               {saving ? 'Saving...' : 'Continue →'}
             </button>
