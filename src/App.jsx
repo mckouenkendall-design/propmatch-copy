@@ -8,7 +8,6 @@ import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'r
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeProvider';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { supabase } from '@/api/supabaseClient';
 import Blog from './pages/Blog';
 import Careers from './pages/Careers';
@@ -31,7 +30,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
-const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
+const MainPage = mainPageKey ? Pages[mainPageKey] : () => <></>;
 
 const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
@@ -43,7 +42,6 @@ const AuthenticatedApp = () => {
   const [checkedProfile, setCheckedProfile] = React.useState(false);
   const location = useLocation();
 
-  // Check if user has a profile — reset when user identity changes
   React.useEffect(() => {
     setCheckedProfile(false);
     setHasProfile(null);
@@ -55,8 +53,12 @@ const AuthenticatedApp = () => {
       }
 
       try {
-        const profile = await supabase.from('profiles').select('user_email').eq('user_email', user.email).single();
-        setHasProfile(!!profile);
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('user_email')
+          .eq('user_email', user.email)
+          .single();
+        setHasProfile(!error && !!data);
       } catch (e) {
         setHasProfile(false);
       }
@@ -66,11 +68,10 @@ const AuthenticatedApp = () => {
     checkProfile();
   }, [user?.email]);
 
-  // Show loading spinner while checking auth or profile
   if (isLoadingAuth || !checkedProfile) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#0E1318' }}>
+        <div className="w-8 h-8 border-4 border-slate-600 border-t-[#00DBC5] rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -78,26 +79,21 @@ const AuthenticatedApp = () => {
   const pathname = location.pathname;
   const publicPages = ['/Blog', '/Careers', '/Affiliate', '/Privacy', '/Terms', '/AboutUs'];
 
-  // Apply routing rules only on non-public pages
   if (!publicPages.includes(pathname)) {
-    // Not logged in — redirect to landing
     if (!user && pathname !== '/') {
       return <Navigate to="/" replace />;
     }
 
-    // Logged in but no profile — redirect to onboarding
     if (user && hasProfile === false && pathname !== '/Onboarding') {
       return <Navigate to="/Onboarding" replace />;
     }
 
-    // Logged in with profile on landing — redirect to dashboard
     if (user && hasProfile && (pathname === '/' || pathname === '/Landing')) {
       const defaultPage = user.user_type === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
       return <Navigate to={defaultPage} replace />;
     }
   }
 
-  // Render the main app
   return (
     <Routes>
       <Route path="/" element={
@@ -123,53 +119,29 @@ const AuthenticatedApp = () => {
       <Route path="/Terms" element={<Terms />} />
       <Route path="/AboutUs" element={<AboutUs />} />
       <Route path="/Onboarding" element={<Onboarding />} />
-      <Route 
-        path="/Profile" 
-        element={
-          <LayoutWrapper currentPageName="Profile">
-            <Profile />
-          </LayoutWrapper>
-        } 
+      <Route
+        path="/Profile"
+        element={<LayoutWrapper currentPageName="Profile"><Profile /></LayoutWrapper>}
       />
-      <Route 
-        path="/Settings" 
-        element={
-          <LayoutWrapper currentPageName="Settings">
-            <Settings />
-          </LayoutWrapper>
-        } 
+      <Route
+        path="/Settings"
+        element={<LayoutWrapper currentPageName="Settings"><Settings /></LayoutWrapper>}
       />
-      <Route 
-        path="/BrokerDashboard" 
-        element={
-          <LayoutWrapper currentPageName="BrokerDashboard">
-            <BrokerDashboard />
-          </LayoutWrapper>
-        } 
+      <Route
+        path="/BrokerDashboard"
+        element={<LayoutWrapper currentPageName="BrokerDashboard"><BrokerDashboard /></LayoutWrapper>}
       />
-      <Route 
-        path="/Inventory" 
-        element={
-          <LayoutWrapper currentPageName="Inventory">
-            <Inventory />
-          </LayoutWrapper>
-        } 
+      <Route
+        path="/Inventory"
+        element={<LayoutWrapper currentPageName="Inventory"><Inventory /></LayoutWrapper>}
       />
-      <Route 
-        path="/Matches" 
-        element={
-          <LayoutWrapper currentPageName="Matches">
-            <Matches />
-          </LayoutWrapper>
-        } 
+      <Route
+        path="/Matches"
+        element={<LayoutWrapper currentPageName="Matches"><Matches /></LayoutWrapper>}
       />
-      <Route 
-        path="/Teams" 
-        element={
-          <LayoutWrapper currentPageName="Teams">
-            <Teams />
-          </LayoutWrapper>
-        } 
+      <Route
+        path="/Teams"
+        element={<LayoutWrapper currentPageName="Teams"><Teams /></LayoutWrapper>}
       />
       <Route path="/GroupDetail" element={<GroupDetail />} />
       <Route path="/NewsWire" element={<LayoutWrapper currentPageName="NewsWire"><NewsWire /></LayoutWrapper>} />
@@ -180,9 +152,7 @@ const AuthenticatedApp = () => {
   );
 };
 
-
 function App() {
-
   return (
     <AuthProvider>
       <ThemeProvider>
