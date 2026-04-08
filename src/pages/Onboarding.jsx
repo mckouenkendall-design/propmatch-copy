@@ -318,26 +318,20 @@ export default function Onboarding() {
     const email = user?.email;
     if (!email) return;
     try {
-      // Check if profile already exists
-      const { data: existing, error: fetchError } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('user_email', email)
-        .single();
+      // The proxy wrapper returns data directly, not {data, error}
+      // .single() throws on no match, so we use try/catch
+      let existingId = null;
+      try {
+        const existing = await supabase.from('user_profiles').select('id').eq('user_email', email).single();
+        if (existing && existing.id) existingId = existing.id;
+      } catch (e) {
+        // No existing profile found — that's fine, we'll insert
+      }
 
-      if (existing && existing.id) {
-        // Update existing profile
-        const { error: updateError } = await supabase
-          .from('user_profiles')
-          .update(profileData)
-          .eq('id', existing.id);
-        if (updateError) console.error('Failed to update profile:', updateError);
+      if (existingId) {
+        await supabase.from('user_profiles').update(profileData).eq('id', existingId);
       } else {
-        // Insert new profile
-        const { error: insertError } = await supabase
-          .from('user_profiles')
-          .insert({ user_email: email, ...profileData });
-        if (insertError) console.error('Failed to insert profile:', insertError);
+        await supabase.from('user_profiles').insert({ user_email: email, ...profileData });
       }
     } catch (e) {
       console.error('Failed to save UserProfile:', e);
@@ -356,13 +350,9 @@ export default function Onboarding() {
 
     // Check username uniqueness
     try {
-      const { data: existingUsers, error } = await supabase
-        .from('user_profiles')
-        .select('user_email')
-        .eq('username', step1.username.trim());
-      
-      // If we found users with this username and they're not us
-      if (!error && existingUsers && existingUsers.length > 0) {
+      const existingUsers = await supabase.from('user_profiles').select('user_email').eq('username', step1.username.trim());
+      // The proxy returns an array directly
+      if (existingUsers && Array.isArray(existingUsers) && existingUsers.length > 0) {
         const isOurOwn = existingUsers.every(u => u.user_email === user?.email);
         if (!isOurOwn) {
           setErrors({ username: 'This username is already taken. Please choose another.' });
@@ -373,7 +363,7 @@ export default function Onboarding() {
       // If check fails, let them continue
     }
 
-    // Save to user_profiles — this is our source of truth
+    // Save to user_profiles
     await saveToUserProfile({
       full_name: step1.fullName,
       username: step1.username.trim(),

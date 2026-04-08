@@ -13,13 +13,8 @@ export const AuthProvider = ({ children }) => {
   const fetchUserProfile = async (email) => {
     if (!email) return null;
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_email', email)
-        .single();
-      if (error || !data) return null;
-      return data;
+      const profile = await supabase.from('user_profiles').select('*').eq('user_email', email).single();
+      return profile || null;
     } catch (e) {
       return null;
     }
