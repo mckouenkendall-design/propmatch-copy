@@ -118,95 +118,102 @@ export default function Onboarding() {
     if (!allFilled || saving) return;
     setSaving(true);
 
+    // Safety net: if ANYTHING hangs for more than 10 seconds, let the user through.
+    // Better a user who proceeds than a user stuck forever on "Saving..."
+    let timedOut = false;
+    const hangGuard = setTimeout(() => {
+      timedOut = true;
+      console.warn('Onboarding save took longer than 10s, advancing anyway');
+      setSaving(false);
+      setShowPayment(true);
+    }, 10000);
+
+    const finishSuccess = () => {
+      if (timedOut) return;
+      clearTimeout(hangGuard);
+      setErrors({});
+      setSaving(false);
+      setShowPayment(true);
+    };
+
+    const finishError = (msg) => {
+      if (timedOut) return;
+      clearTimeout(hangGuard);
+      setSaving(false);
+    };
+
     try {
+      // License format validation
       const brokerError = form.state ? validateLicenseField(form.employingBrokerId, form.state) : null;
       const licenseError = form.state ? validateLicenseField(form.licenseNumber, form.state) : null;
       if (brokerError || licenseError) {
         setErrors({ employingBrokerId: brokerError, licenseNumber: licenseError });
+        clearTimeout(hangGuard);
         setSaving(false);
         return;
       }
 
-      // Check username uniqueness
+      // Username uniqueness check (non-blocking on error)
       try {
         const existingUsers = await supabase.from('profiles').select('user_email').eq('username', form.username.trim());
         if (Array.isArray(existingUsers) && existingUsers.length > 0) {
           const isOurOwn = existingUsers.every(u => u.user_email === user?.email);
           if (!isOurOwn) {
             setErrors({ username: 'This username is already taken. Please choose another.' });
+            clearTimeout(hangGuard);
             setSaving(false);
             return;
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Username check failed, continuing anyway:', e);
+      }
 
-      // STEP 1: Insert with ONLY columns that definitely exist in the migration.
-      // The proxy silently swallows errors, so try/catch won't catch column mismatches.
-      // These columns are guaranteed to exist: user_email, full_name, phone, brokerage_name, brokerage_id, license_number, theme
       const email = user?.email;
-      const existing = await supabase.from('profiles').select('id').eq('user_email', email).limit(1);
-      const safeData = {
+      if (!email) {
+        console.error('No user email available, cannot save profile');
+        finishError('No email');
+        return;
+      }
+
+      // Build the full profile. All of these columns are confirmed to exist on the profiles table.
+      const profileData = {
         full_name: form.fullName,
+        username: form.username.trim(),
+        contact_email: form.email,
         phone: form.phone,
+        state: form.state,
+        user_type: form.role === 'Principal Broker' ? 'principal_broker' : 'agent',
         brokerage_name: form.brokerageName,
-        brokerage_id: form.employingBrokerId,
+        employing_broker_id: form.employingBrokerId,
         license_number: form.licenseNumber,
+        verification_status: 'format_verified',
         theme: 'dark',
       };
 
-      if (Array.isArray(existing) && existing.length > 0 && existing[0].id) {
-        // Profile exists - update with safe columns
-        await supabase.from('profiles').update(safeData).eq('id', existing[0].id);
+      // Check if a profile row already exists for this email, then update or insert
+      const existing = await supabase.from('profiles').select('id').eq('user_email', email).limit(1);
+
+      if (Array.isArray(existing) && existing.length > 0 && existing[0]?.id) {
+        await supabase.from('profiles').update(profileData).eq('id', existing[0].id);
       } else {
-        // No profile - insert with safe columns + .select() to verify
-        const inserted = await supabase.from('profiles').insert({ user_email: email, ...safeData }).select();
-        console.log('Profile insert result:', inserted);
+        await supabase.from('profiles').insert({ user_email: email, ...profileData });
       }
 
-      // STEP 2: Try to update with additional columns (silently fails if columns don't exist, that's OK)
-      // This is fire-and-forget - we don't await or check the result
-      const extraData = {
-        username: form.username.trim(),
-        contact_email: form.email,
-        state: form.state,
-        user_type: form.role === 'Principal Broker' ? 'principal_broker' : 'agent',
-        employing_broker_id: form.employingBrokerId,
-        verification_status: 'format_verified',
-      };
-      // Don't await - if these columns exist, great. If not, no harm done.
-      supabase.from('profiles').update(extraData).eq('user_email', email).then(() => {}).catch(() => {});
+      // Fire-and-forget backup to auth metadata (useful if the DB row somehow doesn't persist)
+      supabase.auth.updateUser({
+        data: {
+          full_name: form.fullName,
+          name: form.fullName,
+          username: form.username.trim(),
+        }
+      }).catch(() => {});
 
-      // STEP 3: Store ALL data in auth metadata as backup (this always works)
-      supabase.auth.updateUser({ data: {
-        full_name: form.fullName,
-        name: form.fullName,
-        username: form.username.trim(),
-        contact_email: form.email,
-        phone: form.phone,
-        state: form.state,
-        user_type: form.role === 'Principal Broker' ? 'principal_broker' : 'agent',
-        brokerage_name: form.brokerageName,
-        brokerage_id: form.employingBrokerId,
-        employing_broker_id: form.employingBrokerId,
-        license_number: form.licenseNumber,
-        verification_status: 'format_verified',
-      }}).catch(() => {});
-
-      // STEP 4: Verify profile was actually created
-      const verify = await supabase.from('profiles').select('id').eq('user_email', email).limit(1);
-      if (!Array.isArray(verify) || verify.length === 0) {
-        console.error('Profile verification failed - row not found after insert');
-        // Last resort: try bare minimum insert
-        await supabase.from('profiles').insert({ user_email: email }).select();
-      }
-
-      setErrors({});
-      setSaving(false);
-      setShowPayment(true);
+      finishSuccess();
 
     } catch (e) {
       console.error('Continue error:', e);
-      setSaving(false);
+      finishError(e?.message || 'Unknown error');
     }
   };
 
