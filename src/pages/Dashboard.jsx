@@ -28,12 +28,17 @@ export default function Dashboard() {
   const {user}=useAuth();
   const navigate=useNavigate();
 
-  const {data:myListings=[]}      =useQuery({queryKey:['cc-my-listings'],     queryFn:async()=> { const { data } = await supabase.from('listings').select('*').eq('created_by', user?.email); return data; }, enabled: !!user?.email});
-  const {data:myRequirements=[]}  =useQuery({queryKey:['cc-my-reqs'],         queryFn:async()=> { const { data } = await supabase.from('requirements').select('*').eq('created_by', user?.email); return data; }, enabled: !!user?.email});
-  const {data:allListings=[]}     =useQuery({queryKey:['cc-all-listings'],    queryFn:async()=> { const { data } = await supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(80); return data; }});
-  const {data:allRequirements=[]} =useQuery({queryKey:['cc-all-reqs'],        queryFn:async()=> { const { data } = await supabase.from('requirements').select('*').order('created_at', { ascending: false }).limit(80); return data; }});
-  const {data:myProfile}          =useQuery({queryKey:['cc-profile'],         queryFn:async()=> { const { data } = await supabase.from('profiles').select('*').eq('user_email', user?.email); return data?.[0]; }, enabled: !!user?.email});
-  const {data:notifications=[]}   =useQuery({queryKey:['cc-notifications'],   queryFn:async()=> { const { data } = await supabase.from('notifications').select('*').eq('user_email', user?.email); return data; }, enabled: !!user?.email});
+  // NOTE: Your supabaseClient.js has a proxy wrapper that auto-unwraps Supabase responses,
+  // so queries return the data array directly. Do NOT destructure { data, error } here.
+  const asArray = (r) => Array.isArray(r) ? r : [];
+  const firstOrNull = (r) => Array.isArray(r) && r.length > 0 ? r[0] : null;
+
+  const {data:myListings=[]}      =useQuery({queryKey:['cc-my-listings'],     queryFn:async()=> asArray(await supabase.from('listings').select('*').eq('created_by', user?.email)), enabled: !!user?.email});
+  const {data:myRequirements=[]}  =useQuery({queryKey:['cc-my-reqs'],         queryFn:async()=> asArray(await supabase.from('requirements').select('*').eq('created_by', user?.email)), enabled: !!user?.email});
+  const {data:allListings=[]}     =useQuery({queryKey:['cc-all-listings'],    queryFn:async()=> asArray(await supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(80))});
+  const {data:allRequirements=[]} =useQuery({queryKey:['cc-all-reqs'],        queryFn:async()=> asArray(await supabase.from('requirements').select('*').order('created_at', { ascending: false }).limit(80))});
+  const {data:myProfile}          =useQuery({queryKey:['cc-profile'],         queryFn:async()=> firstOrNull(await supabase.from('profiles').select('*').eq('user_email', user?.email)), enabled: !!user?.email});
+  const {data:notifications=[]}   =useQuery({queryKey:['cc-notifications'],   queryFn:async()=> asArray(await supabase.from('notifications').select('*').eq('user_email', user?.email)), enabled: !!user?.email});
 
   const firstName=myProfile?.full_name?.split(' ')[0]||user?.email?.split('@')[0]||'there';
 
