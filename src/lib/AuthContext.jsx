@@ -14,10 +14,17 @@ export const AuthProvider = ({ children }) => {
   const fetchUserProfile = async (email) => {
     if (!email) return null;
     try {
-      const profiles = await supabase.from('profiles').select('*').eq('user_email', email).limit(1);
+      // Race the profile query against a 5-second timeout.
+      // If the query hangs (which can happen on fresh page loads right after sign-in
+      // because of the proxy wrapper interacting with session restoration),
+      // return null instead of blocking auth forever.
+      const profilePromise = supabase.from('profiles').select('*').eq('user_email', email).limit(1);
+      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 5000));
+      const profiles = await Promise.race([profilePromise, timeoutPromise]);
       if (Array.isArray(profiles) && profiles.length > 0) return profiles[0];
       return null;
     } catch (e) {
+      console.warn('fetchUserProfile error:', e);
       return null;
     }
   };
@@ -90,8 +97,12 @@ export const AuthProvider = ({ children }) => {
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!isMounted) return;
-      if (session?.user) {
-        await loadUser(session.user);
+      try {
+        if (session?.user) {
+          await loadUser(session.user);
+        }
+      } catch (e) {
+        console.warn('loadUser failed on initial session:', e);
       }
       initialLoadDone.current = true;
       if (isMounted) setIsLoadingAuth(false);
@@ -111,7 +122,11 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setIsAuthenticated(false);
       } else if (event === 'SIGNED_IN' && session?.user) {
-        await loadUser(session.user);
+        try {
+          await loadUser(session.user);
+        } catch (e) {
+          console.warn('loadUser failed on SIGNED_IN:', e);
+        }
         if (isMounted && !initialLoadDone.current) {
           initialLoadDone.current = true;
           setIsLoadingAuth(false);
