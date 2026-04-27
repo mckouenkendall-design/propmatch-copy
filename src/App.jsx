@@ -38,44 +38,12 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 
 const AuthenticatedApp = () => {
   const { user, isLoadingAuth } = useAuth();
-  const [hasProfile, setHasProfile] = React.useState(null);
-  const [checkedProfile, setCheckedProfile] = React.useState(false);
   const location = useLocation();
 
-  React.useEffect(() => {
-    setCheckedProfile(false);
-    setHasProfile(null);
-
-    const checkProfile = async () => {
-      if (!user?.email) {
-        setCheckedProfile(true);
-        return;
-      }
-
-      try {
-        const profiles = await supabase.from('profiles').select('user_email').eq('user_email', user.email).limit(1);
-        setHasProfile(Array.isArray(profiles) && profiles.length > 0);
-      } catch (e) {
-        // On error, assume profile exists (optimistic) to avoid wrong redirects
-        setHasProfile(true);
-      }
-      setCheckedProfile(true);
-    };
-
-    checkProfile();
-
-    // Safety timeout - if profile check hangs, assume profile exists and let them through
-    const timeout = setTimeout(() => {
-      if (!checkedProfile) {
-        setHasProfile(user?.email ? true : false);
-        setCheckedProfile(true);
-      }
-    }, 8000);
-
-    return () => clearTimeout(timeout);
-  }, [user?.email]);
-
-  if (isLoadingAuth || !checkedProfile) {
+  // While AuthContext is loading the user + profile, show one spinner.
+  // No second profile query — AuthContext already has it. _profileId tells us
+  // whether a profile row exists.
+  if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#0E1318' }}>
         <div className="w-8 h-8 border-4 border-slate-600 border-t-[#00DBC5] rounded-full animate-spin"></div>
@@ -83,6 +51,7 @@ const AuthenticatedApp = () => {
     );
   }
 
+  const hasProfile = !!user?._profileId;
   const pathname = location.pathname;
   const publicPages = ['/Blog', '/Careers', '/Affiliate', '/Privacy', '/Terms', '/AboutUs'];
 
@@ -91,7 +60,7 @@ const AuthenticatedApp = () => {
       return <Navigate to="/" replace />;
     }
 
-    if (user && hasProfile === false && pathname !== '/Onboarding') {
+    if (user && !hasProfile && pathname !== '/Onboarding') {
       return <Navigate to="/Onboarding" replace />;
     }
 
