@@ -61,17 +61,25 @@ const wrapBuilder = (builder) => {
 }
 
 // Top-level proxy: intercept .from() to return a wrapped builder.
-// Everything else (.auth, .storage, .channel, etc) passes through untouched.
+// auth, storage, channel, realtime, and everything else go DIRECTLY to the real
+// client untouched - this prevents proxy-induced binding issues with internal state.
 export const supabase = new Proxy(supabaseClient, {
   get(target, prop, receiver) {
     if (prop === 'from') {
       return (table) => wrapBuilder(target.from(table))
     }
-    const value = Reflect.get(target, prop, receiver)
+    // For everything else, return directly from the real client.
+    // Don't go through Reflect.get with the proxy as receiver - that can bind `this`
+    // wrong on internal methods.
+    const value = target[prop]
     if (typeof value === 'function') return value.bind(target)
     return value
   },
 })
+
+// Direct access to the raw client for places that need it (auth, etc.)
+// without any proxy interference.
+export const rawSupabase = supabaseClient
 
 export const uploadFile = async (file) => {
   const fileName = `${Date.now()}-${file.name}`
