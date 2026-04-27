@@ -144,8 +144,10 @@ export default function Inventory() {
   const qc = useQueryClient();
   const location = useLocation();
 
-  const { data: listings     = [], isLoading: loadL } = useQuery({ queryKey:['inv-listings'],     queryFn:async() => { const { data } = await supabase.from('listings').select('*').order('created_at', { ascending: false }); return data; } });
-  const { data: requirements = [], isLoading: loadR } = useQuery({ queryKey:['inv-requirements'], queryFn:async() => { const { data } = await supabase.from('requirements').select('*').order('created_at', { ascending: false }); return data; } });
+  // Proxy wrapper returns the array directly; don't destructure { data }.
+  const _arr = (r) => Array.isArray(r) ? r : [];
+  const { data: listings     = [], isLoading: loadL } = useQuery({ queryKey:['inv-listings'],     queryFn:async() => _arr(await supabase.from('listings').select('*').order('created_at', { ascending: false })) });
+  const { data: requirements = [], isLoading: loadR } = useQuery({ queryKey:['inv-requirements'], queryFn:async() => _arr(await supabase.from('requirements').select('*').order('created_at', { ascending: false })) });
 
   useEffect(()=>{
     const id = location.state?.openPostId;

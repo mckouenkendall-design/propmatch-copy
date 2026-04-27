@@ -286,9 +286,10 @@ export default function CommentSection({ postId, postType = 'group_post', groupI
   const { data: allComments = [], isLoading } = useQuery({
     queryKey: ['comments', postId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('group_comments').select('*').eq('post_id', postId);
-      if (error) throw error;
-      return data.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+      // Proxy wrapper returns the array directly; don't destructure { data, error }.
+      const r = await supabase.from('group_comments').select('*').eq('post_id', postId);
+      const arr = Array.isArray(r) ? r : [];
+      return arr.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
     },
     enabled: expanded,
     refetchInterval: expanded ? 10000 : false,

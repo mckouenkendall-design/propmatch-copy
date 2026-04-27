@@ -47,8 +47,10 @@ export default function Insights() {
   const {user}=useAuth();
   const navigate=useNavigate();
 
-  const {data:myListings=[]}     =useQuery({queryKey:['ins-listings'],  queryFn:async()=> { const { data } = await supabase.from('listings').select('*').eq('created_by', user?.email); return data; }});
-  const {data:myRequirements=[]} =useQuery({queryKey:['ins-reqs'],      queryFn:async()=> { const { data } = await supabase.from('requirements').select('*').eq('created_by', user?.email); return data; }});
+  // Proxy wrapper returns the array directly; don't destructure { data }.
+  const _arr = (r) => Array.isArray(r) ? r : [];
+  const {data:myListings=[]}     =useQuery({queryKey:['ins-listings'],  queryFn:async()=> _arr(await supabase.from('listings').select('*').eq('created_by', user?.email))});
+  const {data:myRequirements=[]} =useQuery({queryKey:['ins-reqs'],      queryFn:async()=> _arr(await supabase.from('requirements').select('*').eq('created_by', user?.email))});
 
   const allPosts=[...myListings,...myRequirements];
   const views  =allPosts.reduce((s,p)=>s+(p.view_count ||0),0);
