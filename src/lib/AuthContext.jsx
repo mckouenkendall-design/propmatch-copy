@@ -14,13 +14,10 @@ export const AuthProvider = ({ children }) => {
   const fetchUserProfile = async (email) => {
     if (!email) return null;
     try {
-      // Race the profile query against a 5-second timeout.
-      // If the query hangs (which can happen on fresh page loads right after sign-in
-      // because of the proxy wrapper interacting with session restoration),
-      // return null instead of blocking auth forever.
-      const profilePromise = supabase.from('profiles').select('*').eq('user_email', email).limit(1);
-      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 5000));
-      const profiles = await Promise.race([profilePromise, timeoutPromise]);
+      // Now that the proxy wrapper bug is fixed, this query no longer hangs.
+      // The .race timeout has been removed - if there's ever a real network
+      // problem, the 15s top-level safety timeout in the main effect catches it.
+      const profiles = await supabase.from('profiles').select('*').eq('user_email', email).limit(1);
       if (Array.isArray(profiles) && profiles.length > 0) return profiles[0];
       return null;
     } catch (e) {

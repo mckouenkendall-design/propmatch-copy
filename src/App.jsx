@@ -40,10 +40,48 @@ const AuthenticatedApp = () => {
   const { user, isLoadingAuth } = useAuth();
   const location = useLocation();
 
-  // While AuthContext is loading the user + profile, show one spinner.
-  // No second profile query — AuthContext already has it. _profileId tells us
-  // whether a profile row exists.
-  if (isLoadingAuth) {
+  // Fallback: if AuthContext has a user but couldn't load _profileId for some reason,
+  // do ONE direct DB check before deciding to redirect them to Onboarding.
+  // This prevents infinite Dashboard <-> Onboarding loops when AuthContext's
+  // profile fetch returns null for any transient reason.
+  const [fallbackHasProfile, setFallbackHasProfile] = React.useState(null);
+  const [fallbackChecked, setFallbackChecked] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    setFallbackChecked(false);
+    setFallbackHasProfile(null);
+
+    if (!user?.email) {
+      setFallbackChecked(true);
+      return;
+    }
+    // If AuthContext already has _profileId, skip the fallback check.
+    if (user._profileId) {
+      setFallbackHasProfile(true);
+      setFallbackChecked(true);
+      return;
+    }
+
+    // AuthContext has user but no profile loaded - do one direct check.
+    (async () => {
+      try {
+        const rows = await supabase.from('profiles').select('id').eq('user_email', user.email).limit(1);
+        if (cancelled) return;
+        setFallbackHasProfile(Array.isArray(rows) && rows.length > 0);
+      } catch (e) {
+        if (cancelled) return;
+        // On error, assume profile exists to avoid wrong-way redirects.
+        setFallbackHasProfile(true);
+      }
+      if (!cancelled) setFallbackChecked(true);
+    })();
+
+    return () => { cancelled = true; };
+  }, [user?.email, user?._profileId]);
+
+  // Wait for both auth and the fallback check before deciding routing.
+  if (isLoadingAuth || (user?.email && !fallbackChecked)) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#0E1318' }}>
         <div className="w-8 h-8 border-4 border-slate-600 border-t-[#00DBC5] rounded-full animate-spin"></div>
@@ -51,7 +89,7 @@ const AuthenticatedApp = () => {
     );
   }
 
-  const hasProfile = !!user?._profileId;
+  const hasProfile = !!user?._profileId || fallbackHasProfile === true;
   const pathname = location.pathname;
   const publicPages = ['/Blog', '/Careers', '/Affiliate', '/Privacy', '/Terms', '/AboutUs'];
 
@@ -64,7 +102,7 @@ const AuthenticatedApp = () => {
       return <Navigate to="/Onboarding" replace />;
     }
 
-    if (user && hasProfile && (pathname === '/' || pathname === '/Landing')) {
+    if (user && hasProfile && (pathname === '/' || pathname === '/Landing' || pathname === '/Onboarding')) {
       const defaultPage = user.user_type === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
       return <Navigate to={defaultPage} replace />;
     }
