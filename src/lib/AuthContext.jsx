@@ -75,36 +75,50 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     let isMounted = true;
+    const TAG = '[AUTH_DIAG]';
+    console.log(TAG, 'effect started at', new Date().toISOString());
 
     const loadUser = async (authUser) => {
+      console.log(TAG, 'loadUser: fetching profile for', authUser?.email);
+      const t0 = Date.now();
       const profile = await fetchUserProfile(authUser.email);
+      console.log(TAG, 'loadUser: profile fetch took', Date.now() - t0, 'ms, profile:', !!profile);
       if (!isMounted) return;
       const mergedUser = buildMergedUser(authUser, profile);
       setUser(mergedUser);
       setIsAuthenticated(true);
+      console.log(TAG, 'loadUser: user set');
     };
 
     // Safety timeout - never show loading spinner for more than 15 seconds
     const timeout = setTimeout(() => {
       if (isMounted && isLoadingAuth) {
-        console.warn('Auth loading timed out');
+        console.warn(TAG, 'TIMEOUT FIRED after 15s');
         setIsLoadingAuth(false);
       }
     }, 15000);
 
+    console.log(TAG, 'about to call getSession()');
+    const sessionStart = Date.now();
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log(TAG, 'getSession resolved after', Date.now() - sessionStart, 'ms, hasSession:', !!session);
       if (!isMounted) return;
       try {
         if (session?.user) {
           await loadUser(session.user);
+        } else {
+          console.log(TAG, 'no session - user is null');
         }
       } catch (e) {
-        console.warn('loadUser failed on initial session:', e);
+        console.warn(TAG, 'loadUser failed on initial session:', e);
       }
       initialLoadDone.current = true;
-      if (isMounted) setIsLoadingAuth(false);
+      if (isMounted) {
+        console.log(TAG, 'setting isLoadingAuth to false (initial path)');
+        setIsLoadingAuth(false);
+      }
     }).catch((error) => {
-      console.error('Session check failed:', error);
+      console.error(TAG, 'getSession rejected after', Date.now() - sessionStart, 'ms, error:', error);
       initialLoadDone.current = true;
       if (isMounted) setIsLoadingAuth(false);
     });
