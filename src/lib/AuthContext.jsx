@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
-import { supabase } from '@/api/supabaseClient';
+import { supabase, rawSupabase } from '@/api/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -14,14 +14,22 @@ export const AuthProvider = ({ children }) => {
   const fetchUserProfile = async (email) => {
     if (!email) return null;
     try {
-      // Now that the proxy wrapper bug is fixed, this query no longer hangs.
-      // The .race timeout has been removed - if there's ever a real network
-      // problem, the 15s top-level safety timeout in the main effect catches it.
-      const profiles = await supabase.from('profiles').select('*').eq('user_email', email).limit(1);
-      if (Array.isArray(profiles) && profiles.length > 0) return profiles[0];
+      // CRITICAL: Use rawSupabase (real client, no proxy wrapper) here.
+      // The proxy wrapper has been hanging on this exact query during fresh
+      // page reloads. Standard { data, error } destructure as per Supabase docs.
+      const { data, error } = await rawSupabase
+        .from('profiles')
+        .select('*')
+        .eq('user_email', email)
+        .limit(1);
+      if (error) {
+        console.warn('fetchUserProfile error:', error);
+        return null;
+      }
+      if (Array.isArray(data) && data.length > 0) return data[0];
       return null;
     } catch (e) {
-      console.warn('fetchUserProfile error:', e);
+      console.warn('fetchUserProfile exception:', e);
       return null;
     }
   };

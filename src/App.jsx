@@ -8,7 +8,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'r
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeProvider';
-import { supabase } from '@/api/supabaseClient';
+import { supabase, rawSupabase } from '@/api/supabaseClient';
 import Blog from './pages/Blog';
 import Careers from './pages/Careers';
 import Affiliate from './pages/Affiliate';
@@ -66,9 +66,14 @@ const AuthenticatedApp = () => {
     // AuthContext has user but no profile loaded - do one direct check.
     (async () => {
       try {
-        const rows = await supabase.from('profiles').select('id').eq('user_email', user.email).limit(1);
+        const { data: rows, error } = await rawSupabase.from('profiles').select('id').eq('user_email', user.email).limit(1);
         if (cancelled) return;
-        setFallbackHasProfile(Array.isArray(rows) && rows.length > 0);
+        if (error) {
+          // On error, assume profile exists to avoid wrong-way redirects.
+          setFallbackHasProfile(true);
+        } else {
+          setFallbackHasProfile(Array.isArray(rows) && rows.length > 0);
+        }
       } catch (e) {
         if (cancelled) return;
         // On error, assume profile exists to avoid wrong-way redirects.
