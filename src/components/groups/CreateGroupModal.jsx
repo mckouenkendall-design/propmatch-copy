@@ -44,12 +44,22 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
   const mutation = useMutation({
     mutationFn: async (data) => {
       const user = await supabase.auth.getUser().then(r => r.data.user);
-      const group = await supabase.from('groups').insert({ ...data, member_count: 1, status: 'active' }).select();
-      // Auto-join creator as admin
+
+      // .select() returns an array, not a single object. Get the first row.
+      const inserted = await supabase.from('groups').insert({ ...data, member_count: 1, status: 'active' }).select();
+      const group = Array.isArray(inserted) ? inserted[0] : inserted;
+      if (!group?.id) throw new Error('Failed to create group');
+
+      // Auto-join creator as admin. Pull display name from user_metadata or email.
+      const displayName = user?.user_metadata?.full_name
+        || user?.user_metadata?.name
+        || user?.email
+        || 'Member';
+
       await supabase.from('group_members').insert({
         group_id: group.id,
         user_email: user.email,
-        user_name: user.full_name,
+        user_name: displayName,
         role: 'admin',
         status: 'active',
       }).select();

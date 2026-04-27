@@ -295,7 +295,7 @@ function DiscussionPostCard({ post, currentUser, authorProfile, profileMap, grou
             </div>
             <div>
               <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:600, color:'white', margin:0 }}>{displayName}</p>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', margin:0 }}>{format(new Date(post.created_date), 'MMM d, yyyy · h:mm a')}</p>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.35)', margin:0 }}>{(() => { try { return format(new Date(post.created_at || post.created_date), 'MMM d, yyyy · h:mm a'); } catch { return ''; } })()}</p>
             </div>
           </div>
           {isAuthor && (

@@ -185,7 +185,7 @@ function CommentThread({ comment, allComments, currentUser, profileMap, postId, 
             {profile?.username && <span style={{ color:'rgba(255,255,255,0.35)', fontWeight:400, marginLeft:'5px' }}>@{profile.username}</span>}
           </span>
           <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>{timeAgo(comment.created_date)}</span>
+            <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>{timeAgo(comment.created_at || comment.created_date)}</span>
             {isMe && (
               <button onClick={() => deleteComment.mutate(comment.id)}
                 style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.2)' }}
@@ -246,7 +246,7 @@ function CommentThread({ comment, allComments, currentUser, profileMap, postId, 
                         {rProfile?.username && <span style={{ color:'rgba(255,255,255,0.35)', fontWeight:400, marginLeft:'5px' }}>@{rProfile.username}</span>}
                       </span>
                       <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>{timeAgo(reply.created_date)}</span>
+                        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>{timeAgo(reply.created_at || reply.created_date)}</span>
                         {rIsMe && (
                           <button onClick={() => deleteComment.mutate(reply.id)}
                             style={{ background:'transparent', border:'none', cursor:'pointer', padding:0, fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.2)' }}
@@ -289,7 +289,7 @@ export default function CommentSection({ postId, postType = 'group_post', groupI
       // Proxy wrapper returns the array directly; don't destructure { data, error }.
       const r = await supabase.from('group_comments').select('*').eq('post_id', postId);
       const arr = Array.isArray(r) ? r : [];
-      return arr.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+      return arr.sort((a, b) => new Date(a.created_at || a.created_date || 0) - new Date(b.created_at || b.created_date || 0));
     },
     enabled: expanded,
     refetchInterval: expanded ? 10000 : false,
