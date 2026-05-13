@@ -10,16 +10,13 @@ export default function NavigationTracker() {
     const { Pages, mainPage } = pagesConfig;
     const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 
-    // Redirect to Dashboard on page refresh
-    useEffect(() => {
-        const handlePerformanceNavigation = () => {
-            if (performance.navigation.type === 1 && isAuthenticated) {
-                navigate('/Dashboard', { replace: true });
-            }
-        };
-
-        handlePerformanceNavigation();
-    }, [isAuthenticated, navigate]);
+    // Note: A previous "redirect to Dashboard on page refresh" effect lived here.
+    // It used performance.navigation (deprecated API) which in modern Chrome
+    // returns type=1 on every route change, not just F5 refreshes. Combined with
+    // [isAuthenticated, navigate] as deps, it fired on every auth state change,
+    // causing instant snap-back to Dashboard whenever the user navigated.
+    // The intended behavior (land on Dashboard after a fresh reload) is already
+    // handled correctly by App.jsx's routing logic.
 
     // Log user activity when navigating to a page
     useEffect(() => {
