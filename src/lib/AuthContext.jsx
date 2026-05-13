@@ -87,15 +87,35 @@ export const AuthProvider = ({ children }) => {
     console.log(TAG, 'effect started at', new Date().toISOString());
 
     const loadUser = async (authUser) => {
-      console.log(TAG, 'loadUser: fetching profile for', authUser?.email);
-      const t0 = Date.now();
-      const profile = await fetchUserProfile(authUser.email);
-      console.log(TAG, 'loadUser: profile fetch took', Date.now() - t0, 'ms, profile:', !!profile);
+      // PHASE 1: Set user IMMEDIATELY from auth metadata. No DB query.
+      // The profile fetch was deadlocking when called inline here - Supabase JS
+      // gets stuck waiting on auth state to settle, but auth state is waiting
+      // for this loadUser to finish. NotificationBell works because it fires
+      // AFTER user is set. We mirror that pattern.
+      console.log(TAG, 'loadUser: phase 1 - setting user from auth metadata');
       if (!isMounted) return;
-      const mergedUser = buildMergedUser(authUser, profile);
-      setUser(mergedUser);
+      const stubUser = buildMergedUser(authUser, null);
+      stubUser._profileLoading = true;
+      setUser(stubUser);
       setIsAuthenticated(true);
-      console.log(TAG, 'loadUser: user set');
+      console.log(TAG, 'loadUser: phase 1 done');
+
+      // PHASE 2: Fetch profile in background after React renders. setTimeout(0)
+      // defers to next event loop tick so the auth state machine fully settles.
+      setTimeout(async () => {
+        if (!isMounted) return;
+        console.log(TAG, 'loadUser: phase 2 - fetching profile in background');
+        const t0 = Date.now();
+        try {
+          const profile = await fetchUserProfile(authUser.email);
+          console.log(TAG, 'loadUser: phase 2 profile fetch took', Date.now() - t0, 'ms, profile:', !!profile);
+          if (!isMounted) return;
+          const mergedUser = buildMergedUser(authUser, profile);
+          setUser(mergedUser);
+        } catch (e) {
+          console.warn(TAG, 'phase 2 profile fetch failed:', e);
+        }
+      }, 0);
     };
 
     // Safety timeout - never show loading spinner for more than 15 seconds

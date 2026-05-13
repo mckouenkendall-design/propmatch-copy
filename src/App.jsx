@@ -62,6 +62,14 @@ const AuthenticatedApp = () => {
       setFallbackChecked(true);
       return;
     }
+    // If AuthContext is fetching profile in background, assume it exists and
+    // don't redirect to Onboarding. The profile will arrive momentarily and
+    // _profileId will be set, triggering this effect to re-run with the truth.
+    if (user._profileLoading) {
+      setFallbackHasProfile(true);
+      setFallbackChecked(true);
+      return;
+    }
 
     // AuthContext has user but no profile loaded - do one direct check.
     (async () => {
