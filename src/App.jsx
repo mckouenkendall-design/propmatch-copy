@@ -102,7 +102,14 @@ const AuthenticatedApp = () => {
     );
   }
 
-  const hasProfile = !!user?._profileId || fallbackHasProfile === true;
+  // hasProfile: true if AuthContext has _profileId, OR if it's currently loading
+  // the profile in the background (Phase 2), OR if the fallback check found one.
+  // The _profileLoading branch is critical - without it, the first render after
+  // reload sees fallbackHasProfile=null and would wrongly redirect to Onboarding.
+  const hasProfile =
+    !!user?._profileId ||
+    user?._profileLoading === true ||
+    fallbackHasProfile === true;
   const pathname = location.pathname;
   const publicPages = ['/Blog', '/Careers', '/Affiliate', '/Privacy', '/Terms', '/AboutUs'];
 
