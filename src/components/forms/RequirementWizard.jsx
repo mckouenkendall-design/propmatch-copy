@@ -105,12 +105,14 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
       const errors = validate(data);
       if (errors.length > 0) throw new Error(errors.join('\n'));
       const submitData = prepareSubmitData(data);
+      console.log('[SAVE_DIAG] requirement submitData:', JSON.stringify(submitData, null, 2));
       let requirement;
       if (editMode && data.id) {
         requirement = await supabase.from('requirements').update(submitData).eq('id', data.id).select();
       } else {
         requirement = await supabase.from('requirements').insert(submitData).select();
       }
+      console.log('[SAVE_DIAG] requirement result:', JSON.stringify(requirement, null, 2));
       const requirementRow = Array.isArray(requirement) ? requirement[0] : requirement;
       const postId   = requirementRow?.id || data.id;
       const postType = 'requirement';

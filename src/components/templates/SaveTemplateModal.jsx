@@ -141,8 +141,8 @@ export default function SaveTemplateModal({ formData, templateType, onClose }) {
                   style={{ padding: '9px 18px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>
                   Cancel
                 </button>
-                <button onClick={handleSave} disabled={!name.trim() || saving}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 20px', background: name.trim() ? ACCENT : 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: name.trim() ? '#111827' : 'rgba(255,255,255,0.3)', cursor: name.trim() ? 'pointer' : 'not-allowed' }}>
+                <button onClick={handleSave} disabled={!name.trim() || !(selectedFolder || (creatingFolder && newFolderName.trim())) || saving}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 20px', background: (name.trim() && (selectedFolder || (creatingFolder && newFolderName.trim()))) ? ACCENT : 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '8px', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: (name.trim() && (selectedFolder || (creatingFolder && newFolderName.trim()))) ? '#111827' : 'rgba(255,255,255,0.3)', cursor: (name.trim() && (selectedFolder || (creatingFolder && newFolderName.trim()))) ? 'pointer' : 'not-allowed' }}>
                   {saving && <Loader2 style={{ width: '13px', height: '13px', animation: 'spin 1s linear infinite' }} />}
                   {saving ? 'Saving…' : 'Save Template'}
                 </button>

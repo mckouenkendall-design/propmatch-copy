@@ -135,12 +135,15 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
   const saveMutation = useMutation({
     mutationFn: async ({ data, sendMode, groupId }) => {
       const submitData = prepareSubmitData(data);
+      console.log('[SAVE_DIAG] editMode:', editMode, 'data.id:', data.id);
+      console.log('[SAVE_DIAG] submitData being sent:', JSON.stringify(submitData, null, 2));
       let listing;
       if (editMode && data.id) {
         listing = await supabase.from('listings').update(submitData).eq('id', data.id).select();
       } else {
         listing = await supabase.from('listings').insert(submitData).select();
       }
+      console.log('[SAVE_DIAG] result from supabase:', JSON.stringify(listing, null, 2));
       // .select() returns an array through the proxy wrapper - grab the first row.
       const listingRow = Array.isArray(listing) ? listing[0] : listing;
       const postId   = listingRow?.id || data.id;
