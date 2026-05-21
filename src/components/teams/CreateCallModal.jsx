@@ -22,11 +22,20 @@ export default function CreateCallModal({ onClose }) {
   const [scheduledTime, setScheduledTime] = useState('');
 
   const createMutation = useMutation({
-    mutationFn: (data) => supabase.from('team_calls').insert(data).select(),
+    mutationFn: async (data) => {
+      console.log('[SAVE_DIAG] team call payload:', JSON.stringify(data, null, 2));
+      const result = await supabase.from('team_calls').insert(data).select();
+      console.log('[SAVE_DIAG] team call result:', JSON.stringify(result, null, 2));
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teamCalls'] });
       toast({ title: 'Team call scheduled successfully' });
       onClose();
+    },
+    onError: (err) => {
+      console.error('[SAVE_DIAG] team call error:', err);
+      alert('Could not schedule call: ' + (err?.message || 'Unknown error'));
     },
   });
 

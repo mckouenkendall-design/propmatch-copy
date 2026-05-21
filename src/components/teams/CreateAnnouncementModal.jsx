@@ -19,11 +19,20 @@ export default function CreateAnnouncementModal({ onClose }) {
   const [content, setContent] = useState('');
 
   const createMutation = useMutation({
-    mutationFn: (data) => supabase.from('team_announcements').insert(data).select(),
+    mutationFn: async (data) => {
+      console.log('[SAVE_DIAG] announcement payload:', JSON.stringify(data, null, 2));
+      const result = await supabase.from('team_announcements').insert(data).select();
+      console.log('[SAVE_DIAG] announcement result:', JSON.stringify(result, null, 2));
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teamAnnouncements'] });
       toast({ title: 'Announcement posted successfully' });
       onClose();
+    },
+    onError: (err) => {
+      console.error('[SAVE_DIAG] announcement error:', err);
+      alert('Could not post announcement: ' + (err?.message || 'Unknown error'));
     },
   });
 
