@@ -83,8 +83,6 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     let isMounted = true;
-    const TAG = '[AUTH_DIAG]';
-    console.log(TAG, 'effect started at', new Date().toISOString());
 
     const loadUser = async (authUser) => {
       // PHASE 1: Set user IMMEDIATELY from auth metadata. No DB query.
@@ -92,28 +90,24 @@ export const AuthProvider = ({ children }) => {
       // gets stuck waiting on auth state to settle, but auth state is waiting
       // for this loadUser to finish. NotificationBell works because it fires
       // AFTER user is set. We mirror that pattern.
-      console.log(TAG, 'loadUser: phase 1 - setting user from auth metadata');
       if (!isMounted) return;
       const stubUser = buildMergedUser(authUser, null);
       stubUser._profileLoading = true;
       setUser(stubUser);
       setIsAuthenticated(true);
-      console.log(TAG, 'loadUser: phase 1 done');
 
       // PHASE 2: Fetch profile in background after React renders. setTimeout(0)
       // defers to next event loop tick so the auth state machine fully settles.
       setTimeout(async () => {
         if (!isMounted) return;
-        console.log(TAG, 'loadUser: phase 2 - fetching profile in background');
         const t0 = Date.now();
         try {
           const profile = await fetchUserProfile(authUser.email);
-          console.log(TAG, 'loadUser: phase 2 profile fetch took', Date.now() - t0, 'ms, profile:', !!profile);
           if (!isMounted) return;
           const mergedUser = buildMergedUser(authUser, profile);
           setUser(mergedUser);
         } catch (e) {
-          console.warn(TAG, 'phase 2 profile fetch failed:', e);
+          console.warn('phase 2 profile fetch failed:', e);
         }
       }, 0);
     };
@@ -121,32 +115,26 @@ export const AuthProvider = ({ children }) => {
     // Safety timeout - never show loading spinner for more than 15 seconds
     const timeout = setTimeout(() => {
       if (isMounted && isLoadingAuth) {
-        console.warn(TAG, 'TIMEOUT FIRED after 15s');
+        console.warn('Auth loading timed out');
         setIsLoadingAuth(false);
       }
     }, 15000);
 
-    console.log(TAG, 'about to call getSession()');
-    const sessionStart = Date.now();
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log(TAG, 'getSession resolved after', Date.now() - sessionStart, 'ms, hasSession:', !!session);
       if (!isMounted) return;
       try {
         if (session?.user) {
           await loadUser(session.user);
-        } else {
-          console.log(TAG, 'no session - user is null');
         }
       } catch (e) {
-        console.warn(TAG, 'loadUser failed on initial session:', e);
+        console.warn('loadUser failed on initial session:', e);
       }
       initialLoadDone.current = true;
       if (isMounted) {
-        console.log(TAG, 'setting isLoadingAuth to false (initial path)');
         setIsLoadingAuth(false);
       }
     }).catch((error) => {
-      console.error(TAG, 'getSession rejected after', Date.now() - sessionStart, 'ms, error:', error);
+      console.error('Session check failed:', error);
       initialLoadDone.current = true;
       if (isMounted) setIsLoadingAuth(false);
     });

@@ -113,36 +113,21 @@ const AuthenticatedApp = () => {
   const pathname = location.pathname;
   const publicPages = ['/Blog', '/Careers', '/Affiliate', '/Privacy', '/Terms', '/AboutUs'];
 
-  console.log('[ROUTE_DIAG]', {
-    pathname,
-    hasUser: !!user,
-    hasProfile,
-    _profileId: user?._profileId,
-    _profileLoading: user?._profileLoading,
-    fallbackChecked,
-    fallbackHasProfile,
-    isLoadingAuth,
-  });
-
   if (!publicPages.includes(pathname)) {
     if (!user && pathname !== '/') {
-      console.log('[ROUTE_DIAG] redirect to / (no user)');
       return <Navigate to="/" replace />;
     }
 
     if (user && !hasProfile && pathname !== '/Onboarding') {
-      console.log('[ROUTE_DIAG] redirect to /Onboarding (no profile)');
       return <Navigate to="/Onboarding" replace />;
     }
 
     if (user && hasProfile && (pathname === '/' || pathname === '/Landing' || pathname === '/Onboarding')) {
       const defaultPage = user.user_type === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
-      console.log('[ROUTE_DIAG] redirect to', defaultPage, '(on landing/onboarding)');
       return <Navigate to={defaultPage} replace />;
     }
   }
 
-  console.log('[ROUTE_DIAG] rendering page for', pathname);
 
   return (
     <Routes>

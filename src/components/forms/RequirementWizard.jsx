@@ -84,9 +84,15 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     const submitData = { ...data };
     submitData.title = generateTitle(data);
     submitData.property_details = JSON.stringify(data.property_details || {});
-    submitData.area_map_data = JSON.stringify(data.mapAreas || []);
     submitData.created_by = data.created_by || user?.email;
     delete submitData.mapAreas;
+    // area_map_data column does not exist on the requirements table - writing it
+    // made Postgres reject the whole insert (this was why requirements never posted).
+    delete submitData.area_map_data;
+    // Strip DB-managed columns so updates/inserts don't fail.
+    delete submitData.id;
+    delete submitData.created_at;
+    delete submitData.updated_at;
     ['min_price', 'max_price', 'min_size_sqft', 'max_size_sqft', 'min_bedrooms', 'min_bathrooms'].forEach(f => {
       if (submitData[f] === '' || submitData[f] == null) delete submitData[f];
       else submitData[f] = parseFloat(submitData[f]);
@@ -105,7 +111,8 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
       } else {
         requirement = await supabase.from('requirements').insert(submitData).select();
       }
-      const postId   = requirement?.id || data.id;
+      const requirementRow = Array.isArray(requirement) ? requirement[0] : requirement;
+      const postId   = requirementRow?.id || data.id;
       const postType = 'requirement';
       const myEmail  = user?.email || '';
       const myName   = user?.full_name || user?.email || 'Agent';

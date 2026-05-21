@@ -34,6 +34,7 @@ export default function SaveTemplateModal({ formData, templateType, onClose }) {
     setSaving(true);
     try {
       await supabase.from('templates').insert({
+        created_by: user?.email,
         name: name.trim(),
         folder,
         template_type: templateType,

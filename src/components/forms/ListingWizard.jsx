@@ -80,6 +80,16 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       created_by: data.created_by || user?.email,
     };
 
+    // Strip DB-managed columns that must never be written in an insert or update.
+    // Writing id/created_at/counters causes Postgres to reject the whole operation,
+    // which the proxy wrapper swallows silently (this was why edits never saved).
+    delete submitData.id;
+    delete submitData.created_at;
+    delete submitData.updated_at;
+    delete submitData.view_count;
+    delete submitData.save_count;
+    delete submitData.share_count;
+
     // Auto-default lease_type so Supabase never sees a blank required field
     const isLease = submitData.transaction_type === 'lease' || submitData.transaction_type === 'sublease';
     if (isLease && !submitData.lease_type) {
@@ -131,7 +141,9 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       } else {
         listing = await supabase.from('listings').insert(submitData).select();
       }
-      const postId   = listing?.id || data.id;
+      // .select() returns an array through the proxy wrapper - grab the first row.
+      const listingRow = Array.isArray(listing) ? listing[0] : listing;
+      const postId   = listingRow?.id || data.id;
       const postType = 'listing';
       const myEmail  = user?.email || data.contact_agent_email || '';
       const myName   = data.contact_agent_name  || user?.full_name || user?.email || 'Agent';
