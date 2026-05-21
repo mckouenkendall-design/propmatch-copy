@@ -73,22 +73,28 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
   });
 
   const prepareSubmitData = (data) => {
-    const submitData = {
-      ...data,
-      property_details: JSON.stringify(data.property_details || {}),
-      title: buildTitle(data),
-      created_by: data.created_by || user?.email,
-    };
+    // Build the payload from an explicit allow-list of REAL listings table columns.
+    // Spreading ...data used to sweep in stray fields like postType, which Postgres
+    // rejects, killing the whole save silently. An allow-list makes that impossible.
+    const LISTINGS_COLUMNS = [
+      'created_by', 'title', 'property_category', 'property_type', 'transaction_type',
+      'lease_type', 'lease_sub', 'utilities_included', 'price_period', 'address',
+      'city', 'state', 'zip_code', 'price', 'price_is_tbd', 'size_sqft',
+      'property_details', 'description', 'amenities', 'status',
+      'contact_agent_name', 'contact_agent_email', 'contact_agent_phone',
+      'company_name', 'brokerage_id', 'visibility', 'visibility_groups',
+      'visibility_recipient_email', 'allow_direct_contact', 'photos',
+    ];
 
-    // Strip DB-managed columns that must never be written in an insert or update.
-    // Writing id/created_at/counters causes Postgres to reject the whole operation,
-    // which the proxy wrapper swallows silently (this was why edits never saved).
-    delete submitData.id;
-    delete submitData.created_at;
-    delete submitData.updated_at;
-    delete submitData.view_count;
-    delete submitData.save_count;
-    delete submitData.share_count;
+    const submitData = {};
+    LISTINGS_COLUMNS.forEach(col => {
+      if (data[col] !== undefined) submitData[col] = data[col];
+    });
+
+    // Computed / overridden fields
+    submitData.created_by = data.created_by || user?.email;
+    submitData.title = buildTitle(data);
+    submitData.property_details = JSON.stringify(data.property_details || {});
 
     // Auto-default lease_type so Supabase never sees a blank required field
     const isLease = submitData.transaction_type === 'lease' || submitData.transaction_type === 'sublease';
@@ -96,8 +102,7 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       submitData.lease_type = 'full_service_gross';
     }
 
-    // Strip any field that is null, undefined, or empty string
-    // Supabase rejects null/undefined on string fields like lease_sub
+    // Strip optional string fields that are null/undefined/empty
     const optionalStringFields = ['lease_sub', 'lease_type', 'address', 'description', 'visibility_groups', 'visibility_recipient_email'];
     optionalStringFields.forEach(f => {
       if (submitData[f] === null || submitData[f] === undefined || submitData[f] === '') {
@@ -129,21 +134,23 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       else submitData[f] = parseFloat(submitData[f]);
     });
 
+    // brokerage_id empty string -> drop it (column is nullable)
+    if (submitData.brokerage_id === '' || submitData.brokerage_id === undefined) {
+      delete submitData.brokerage_id;
+    }
+
     return submitData;
   };
 
   const saveMutation = useMutation({
     mutationFn: async ({ data, sendMode, groupId }) => {
       const submitData = prepareSubmitData(data);
-      console.log('[SAVE_DIAG] editMode:', editMode, 'data.id:', data.id);
-      console.log('[SAVE_DIAG] submitData being sent:', JSON.stringify(submitData, null, 2));
       let listing;
       if (editMode && data.id) {
         listing = await supabase.from('listings').update(submitData).eq('id', data.id).select();
       } else {
         listing = await supabase.from('listings').insert(submitData).select();
       }
-      console.log('[SAVE_DIAG] result from supabase:', JSON.stringify(listing, null, 2));
       // .select() returns an array through the proxy wrapper - grab the first row.
       const listingRow = Array.isArray(listing) ? listing[0] : listing;
       const postId   = listingRow?.id || data.id;

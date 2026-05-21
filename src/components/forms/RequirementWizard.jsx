@@ -81,22 +81,37 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   });
 
   const prepareSubmitData = (data) => {
-    const submitData = { ...data };
+    // Explicit allow-list of REAL requirements table columns. Spreading ...data
+    // swept in fields like timeline, property_category, mapAreas, postType which
+    // don't exist as columns and made Postgres reject the whole insert silently.
+    const REQUIREMENTS_COLUMNS = [
+      'created_by', 'title', 'property_type', 'transaction_type', 'cities',
+      'max_price', 'min_price', 'price_period', 'min_size_sqft', 'max_size_sqft',
+      'min_bedrooms', 'min_bathrooms', 'required_amenities', 'notes', 'status',
+      'visibility', 'visibility_groups', 'brokerage_id', 'visibility_recipient_email',
+      'property_details', 'contact_agent_name', 'contact_agent_email',
+      'contact_agent_phone', 'company_name',
+    ];
+
+    const submitData = {};
+    REQUIREMENTS_COLUMNS.forEach(col => {
+      if (data[col] !== undefined) submitData[col] = data[col];
+    });
+
     submitData.title = generateTitle(data);
     submitData.property_details = JSON.stringify(data.property_details || {});
     submitData.created_by = data.created_by || user?.email;
-    delete submitData.mapAreas;
-    // area_map_data column does not exist on the requirements table - writing it
-    // made Postgres reject the whole insert (this was why requirements never posted).
-    delete submitData.area_map_data;
-    // Strip DB-managed columns so updates/inserts don't fail.
-    delete submitData.id;
-    delete submitData.created_at;
-    delete submitData.updated_at;
+
     ['min_price', 'max_price', 'min_size_sqft', 'max_size_sqft', 'min_bedrooms', 'min_bathrooms'].forEach(f => {
       if (submitData[f] === '' || submitData[f] == null) delete submitData[f];
       else submitData[f] = parseFloat(submitData[f]);
     });
+
+    // brokerage_id empty string -> drop it (nullable column)
+    if (submitData.brokerage_id === '' || submitData.brokerage_id === undefined) {
+      delete submitData.brokerage_id;
+    }
+
     return submitData;
   };
 
@@ -105,14 +120,12 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
       const errors = validate(data);
       if (errors.length > 0) throw new Error(errors.join('\n'));
       const submitData = prepareSubmitData(data);
-      console.log('[SAVE_DIAG] requirement submitData:', JSON.stringify(submitData, null, 2));
       let requirement;
       if (editMode && data.id) {
         requirement = await supabase.from('requirements').update(submitData).eq('id', data.id).select();
       } else {
         requirement = await supabase.from('requirements').insert(submitData).select();
       }
-      console.log('[SAVE_DIAG] requirement result:', JSON.stringify(requirement, null, 2));
       const requirementRow = Array.isArray(requirement) ? requirement[0] : requirement;
       const postId   = requirementRow?.id || data.id;
       const postType = 'requirement';
