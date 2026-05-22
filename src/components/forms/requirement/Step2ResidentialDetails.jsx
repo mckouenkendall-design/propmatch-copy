@@ -236,7 +236,6 @@ function SingleFamilyRequirement({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 3" details={details} setDetail={setDetail} />
         <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 2" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Min Sqft" field="min_sqft" placeholder="e.g. 1500" details={details} setDetail={setDetail} />
         <MinField label="Min Garage Spaces" field="min_garage" placeholder="e.g. 2" details={details} setDetail={setDetail} />
         <MinField label="Min Lot Size (sqft)" field="min_lot_sqft" placeholder="e.g. 6000" details={details} setDetail={setDetail} />
       </div>
@@ -426,7 +425,6 @@ function ManufacturedRequirement({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
         <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Min Size (sqft)" field="min_sqft" placeholder="e.g. 900" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="Land Ownership Required" value={details.land_ownership_req || ''} onChange={v => setDetail('land_ownership_req', v)}
         options={[{ value: 'owned', label: 'Land Owned' }, { value: 'leased', label: 'Lot Lease OK' }, { value: 'any', label: 'Either' }]} />
