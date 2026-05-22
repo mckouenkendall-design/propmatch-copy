@@ -23,9 +23,7 @@ export default function CreateCallModal({ onClose }) {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      console.log('[SAVE_DIAG] team call payload:', JSON.stringify(data, null, 2));
       const result = await supabase.from('team_calls').insert(data).select();
-      console.log('[SAVE_DIAG] team call result:', JSON.stringify(result, null, 2));
       return result;
     },
     onSuccess: () => {
@@ -34,7 +32,6 @@ export default function CreateCallModal({ onClose }) {
       onClose();
     },
     onError: (err) => {
-      console.error('[SAVE_DIAG] team call error:', err);
       alert('Could not schedule call: ' + (err?.message || 'Unknown error'));
     },
   });
