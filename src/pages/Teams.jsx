@@ -11,6 +11,17 @@ import CreateAnnouncementModal from '@/components/teams/CreateAnnouncementModal'
 import CreateCallModal from '@/components/teams/CreateCallModal';
 import ShareResourceModal from '@/components/teams/ShareResourceModal';
 import { format } from 'date-fns';
+
+// Safe date formatter - never throws on invalid/missing dates.
+// Several Team records use created_at (not created_date), and some rows may have
+// null/malformed dates. Passing those to date-fns format() throws "Invalid time
+// value" and crashes the whole page. This guards against that.
+const safeFormat = (value, fmt) => {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return '';
+  try { return format(d, fmt); } catch { return ''; }
+};
 import { calculateMatchScore, getScoreColor, getScoreLabel } from '@/utils/matchScore';
 import FloatingMessageCompose from '@/components/messages/FloatingMessageCompose';
 import AgentContactModal from '@/components/shared/AgentContactModal';
@@ -231,7 +242,7 @@ export default function Teams() {
   const sortedAnnouncements = [...announcements].sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
-    return new Date(b.created_date) - new Date(a.created_date);
+    return new Date(b.created_at || b.created_date || 0) - new Date(a.created_at || a.created_date || 0);
   });
 
   const { data: calls = [] } = useQuery({
@@ -405,7 +416,7 @@ export default function Teams() {
                         <CardTitle style={{ color: 'white', fontSize: '18px' }}>{announcement.title}</CardTitle>
                       </div>
                       <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: 0 }}>
-                        Posted by {announcement.author_name} • {format(new Date(announcement.created_date), 'MMM d, yyyy')}
+                        Posted by {announcement.author_name} • {safeFormat(announcement.created_at || announcement.created_date, 'MMM d, yyyy')}
                       </p>
                     </div>
                   </div>
@@ -439,7 +450,7 @@ export default function Teams() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                     <Calendar style={{ width: '14px', height: '14px', color: ACCENT }} />
                     <span style={{ color: ACCENT, fontSize: '14px', fontWeight: 500 }}>
-                      {format(new Date(call.scheduled_date), 'MMM d, yyyy h:mm a')}
+                      {safeFormat(call.scheduled_date, 'MMM d, yyyy h:mm a')}
                     </span>
                   </div>
                 </CardHeader>
