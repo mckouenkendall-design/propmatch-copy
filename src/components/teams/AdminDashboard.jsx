@@ -2,13 +2,22 @@ import React, { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { formatListingPrice } from '@/utils/matchScore';
 import {
   Users, UserPlus, ChevronLeft, Mail, Calendar, Clock, FileText, Search,
   Briefcase, X, Trash2, CheckCircle, Globe, Lock, Loader2
 } from 'lucide-react';
 
 const ACCENT = '#00DBC5';
+
+// Self-contained price formatter (copied from Teams.jsx, not exported there)
+function formatListingPrice(listing) {
+  const price = parseFloat(listing.price);
+  if (!price || isNaN(price)) return null;
+  const fmt = price % 1 === 0 ? price.toLocaleString() : price.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const tx = listing.transaction_type;
+  const unit = tx === 'lease' || tx === 'sublease' ? '/SF/yr' : tx === 'rent' ? '/mo' : '';
+  return `$${fmt}${unit}`;
+}
 
 // One-word subscription label from selected_plan
 const planLabel = (plan) => {
