@@ -205,7 +205,7 @@ export default function ResourceLibrary() {
 
       {/* Items - card grid */}
       {!isLoading && (folders.length > 0 || files.length > 0) && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
           {[...folders, ...files].map(item => (
             <div
               key={item.id}
@@ -219,10 +219,10 @@ export default function ResourceLibrary() {
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '12px',
-                padding: '28px 24px',
+                padding: '20px',
                 cursor: 'pointer',
                 transition: 'background 0.15s, border-color 0.15s',
-                minHeight: '220px',
+                minHeight: '140px',
                 display: 'flex',
                 flexDirection: 'column',
               }}
@@ -266,8 +266,8 @@ export default function ResourceLibrary() {
 
               {/* Icon */}
               {item.is_folder
-                ? <Folder style={{ width: '52px', height: '52px', color: ACCENT, marginBottom: '16px' }} />
-                : <FileText style={{ width: '52px', height: '52px', color: 'rgba(255,255,255,0.55)', marginBottom: '16px' }} />}
+                ? <Folder style={{ width: '40px', height: '40px', color: ACCENT, marginBottom: '12px' }} />
+                : <FileText style={{ width: '40px', height: '40px', color: 'rgba(255,255,255,0.55)', marginBottom: '12px' }} />}
 
               {/* Name (or rename input) */}
               {renamingId === item.id ? (
