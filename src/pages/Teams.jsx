@@ -9,7 +9,7 @@ import { Users, Megaphone, Video, FolderOpen, Building2, Plus, Globe, Lock, Cale
 import { useNavigate } from 'react-router-dom';
 import CreateAnnouncementModal from '@/components/teams/CreateAnnouncementModal';
 import CreateCallModal from '@/components/teams/CreateCallModal';
-import ShareResourceModal from '@/components/teams/ShareResourceModal';
+import ResourceLibrary from '@/components/teams/ResourceLibrary';
 import { format } from 'date-fns';
 
 // Safe date formatter - never throws on invalid/missing dates.
@@ -183,7 +183,6 @@ export default function Teams() {
   const [viewingAgent, setViewingAgent]           = useState(null);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [showCallModal, setShowCallModal]         = useState(false);
-  const [showResourceModal, setShowResourceModal] = useState(false);
   const isManagingBroker = user?.role === 'admin' && user?.selected_plan === 'brokerage';
 
   const { data: allListings = [] } = useQuery({
@@ -254,19 +253,6 @@ export default function Teams() {
   const upcomingCalls = calls
     .filter(call => call.status === 'upcoming')
     .sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date));
-
-  const { data: resources = [] } = useQuery({
-    queryKey: ['teamResources', user?.brokerage_id],
-    queryFn: () => supabase.from('team_resources').select('*').eq('brokerage_id', user?.brokerage_id),
-    enabled: !!user?.brokerage_id,
-  });
-
-  const groupedResources = resources.reduce((acc, resource) => {
-    const cat = resource.category || 'general';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(resource);
-    return acc;
-  }, {});
 
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '48px 24px' }}>
@@ -468,52 +454,7 @@ export default function Teams() {
         </TabsContent>
 
         <TabsContent value="resources">
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-            <Button onClick={() => setShowResourceModal(true)} style={{ background: ACCENT, color: '#111827', gap: '8px' }}>
-              <Plus style={{ width: '16px', height: '16px' }} />
-              Share Resource
-            </Button>
-          </div>
-          {Object.keys(groupedResources).length === 0 ? (
-            <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <CardContent style={{ padding: '48px', textAlign: 'center' }}>
-                <p style={{ color: 'rgba(255,255,255,0.5)' }}>No resources shared yet</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {Object.entries(groupedResources).map(([category, items]) => (
-                <div key={category}>
-                  <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 500, color: 'white', marginBottom: '12px', textTransform: 'capitalize' }}>
-                    {category.replace(/_/g, ' ')}
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
-                    {items.map(resource => (
-                      <Card key={resource.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <CardHeader>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                            <FileText style={{ width: '20px', height: '20px', color: ACCENT, flexShrink: 0, marginTop: '2px' }} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <CardTitle style={{ color: 'white', fontSize: '14px', marginBottom: '4px' }}>{resource.title}</CardTitle>
-                              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{resource.resource_type}</p>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          {resource.description && <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '8px' }}>{resource.description}</p>}
-                          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '12px' }}>Shared by {resource.uploaded_by_name}</p>
-                          <Button onClick={() => window.open(resource.file_url, '_blank')} variant="outline" size="sm" style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', width: '100%', gap: '6px' }}>
-                            <Download style={{ width: '14px', height: '14px' }} />
-                            Download
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <ResourceLibrary />
         </TabsContent>
 
         {isManagingBroker && (
@@ -570,7 +511,6 @@ export default function Teams() {
 
       {showAnnouncementModal && <CreateAnnouncementModal onClose={() => setShowAnnouncementModal(false)} />}
       {showCallModal && <CreateCallModal onClose={() => setShowCallModal(false)} />}
-      {showResourceModal && <ShareResourceModal onClose={() => setShowResourceModal(false)} />}
     </div>
   );
 }
