@@ -123,7 +123,7 @@ const AuthenticatedApp = () => {
     }
 
     if (user && hasProfile && (pathname === '/' || pathname === '/Landing' || pathname === '/Onboarding')) {
-      const defaultPage = user.user_type === 'principal_broker' ? '/BrokerDashboard' : '/Dashboard';
+      const defaultPage = '/Dashboard';
       return <Navigate to={defaultPage} replace />;
     }
   }

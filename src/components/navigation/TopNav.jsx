@@ -91,7 +91,7 @@ export default function TopNav() {
           ))}
           {isBrokerageMember && (
             <Link
-              to={isBroker ? '/BrokerDashboard' : '/Teams'}
+              to="/Teams"
               style={navLinkStyle}
               onMouseEnter={e => { e.currentTarget.style.color = ACCENT; e.currentTarget.style.background = 'rgba(0,219,197,0.08)'; }}
               onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.background = 'transparent'; }}
