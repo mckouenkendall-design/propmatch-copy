@@ -205,7 +205,7 @@ export default function ResourceLibrary() {
 
       {/* Items - card grid */}
       {!isLoading && (folders.length > 0 || files.length > 0) && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
           {[...folders, ...files].map(item => (
             <div
               key={item.id}
@@ -219,10 +219,10 @@ export default function ResourceLibrary() {
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '12px',
-                padding: '16px 14px',
+                padding: '28px 24px',
                 cursor: 'pointer',
                 transition: 'background 0.15s, border-color 0.15s',
-                minHeight: '110px',
+                minHeight: '220px',
                 display: 'flex',
                 flexDirection: 'column',
               }}
@@ -266,8 +266,8 @@ export default function ResourceLibrary() {
 
               {/* Icon */}
               {item.is_folder
-                ? <Folder style={{ width: '34px', height: '34px', color: ACCENT, marginBottom: '10px' }} />
-                : <FileText style={{ width: '34px', height: '34px', color: 'rgba(255,255,255,0.55)', marginBottom: '10px' }} />}
+                ? <Folder style={{ width: '52px', height: '52px', color: ACCENT, marginBottom: '16px' }} />
+                : <FileText style={{ width: '52px', height: '52px', color: 'rgba(255,255,255,0.55)', marginBottom: '16px' }} />}
 
               {/* Name (or rename input) */}
               {renamingId === item.id ? (
@@ -281,11 +281,11 @@ export default function ResourceLibrary() {
                 />
               ) : (
                 <>
-                  <div style={{ color: 'white', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500, lineHeight: '1.3', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <div style={{ color: 'white', fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 500, lineHeight: '1.3', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {item.title}
                   </div>
                   {item.description && (
-                    <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter', sans-serif", fontSize: '11px', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter', sans-serif", fontSize: '13px', marginTop: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</div>
                   )}
                 </>
               )}
