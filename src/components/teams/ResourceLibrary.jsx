@@ -203,54 +203,42 @@ export default function ResourceLibrary() {
         </div>
       )}
 
-      {/* Items */}
+      {/* Items - card grid */}
       {!isLoading && (folders.length > 0 || files.length > 0) && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '12px' }}>
           {[...folders, ...files].map(item => (
-            <div key={item.id} style={rowStyle} onClick={(e) => e.stopPropagation()}>
-              {/* Icon + name (folders are double-clickable to open) */}
-              <div
-                onDoubleClick={() => item.is_folder && enterFolder(item)}
-                onClick={() => !item.is_folder && item.file_url && window.open(item.file_url, '_blank')}
-                style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0, cursor: item.is_folder ? 'pointer' : (item.file_url ? 'pointer' : 'default') }}
-              >
-                {item.is_folder
-                  ? <Folder style={{ width: '20px', height: '20px', color: ACCENT, flexShrink: 0 }} />
-                  : <FileText style={{ width: '20px', height: '20px', color: 'rgba(255,255,255,0.6)', flexShrink: 0 }} />}
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  {renamingId === item.id ? (
-                    <input
-                      autoFocus
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && renameValue.trim()) renameMutation.mutate({ id: item.id, title: renameValue.trim() }); if (e.key === 'Escape') { setRenamingId(null); setRenameValue(''); } }}
-                      style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '4px 8px', color: 'white', fontFamily: "'Inter', sans-serif", fontSize: '14px', outline: 'none' }}
-                    />
-                  ) : (
-                    <>
-                      <div style={{ color: 'white', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {item.title}
-                        {!item.is_folder && item.file_url && <ExternalLink style={{ width: '12px', height: '12px', color: 'rgba(255,255,255,0.3)' }} />}
-                      </div>
-                      {item.description && (
-                        <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter', sans-serif", fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Per-item menu */}
-              <div style={{ position: 'relative', flexShrink: 0 }}>
+            <div
+              key={item.id}
+              onClick={() => {
+                if (renamingId === item.id) return;
+                if (item.is_folder) enterFolder(item);
+                else if (item.file_url) window.open(item.file_url, '_blank');
+              }}
+              style={{
+                position: 'relative',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '12px',
+                padding: '16px 14px',
+                cursor: 'pointer',
+                transition: 'background 0.15s, border-color 0.15s',
+                minHeight: '110px',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(0,219,197,0.3)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+            >
+              {/* Three-dot menu, top-right corner */}
+              <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
                 <button
                   onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === item.id ? null : item.id); }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'rgba(255,255,255,0.5)', display: 'flex' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: 'rgba(255,255,255,0.45)', display: 'flex', borderRadius: '4px' }}
                 >
-                  <MoreVertical style={{ width: '18px', height: '18px' }} />
+                  <MoreVertical style={{ width: '16px', height: '16px' }} />
                 </button>
                 {menuOpenId === item.id && (
-                  <div style={{ position: 'absolute', top: '30px', right: 0, background: '#1a2127', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '6px', minWidth: '150px', zIndex: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }} onClick={(e) => e.stopPropagation()}>
+                  <div style={{ position: 'absolute', top: '26px', right: 0, background: '#1a2127', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '6px', minWidth: '150px', zIndex: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }} onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => { setMenuOpenId(null); setRenamingId(item.id); setRenameValue(item.title || ''); }}
                       style={menuItemStyle}
@@ -275,6 +263,32 @@ export default function ResourceLibrary() {
                   </div>
                 )}
               </div>
+
+              {/* Icon */}
+              {item.is_folder
+                ? <Folder style={{ width: '34px', height: '34px', color: ACCENT, marginBottom: '10px' }} />
+                : <FileText style={{ width: '34px', height: '34px', color: 'rgba(255,255,255,0.55)', marginBottom: '10px' }} />}
+
+              {/* Name (or rename input) */}
+              {renamingId === item.id ? (
+                <input
+                  autoFocus
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && renameValue.trim()) renameMutation.mutate({ id: item.id, title: renameValue.trim() }); if (e.key === 'Escape') { setRenamingId(null); setRenameValue(''); } }}
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '4px 8px', color: 'white', fontFamily: "'Inter', sans-serif", fontSize: '13px', outline: 'none' }}
+                />
+              ) : (
+                <>
+                  <div style={{ color: 'white', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 500, lineHeight: '1.3', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {item.title}
+                  </div>
+                  {item.description && (
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter', sans-serif", fontSize: '11px', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</div>
+                  )}
+                </>
+              )}
             </div>
           ))}
         </div>
