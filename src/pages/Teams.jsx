@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import CreateAnnouncementModal from '@/components/teams/CreateAnnouncementModal';
 import CreateCallModal from '@/components/teams/CreateCallModal';
 import ResourceLibrary from '@/components/teams/ResourceLibrary';
+import AdminDashboard from '@/components/teams/AdminDashboard';
 import { format } from 'date-fns';
 
 // Safe date formatter - never throws on invalid/missing dates.
@@ -183,7 +184,7 @@ export default function Teams() {
   const [viewingAgent, setViewingAgent]           = useState(null);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [showCallModal, setShowCallModal]         = useState(false);
-  const isManagingBroker = user?.role === 'admin' && user?.selected_plan === 'brokerage';
+  const isManagingBroker = user?.user_type === 'principal_broker' && user?.selected_plan === 'brokerage';
 
   const { data: allListings = [] } = useQuery({
     queryKey: ['allListings'],
@@ -459,15 +460,7 @@ export default function Teams() {
 
         {isManagingBroker && (
           <TabsContent value="admin">
-            <Card style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <CardHeader><CardTitle style={{ color: 'white' }}>Admin Dashboard</CardTitle></CardHeader>
-              <CardContent>
-                <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '16px' }}>Access your broker admin tools</p>
-                <Button onClick={() => navigate('/BrokerDashboard')} style={{ background: ACCENT, color: '#111827' }}>
-                  Go to Broker Dashboard
-                </Button>
-              </CardContent>
-            </Card>
+            <AdminDashboard />
           </TabsContent>
         )}
       </Tabs>
