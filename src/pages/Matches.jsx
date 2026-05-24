@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/api/supabaseClient';
@@ -1049,11 +1049,14 @@ export default function Matches() {
   const savedCount=savedHook.saved.length;
   const openModal=(myPost,matchResult,matchIndex)=>{const groups=myPost.postType==='listing'?listingGroups:requirementGroups;const group=groups.find(g=>g.myPost.id===myPost.id);setModalState({myPost,matches:group?.matches||[matchResult],matchIndex});};
 
+  const autoOpenedRef = useRef(false);
   useEffect(()=>{
     if(!openPostId)return;
+    if(autoOpenedRef.current)return;
     const allGroups=[...listingGroups,...requirementGroups];
     const group=allGroups.find(g=>g.myPost.id===openPostId);
     if(group&&group.matches.length>0){
+      autoOpenedRef.current=true;
       setActiveTab(group.myPost.postType==='listing'?'listings':'requirements');
       setModalState({myPost:group.myPost,matches:group.matches,matchIndex:0});
       window.history.replaceState({},'');
