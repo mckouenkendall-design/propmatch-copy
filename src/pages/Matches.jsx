@@ -938,27 +938,7 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
       onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor=`${myColor}35`;}}
       onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.08)';}}>
 
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'12px', marginBottom:'14px' }}>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'3px' }}><div style={{ width:'6px',height:'6px',borderRadius:'50%',background:myColor }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:myColor }}>Your {myIsListing?'Listing':'Requirement'}</span></div>
-          <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'15px',fontWeight:500,color:'white',margin:'0 0 2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{myPost.title}</h3>
-          <p style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:0 }}>{priceStr(myPost,myIsListing)}{myIsListing&&myPost.size_sqft?` · ${parseFloat(myPost.size_sqft).toLocaleString()} SF`:''}{myPost.city?` · ${myPost.city}`:''}</p>
-        </div>
-        <div style={{ display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'5px',flexShrink:0 }}>
-          <div style={{ display:'flex',alignItems:'center',gap:'5px',padding:'4px 10px',background:`${myColor}10`,border:`1px solid ${myColor}25`,borderRadius:'20px' }}>
-            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:700,color:myColor }}>{matches.length}</span>
-            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.35)' }}>{matches.length===1?'match':'matches'}</span>
-          </div>
-          {matches.length > 1 && (
-            <div style={{ display:'flex',alignItems:'center',gap:'7px' }}>
-              {strong>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:ACCENT,boxShadow:`0 0 5px ${ACCENT}80` }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:ACCENT }}>{strong}</span></div>}
-              {good>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:'#F59E0B' }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'#F59E0B' }}>{good}</span></div>}
-              {fair>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:'rgba(255,255,255,0.25)' }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'rgba(255,255,255,0.4)' }}>{fair}</span></div>}
-            </div>
-          )}
-        </div>
-      </div>
-      <div style={{ height:'1px',background:'rgba(255,255,255,0.06)',margin:'0 0 14px' }}/>
+      {/* THEIR POST (on top) - score circle + preview navigation */}
       <div style={{ marginBottom:'14px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'8px' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'5px' }}><div style={{ width:'6px',height:'6px',borderRadius:'50%',background:myIsListing?LAVENDER:ACCENT }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:'rgba(255,255,255,0.35)' }}>Their {myIsListing?'Requirement':'Listing'}</span></div>
@@ -980,6 +960,28 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
               {label&&<span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,color:scoreColor,background:`${scoreColor}12`,border:`1px solid ${scoreColor}30`,borderRadius:'20px',padding:'2px 8px' }}>{label}</span>}
             </div>
           </div>
+        </div>
+      </div>
+      <div style={{ height:'1px',background:'rgba(255,255,255,0.06)',margin:'0 0 14px' }}/>
+      {/* YOUR POST (below) - match count badge */}
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'12px', marginBottom:'14px' }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'3px' }}><div style={{ width:'6px',height:'6px',borderRadius:'50%',background:myColor }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:myColor }}>Your {myIsListing?'Listing':'Requirement'}</span></div>
+          <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'15px',fontWeight:500,color:'white',margin:'0 0 2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{myPost.title}</h3>
+          <p style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:0 }}>{priceStr(myPost,myIsListing)}{myIsListing&&myPost.size_sqft?` · ${parseFloat(myPost.size_sqft).toLocaleString()} SF`:''}{myPost.city?` · ${myPost.city}`:''}</p>
+        </div>
+        <div style={{ display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'5px',flexShrink:0 }}>
+          <div style={{ display:'flex',alignItems:'center',gap:'5px',padding:'4px 10px',background:`${myColor}10`,border:`1px solid ${myColor}25`,borderRadius:'20px' }}>
+            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:700,color:myColor }}>{matches.length}</span>
+            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.35)' }}>{matches.length===1?'match':'matches'}</span>
+          </div>
+          {matches.length > 1 && (
+            <div style={{ display:'flex',alignItems:'center',gap:'7px' }}>
+              {strong>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:ACCENT,boxShadow:`0 0 5px ${ACCENT}80` }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:ACCENT }}>{strong}</span></div>}
+              {good>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:'#F59E0B' }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'#F59E0B' }}>{good}</span></div>}
+              {fair>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:'rgba(255,255,255,0.25)' }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'rgba(255,255,255,0.4)' }}>{fair}</span></div>}
+            </div>
+          )}
         </div>
       </div>
       <button onClick={()=>onOpen(myPost,best,previewIdx)} style={{ width:'100%',padding:'10px',background:`${myColor}10`,border:`1px solid ${myColor}25`,borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:500,color:myColor,cursor:'pointer',transition:'all 0.15s' }}
