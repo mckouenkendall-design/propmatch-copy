@@ -578,7 +578,7 @@ function BigScoreCircle({ score }) {
 }
 
 // ─── Range Bar ────────────────────────────────────────────────────────────────
-function RangeBar({ value, min, max, label, score }) {
+function RangeBar({ value, min, max, label, score, isMoney }) {
   if (value == null || (min == null && max == null)) return null;
   const lo=min!=null?parseFloat(min):null, hi=max!=null?parseFloat(max):null, v=parseFloat(value);
   const refLo=lo??v*0.6, refHi=hi??v*1.4, pad=(refHi-refLo)*0.3;
@@ -588,12 +588,18 @@ function RangeBar({ value, min, max, label, score }) {
   const loP=lo!=null?Math.max(0,Math.min(100,((refLo-barMin)/range)*100)):null;
   const hiP=hi!=null?Math.max(0,Math.min(100,((refHi-barMin)/range)*100)):null;
   const sc=getScoreColor(score);
+  // Format depends on the bar type: money bars get $ + K/M; everything else is a plain number.
+  const fmt = (n) => {
+    if (isMoney) return fmtMoney(n);
+    if (n >= 1000) return Math.round(n).toLocaleString();
+    return (Math.round(n*100)/100).toLocaleString();
+  };
   return (
     <div style={{ marginBottom:'24px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
         <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.6)', fontWeight:500 }}>{label}</span>
         <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:700, color:ACCENT }}>{fmtMoney(v)}</span>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:700, color:ACCENT }}>{fmt(v)}</span>
           <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, color:sc, background:`${sc}12`, border:`1px solid ${sc}30`, borderRadius:'4px', padding:'2px 6px' }}>{score}%</span>
         </div>
       </div>
@@ -602,8 +608,8 @@ function RangeBar({ value, min, max, label, score }) {
           {loP!=null&&hiP!=null&&<div style={{ position:'absolute', left:`${loP}%`, width:`${hiP-loP}%`, height:'100%', background:`${LAVENDER}22`, borderRadius:'4px', border:`1px solid ${LAVENDER}45` }}/>}
           <div style={{ position:'absolute', left:`${vP}%`, top:'-6px', transform:'translateX(-50%)', width:'20px', height:'20px', borderRadius:'50%', background:ACCENT, border:'3px solid #0E1318', boxShadow:`0 0 12px ${ACCENT}70`, zIndex:2 }}/>
         </div>
-        {lo!=null&&loP!=null&&<span style={{ position:'absolute', top:'32px', left:`${loP}%`, transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'10px', color:`${LAVENDER}70`, whiteSpace:'nowrap' }}>{fmtMoney(refLo)}</span>}
-        {hi!=null&&hiP!=null&&<span style={{ position:'absolute', top:'32px', left:`${hiP}%`, transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'10px', color:`${LAVENDER}70`, whiteSpace:'nowrap' }}>{fmtMoney(refHi)}</span>}
+        {lo!=null&&loP!=null&&<span style={{ position:'absolute', top:'32px', left:`${loP}%`, transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'10px', color:`${LAVENDER}70`, whiteSpace:'nowrap' }}>{fmt(refLo)}</span>}
+        {hi!=null&&hiP!=null&&<span style={{ position:'absolute', top:'32px', left:`${hiP}%`, transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'10px', color:`${LAVENDER}70`, whiteSpace:'nowrap' }}>{fmt(refHi)}</span>}
       </div>
       <div style={{ display:'flex', alignItems:'center', gap:'16px', marginTop:'6px' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'4px' }}><div style={{ width:'8px', height:'8px', borderRadius:'50%', background:ACCENT }}/><span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>Your listing value</span></div>
@@ -622,7 +628,10 @@ function buildRangeBars(listing, requirement, breakdown) {
     const v=parseFloat(value),lo=min?parseFloat(min):null,hi=max?parseFloat(max):null;
     let score=getScore(skw);
     if(score===null){if(lo!=null&&hi!=null){if(v>=lo&&v<=hi)score=100;else if(v<lo)score=Math.max(0,Math.round(100-((lo-v)/lo)*100));else score=Math.max(0,Math.round(100-((v-hi)/hi)*150));}else if(lo!=null){score=v>=lo?100:Math.max(0,Math.round(100-((lo-v)/lo)*100));}else if(hi!=null){score=v<=hi?100:Math.max(0,Math.round(100-((v-hi)/hi)*150));}else{score=100;}}
-    bars.push({label,value:v,min:lo,max:hi,score});
+    // Classify the bar's unit so the display formats correctly (money vs plain count/measure)
+    const lbl=label.toLowerCase();
+    const isMoney=lbl.includes('price')||lbl.includes('monthly')||lbl.includes('rate')||lbl.includes('hoa')||lbl.includes('noi')||lbl.includes('$');
+    bars.push({label,value:v,min:lo,max:hi,score,isMoney});
   };
   const price=parseFloat(listing.price),size=parseFloat(listing.size_sqft),tx=listing.transaction_type,isLease=tx==='lease'||tx==='sublease';
   if(price){if(isLease&&size){const monthly=(price*size)/12;if(requirement.price_period==='per_sf_per_year')add('Rate ($/SF/yr)',price,requirement.min_price,requirement.max_price,'price');else add('Monthly Total',monthly,requirement.min_price,requirement.max_price,'price');}else add('Price',price,requirement.min_price,requirement.max_price,'price');}
@@ -874,7 +883,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
               {rangeBars.length>0&&(
                 <div style={{ marginBottom:'32px' }}>
                   <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.3)', margin:'0 0 20px' }}>How Your Listing Fits Their Requirements</p>
-                  {rangeBars.map((bar,i)=><RangeBar key={i} value={bar.value} min={bar.min} max={bar.max} label={bar.label} score={bar.score}/>)}
+                  {rangeBars.map((bar,i)=><RangeBar key={i} value={bar.value} min={bar.min} max={bar.max} label={bar.label} score={bar.score} isMoney={bar.isMoney}/>)}
                 </div>
               )}
               <div style={{ background:`${theirColor}06`, border:`1px solid ${theirColor}20`, borderRadius:'14px', padding:'20px' }}>
