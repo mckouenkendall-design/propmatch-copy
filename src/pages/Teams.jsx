@@ -233,6 +233,15 @@ export default function Teams() {
     return map;
   }, [myListings, myRequirements, teamListings, teamRequirements, user?.email]);
 
+  // Sort pipeline posts by match score (highest first), unmatched posts after matched ones
+  const sortByMatch = (a, b) => {
+    const sa = brokerageMatchMap[a.id]?.totalScore ?? -1;
+    const sb = brokerageMatchMap[b.id]?.totalScore ?? -1;
+    return sb - sa;
+  };
+  const sortedTeamListings     = [...teamListings].sort(sortByMatch);
+  const sortedTeamRequirements = [...teamRequirements].sort(sortByMatch);
+
   const { data: announcements = [] } = useQuery({
     queryKey: ['teamAnnouncements', user?.brokerage_id],
     queryFn: () => supabase.from('team_announcements').select('*').eq('brokerage_id', user?.brokerage_id),
@@ -312,7 +321,7 @@ export default function Teams() {
                         <p style={{ color: 'rgba(255,255,255,0.5)' }}>No brokerage listings yet</p>
                       </CardContent>
                     </Card>
-                  ) : teamListings.map(listing => {
+                  ) : sortedTeamListings.map(listing => {
                     const matchInfo  = brokerageMatchMap[listing.id];
                     const scoreColor = matchInfo ? getScoreColor(matchInfo.totalScore) : null;
                     return (
@@ -348,7 +357,7 @@ export default function Teams() {
                         <p style={{ color: 'rgba(255,255,255,0.5)' }}>No brokerage requirements yet</p>
                       </CardContent>
                     </Card>
-                  ) : teamRequirements.map(req => {
+                  ) : sortedTeamRequirements.map(req => {
                     const matchInfo  = brokerageMatchMap[req.id];
                     const scoreColor = matchInfo ? getScoreColor(matchInfo.totalScore) : null;
                     return (
