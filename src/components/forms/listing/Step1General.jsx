@@ -137,7 +137,14 @@ function NumericInput({ value, onChange, placeholder, style, className }) {
 }
 
 export default function ListStep1({ data, update, onNext }) {
-  const isCommercial = data.property_category === 'commercial';
+  // property_category may not persist on edit; derive it from the saved
+  // property_type so the correct type list shows when editing.
+  const COMMERCIAL_VALUES = COMMERCIAL_TYPES.map(t => t.value);
+  const RESIDENTIAL_VALUES = RESIDENTIAL_TYPES.map(t => t.value);
+  const isCommercial =
+    COMMERCIAL_VALUES.includes(data.property_type) ? true
+    : RESIDENTIAL_VALUES.includes(data.property_type) ? false
+    : data.property_category === 'commercial';
   const types = isCommercial ? COMMERCIAL_TYPES : RESIDENTIAL_TYPES;
   const txTypes = isCommercial ? COMMERCIAL_TX : RESIDENTIAL_TX;
   const showLease = isCommercial && isLeaseType(data.transaction_type);

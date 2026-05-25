@@ -75,7 +75,16 @@ function NumericInput({ value, onChange, placeholder, style, className }) {
 }
 
 export default function ReqStep1({ data, update, onNext }) {
-  const types = data.property_category === 'commercial' ? COMMERCIAL_TYPES : RESIDENTIAL_TYPES;
+  // property_category is not stored on the requirements table, so when editing an
+  // existing post it comes back undefined. Derive the category from the saved
+  // property_type instead of trusting a field that does not persist.
+  const COMMERCIAL_VALUES = COMMERCIAL_TYPES.map(t => t.value);
+  const RESIDENTIAL_VALUES = RESIDENTIAL_TYPES.map(t => t.value);
+  const derivedCategory =
+    COMMERCIAL_VALUES.includes(data.property_type) ? 'commercial'
+    : RESIDENTIAL_VALUES.includes(data.property_type) ? 'residential'
+    : (data.property_category || 'commercial');
+  const types = derivedCategory === 'commercial' ? COMMERCIAL_TYPES : RESIDENTIAL_TYPES;
 
   const ACRES_TO_SQFT = 43560;
   const isLand = data.property_type === 'land' || data.property_type === 'land_residential';
