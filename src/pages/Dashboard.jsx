@@ -43,8 +43,16 @@ export default function Dashboard() {
   const firstName=myProfile?.full_name?.split(' ')[0]||user?.email?.split('@')[0]||'there';
 
   const {topMatches,postMatchCounts,thisWeekCount,strongCount}=useMemo(()=>{
-    const otherL=allListings.filter(l=>l.created_by!==user?.email);
-    const otherR=allRequirements.filter(r=>r.created_by!==user?.email);
+    // Eligible to match against: your own posts (for self-match), plus others' posts
+    // you're allowed to see (public, or brokerage-only within your brokerage).
+    const canMatch=(p)=>{
+      if(p.created_by===user?.email)return true;
+      if(p.visibility==='public')return true;
+      if(p.visibility==='brokerage'&&p.brokerage_id&&p.brokerage_id===user?.brokerage_id)return true;
+      return false;
+    };
+    const otherL=allListings.filter(canMatch);
+    const otherR=allRequirements.filter(canMatch);
     const all=[],counts={},weekAgo=Date.now()-7*24*60*60*1000;
     let weekCount=0,strongC=0;
     const add=(id,score)=>{if(!counts[id])counts[id]={total:0,strong:0,good:0,fair:0};counts[id].total++;if(score>=70)counts[id].strong++;else if(score>=50)counts[id].good++;else counts[id].fair++;};
