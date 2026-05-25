@@ -192,7 +192,7 @@ export default function ReqStep1({ data, update, onNext }) {
             onChange={v => update({ price_period: v })}
             options={[
               { value: 'per_month',       label: 'Per Month' },
-              { value: 'per_sf_per_year', label: 'Per Year' },
+              { value: 'per_year',        label: 'Per Year' },
             ]}
           />
         ) : null}

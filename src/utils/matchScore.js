@@ -395,13 +395,15 @@ export function calculateMatchScore(listing, requirement) {
 
     if (isCommercialLease) {
       const listingMonthly = (listingPrice * parseFloat(listing.size_sqft)) / 12;
-      if (reqPeriod === 'per_sf_per_year') {
-        compareValue  = listingPrice;
-        compareMin    = reqMinRaw || null;
-        compareMax    = reqMaxRaw || null;
-        priceLabel    = 'Rate ($/SF/yr)';
-        priceDetails  = `$${listingPrice}/SF/yr`;
-        priceUnit     = '$/SF/yr';
+      // Requirements are always entered as TOTAL dollars (per month or per year), never a per-SF rate.
+      // Reduce both the requirement and the listing to a monthly total dollar figure before comparing.
+      if (reqPeriod === 'per_year') {
+        compareValue  = listingMonthly;
+        compareMin    = reqMinRaw ? reqMinRaw / 12 : null;
+        compareMax    = reqMaxRaw ? reqMaxRaw / 12 : null;
+        priceLabel    = 'Monthly Total';
+        priceDetails  = `$${Math.round(listingMonthly).toLocaleString()}/mo`;
+        priceUnit     = '$/mo';
       } else {
         compareValue  = listingMonthly;
         compareMin    = reqMinRaw || null;
@@ -411,9 +413,12 @@ export function calculateMatchScore(listing, requirement) {
         priceUnit     = '$/mo';
       }
     } else if (listingTx === 'rent') {
+      // Residential rent: listing price is already a monthly total.
+      const reqMin = reqPeriod === 'per_year' ? (reqMinRaw ? reqMinRaw / 12 : null) : (reqMinRaw || null);
+      const reqMax = reqPeriod === 'per_year' ? (reqMaxRaw ? reqMaxRaw / 12 : null) : (reqMaxRaw || null);
       compareValue = listingPrice;
-      compareMin   = reqMinRaw || null;
-      compareMax   = reqMaxRaw || null;
+      compareMin   = reqMin;
+      compareMax   = reqMax;
       priceLabel   = 'Monthly Rent';
       priceDetails = `$${listingPrice.toLocaleString()}/mo`;
       priceUnit    = '$/mo';
