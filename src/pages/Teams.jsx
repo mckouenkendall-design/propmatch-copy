@@ -33,7 +33,7 @@ function fmtPrice(post, isListing) {
   const fmt = (n) => { const num = parseFloat(n); if (!n||isNaN(num)) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
   const u = isListing
     ? (post.transaction_type==='lease'||post.transaction_type==='sublease'?'/SF/yr':post.transaction_type==='rent'?'/mo':'')
-    : (post.price_period==='per_month'?'/mo':post.price_period==='per_sf_per_year'?'/SF/yr':post.price_period==='annually'?'/yr':(post.transaction_type==='lease'||post.transaction_type==='rent')?'/mo':'');
+    : (post.price_period==='per_month'?'/mo':post.price_period==='per_year'?'/yr':post.price_period==='per_sf_per_year'?'/SF/yr':post.price_period==='annually'?'/yr':(post.transaction_type==='lease'||post.transaction_type==='rent')?'/mo':'');
   if (isListing) return `$${fmt(post.price)||'0'}${u}`;
   const lo=fmt(post.min_price),hi=fmt(post.max_price);
   if(lo&&hi) return `$${lo}–$${hi}${u}`;
@@ -55,7 +55,7 @@ function formatRequirementPrice(req) {
   const fmt = (n) => { const num = parseFloat(n); if (!n || isNaN(num)) return null; return num % 1 === 0 ? num.toLocaleString() : num.toLocaleString('en-US', { maximumFractionDigits: 2 }); };
   const tx = req.transaction_type;
   const period = req.price_period;
-  const unit = period === 'per_month' ? '/mo' : period === 'per_sf_per_year' ? '/SF/yr' : period === 'annually' ? '/yr' : (tx === 'lease' || tx === 'rent') ? '/mo' : '';
+  const unit = period === 'per_month' ? '/mo' : period === 'per_year' ? '/yr' : period === 'per_sf_per_year' ? '/SF/yr' : period === 'annually' ? '/yr' : (tx === 'lease' || tx === 'rent') ? '/mo' : '';
   const lo = fmt(req.min_price), hi = fmt(req.max_price);
   if (lo && hi) return `$${lo}–$${hi}${unit}`;
   if (hi) return `Up to $${hi}${unit}`;

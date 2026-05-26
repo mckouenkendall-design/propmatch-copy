@@ -78,7 +78,7 @@ function useMatchInfo(post, postType, allListings, allRequirements, myEmail) {
 function fmtPrice(post, isListing) {
   const fmt = (n) => { const num=parseFloat(n); if(!n||isNaN(num))return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
   const tx=post.transaction_type, pp=post.price_period;
-  const u=isListing?(tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':''):(pp==='per_month'?'/mo':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
+  const u=isListing?(tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':''):(pp==='per_month'?'/mo':pp==='per_year'?'/yr':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
   if(isListing){if(post.price_is_tbd)return'TBD';const f=fmt(post.price);return f?`$${f}${u}`:null;}
   const lo=fmt(post.min_price),hi=fmt(post.max_price);
   if(lo&&hi)return`$${lo}–$${hi}${u}`;

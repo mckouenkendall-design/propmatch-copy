@@ -14,7 +14,7 @@ const LAVENDER = '#818cf8';
 function fmtPostPrice(post) {
   const isL = !!post.size_sqft;
   const fmt = (n) => { const num = parseFloat(n); if (!n||isNaN(num)) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
-  const u = isL ? (post.transaction_type==='lease'||post.transaction_type==='sublease'?'/SF/yr':post.transaction_type==='rent'?'/mo':'') : (post.price_period==='per_month'?'/mo':post.price_period==='per_sf_per_year'?'/SF/yr':post.price_period==='annually'?'/yr':'');
+  const u = isL ? (post.transaction_type==='lease'||post.transaction_type==='sublease'?'/SF/yr':post.transaction_type==='rent'?'/mo':'') : (post.price_period==='per_month'?'/mo':post.price_period==='per_year'?'/yr':post.price_period==='per_sf_per_year'?'/SF/yr':post.price_period==='annually'?'/yr':'');
   if (isL) return `$${fmt(post.price)||'0'}${u}`;
   const lo=fmt(post.min_price),hi=fmt(post.max_price);
   if(lo&&hi) return `$${lo}–$${hi}${u}`;
@@ -215,7 +215,7 @@ function GroupMatchModal({ myPost, matchPost, matchResult, posterProfile, onClos
   const fmtPrice = (post, isL) => {
     const fmt = (n) => { const num=parseFloat(n); if(!n||isNaN(num))return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
     const tx=post.transaction_type, pp=post.price_period;
-    const u=isL?(tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':''):(pp==='per_month'?'/mo':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
+    const u=isL?(tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':''):(pp==='per_month'?'/mo':pp==='per_year'?'/yr':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
     if(isL){const f=fmt(post.price);return f?`$${f}${u}`:null;}
     const lo=fmt(post.min_price),hi=fmt(post.max_price);
     if(lo&&hi)return`$${lo}–$${hi}${u}`;if(hi)return`Up to $${hi}${u}`;if(lo)return`From $${lo}${u}`;return null;

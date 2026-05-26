@@ -42,7 +42,7 @@ function priceStr(post, isListing) {
   const tx = post.transaction_type, pp = post.price_period;
   const u = isListing
     ? (tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':'')
-    : (pp==='per_month'?'/mo':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
+    : (pp==='per_month'?'/mo':pp==='per_year'?'/yr':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
   if (isListing) { const f = fmtN(post.price); return f ? `$${f}${u}` : null; }
   const lo = fmtN(post.min_price), hi = fmtN(post.max_price);
   if (lo && hi) return `$${lo}\u2013$${hi}${u}`;
@@ -634,7 +634,7 @@ function buildRangeBars(listing, requirement, breakdown) {
     bars.push({label,value:v,min:lo,max:hi,score,isMoney});
   };
   const price=parseFloat(listing.price),size=parseFloat(listing.size_sqft),tx=listing.transaction_type,isLease=tx==='lease'||tx==='sublease';
-  if(price){if(isLease&&size){const monthly=(price*size)/12;if(requirement.price_period==='per_sf_per_year')add('Rate ($/SF/yr)',price,requirement.min_price,requirement.max_price,'price');else add('Monthly Total',monthly,requirement.min_price,requirement.max_price,'price');}else add('Price',price,requirement.min_price,requirement.max_price,'price');}
+  if(price){if(isLease&&size){const monthly=(price*size)/12;const isYr=requirement.price_period==='per_year';const rMin=isYr&&requirement.min_price?parseFloat(requirement.min_price)/12:requirement.min_price;const rMax=isYr&&requirement.max_price?parseFloat(requirement.max_price)/12:requirement.max_price;add('Monthly Total',monthly,rMin,rMax,'price');}else add('Price',price,requirement.min_price,requirement.max_price,'price');}
   if(size)add('Size (SF)',size,requirement.min_size_sqft,requirement.max_size_sqft,'size');
   const pt=listing.property_type;
   if(pt==='office'){if(ld.offices)add('Private Offices',ld.offices,rd.min_offices,rd.max_offices,'details');if(ld.conf_rooms)add('Conference Rooms',ld.conf_rooms,rd.min_conf_rooms,rd.max_conf_rooms,'details');if(ld.total_parking_spaces)add('Parking Spaces',ld.total_parking_spaces,rd.min_total_parking_spaces,rd.max_parking,'details');}

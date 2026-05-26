@@ -202,7 +202,7 @@ export default function Requirements() {
                   <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: 700, color: ACCENT }}>
                     {(() => {
                       const fmt = (n) => { const num = parseFloat(n); if (isNaN(num)||!n) return null; return num%1===0?num.toLocaleString():num.toLocaleString('en-US',{maximumFractionDigits:2}); };
-                      const u = req.price_period==='per_month' ? '/mo' : req.price_period==='per_sf_per_year' ? '/SF/yr' : req.price_period==='annually' ? '/yr' : req.transaction_type==='rent'||req.transaction_type==='lease' ? '/mo' : '';
+                      const u = req.price_period==='per_month' ? '/mo' : req.price_period==='per_year' ? '/yr' : req.price_period==='per_sf_per_year' ? '/SF/yr' : req.price_period==='annually' ? '/yr' : req.transaction_type==='rent'||req.transaction_type==='lease' ? '/mo' : '';
                       const lo = fmt(req.min_price), hi = fmt(req.max_price);
                       if (lo && hi) return `$${lo}–$${hi}${u}`;
                       if (hi) return `Up to $${hi}${u}`;

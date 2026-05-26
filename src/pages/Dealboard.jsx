@@ -53,6 +53,7 @@ export default function Dealboard() {
         ? (deal.transaction_type === 'lease' || deal.transaction_type === 'sublease' ? '/SF/yr'
           : deal.transaction_type === 'rent' ? '/mo' : '')
         : (deal.price_period === 'per_month' ? '/mo'
+          : deal.price_period === 'per_year' ? '/yr'
           : deal.price_period === 'per_sf_per_year' ? '/SF/yr'
           : deal.price_period === 'annually' ? '/yr'
           : (deal.transaction_type === 'lease' || deal.transaction_type === 'rent') ? '/mo' : '');

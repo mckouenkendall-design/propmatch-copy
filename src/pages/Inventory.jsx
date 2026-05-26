@@ -25,7 +25,7 @@ function fmtPrice(post, isListing) {
     const u = post.transaction_type === 'lease' || post.transaction_type === 'sublease' ? '/SF/yr' : post.transaction_type === 'rent' ? '/mo' : '';
     return `$${f}${u}`;
   }
-  const u = post.price_period === 'per_month' ? '/mo' : post.price_period === 'per_sf_per_year' ? '/SF/yr' : post.price_period === 'annually' ? '/yr' : (post.transaction_type === 'lease' || post.transaction_type === 'rent') ? '/mo' : '';
+  const u = post.price_period === 'per_month' ? '/mo' : post.price_period === 'per_year' ? '/yr' : post.price_period === 'per_sf_per_year' ? '/SF/yr' : post.price_period === 'annually' ? '/yr' : (post.transaction_type === 'lease' || post.transaction_type === 'rent') ? '/mo' : '';
   const lo = n(post.min_price), hi = n(post.max_price);
   if (lo && hi) return `$${lo}\u2013$${hi}${u}`;
   if (hi) return `Up to $${hi}${u}`;

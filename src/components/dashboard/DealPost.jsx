@@ -27,6 +27,7 @@ function formatPrice(post, isListing) {
       return '';
     }
     if (post.price_period === 'per_month') return '/mo';
+    if (post.price_period === 'per_year') return '/yr';
     if (post.price_period === 'per_sf_per_year') return '/SF/yr';
     if (post.price_period === 'annually') return '/yr';
     if (post.transaction_type === 'lease' || post.transaction_type === 'rent') return '/mo';
