@@ -45,6 +45,36 @@ function Toggle({ label, value, onChange }) {
     </div>
   );
 }
+// Preferred amenities a tenant can request. Mirrors the listing building + space amenities
+// (including Cafe / Grab-and-Go) so requirements can ask for anything a listing can advertise.
+const PREFERRED_AMENITIES = [
+  { value: 'on_site_management', label: 'On-Site Management' }, { value: 'security_247', label: '24/7 Security / Controlled Access' },
+  { value: 'concierge', label: 'Concierge Services' }, { value: 'janitorial_common', label: 'Janitorial (Common Areas)' },
+  { value: 'mail_room', label: 'Mail Room / Package Handling' }, { value: 'shared_loading_dock', label: 'Shared Loading Dock' },
+  { value: 'lobby_reception', label: 'Lobby / Reception Area' }, { value: 'shared_conference', label: 'Shared Conference Rooms' },
+  { value: 'tenant_lounge', label: 'Tenant Lounge / Break Room' }, { value: 'fitness_center', label: 'Fitness Center / Gym' },
+  { value: 'cafe_food_service', label: 'Cafe / Food Service' }, { value: 'grab_and_go', label: 'Grab-and-Go Station' },
+  { value: 'outdoor_space', label: 'Outdoor Space / Patio / Terrace' }, { value: 'fiber_optic', label: 'Fiber Optic Connectivity' },
+  { value: 'multi_isp', label: 'Multiple Internet Providers' }, { value: 'backup_generator', label: 'Backup Generator' },
+  { value: 'ada_building', label: 'ADA Compliant Building' }, { value: 'elevators', label: 'Elevators' },
+  { value: 'covered_parking', label: 'Covered / Garage Parking' }, { value: 'ev_charging', label: 'EV Charging Stations' },
+  { value: 'bicycle_storage', label: 'Bicycle Storage' }, { value: 'energy_efficient', label: 'Energy Efficient Building' },
+  { value: 'leed_certified', label: 'LEED Certified / Green Building' },
+];
+
+// Reusable preferred-amenities picker for requirement forms.
+function PreferredAmenities({ details, setDetail }) {
+  const selected = details.preferred_amenities || [];
+  const toggle = (v) => setDetail('preferred_amenities', selected.includes(v) ? selected.filter(a => a !== v) : [...selected, v]);
+  return (
+    <Field label="Preferred Amenities (select any that matter to your client)">
+      <div className="flex flex-wrap gap-2">
+        {PREFERRED_AMENITIES.map(a => <Chip key={a.value} label={a.label} selected={selected.includes(a.value)} onClick={() => toggle(a.value)} />)}
+      </div>
+    </Field>
+  );
+}
+
 function Chip({ label, selected, onClick }) {
   return (
     <button type="button" onClick={onClick} className="px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all"
@@ -373,10 +403,9 @@ function OfficeRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Space Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Min SF"><Num field="min_sf" placeholder="e.g. 2000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max SF"><Num field="max_sf" placeholder="e.g. 5000" details={details} setDetail={setDetail} /></Field>
         <Field label="Offices Needed"><Num field="offices_needed" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
         <Field label="Conference Rooms Needed"><Num field="conf_rooms_needed" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Parking Spaces Needed"><Num field="min_parking_spaces" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
       </div>
       <ToggleGroup label="Layout Preference" value={details.layout_pref || ''} onChange={v => setDetail('layout_pref', v)}
         options={[{ value: 'open_plan', label: 'Open Plan' }, { value: 'partitioned', label: 'Partitioned' }, { value: 'mixed', label: 'Mixed' }, { value: 'flexible', label: 'Flexible' }]} />
@@ -397,6 +426,8 @@ function OfficeRequirement({ details, setDetail }) {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Server Room / IT Infrastructure Required" value={!!details.server_room_req} onChange={v => setDetail('server_room_req', v)} />
       </div>
+      <SectionTitle>Amenities</SectionTitle>
+      <PreferredAmenities details={details} setDetail={setDetail} />
       <Field label="Additional Requirements">
         <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
           placeholder="Any other must-haves for your office space…" rows={2} />

@@ -256,6 +256,7 @@ const BUILDING_AMENITIES = [
   { value: 'mail_room', label: 'Mail Room / Package Handling' }, { value: 'shared_loading_dock', label: 'Shared Loading Dock' },
   { value: 'lobby_reception', label: 'Lobby / Reception Area' }, { value: 'shared_conference', label: 'Shared Conference Rooms' },
   { value: 'tenant_lounge', label: 'Tenant Lounge / Break Room' }, { value: 'fitness_center', label: 'Fitness Center / Gym' },
+  { value: 'cafe_food_service', label: 'Cafe / Food Service' }, { value: 'grab_and_go', label: 'Grab-and-Go Station' },
   { value: 'outdoor_space', label: 'Outdoor Space / Patio / Terrace' }, { value: 'fiber_optic', label: 'Fiber Optic Connectivity' },
   { value: 'multi_isp', label: 'Multiple Internet Providers' }, { value: 'backup_generator', label: 'Backup Generator' },
   { value: 'ada_building', label: 'ADA Compliant Building' }, { value: 'elevators', label: 'Elevators' },
