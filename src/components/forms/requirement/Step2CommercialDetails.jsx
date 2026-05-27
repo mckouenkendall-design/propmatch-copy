@@ -64,6 +64,8 @@ const PREFERRED_AMENITIES = [
 
 const MEDICAL_SPECIALTIES = ['Primary Care', 'Dental', 'Cardiology', 'Orthopedic', 'Dermatology', 'Oncology', 'Imaging / Radiology', 'Physical Therapy', 'Dialysis', 'Urgent Care', 'Pediatrics', 'Ophthalmology', 'Other'];
 
+const AMPERAGE_OPTIONS = ['200A', '400A', '600A', '800A', '1000A', '1200A', '1600A', '2000A+'];
+
 // Reusable preferred-amenities picker for requirement forms.
 function PreferredAmenities({ details, setDetail }) {
   const selected = details.preferred_amenities || [];
@@ -532,21 +534,33 @@ function IndustrialFlexRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Space Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Min SF"><Num field="min_sf" placeholder="e.g. 10000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max SF"><Num field="max_sf" placeholder="e.g. 50000" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Clear Height (ft)"><Num field="min_clear_height" placeholder="e.g. 18" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Dock-High Doors"><Num field="min_dock_doors" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Drive-In Doors"><Num field="min_drive_in_doors" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Truck Court Depth (ft)"><Num field="min_truck_court" placeholder="e.g. 100" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Floor Load (lbs/sqft)"><Num field="min_floor_load" placeholder="e.g. 250" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Land / Lot (acres)"><Num field="min_acres" placeholder="e.g. 1.0" step="0.1" details={details} setDetail={setDetail} /></Field>
       </div>
       <SectionTitle>Power & Yard</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min Amperage">
+          <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+            value={details.min_amperage || ''} onChange={e => setDetail('min_amperage', e.target.value)}>
+            <option value="" style={{ background: '#0E1318' }}>No preference</option>
+            {AMPERAGE_OPTIONS.map(a => <option key={a} value={a} style={{ background: '#0E1318' }}>{a}</option>)}
+          </select>
+        </Field>
+      </div>
+      <ToggleGroup label="Power Voltage Preference" value={details.voltage_pref || ''} onChange={v => setDetail('voltage_pref', v)}
+        options={[{ value: '240v', label: '240V' }, { value: '480v', label: '480V' }, { value: 'any', label: 'Any' }]} />
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="3-Phase Power Required" value={!!details.three_phase_req} onChange={v => setDetail('three_phase_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Fenced / Secured Yard Required" value={!!details.fenced_yard_req} onChange={v => setDetail('fenced_yard_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Crane System Required" value={!!details.crane_req} onChange={v => setDetail('crane_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Rail Access Required" value={!!details.rail_access_req} onChange={v => setDetail('rail_access_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Outside Storage Permitted Required" value={!!details.outside_storage_req} onChange={v => setDetail('outside_storage_req', v)} />
       </div>
