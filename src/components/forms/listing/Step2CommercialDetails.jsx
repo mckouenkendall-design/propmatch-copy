@@ -945,7 +945,6 @@ function SpecialUseDetails({ details, setDetail }) {
       {details.specific_use === 'Other' && <Field label="Describe Current Use"><Input value={details.specific_use_other || ''} onChange={e => setDetail('specific_use_other', e.target.value)} placeholder="e.g., Funeral Home, Bowling Alley" /></Field>}
       <SectionTitle>Key Capacity & Size</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Total SF"><Num field="total_sf" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
         <Field label="Acreage"><Num field="acres" placeholder="e.g. 2.5" step="0.1" details={details} setDetail={setDetail} /></Field>
         <Field label="Seating Capacity" hint="Sanctuaries, theaters, stadiums"><Num field="seating_capacity" placeholder="e.g. 500" details={details} setDetail={setDetail} /></Field>
         <Field label="Bed / Room Count" hint="Hotels or Assisted Living"><Num field="bed_room_count" placeholder="e.g. 80" details={details} setDetail={setDetail} /></Field>

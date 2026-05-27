@@ -651,9 +651,8 @@ function SpecialUseRequirement({ details, setDetail }) {
         </select>
       </Field>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Min SF"><Num field="min_sf" placeholder="e.g. 5000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max SF"><Num field="max_sf" placeholder="e.g. 25000" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Seating / Capacity"><Num field="min_seating" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Bed / Room Count" hint="Hotels or Assisted Living"><Num field="min_bed_room_count" placeholder="e.g. 50" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Acreage"><Num field="min_acres" placeholder="e.g. 1.0" step="0.1" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Parking"><Num field="min_parking" placeholder="e.g. 80" details={details} setDetail={setDetail} /></Field>
       </div>
