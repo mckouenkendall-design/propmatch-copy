@@ -488,8 +488,6 @@ function RetailRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Space Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Min SF"><Num field="min_sf" placeholder="e.g. 1000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max SF"><Num field="max_sf" placeholder="e.g. 3000" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Street Frontage (ft)"><Num field="min_frontage" placeholder="e.g. 25" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Traffic Count (vehicles/day)"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
       </div>
@@ -505,12 +503,21 @@ function RetailRequirement({ details, setDetail }) {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Grease Trap Required" value={!!details.grease_trap_req} onChange={v => setDetail('grease_trap_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Cold Storage / Walk-in Freezer Required" value={!!details.cold_storage_req} onChange={v => setDetail('cold_storage_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Outdoor Seating Required" value={!!details.outdoor_seating_req} onChange={v => setDetail('outdoor_seating_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Rear Loading / Alley Access Required" value={!!details.rear_loading_req} onChange={v => setDetail('rear_loading_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Auto Bay / Garage Doors Required" value={!!details.auto_bay_req} onChange={v => setDetail('auto_bay_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Signage (Building / Pylon) Required" value={!!details.signage_req} onChange={v => setDetail('signage_req', v)} />
       </div>
       <Field label="Business Type / Concept">
         <Input value={details.business_type || ''} onChange={e => setDetail('business_type', e.target.value)} placeholder="e.g. QSR restaurant, boutique retail, medical spa" />
+      </Field>
+      <Field label="Co-Tenancy Preference" hint="Neighbors you want nearby or want to avoid">
+        <Input value={details.co_tenancy_pref || ''} onChange={e => setDetail('co_tenancy_pref', e.target.value)} placeholder="e.g. near grocery anchor, avoid competing QSR" />
       </Field>
       <Field label="Additional Requirements">
         <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
