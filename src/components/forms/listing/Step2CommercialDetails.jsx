@@ -681,8 +681,7 @@ function RetailDetails({ details, setDetail }) {
       <SectionTitle>Primary Retail Specs</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Suite Number" hint="Optional"><Input value={details.suite_number || ''} onChange={e => setDetail('suite_number', e.target.value)} placeholder="e.g. Suite 150" /></Field>
-        <Field label="Total SF"><Num field="total_sf" placeholder="e.g. 2500" details={details} setDetail={setDetail} /></Field>
-        <Field label="Sales Floor SF"><Num field="sales_floor_sf" placeholder="e.g. 1800" details={details} setDetail={setDetail} /></Field>
+        <Field label="Sales Floor SF" hint="Sellable area (excludes storage/back-of-house)"><Num field="sales_floor_sf" placeholder="e.g. 1800" details={details} setDetail={setDetail} /></Field>
         <Field label="Street Frontage (ft)"><Num field="frontage" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
         <Field label="Ceiling Height (ft)"><Num field="ceiling_height" placeholder="e.g. 12" details={details} setDetail={setDetail} /></Field>
       </div>
