@@ -590,7 +590,15 @@ function LandRequirement({ details, setDetail }) {
       <SectionTitle>Size Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Min Road Frontage (ft)"><Num field="min_frontage" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Traffic Count (vehicles/day)"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
       </div>
+      <Field label="Location Setting Preference">
+        <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+          value={details.location_setting_pref || ''} onChange={e => setDetail('location_setting_pref', e.target.value)}>
+          <option value="" style={{ background: '#0E1318' }}>No preference</option>
+          {['Highway Frontage', 'Main Road', 'Industrial Park', 'Suburban/Residential', 'Rural/Country'].map(o => <option key={o} value={o} style={{ background: '#0E1318' }}>{o}</option>)}
+        </select>
+      </Field>
       <ToggleGroup label="Entitlements Needed" value={details.entitlements_needed || ''} onChange={v => setDetail('entitlements_needed', v)}
         options={[{ value: 'raw', label: 'Raw OK' }, { value: 'shovel_ready', label: 'Shovel Ready' }, { value: 'approved', label: 'Approved Plan' }]} />
       <SectionTitle>Utilities Required at Site</SectionTitle>
