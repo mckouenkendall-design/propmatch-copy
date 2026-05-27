@@ -225,10 +225,12 @@ function ManufacturedRequirementSaleInvestment({ details, setDetail }) {
 function SingleFamilyRequirement({ details, setDetail }) {
   const features = details.desired_features || [];
   const toggleFeature = (key) => setDetail('desired_features', features.includes(key) ? features.filter(k => k !== key) : [...features, key]);
+  // Keys aligned to the listing's SF_FEATURES so requirements actually match listings.
+  // Curated to features buyers genuinely search for (dropped nice-surprise-only items).
   const FEATURES = [
-    { key: 'pool', label: 'Pool' }, { key: 'garage', label: 'Garage' }, { key: 'basement', label: 'Basement' },
-    { key: 'fireplace', label: 'Fireplace' }, { key: 'home_office', label: 'Home Office' }, { key: 'fenced_yard', label: 'Fenced Yard' },
-    { key: 'large_yard', label: 'Large Yard' }, { key: 'solar', label: 'Solar Panels' }, { key: 'ac', label: 'Central A/C' },
+    { key: 'pool', label: 'Pool' }, { key: 'hot_tub', label: 'Hot Tub / Spa' }, { key: 'deck', label: 'Deck / Patio' },
+    { key: 'fence', label: 'Fenced Yard' }, { key: 'fireplace', label: 'Fireplace' }, { key: 'ac', label: 'Central A/C' },
+    { key: 'generator', label: 'Generator' }, { key: 'solar', label: 'Solar Panels' }, { key: 'home_office', label: 'Dedicated Home Office' },
   ];
   return (
     <>
@@ -238,6 +240,7 @@ function SingleFamilyRequirement({ details, setDetail }) {
         <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 2" step="0.5" details={details} setDetail={setDetail} />
         <MinField label="Min Garage Spaces" field="min_garage" placeholder="e.g. 2" details={details} setDetail={setDetail} />
         <MinField label="Min Lot Size (sqft)" field="min_lot_sqft" placeholder="e.g. 6000" details={details} setDetail={setDetail} />
+        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 1990" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="Stories Preferred" value={details.stories_pref || ''} onChange={v => setDetail('stories_pref', v)}
         options={[{ value: 'one', label: '1 Story' }, { value: 'two', label: '2 Story' }, { value: 'any', label: 'Any' }]} />
