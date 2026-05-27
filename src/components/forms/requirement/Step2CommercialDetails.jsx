@@ -62,6 +62,8 @@ const PREFERRED_AMENITIES = [
   { value: 'leed_certified', label: 'LEED Certified / Green Building' },
 ];
 
+const MEDICAL_SPECIALTIES = ['Primary Care', 'Dental', 'Cardiology', 'Orthopedic', 'Dermatology', 'Oncology', 'Imaging / Radiology', 'Physical Therapy', 'Dialysis', 'Urgent Care', 'Pediatrics', 'Ophthalmology', 'Other'];
+
 // Reusable preferred-amenities picker for requirement forms.
 function PreferredAmenities({ details, setDetail }) {
   const selected = details.preferred_amenities || [];
@@ -437,12 +439,12 @@ function OfficeRequirement({ details, setDetail }) {
 }
 
 function MedicalOfficeRequirement({ details, setDetail }) {
+  const specialties = details.specialties || [];
+  const toggleSpecialty = (s) => setDetail('specialties', specialties.includes(s) ? specialties.filter(x => x !== s) : [...specialties, s]);
   return (
     <>
       <SectionTitle>Clinical Space Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Min SF"><Num field="min_sf" placeholder="e.g. 1500" details={details} setDetail={setDetail} /></Field>
-        <Field label="Max SF"><Num field="max_sf" placeholder="e.g. 4000" details={details} setDetail={setDetail} /></Field>
         <Field label="Exam Rooms Needed"><Num field="exam_rooms_needed" placeholder="e.g. 6" details={details} setDetail={setDetail} /></Field>
         <Field label="Procedure Rooms Needed"><Num field="procedure_rooms_needed" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
         <Field label="Waiting Room Capacity"><Num field="waiting_capacity_needed" placeholder="e.g. 15" details={details} setDetail={setDetail} /></Field>
@@ -456,15 +458,23 @@ function MedicalOfficeRequirement({ details, setDetail }) {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Medical Gas Lines Required" value={!!details.medical_gas_req} onChange={v => setDetail('medical_gas_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Sterilization Area Required" value={!!details.sterilization_req} onChange={v => setDetail('sterilization_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="HIPAA Compliant Layout Required" value={!!details.hipaa_req} onChange={v => setDetail('hipaa_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="ADA Compliant Required" value={!!details.ada_req} onChange={v => setDetail('ada_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Lab Space Required" value={!!details.lab_req} onChange={v => setDetail('lab_req', v)} />
       </div>
       <ToggleGroup label="Campus Location" value={details.campus_pref || ''} onChange={v => setDetail('campus_pref', v)}
         options={[{ value: 'on_campus', label: 'On-Campus' }, { value: 'adjacent', label: 'Adjacent' }, { value: 'off_campus', label: 'Off-Campus' }, { value: 'any', label: 'Any' }]} />
-      <Field label="Specialty / Practice Type">
-        <Input value={details.specialty || ''} onChange={e => setDetail('specialty', e.target.value)} placeholder="e.g. Orthopedics, Primary Care, Dental" />
+      <Field label="Specialty / Practice Type (select all that apply)">
+        <div className="flex flex-wrap gap-2">
+          {MEDICAL_SPECIALTIES.map(s => <Chip key={s} label={s} selected={specialties.includes(s)} onClick={() => toggleSpecialty(s)} />)}
+        </div>
       </Field>
+      <SectionTitle>Amenities</SectionTitle>
+      <PreferredAmenities details={details} setDetail={setDetail} />
       <Field label="Additional Requirements">
         <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
           placeholder="Any other must-haves for your practice space…" rows={2} />
