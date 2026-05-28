@@ -408,7 +408,6 @@ function SpecialUseRequirementSaleInvestment({ details, setDetail }) {
           <SectionTitle>Property Criteria</SectionTitle>
           <div className="grid grid-cols-2 gap-4">
             <MinField label="Min Seating / Capacity" field="min_seating" placeholder="e.g. 200" details={details} setDetail={setDetail} />
-            <MinField label="Min Total SF" field="min_sf" placeholder="e.g. 8000" details={details} setDetail={setDetail} />
             <MinField label="Min Acreage" field="min_acres" placeholder="e.g. 1.0" step="0.1" details={details} setDetail={setDetail} />
             <MinField label="Min Parking Spaces" field="min_parking" placeholder="e.g. 100" details={details} setDetail={setDetail} />
           </div>
