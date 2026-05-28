@@ -8,6 +8,25 @@ import { ArrowRight, X } from 'lucide-react';
 
 const ACCENT = '#818cf8'; // lavender — requirement color
 
+function CollapsiblePanel({ title, summary, children, defaultOpen }) {
+  const [open, setOpen] = React.useState(defaultOpen || false);
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+      <button type="button" onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
+        style={{ background: 'rgba(255,255,255,0.05)' }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+        <div>
+          <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>{title}</p>
+          {!open && <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{summary}</p>}
+        </div>
+        <span className="text-lg leading-none ml-2" style={{ color: 'rgba(255,255,255,0.5)' }}>{open ? '−' : '+'}</span>
+      </button>
+      {open && <div className="px-4 py-3">{children}</div>}
+    </div>
+  );
+}
+
 function Field({ label, hint, children }) {
   return (
     <div className="space-y-1.5">
@@ -268,9 +287,12 @@ function SingleFamilyRequirement({ details, setDetail }) {
 function CondoRequirement({ details, setDetail }) {
   const amenities = details.desired_amenities || [];
   const toggleAmenity = (key) => setDetail('desired_amenities', amenities.includes(key) ? amenities.filter(k => k !== key) : [...amenities, key]);
+  // Keys aligned to the listing's CONDO_AMENITIES so requirements actually match listings.
   const AMENITIES = [
     { key: 'gym', label: 'Fitness Center' }, { key: 'pool', label: 'Pool' }, { key: 'rooftop', label: 'Rooftop Deck' },
-    { key: 'doorman', label: 'Doorman' }, { key: 'package_room', label: 'Package Room' }, { key: 'ev_charging', label: 'EV Charging' },
+    { key: 'doorman', label: 'Doorman / Concierge' }, { key: 'lounge', label: 'Resident Lounge' }, { key: 'business_ctr', label: 'Business Center' },
+    { key: 'bike_storage', label: 'Bike Storage' }, { key: 'ev_charging', label: 'EV Charging' }, { key: 'dog_wash', label: 'Dog Wash Station' },
+    { key: 'package_room', label: 'Package Room' },
   ];
   return (
     <>
@@ -280,22 +302,28 @@ function CondoRequirement({ details, setDetail }) {
         <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
         <Field label="Max HOA ($/mo)"><Num field="max_hoa" placeholder="e.g. 600" details={details} setDetail={setDetail} /></Field>
         <MinField label="Min Floor #" field="min_floor" placeholder="e.g. 3" hint="Optional" details={details} setDetail={setDetail} />
+        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 2000" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="View Preference" value={details.view_pref || ''} onChange={v => setDetail('view_pref', v)}
         options={[{ value: 'city', label: 'City' }, { value: 'water', label: 'Water' }, { value: 'any', label: 'Any' }]} />
       <ToggleGroup label="Pet Policy" value={details.pet_policy_req || ''} onChange={v => setDetail('pet_policy_req', v)}
         options={[{ value: 'allowed', label: 'Pets Allowed' }, { value: 'any', label: 'No Requirement' }]} />
-      <SectionTitle>Desired Building Amenities</SectionTitle>
-      <div className="flex flex-wrap gap-2">
-        {AMENITIES.map(a => <Chip key={a.key} label={a.label} selected={amenities.includes(a.key)} onClick={() => toggleAmenity(a.key)} />)}
-      </div>
-      <div className="rounded-xl px-4 py-1 mt-2" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+      <SectionTitle>Unit Features Required</SectionTitle>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Parking Required" value={!!details.parking_req} onChange={v => setDetail('parking_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="In-Unit Laundry Required" value={!!details.in_unit_laundry_req} onChange={v => setDetail('in_unit_laundry_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Balcony Required" value={!!details.balcony_req} onChange={v => setDetail('balcony_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Storage Unit Required" value={!!details.storage_unit_req} onChange={v => setDetail('storage_unit_req', v)} />
       </div>
+      <SectionTitle>Desired Building Amenities</SectionTitle>
+      <CollapsiblePanel title="Building Amenities" summary={amenities.length > 0 ? `${amenities.length} selected` : 'Shared building features your client wants'}>
+        <div className="flex flex-wrap gap-2 pt-1">
+          {AMENITIES.map(a => <Chip key={a.key} label={a.label} selected={amenities.includes(a.key)} onClick={() => toggleAmenity(a.key)} />)}
+        </div>
+      </CollapsiblePanel>
       <Field label="Additional Requirements">
         <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)} placeholder="Any must-haves…" rows={2} />
       </Field>
