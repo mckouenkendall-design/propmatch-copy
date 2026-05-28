@@ -523,9 +523,17 @@ function ResidentialLandRequirement({ details, setDetail }) {
         <MinField label="Min Acreage" field="min_acres" placeholder="e.g. 0.25" step="0.01" details={details} setDetail={setDetail} />
         <Field label="Max Acreage"><Num field="max_acres" placeholder="e.g. 2.0" step="0.1" details={details} setDetail={setDetail} /></Field>
         <MinField label="Min Road Frontage (ft)" field="min_frontage" placeholder="e.g. 60" details={details} setDetail={setDetail} />
+        <Field label="Max HOA ($/yr)" hint="Leave blank if no HOA required"><Num field="max_hoa_annual" placeholder="e.g. 500" details={details} setDetail={setDetail} /></Field>
       </div>
       <ToggleGroup label="Entitlements Needed" value={details.entitlements_needed || ''} onChange={v => setDetail('entitlements_needed', v)}
         options={[{ value: 'raw', label: 'Raw OK' }, { value: 'perc_tested', label: 'Perc Tested' }, { value: 'approved', label: 'Site Plan Approved' }]} />
+      <Field label="Location Setting Preference">
+        <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+          value={details.location_setting_pref || ''} onChange={e => setDetail('location_setting_pref', e.target.value)}>
+          <option value="" style={{ background: '#0E1318' }}>No preference</option>
+          {['Platted Subdivision', 'Cul-de-Sac', 'Corner Lot', 'Lakefront / Waterfront', 'Rural / Country', 'Wooded / Private'].map(o => <option key={o} value={o} style={{ background: '#0E1318' }}>{o}</option>)}
+        </select>
+      </Field>
       <SectionTitle>Utilities Required at Lot Line</SectionTitle>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         {[{key:'municipal_water',label:'Municipal Water'},{key:'sanitary_sewer',label:'Sanitary Sewer'},{key:'electric',label:'Electric'},{key:'natural_gas',label:'Natural Gas'},{key:'fiber_internet',label:'Fiber / Internet'}].map((u, idx) => (
@@ -535,12 +543,14 @@ function ResidentialLandRequirement({ details, setDetail }) {
       <SectionTitle>Site Preferences</SectionTitle>
       <Field label="Topography Preferred">
         <div className="flex flex-wrap gap-2">
-          {[{key:'level',label:'Level / Flat'},{key:'wooded',label:'Wooded'},{key:'cleared',label:'Cleared'},{key:'waterfront',label:'Waterfront'}].map(t => (
+          {[{key:'level',label:'Level / Flat'},{key:'wooded',label:'Wooded'},{key:'cleared',label:'Cleared'},{key:'sloped',label:'Sloped'},{key:'rolling',label:'Rolling'}].map(t => (
             <Chip key={t.key} label={t.label} selected={topography.includes(t.key)} onClick={() => toggleTopo(t.key)} />
           ))}
         </div>
       </Field>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="Paved Road Access Required" value={!!details.paved_road_req} onChange={v => setDetail('paved_road_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="No Wetlands / No Flood Zone Required" value={!!details.no_wetlands_req} onChange={v => setDetail('no_wetlands_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Subdivision Potential Desired" value={!!details.subdivision_pref} onChange={v => setDetail('subdivision_pref', v)} />
