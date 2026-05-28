@@ -429,18 +429,23 @@ function TownhouseRequirement({ details, setDetail }) {
         <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
         <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1.5" step="0.5" details={details} setDetail={setDetail} />
         <MinField label="Min Garage Spaces" field="min_garage" placeholder="e.g. 1" details={details} setDetail={setDetail} />
+        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 2000" details={details} setDetail={setDetail} />
         <Field label="Max HOA ($/mo)"><Num field="max_hoa" placeholder="e.g. 300" details={details} setDetail={setDetail} /></Field>
       </div>
       <ToggleGroup label="Stories Preferred" value={details.stories_pref || ''} onChange={v => setDetail('stories_pref', v)}
         options={[{ value: 'two', label: '2 Story' }, { value: 'three', label: '3 Story' }, { value: 'any', label: 'Any' }]} />
       <ToggleGroup label="Position Preference" value={details.position_pref || ''} onChange={v => setDetail('position_pref', v)}
         options={[{ value: 'end', label: 'End Unit' }, { value: 'any', label: 'Any' }]} />
+      <ToggleGroup label="Basement" value={details.basement_pref || ''} onChange={v => setDetail('basement_pref', v)}
+        options={[{ value: 'finished', label: 'Finished' }, { value: 'any', label: 'Any/None OK' }]} />
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="Rooftop Deck Required" value={!!details.rooftop_req} onChange={v => setDetail('rooftop_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Private Patio / Yard Required" value={!!details.patio_req} onChange={v => setDetail('patio_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="In-Unit Laundry Required" value={!!details.in_unit_laundry_req} onChange={v => setDetail('in_unit_laundry_req', v)} />
+        <Toggle label="Fireplace Required" value={!!details.fireplace_req} onChange={v => setDetail('fireplace_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Basement Preferred" value={!!details.basement_pref} onChange={v => setDetail('basement_pref', v)} />
+        <Toggle label="In-Unit Laundry Required" value={!!details.in_unit_laundry_req} onChange={v => setDetail('in_unit_laundry_req', v)} />
       </div>
       <Field label="Additional Requirements">
         <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)} placeholder="Any must-haves…" rows={2} />
