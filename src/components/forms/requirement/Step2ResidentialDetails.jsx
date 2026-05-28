@@ -334,7 +334,16 @@ function CondoRequirement({ details, setDetail }) {
 function ApartmentRequirement({ details, setDetail }) {
   const utilities = details.utilities_req || [];
   const toggleUtility = (key) => setDetail('utilities_req', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
+  const amenities = details.desired_amenities || [];
+  const toggleAmenity = (key) => setDetail('desired_amenities', amenities.includes(key) ? amenities.filter(k => k !== key) : [...amenities, key]);
   const UTILITIES = ['Water','Sewer','Trash','Gas','Electric','Internet'];
+  // Keys aligned to the listing's APT_AMENITIES so renter requirements actually match listings.
+  const AMENITIES = [
+    { key: 'gym', label: 'Fitness Center' }, { key: 'pool', label: 'Pool' }, { key: 'rooftop', label: 'Rooftop Deck' },
+    { key: 'doorman', label: 'Doorman / Concierge' }, { key: 'package_room', label: 'Package Room' }, { key: 'bike_storage', label: 'Bike Storage' },
+    { key: 'ev_charging', label: 'EV Charging' }, { key: 'coworking', label: 'Co-Working Space' }, { key: 'dog_park', label: 'Dog Park / Pet Area' },
+    { key: 'game_room', label: 'Game Room / Lounge' },
+  ];
   return (
     <>
       <SectionTitle>Unit Requirements</SectionTitle>
@@ -342,6 +351,7 @@ function ApartmentRequirement({ details, setDetail }) {
         <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
         <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
         <MinField label="Min Floor #" field="min_floor" placeholder="e.g. 2" hint="Optional" details={details} setDetail={setDetail} />
+        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 2010" details={details} setDetail={setDetail} />
       </div>
       <SectionTitle>Utilities Needed in Rent</SectionTitle>
       <div className="flex flex-wrap gap-2">
@@ -358,6 +368,15 @@ function ApartmentRequirement({ details, setDetail }) {
         options={[{ value: 'allowed', label: 'Pets Allowed' }, { value: 'any', label: 'No Requirement' }]} />
       <ToggleGroup label="Furnished" value={details.furnished_pref || ''} onChange={v => setDetail('furnished_pref', v)}
         options={[{ value: 'furnished', label: 'Furnished' }, { value: 'unfurnished', label: 'Unfurnished' }, { value: 'any', label: 'Any' }]} />
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="Central A/C Required" value={!!details.central_ac_req} onChange={v => setDetail('central_ac_req', v)} />
+      </div>
+      <SectionTitle>Desired Building Amenities</SectionTitle>
+      <CollapsiblePanel title="Building Amenities" summary={amenities.length > 0 ? `${amenities.length} selected` : 'Community features your client wants'}>
+        <div className="flex flex-wrap gap-2 pt-1">
+          {AMENITIES.map(a => <Chip key={a.key} label={a.label} selected={amenities.includes(a.key)} onClick={() => toggleAmenity(a.key)} />)}
+        </div>
+      </CollapsiblePanel>
       <Field label="Additional Requirements">
         <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)} placeholder="Any must-haves…" rows={2} />
       </Field>
