@@ -247,12 +247,17 @@ function RetailRequirementSaleInvestment({ details, setDetail }) {
         <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 90" details={details} setDetail={setDetail} />
         <MinField label="Min GLA (SF)" field="min_gla_sf" placeholder="e.g. 20000" details={details} setDetail={setDetail} />
         <MinField label="Min Avg Lease Term Remaining (yrs)" field="min_avg_lease_remaining" placeholder="e.g. 3" step="0.1" details={details} setDetail={setDetail} />
+        <MinField label="Min Traffic Count (vehicles/day)" field="min_traffic_count" placeholder="e.g. 20000" details={details} setDetail={setDetail} />
       </div>
       <SectionTitle>Asset Preferences</SectionTitle>
       <ToggleGroup label="Lease Type Preference" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
-        options={[{ value: 'nnn', label: 'NNN' }, { value: 'mg', label: 'Modified Gross' }, { value: 'any', label: 'Any' }]} />
+        options={[{ value: 'nnn', label: 'NNN' }, { value: 'modified_gross', label: 'Modified Gross' }, { value: 'gross', label: 'Gross' }, { value: 'any', label: 'Any' }]} />
+      <ToggleGroup label="Tenancy Preference" value={details.tenancy_pref || ''} onChange={v => setDetail('tenancy_pref', v)}
+        options={[{ value: 'single', label: 'Single-Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'any', label: 'Either' }]} />
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Grocery-Anchored Required" value={!!details.grocery_anchored_req} onChange={v => setDetail('grocery_anchored_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Avoid Co-Tenancy Clauses" value={!!details.avoid_co_tenancy_clauses} onChange={v => setDetail('avoid_co_tenancy_clauses', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Open to Value-Add / Repositioning" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
       </div>
