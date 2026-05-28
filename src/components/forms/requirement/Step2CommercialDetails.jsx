@@ -200,6 +200,8 @@ function OfficeRequirementSaleInvestment({ details, setDetail }) {
 }
 
 function MOBRequirementSaleInvestment({ details, setDetail }) {
+  const specialties = details.preferred_specialties || [];
+  const toggleSpecialty = (s) => setDetail('preferred_specialties', specialties.includes(s) ? specialties.filter(x => x !== s) : [...specialties, s]);
   return (
     <>
       <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
@@ -209,7 +211,6 @@ function MOBRequirementSaleInvestment({ details, setDetail }) {
         <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 5.5" step="0.1" hint="MOB avg: ~6.3% Q1 2026" details={details} setDetail={setDetail} />
         <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 90" details={details} setDetail={setDetail} />
         <MinField label="Min WALT (years)" field="min_walt" placeholder="e.g. 5" step="0.1" hint="Medical tenants sign 7–15 yr leases" details={details} setDetail={setDetail} />
-        <MinField label="Min Total SF" field="min_sf" placeholder="e.g. 10000" details={details} setDetail={setDetail} />
         <MinField label="Min Annual Rent Escalations (%)" field="min_rent_escalations" placeholder="e.g. 2.0" step="0.1" details={details} setDetail={setDetail} />
       </div>
       <SectionTitle>Property Preferences</SectionTitle>
@@ -219,8 +220,10 @@ function MOBRequirementSaleInvestment({ details, setDetail }) {
         options={[{ value: 'nnn', label: 'NNN' }, { value: 'gross', label: 'Gross' }, { value: 'any', label: 'Any' }]} />
       <ToggleGroup label="Tenancy" value={details.tenancy_pref || ''} onChange={v => setDetail('tenancy_pref', v)}
         options={[{ value: 'single', label: 'Single Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'any', label: 'Any' }]} />
-      <Field label="Preferred Tenant Specialties" hint="Press Enter to add each">
-        <TagsInput value={details.preferred_specialties || []} onChange={v => setDetail('preferred_specialties', v)} placeholder="e.g. Primary Care, Cardiology (press Enter)" />
+      <Field label="Preferred Tenant Specialties (select all that apply)">
+        <div className="flex flex-wrap gap-2">
+          {MEDICAL_SPECIALTIES.map(s => <Chip key={s} label={s} selected={specialties.includes(s)} onClick={() => toggleSpecialty(s)} />)}
+        </div>
       </Field>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Open to Value-Add Opportunities" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
