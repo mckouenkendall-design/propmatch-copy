@@ -480,6 +480,7 @@ function ManufacturedRequirement({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
         <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
+        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 2000" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="Land Ownership Required" value={details.land_ownership_req || ''} onChange={v => setDetail('land_ownership_req', v)}
         options={[{ value: 'owned', label: 'Land Owned' }, { value: 'leased', label: 'Lot Lease OK' }, { value: 'any', label: 'Either' }]} />
@@ -490,12 +491,18 @@ function ManufacturedRequirement({ details, setDetail }) {
       )}
       <ToggleGroup label="Age Restriction Preference" value={details.age_restriction_pref || ''} onChange={v => setDetail('age_restriction_pref', v)}
         options={[{ value: '55_plus', label: '55+ Community' }, { value: 'all_ages', label: 'All Ages' }, { value: 'any', label: 'Either' }]} />
+      <ToggleGroup label="Utilities Setup Preference" value={details.utilities_setup_pref || ''} onChange={v => setDetail('utilities_setup_pref', v)}
+        options={[{ value: 'municipal', label: 'Municipal' }, { value: 'well_septic', label: 'Well / Septic OK' }, { value: 'any', label: 'Either' }]} />
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="HUD Tag / Title Required" value={!!details.hud_tag_req} onChange={v => setDetail('hud_tag_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Permanent Foundation Required" value={!!details.permanent_foundation_req} onChange={v => setDetail('permanent_foundation_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Central A/C Required" value={!!details.ac_req} onChange={v => setDetail('ac_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Carport / Garage Required" value={!!details.carport_req} onChange={v => setDetail('carport_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Covered Porch / Deck Required" value={!!details.porch_req} onChange={v => setDetail('porch_req', v)} />
       </div>
       <Field label="Additional Requirements">
         <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)} placeholder="Any must-haves or community preferences…" rows={2} />
