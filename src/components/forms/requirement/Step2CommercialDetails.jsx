@@ -8,6 +8,25 @@ import { ArrowRight, X } from 'lucide-react';
 
 const ACCENT = '#818cf8'; // lavender — requirement color
 
+function CollapsiblePanel({ title, summary, children, defaultOpen }) {
+  const [open, setOpen] = React.useState(defaultOpen || false);
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+      <button type="button" onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
+        style={{ background: 'rgba(255,255,255,0.05)' }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+        <div>
+          <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>{title}</p>
+          {!open && <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{summary}</p>}
+        </div>
+        <span className="text-lg leading-none ml-2" style={{ color: 'rgba(255,255,255,0.5)' }}>{open ? '−' : '+'}</span>
+      </button>
+      {open && <div className="px-4 py-3">{children}</div>}
+    </div>
+  );
+}
+
 function Field({ label, hint, children }) {
   return (
     <div className="space-y-1.5">
@@ -71,11 +90,11 @@ function PreferredAmenities({ details, setDetail }) {
   const selected = details.preferred_amenities || [];
   const toggle = (v) => setDetail('preferred_amenities', selected.includes(v) ? selected.filter(a => a !== v) : [...selected, v]);
   return (
-    <Field label="Preferred Amenities (select any that matter to your client)">
-      <div className="flex flex-wrap gap-2">
+    <CollapsiblePanel title="Preferred Amenities" summary={selected.length > 0 ? `${selected.length} selected` : 'Building features your client wants'}>
+      <div className="flex flex-wrap gap-2 pt-1">
         {PREFERRED_AMENITIES.map(a => <Chip key={a.value} label={a.label} selected={selected.includes(a.value)} onClick={() => toggle(a.value)} />)}
       </div>
-    </Field>
+    </CollapsiblePanel>
   );
 }
 
