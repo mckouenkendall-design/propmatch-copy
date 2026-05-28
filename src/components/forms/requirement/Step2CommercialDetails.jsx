@@ -185,7 +185,9 @@ function OfficeRequirementSaleInvestment({ details, setDetail }) {
         </div>
       </Field>
       <ToggleGroup label="Lease Type Preference" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
-        options={[{ value: 'nnn', label: 'NNN' }, { value: 'mg', label: 'Modified Gross' }, { value: 'fsg', label: 'Full Service' }, { value: 'any', label: 'Any' }]} />
+        options={[{ value: 'nnn', label: 'NNN' }, { value: 'modified_gross', label: 'Modified Gross' }, { value: 'full_service', label: 'Full Service' }, { value: 'any', label: 'Any' }]} />
+      <ToggleGroup label="Tenancy Preference" value={details.tenancy_pref || ''} onChange={v => setDetail('tenancy_pref', v)}
+        options={[{ value: 'single', label: 'Single-Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'any', label: 'Either' }]} />
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Open to Value-Add Opportunities" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
       </div>
