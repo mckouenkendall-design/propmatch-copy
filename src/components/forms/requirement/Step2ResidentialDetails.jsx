@@ -194,6 +194,8 @@ function TownhouseRequirementSaleInvestment({ details, setDetail }) {
         <Toggle label="Private Patio / Yard Required" value={!!details.patio_req} onChange={v => setDetail('patio_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="In-Unit Laundry Required" value={!!details.in_unit_laundry_req} onChange={v => setDetail('in_unit_laundry_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Property Management in Place Preferred" value={!!details.management_pref} onChange={v => setDetail('management_pref', v)} />
       </div>
       <Field label="Notes / Strategy">
         <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
