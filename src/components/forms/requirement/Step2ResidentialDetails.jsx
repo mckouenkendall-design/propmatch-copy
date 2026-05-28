@@ -160,7 +160,6 @@ function CondoRequirementSaleInvestment({ details, setDetail }) {
         <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
         <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
         <MinField label="Min Floor #" field="min_floor" placeholder="e.g. 3" hint="Optional — leave blank if any floor OK" details={details} setDetail={setDetail} />
-        <Field label="Max HOA Already Captured Above" hint="See rental criteria section" />
       </div>
       <ToggleGroup label="Parking" value={details.parking_pref || ''} onChange={v => setDetail('parking_pref', v)}
         options={[{ value: 'assigned', label: 'Assigned' }, { value: 'garage', label: 'Garage' }, { value: 'any', label: 'Any' }]} />
@@ -168,6 +167,8 @@ function CondoRequirementSaleInvestment({ details, setDetail }) {
         <Toggle label="In-Unit Laundry Required" value={!!details.in_unit_laundry_req} onChange={v => setDetail('in_unit_laundry_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Balcony / Outdoor Space Required" value={!!details.balcony_req} onChange={v => setDetail('balcony_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Property Management in Place Preferred" value={!!details.management_pref} onChange={v => setDetail('management_pref', v)} />
       </div>
       <Field label="Notes / Strategy">
         <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
