@@ -278,22 +278,29 @@ function IndustrialFlexRequirementSaleInvestment({ details, setDetail }) {
       <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
       <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
       <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 200000" hint="Leave blank if targeting owner-occupied" details={details} setDetail={setDetail} />
+        <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 200000" hint="Leave blank if targeting vacant / owner-occupied" details={details} setDetail={setDetail} />
         <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 5.5" step="0.1" hint="Industrial: 5–9.5% by type/market" details={details} setDetail={setDetail} />
+        <Field label="Max Price / SF ($)" hint="Use when targeting vacant or owner-occupied deals"><Num field="max_price_per_sf" placeholder="e.g. 110" details={details} setDetail={setDetail} /></Field>
         <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 85" details={details} setDetail={setDetail} />
         <MinField label="Min WALT (years)" field="min_walt" placeholder="e.g. 2" step="0.1" details={details} setDetail={setDetail} />
-        <MinField label="Min Total SF" field="min_sf" placeholder="e.g. 40000" details={details} setDetail={setDetail} />
+      </div>
+      <SectionTitle>Physical Profile (Minimums)</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
         <MinField label="Min Clear Height (ft)" field="min_clear_height" placeholder="e.g. 24" details={details} setDetail={setDetail} />
         <MinField label="Min Dock-High Doors" field="min_dock_doors" placeholder="e.g. 4" details={details} setDetail={setDetail} />
+        <MinField label="Min Drive-In Doors" field="min_drive_in_doors" placeholder="e.g. 1" details={details} setDetail={setDetail} />
+        <MinField label="Min Floor Load (lbs/sqft)" field="min_floor_load" placeholder="e.g. 250" details={details} setDetail={setDetail} />
         <MinField label="Min Land / Lot (acres)" field="min_acres" placeholder="e.g. 2" step="0.1" details={details} setDetail={setDetail} />
       </div>
       <SectionTitle>Asset Preferences</SectionTitle>
       <ToggleGroup label="Tenancy Preference" value={details.tenancy_pref || ''} onChange={v => setDetail('tenancy_pref', v)}
-        options={[{ value: 'single', label: 'Single Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'any', label: 'Any' }]} />
+        options={[{ value: 'single', label: 'Single Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'vacant', label: 'Vacant OK' }, { value: 'any', label: 'Any' }]} />
       <ToggleGroup label="Lease Type Preference" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
-        options={[{ value: 'nnn', label: 'NNN' }, { value: 'mg', label: 'Modified Gross' }, { value: 'any', label: 'Any' }]} />
+        options={[{ value: 'nnn', label: 'NNN' }, { value: 'modified_gross', label: 'Modified Gross' }, { value: 'gross', label: 'Gross' }, { value: 'any', label: 'Any' }]} />
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="3-Phase Power Required" value={!!details.three_phase_req} onChange={v => setDetail('three_phase_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Rail Access Required" value={!!details.rail_access_req} onChange={v => setDetail('rail_access_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Open to Value-Add Opportunities" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
       </div>
