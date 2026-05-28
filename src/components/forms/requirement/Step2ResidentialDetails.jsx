@@ -223,6 +223,7 @@ function ManufacturedRequirementSaleInvestment({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
         <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
+        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 1990" hint="Post-1976 HUD code is critical for financing" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="Land Ownership Preference" value={details.land_ownership_pref || ''} onChange={v => setDetail('land_ownership_pref', v)}
         options={[{ value: 'owned', label: 'Land Owned Only' }, { value: 'leased', label: 'Lot Lease OK' }, { value: 'any', label: 'Either' }]} />
@@ -233,6 +234,8 @@ function ManufacturedRequirementSaleInvestment({ details, setDetail }) {
       )}
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="HUD Tag / Title Required" value={!!details.hud_tag_req} onChange={v => setDetail('hud_tag_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Property Management in Place Preferred" value={!!details.management_pref} onChange={v => setDetail('management_pref', v)} />
       </div>
       <Field label="Notes / Strategy">
         <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
