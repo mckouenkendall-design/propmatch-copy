@@ -62,16 +62,16 @@ export default function LocationAreaInput({ areas = [], mapAreas = [], onChange 
           onEnter={addArea}
           placeholder="e.g. Ferndale, MI"
         />
-        <Button type="button" variant="outline" onClick={() => setShowMap(true)} className="flex-shrink-0 gap-1.5">
+        <Button type="button" variant="outline" disabled title="Custom map areas coming soon" className="flex-shrink-0 gap-1.5 opacity-50 cursor-not-allowed">
           <Map className="w-4 h-4" />
-          Draw on Map
+          Draw on Map (coming soon)
         </Button>
       </div>
       <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-        Type a city and click a suggestion to add it. Use "Draw on Map" for custom areas.
+        Type a city and click a suggestion to add it. Custom map areas coming soon.
       </p>
 
-      {showMap && (
+      {false && showMap && (
         <MapAreaSelector
           existingAreas={mapAreas}
           onSave={(newMapAreas) => onChange({ areas, mapAreas: newMapAreas })}
