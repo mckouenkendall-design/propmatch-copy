@@ -56,42 +56,43 @@ const AuthenticatedApp = () => {
       setFallbackChecked(true);
       return;
     }
-    // If AuthContext already has _profileId, skip the fallback check.
+    // If AuthContext already has _profileId, profile is confirmed to exist.
     if (user._profileId) {
       setFallbackHasProfile(true);
       setFallbackChecked(true);
       return;
     }
-    // If AuthContext is fetching profile in background, assume it exists and
-    // don't redirect to Onboarding. The profile will arrive momentarily and
-    // _profileId will be set, triggering this effect to re-run with the truth.
+    // If AuthContext is still doing its Phase-2 background fetch, hold off on
+    // committing a routing decision — but DO NOT assume the profile exists.
+    // Show loading; this effect will re-run when _profileLoading flips false.
     if (user._profileLoading) {
-      setFallbackHasProfile(true);
-      setFallbackChecked(true);
+      setFallbackChecked(false);
       return;
     }
 
-    // AuthContext has user but no profile loaded - do one direct check.
+    // AuthContext has user but no profile and no longer loading — do the
+    // authoritative DB check before deciding to redirect.
     (async () => {
       try {
         const { data: rows, error } = await rawSupabase.from('profiles').select('id').eq('user_email', user.email).limit(1);
         if (cancelled) return;
         if (error) {
-          // On error, assume profile exists to avoid wrong-way redirects.
-          setFallbackHasProfile(true);
+          // On error, assume profile does NOT exist so new users get sent to
+          // Onboarding rather than dropped into the app with no profile.
+          setFallbackHasProfile(false);
         } else {
           setFallbackHasProfile(Array.isArray(rows) && rows.length > 0);
         }
       } catch (e) {
         if (cancelled) return;
-        // On error, assume profile exists to avoid wrong-way redirects.
-        setFallbackHasProfile(true);
+        // On exception, treat as no profile — safer for new users.
+        setFallbackHasProfile(false);
       }
       if (!cancelled) setFallbackChecked(true);
     })();
 
     return () => { cancelled = true; };
-  }, [user?.email, user?._profileId]);
+  }, [user?.email, user?._profileId, user?._profileLoading]);
 
   // Wait for both auth and the fallback check before deciding routing.
   if (isLoadingAuth || (user?.email && !fallbackChecked)) {
@@ -102,13 +103,12 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // hasProfile: true if AuthContext has _profileId, OR if it's currently loading
-  // the profile in the background (Phase 2), OR if the fallback check found one.
-  // The _profileLoading branch is critical - without it, the first render after
-  // reload sees fallbackHasProfile=null and would wrongly redirect to Onboarding.
+  // hasProfile is now strictly: confirmed _profileId, OR fallback DB check found one.
+  // _profileLoading is no longer treated as a positive signal — when AuthContext
+  // is still loading, we show the spinner (see isLoadingAuth/fallbackChecked guard above)
+  // and DO NOT prematurely let the user past the onboarding gate.
   const hasProfile =
     !!user?._profileId ||
-    user?._profileLoading === true ||
     fallbackHasProfile === true;
   const pathname = location.pathname;
   const publicPages = ['/Blog', '/Careers', '/Affiliate', '/Privacy', '/Terms', '/AboutUs'];
