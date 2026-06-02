@@ -69,15 +69,22 @@ function scoreLoc(listingCity, reqCities) {
       cc.startsWith(lc + ',') ||
       lc.startsWith(cc + ',');
   });
-  return hit ? 100 : 20;
+  return hit ? 100 : 0;
 }
 
-// Amenity / feature overlap
+// Amenity / feature overlap — bonus pool curve, not flat percentage.
+// Amenities are nice-to-haves, scored generously so missing one or two
+// doesn't catastrophically drop the score.
+// Curve: 100% match → 100, 75% → 90, 50% → 75, 25% → 55, 0% → 15.
 function scoreAmenities(listingSet, requiredSet) {
   if (!requiredSet?.length) return null;
-  if (!listingSet?.length) return 0;
-  const hit = requiredSet.filter(a => listingSet.includes(a));
-  return Math.round((hit.length / requiredSet.length) * 100);
+  const matched = (listingSet || []).filter(a => requiredSet.includes(a)).length;
+  const pct = matched / requiredSet.length;
+  if (pct >= 1.0)  return 100;
+  if (pct >= 0.75) return 90;
+  if (pct >= 0.50) return 75;
+  if (pct >= 0.25) return 55;
+  return 15;
 }
 
 // ── Property-type detail scoring ──────────────────────────────────────────────
@@ -350,97 +357,96 @@ function scoreDetails(listing, requirement, ld, rd) {
 export function calculateMatchScore(listing, requirement) {
   // Hard gate: property type must match
   if (listing.property_type !== requirement.property_type) {
-    return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null };
+    return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null, coverage: 0 };
   }
 
-  // Hard gate: transaction type must be compatible
+  // Hard gate: transaction type must be compatible.
+  // No partial-credit weighting — either compatible or not.
   const txScore = scoreTx(listing.transaction_type, requirement.transaction_type);
-  if (txScore === 0) {
-    return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null };
+  if (txScore === 0 || txScore === null) {
+    return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null, coverage: 0 };
   }
 
   const ld = parseDetails(listing);
   const rd = parseDetails(requirement);
 
   const breakdown = [];
-  const rangeData  = {};
-  let weightedSum  = 0;
-  let totalWeight  = 0;
+  const rangeData = {};
+  let weightedSum = 0;
+  let totalWeight = 0;
 
-  const W = { tx: 15, price: 22, size: 18, location: 15, details: 15 };
-
-  // Transaction type
-  breakdown.push({ category: 'Transaction Type', score: txScore, weight: W.tx,
-    details: txScore === 100 ? 'Exact match' : 'Compatible types', icon: '↔️' });
-  weightedSum += (txScore / 100) * W.tx;
-  totalWeight += W.tx;
+  // Phase A: single weight set across all types (Phase B will introduce per-type splits).
+  // Transaction removed as a weighted category — it is now a pure hard gate above.
+  const W = { price: 26, size: 22, location: 22, details: 30 };
 
   // ── Price (with unit normalization) ────────────────────────────────────────
   const listingPrice    = parseFloat(listing.price) || 0;
   const listingPriceTBD = !!(listing.price_is_tbd);
+  // Requirement TBD lives inside property_details so we don't need a DB column.
+  const reqPriceTBD     = !!(requirement.price_is_tbd || rd.price_is_tbd);
   const reqMinRaw       = parseFloat(requirement.min_price) || 0;
   const reqMaxRaw       = parseFloat(requirement.max_price) || 0;
 
-  // TBD price: counts as 100% — listing is open to negotiation, not a blocker
-  if (listingPriceTBD) {
-    breakdown.push({ category: 'Price', score: 100, weight: W.price, details: 'TBD — open to offers', icon: '💰' });
-    weightedSum += W.price;
-    totalWeight += W.price;
-  } else if (listingPrice > 0 && (reqMinRaw > 0 || reqMaxRaw > 0)) {
-    const listingTx = listing.transaction_type;
-    const reqPeriod = requirement.price_period || 'per_month';
-    let compareValue, compareMin, compareMax, priceLabel, priceDetails, priceUnit;
-
-    const isCommercialLease = (listingTx === 'lease' || listingTx === 'sublease') && listing.size_sqft;
-
-    if (isCommercialLease) {
-      const listingMonthly = (listingPrice * parseFloat(listing.size_sqft)) / 12;
-      // Requirements are always entered as TOTAL dollars (per month or per year), never a per-SF rate.
-      // Reduce both the requirement and the listing to a monthly total dollar figure before comparing.
-      if (reqPeriod === 'per_year') {
-        compareValue  = listingMonthly;
-        compareMin    = reqMinRaw ? reqMinRaw / 12 : null;
-        compareMax    = reqMaxRaw ? reqMaxRaw / 12 : null;
-        priceLabel    = 'Monthly Total';
-        priceDetails  = `$${Math.round(listingMonthly).toLocaleString()}/mo`;
-        priceUnit     = '$/mo';
-      } else {
-        compareValue  = listingMonthly;
-        compareMin    = reqMinRaw || null;
-        compareMax    = reqMaxRaw || null;
-        priceLabel    = 'Monthly Total';
-        priceDetails  = `$${Math.round(listingMonthly).toLocaleString()}/mo`;
-        priceUnit     = '$/mo';
-      }
-    } else if (listingTx === 'rent') {
-      // Residential rent: listing price is already a monthly total.
-      const reqMin = reqPeriod === 'per_year' ? (reqMinRaw ? reqMinRaw / 12 : null) : (reqMinRaw || null);
-      const reqMax = reqPeriod === 'per_year' ? (reqMaxRaw ? reqMaxRaw / 12 : null) : (reqMaxRaw || null);
-      compareValue = listingPrice;
-      compareMin   = reqMin;
-      compareMax   = reqMax;
-      priceLabel   = 'Monthly Rent';
-      priceDetails = `$${listingPrice.toLocaleString()}/mo`;
-      priceUnit    = '$/mo';
-    } else {
-      compareValue = listingPrice;
-      compareMin   = reqMinRaw || null;
-      compareMax   = reqMaxRaw || null;
-      priceLabel   = 'Purchase Price';
-      priceDetails = `$${listingPrice.toLocaleString()}`;
-      priceUnit    = '$';
-    }
-
-    const priceScore = scoreRange(compareValue, compareMin, compareMax);
-    if (priceScore !== null) {
-      breakdown.push({ category: priceLabel, score: priceScore, weight: W.price, details: priceDetails, icon: '💰' });
-      weightedSum += (priceScore / 100) * W.price;
+  // Requirement TBD = no price preference → skip price category entirely.
+  // (Listing TBD is handled below as "open to offers" → 100.)
+  if (!reqPriceTBD) {
+    if (listingPriceTBD) {
+      // Listing is open to offers — price category scores 100.
+      breakdown.push({ category: 'Price', score: 100, weight: W.price, details: 'Listing open to offers', icon: '💰' });
+      weightedSum += W.price;
       totalWeight += W.price;
-      rangeData.price = {
-        value: Math.round(compareValue * 100) / 100,
-        min: compareMin, max: compareMax,
-        unit: priceUnit, label: priceLabel, score: priceScore,
-      };
+    } else if (listingPrice > 0 && (reqMinRaw > 0 || reqMaxRaw > 0)) {
+      const listingTx = listing.transaction_type;
+      const reqPeriod = requirement.price_period || 'per_month';
+      let compareValue, compareMin, compareMax, priceLabel, priceDetails, priceUnit;
+
+      const isCommercialLease = (listingTx === 'lease' || listingTx === 'sublease') && listing.size_sqft;
+
+      if (isCommercialLease) {
+        const listingMonthly = (listingPrice * parseFloat(listing.size_sqft)) / 12;
+        // Requirements are always entered as TOTAL dollars (per month or per year), never per-SF.
+        // Reduce both sides to a monthly total before comparing.
+        if (reqPeriod === 'per_year') {
+          compareValue = listingMonthly;
+          compareMin   = reqMinRaw ? reqMinRaw / 12 : null;
+          compareMax   = reqMaxRaw ? reqMaxRaw / 12 : null;
+        } else {
+          compareValue = listingMonthly;
+          compareMin   = reqMinRaw || null;
+          compareMax   = reqMaxRaw || null;
+        }
+        priceLabel   = 'Monthly Total';
+        priceDetails = `$${Math.round(listingMonthly).toLocaleString()}/mo`;
+        priceUnit    = '$/mo';
+      } else if (listingTx === 'rent') {
+        const reqMin = reqPeriod === 'per_year' ? (reqMinRaw ? reqMinRaw / 12 : null) : (reqMinRaw || null);
+        const reqMax = reqPeriod === 'per_year' ? (reqMaxRaw ? reqMaxRaw / 12 : null) : (reqMaxRaw || null);
+        compareValue = listingPrice;
+        compareMin   = reqMin;
+        compareMax   = reqMax;
+        priceLabel   = 'Monthly Rent';
+        priceDetails = `$${listingPrice.toLocaleString()}/mo`;
+        priceUnit    = '$/mo';
+      } else {
+        compareValue = listingPrice;
+        compareMin   = reqMinRaw || null;
+        compareMax   = reqMaxRaw || null;
+        priceLabel   = 'Purchase Price';
+        priceDetails = `$${listingPrice.toLocaleString()}`;
+        priceUnit    = '$';
+      }
+
+      const priceScore = scoreRange(compareValue, compareMin, compareMax);
+      if (priceScore !== null) {
+        breakdown.push({ category: priceLabel, score: priceScore, weight: W.price, details: priceDetails, icon: '💰' });
+        weightedSum += (priceScore / 100) * W.price;
+        totalWeight += W.price;
+        rangeData.price = {
+          value: Math.round(compareValue * 100) / 100,
+          min: compareMin, max: compareMax,
+          unit: priceUnit, label: priceLabel, score: priceScore,
+        };
+      }
     }
   }
 
@@ -483,27 +489,34 @@ export function calculateMatchScore(listing, requirement) {
     totalWeight += W.details;
   }
 
-  // ── Final score calculation ───────────────────────────────────────────────
-  // 20 base points for property-type match, 80 points from weighted factors
-  const factorScore = totalWeight > 0 ? (weightedSum / totalWeight) * 100 : 50;
-  const finalScore  = Math.min(100, Math.max(0, Math.round(20 + factorScore * 0.8)));
+  // ── Final score: raw weighted average, no baseline floor ───────────────────
+  // If nothing scored (no requirement fields filled), default to 0 — there's
+  // nothing to evaluate so it's not a match.
+  const finalScore = totalWeight > 0
+    ? Math.min(100, Math.max(0, Math.round((weightedSum / totalWeight) * 100)))
+    : 0;
 
-  const isMatch    = finalScore >= 30;
+  // Coverage = how many dimensions actually contributed to this score.
+  // Used in the UI to show "score based on N dimensions" so users can tell
+  // whether a 95 came from 2 fields (sketchy) or 18 fields (solid).
+  const coverage = breakdown.length;
+
+  const isMatch    = finalScore >= 45;
   const matchLabel = isMatch ? getScoreLabel(finalScore) : null;
 
-  return { totalScore: finalScore, breakdown, rangeData, isMatch, matchLabel };
+  return { totalScore: finalScore, breakdown, rangeData, isMatch, matchLabel, coverage };
 }
 
 export function getScoreColor(score) {
-  if (score >= 70) return '#00DBC5';
-  if (score >= 50) return '#F59E0B';
-  if (score >= 30) return '#F97316';
+  if (score >= 85) return '#00DBC5';
+  if (score >= 65) return '#F59E0B';
+  if (score >= 45) return '#F97316';
   return '#374151';
 }
 
 export function getScoreLabel(score) {
-  if (score >= 70) return 'Strong Match';
-  if (score >= 50) return 'Good Match';
-  if (score >= 30) return 'Partial Match';
+  if (score >= 85) return 'Strong Match';
+  if (score >= 65) return 'Good Match';
+  if (score >= 45) return 'Partial Match';
   return null;
 }

@@ -31,7 +31,7 @@ const validate = (data) => {
   const errors = [];
   if (!data.property_type) errors.push('Property type is required (Step 1)');
   if (!data.transaction_type) errors.push('Transaction type is required (Step 1)');
-  if (!data.max_price) errors.push('Max price / budget is required (Step 1)');
+  if (!data.max_price && !data.price_is_tbd) errors.push('Max price / budget is required (Step 1) — or mark price as TBD');
   return errors;
 };
 
@@ -44,11 +44,15 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
 
   const parseInitialData = (data) => {
     if (!data) return null;
+    const pd = typeof data.property_details === 'string'
+      ? (() => { try { return JSON.parse(data.property_details); } catch { return {}; } })()
+      : (data.property_details || {});
     return {
       ...data,
-      property_details: typeof data.property_details === 'string'
-        ? (() => { try { return JSON.parse(data.property_details); } catch { return {}; } })()
-        : (data.property_details || {}),
+      property_details: pd,
+      // price_is_tbd lives inside property_details so we don't need a DB migration.
+      // Hoist it to top-level form state for the UI.
+      price_is_tbd: !!pd.price_is_tbd,
       mapAreas: data.mapAreas || (() => { try { return JSON.parse(data.area_map_data || '[]'); } catch { return []; } })(),
     };
   };
@@ -64,6 +68,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     mapAreas: [],
     min_price: '',
     max_price: '',
+    price_is_tbd: false,
     min_size_sqft: '',
     max_size_sqft: '',
     property_details: {},
@@ -99,13 +104,20 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     });
 
     submitData.title = generateTitle(data);
-    submitData.property_details = JSON.stringify(data.property_details || {});
+    // Fold price_is_tbd into property_details so we don't need a DB column for it.
+    const pd = { ...(data.property_details || {}), price_is_tbd: !!data.price_is_tbd };
+    submitData.property_details = JSON.stringify(pd);
     submitData.created_by = data.created_by || user?.email;
 
     ['min_price', 'max_price', 'min_size_sqft', 'max_size_sqft', 'min_bedrooms', 'min_bathrooms'].forEach(f => {
       if (submitData[f] === '' || submitData[f] == null) delete submitData[f];
       else submitData[f] = parseFloat(submitData[f]);
     });
+    // If price is TBD, force min/max price to be dropped — they shouldn't be sent.
+    if (data.price_is_tbd) {
+      delete submitData.min_price;
+      delete submitData.max_price;
+    }
 
     // brokerage_id empty string -> drop it (nullable column)
     if (submitData.brokerage_id === '' || submitData.brokerage_id === undefined) {

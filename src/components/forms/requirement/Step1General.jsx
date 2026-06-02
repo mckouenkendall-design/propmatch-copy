@@ -89,14 +89,15 @@ export default function ReqStep1({ data, update, onNext }) {
   const ACRES_TO_SQFT = 43560;
   const isLand = data.property_type === 'land' || data.property_type === 'land_residential';
 
-  // Required: property_type, at least one preferred area, transaction_type
+  // Required: property_type, at least one preferred area, transaction_type, and either a price range OR TBD flag
   const hasPrice = !!(data.min_price || data.max_price);
+  const priceTBD = !!data.price_is_tbd;
 
   const canNext = !!(
     data.property_type &&
     data.cities && data.cities.length > 0 &&
     data.transaction_type &&
-    hasPrice
+    (hasPrice || priceTBD)
   );
 
   return (
@@ -206,12 +207,31 @@ export default function ReqStep1({ data, update, onNext }) {
           />
         ) : null}
         <div className="flex items-center gap-3 mt-2">
-          <NumericInput placeholder="Min $" value={data.min_price || ''} onChange={v => update({ min_price: v })} className="flex-1"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
-          <span className="font-medium flex-shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }}>–</span>
-          <NumericInput placeholder="Max $" value={data.max_price || ''} onChange={v => update({ max_price: v })} className="flex-1"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+          {data.price_is_tbd ? (
+            <div style={{ flex:1, padding:'9px 14px', background:'rgba(0,219,197,0.08)', border:`1px solid ${ACCENT}40`, borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:ACCENT, fontWeight:600 }}>Price: TBD — no budget set yet</div>
+          ) : (
+            <>
+              <NumericInput placeholder="Min $" value={data.min_price || ''} onChange={v => update({ min_price: v })} className="flex-1"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+              <span className="font-medium flex-shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }}>–</span>
+              <NumericInput placeholder="Max $" value={data.max_price || ''} onChange={v => update({ max_price: v })} className="flex-1"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+            </>
+          )}
+          <button type="button"
+            onClick={() => {
+              if (data.price_is_tbd) update({ price_is_tbd: false });
+              else update({ price_is_tbd: true, min_price: '', max_price: '' });
+            }}
+            style={{ padding:'8px 14px', borderRadius:'8px', border:`1px solid ${data.price_is_tbd?ACCENT+'60':'rgba(255,255,255,0.15)'}`, background:data.price_is_tbd?`${ACCENT}15`:'transparent', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:700, color:data.price_is_tbd?ACCENT:'rgba(255,255,255,0.5)', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+            TBD
+          </button>
         </div>
+        {data.price_is_tbd && (
+          <p className="text-xs italic" style={{ color: 'rgba(255,255,255,0.5)' }}>
+            Use this when your client hasn't given a clear budget yet — price won't filter matches.
+          </p>
+        )}
       </div>
 
       {/* Timeline */}
