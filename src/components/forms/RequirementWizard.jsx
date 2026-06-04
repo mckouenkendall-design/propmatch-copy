@@ -113,10 +113,12 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
       if (submitData[f] === '' || submitData[f] == null) delete submitData[f];
       else submitData[f] = parseFloat(submitData[f]);
     });
-    // If price is TBD, force min/max price to be dropped — they shouldn't be sent.
+    // If price is TBD, force min/max price to null in the payload so an UPDATE
+    // call actually clears them in the DB (just deleting the keys would leave
+    // the old values in place because Supabase only updates fields you send).
     if (data.price_is_tbd) {
-      delete submitData.min_price;
-      delete submitData.max_price;
+      submitData.min_price = null;
+      submitData.max_price = null;
     }
 
     // brokerage_id empty string -> drop it (nullable column)

@@ -367,6 +367,23 @@ export function calculateMatchScore(listing, requirement) {
     return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null, coverage: 0 };
   }
 
+  // Hard gate: if the requirement specifies cities and the listing's city isn't
+  // in that list, this is not a match. A wrong-city listing should never appear
+  // as a partial match — agents enter the cities they want; we honor them stiffly.
+  // (If the requirement has no cities specified, location is skipped, not gated.)
+  const reqCitiesRaw = Array.isArray(requirement.cities)
+    ? requirement.cities
+    : (typeof requirement.cities === 'string'
+        ? (() => { try { return JSON.parse(requirement.cities); } catch { return []; } })()
+        : []);
+  if (reqCitiesRaw.length > 0 && listing.city) {
+    const norm = (s) => String(s || '').trim().toLowerCase();
+    const hit = reqCitiesRaw.some(c => norm(c) === norm(listing.city));
+    if (!hit) {
+      return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null, coverage: 0 };
+    }
+  }
+
   const ld = parseDetails(listing);
   const rd = parseDetails(requirement);
 
@@ -468,12 +485,13 @@ export function calculateMatchScore(listing, requirement) {
   }
 
   // ── Location ──────────────────────────────────────────────────────────────
-  const locScore = scoreLoc(listing.city, requirement.cities);
-  if (locScore !== null) {
-    breakdown.push({ category: 'Location', score: locScore, weight: W.location,
-      details: locScore === 100 ? `${listing.city} matches` : `${listing.city} (not in preferred areas)`,
-      icon: '📍' });
-    weightedSum += (locScore / 100) * W.location;
+  // If we reached this point, location either matched (city in cities list) or
+  // the requirement had no cities specified at all. Either way, location is not
+  // dragging the score down — show 100 in the breakdown if there was a city to match.
+  if (reqCitiesRaw.length > 0 && listing.city) {
+    breakdown.push({ category: 'Location', score: 100, weight: W.location,
+      details: `${listing.city} matches`, icon: '📍' });
+    weightedSum += W.location;
     totalWeight += W.location;
   }
 
