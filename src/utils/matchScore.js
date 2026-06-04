@@ -371,14 +371,17 @@ export function calculateMatchScore(listing, requirement) {
   // in that list, this is not a match. A wrong-city listing should never appear
   // as a partial match — agents enter the cities they want; we honor them stiffly.
   // (If the requirement has no cities specified, location is skipped, not gated.)
+  // Comparison strips any ", STATE" suffix so "Clarkston" on a listing matches
+  // "Clarkston, MI" stored on a requirement.
   const reqCitiesRaw = Array.isArray(requirement.cities)
     ? requirement.cities
     : (typeof requirement.cities === 'string'
         ? (() => { try { return JSON.parse(requirement.cities); } catch { return []; } })()
         : []);
   if (reqCitiesRaw.length > 0 && listing.city) {
-    const norm = (s) => String(s || '').trim().toLowerCase();
-    const hit = reqCitiesRaw.some(c => norm(c) === norm(listing.city));
+    const cityOnly = (s) => String(s || '').split(',')[0].trim().toLowerCase();
+    const listingCityKey = cityOnly(listing.city);
+    const hit = reqCitiesRaw.some(c => cityOnly(c) === listingCityKey);
     if (!hit) {
       return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null, coverage: 0 };
     }
