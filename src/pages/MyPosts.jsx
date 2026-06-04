@@ -15,15 +15,29 @@ export default function MyPosts() {
   const [deletingId, setDeletingId] = useState(null);
   const queryClient = useQueryClient();
 
+  // DIAGNOSTIC: see exactly what email the page is using and what posts come back.
+  React.useEffect(() => {
+    console.log('[MyPosts DIAG] user object:', user);
+    console.log('[MyPosts DIAG] user.email used to filter:', user?.email);
+  }, [user]);
+
   const { data: listings = [], isLoading: loadingListings } = useQuery({
     queryKey: ['my-listings', user?.email],
-    queryFn: () => supabase.from('listings').select('*').eq('created_by', user?.email).order('created_at', { ascending: false }),
+    queryFn: async () => {
+      const result = await supabase.from('listings').select('*').eq('created_by', user?.email).order('created_at', { ascending: false });
+      console.log('[MyPosts DIAG] listings query result for email', user?.email, ':', result);
+      return result;
+    },
     enabled: !!user?.email,
   });
 
   const { data: requirements = [], isLoading: loadingRequirements } = useQuery({
     queryKey: ['my-requirements', user?.email],
-    queryFn: () => supabase.from('requirements').select('*').eq('created_by', user?.email).order('created_at', { ascending: false }),
+    queryFn: async () => {
+      const result = await supabase.from('requirements').select('*').eq('created_by', user?.email).order('created_at', { ascending: false });
+      console.log('[MyPosts DIAG] requirements query result for email', user?.email, ':', result);
+      return result;
+    },
     enabled: !!user?.email,
   });
 
