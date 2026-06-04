@@ -43,7 +43,14 @@ function priceStr(post, isListing) {
   const u = isListing
     ? (tx==='lease'||tx==='sublease'?'/SF/yr':tx==='rent'?'/mo':'')
     : (pp==='per_month'?'/mo':pp==='per_year'?'/yr':pp==='per_sf_per_year'?'/SF/yr':pp==='annually'?'/yr':(tx==='lease'||tx==='rent')?'/mo':'');
-  if (isListing) { const f = fmtN(post.price); return f ? `$${f}${u}` : null; }
+  if (isListing) {
+    if (post.price_is_tbd) return 'Price: TBD';
+    const f = fmtN(post.price);
+    return f ? `$${f}${u}` : null;
+  }
+  // Requirement: TBD lives inside property_details since there's no DB column for it on requirements.
+  const pd = parseDetails(post);
+  if (pd?.price_is_tbd || post.price_is_tbd) return 'Budget: TBD';
   const lo = fmtN(post.min_price), hi = fmtN(post.max_price);
   if (lo && hi) return `$${lo}\u2013$${hi}${u}`;
   if (hi) return `Up to $${hi}${u}`;
@@ -606,10 +613,13 @@ function RangeBar({ value, min, max, label, score, isMoney }) {
       <div style={{ position:'relative', height:'44px' }}>
         <div style={{ position:'absolute', top:'18px', left:0, right:0, height:'8px', background:'rgba(255,255,255,0.06)', borderRadius:'4px' }}>
           {loP!=null&&hiP!=null&&<div style={{ position:'absolute', left:`${loP}%`, width:`${hiP-loP}%`, height:'100%', background:`${LAVENDER}22`, borderRadius:'4px', border:`1px solid ${LAVENDER}45` }}/>}
+          {loP==null&&hiP!=null&&<div style={{ position:'absolute', left:`0%`, width:`${hiP}%`, height:'100%', background:`${LAVENDER}22`, borderRadius:'4px 0 0 4px', borderTop:`1px solid ${LAVENDER}45`, borderRight:`1px solid ${LAVENDER}45`, borderBottom:`1px solid ${LAVENDER}45` }}/>}
+          {loP!=null&&hiP==null&&<div style={{ position:'absolute', left:`${loP}%`, width:`${100-loP}%`, height:'100%', background:`${LAVENDER}22`, borderRadius:'0 4px 4px 0', borderTop:`1px solid ${LAVENDER}45`, borderLeft:`1px solid ${LAVENDER}45`, borderBottom:`1px solid ${LAVENDER}45` }}/>}
           <div style={{ position:'absolute', left:`${vP}%`, top:'-6px', transform:'translateX(-50%)', width:'20px', height:'20px', borderRadius:'50%', background:ACCENT, border:'3px solid #0E1318', boxShadow:`0 0 12px ${ACCENT}70`, zIndex:2 }}/>
         </div>
         {lo!=null&&loP!=null&&<span style={{ position:'absolute', top:'32px', left:`${loP}%`, transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'10px', color:`${LAVENDER}70`, whiteSpace:'nowrap' }}>{fmt(refLo)}</span>}
         {hi!=null&&hiP!=null&&<span style={{ position:'absolute', top:'32px', left:`${hiP}%`, transform:'translateX(-50%)', fontFamily:"'Inter',sans-serif", fontSize:'10px', color:`${LAVENDER}70`, whiteSpace:'nowrap' }}>{fmt(refHi)}</span>}
+        {lo==null&&hi!=null&&<span style={{ position:'absolute', top:'32px', left:`0%`, fontFamily:"'Inter',sans-serif", fontSize:'10px', color:`${LAVENDER}70`, whiteSpace:'nowrap' }}>Up to</span>}
       </div>
       <div style={{ display:'flex', alignItems:'center', gap:'16px', marginTop:'6px' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'4px' }}><div style={{ width:'8px', height:'8px', borderRadius:'50%', background:ACCENT }}/><span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)' }}>Your listing value</span></div>
@@ -634,7 +644,9 @@ function buildRangeBars(listing, requirement, breakdown) {
     bars.push({label,value:v,min:lo,max:hi,score,isMoney});
   };
   const price=parseFloat(listing.price),size=parseFloat(listing.size_sqft),tx=listing.transaction_type,isLease=tx==='lease'||tx==='sublease';
-  if(price){if(isLease&&size){const monthly=(price*size)/12;const isYr=requirement.price_period==='per_year';const rMin=isYr&&requirement.min_price?parseFloat(requirement.min_price)/12:requirement.min_price;const rMax=isYr&&requirement.max_price?parseFloat(requirement.max_price)/12:requirement.max_price;add('Monthly Total',monthly,rMin,rMax,'price');}else add('Price',price,requirement.min_price,requirement.max_price,'price');}
+  // If requirement price is TBD, skip the price bar entirely — the score is 100% but there's nothing meaningful to chart.
+  const reqTBD = rd?.price_is_tbd || requirement.price_is_tbd;
+  if(price && !reqTBD){if(isLease&&size){const monthly=(price*size)/12;const isYr=requirement.price_period==='per_year';const rMin=isYr&&requirement.min_price?parseFloat(requirement.min_price)/12:requirement.min_price;const rMax=isYr&&requirement.max_price?parseFloat(requirement.max_price)/12:requirement.max_price;add('Monthly Total',monthly,rMin,rMax,'price');}else add('Price',price,requirement.min_price,requirement.max_price,'price');}
   if(size)add('Size (SF)',size,requirement.min_size_sqft,requirement.max_size_sqft,'size');
   const pt=listing.property_type;
   if(pt==='office'){if(ld.offices)add('Private Offices',ld.offices,rd.min_offices,rd.max_offices,'details');if(ld.conf_rooms)add('Conference Rooms',ld.conf_rooms,rd.min_conf_rooms,rd.max_conf_rooms,'details');if(ld.total_parking_spaces)add('Parking Spaces',ld.total_parking_spaces,rd.min_total_parking_spaces,rd.max_parking,'details');}

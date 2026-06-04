@@ -89,8 +89,9 @@ export default function ReqStep1({ data, update, onNext }) {
   const ACRES_TO_SQFT = 43560;
   const isLand = data.property_type === 'land' || data.property_type === 'land_residential';
 
-  // Required: property_type, at least one preferred area, transaction_type, and either a price range OR TBD flag
-  const hasPrice = !!(data.min_price || data.max_price);
+  // Required: property_type, at least one preferred area, transaction_type,
+  // and either a MAX price OR TBD flag. Min is optional.
+  const hasPrice = !!data.max_price;
   const priceTBD = !!data.price_is_tbd;
 
   const canNext = !!(
@@ -192,9 +193,9 @@ export default function ReqStep1({ data, update, onNext }) {
 
       {/* Price Range */}
       <div className="space-y-1.5">
-        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Price Range<Req /></Label>
+        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Price (Max Required)<Req /></Label>
         {data.transaction_type === 'purchase' ? (
-          <p className="text-xs italic" style={{ color: 'rgba(255,255,255,0.5)' }}>Total purchase price range</p>
+          <p className="text-xs italic" style={{ color: 'rgba(255,255,255,0.5)' }}>Max purchase budget (Min optional)</p>
         ) : (data.transaction_type === 'lease' || data.transaction_type === 'rent') ? (
           <ToggleGroup
             label=""
@@ -211,10 +212,10 @@ export default function ReqStep1({ data, update, onNext }) {
             <div style={{ flex:1, padding:'9px 14px', background:'rgba(0,219,197,0.08)', border:`1px solid ${ACCENT}40`, borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'14px', color:ACCENT, fontWeight:600 }}>Price: TBD — no budget set yet</div>
           ) : (
             <>
-              <NumericInput placeholder="Min $" value={data.min_price || ''} onChange={v => update({ min_price: v })} className="flex-1"
+              <NumericInput placeholder="Min $ (optional)" value={data.min_price || ''} onChange={v => update({ min_price: v })} className="flex-1"
                 style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
               <span className="font-medium flex-shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }}>–</span>
-              <NumericInput placeholder="Max $" value={data.max_price || ''} onChange={v => update({ max_price: v })} className="flex-1"
+              <NumericInput placeholder="Max $ (required)" value={data.max_price || ''} onChange={v => update({ max_price: v })} className="flex-1"
                 style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
             </>
           )}

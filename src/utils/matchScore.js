@@ -404,10 +404,14 @@ export function calculateMatchScore(listing, requirement) {
   const reqMinRaw       = parseFloat(requirement.min_price) || 0;
   const reqMaxRaw       = parseFloat(requirement.max_price) || 0;
 
-  // Requirement TBD = no price preference → skip price category entirely.
-  // (Listing TBD is handled below as "open to offers" → 100.)
-  if (!reqPriceTBD) {
-    if (listingPriceTBD) {
+  // Requirement TBD = no price preference yet → match everything at 100% on price.
+  // (Earlier design called for skip; product decision: when an agent flags price as TBD,
+  // they explicitly want the score broadened to surface matches.)
+  if (reqPriceTBD) {
+    breakdown.push({ category: 'Price', score: 100, weight: W.price, details: 'Price TBD — open', icon: '💰' });
+    weightedSum += W.price;
+    totalWeight += W.price;
+  } else if (listingPriceTBD) {
       // Listing is open to offers — price category scores 100.
       breakdown.push({ category: 'Price', score: 100, weight: W.price, details: 'Listing open to offers', icon: '💰' });
       weightedSum += W.price;
@@ -465,7 +469,6 @@ export function calculateMatchScore(listing, requirement) {
         };
       }
     }
-  }
 
   // ── Size ──────────────────────────────────────────────────────────────────
   const listingSize = parseFloat(listing.size_sqft) || 0;
