@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/api/supabaseClient';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { Building2, Search, Plus, Trash2, Loader2, LayoutGrid, List, Eye, Bookmark, Share2, Pencil } from 'lucide-react';
 import CreatePostModal from '../components/dashboard/CreatePostModal';
 import ListingWizard from '@/components/forms/ListingWizard';
@@ -143,11 +144,23 @@ export default function Inventory() {
   const [deletingId, setDeletingId] = useState(null);
   const qc = useQueryClient();
   const location = useLocation();
+  const { user } = useAuth();
 
   // Proxy wrapper returns the array directly; don't destructure { data }.
+  // CRITICAL: this is the "My Listings & Client Requirements" page — show ONLY
+  // posts owned by the current user. Filtering by created_by prevents the page
+  // from leaking every post in the database to every user.
   const _arr = (r) => Array.isArray(r) ? r : [];
-  const { data: listings     = [], isLoading: loadL } = useQuery({ queryKey:['inv-listings'],     queryFn:async() => _arr(await supabase.from('listings').select('*').order('created_at', { ascending: false })) });
-  const { data: requirements = [], isLoading: loadR } = useQuery({ queryKey:['inv-requirements'], queryFn:async() => _arr(await supabase.from('requirements').select('*').order('created_at', { ascending: false })) });
+  const { data: listings     = [], isLoading: loadL } = useQuery({
+    queryKey:['inv-listings', user?.email],
+    queryFn:async() => _arr(await supabase.from('listings').select('*').eq('created_by', user?.email).order('created_at', { ascending: false })),
+    enabled: !!user?.email,
+  });
+  const { data: requirements = [], isLoading: loadR } = useQuery({
+    queryKey:['inv-requirements', user?.email],
+    queryFn:async() => _arr(await supabase.from('requirements').select('*').eq('created_by', user?.email).order('created_at', { ascending: false })),
+    enabled: !!user?.email,
+  });
 
   useEffect(()=>{
     const id = location.state?.openPostId;
