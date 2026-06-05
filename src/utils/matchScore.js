@@ -436,12 +436,18 @@ export function calculateMatchScore(listing, requirement) {
   const txKind = listing.transaction_type;
   const isOfficeLease = (listing.property_type === 'office') && (txKind === 'lease' || txKind === 'sublease');
   const isMedicalOfficeLease = (listing.property_type === 'medical_office') && (txKind === 'lease' || txKind === 'sublease');
+  const isRetailLease = (listing.property_type === 'retail') && (txKind === 'lease' || txKind === 'sublease');
 
-  // Top-level weights. Office Lease and Medical Office Lease use tuned per-type tables.
+  // Top-level weights. Per-type tables for Office, Medical Office, Retail leases.
   // Everything else uses the legacy generic split for now.
-  const W = (isOfficeLease || isMedicalOfficeLease)
-    ? { price: 21, size: 23, location: 0, details: 0 } // detail items added individually below
-    : { price: 26, size: 22, location: 22, details: 30 };
+  let W;
+  if (isOfficeLease || isMedicalOfficeLease) {
+    W = { price: 21, size: 23, location: 0, details: 0 };
+  } else if (isRetailLease) {
+    W = { price: 19, size: 20, location: 0, details: 0 };
+  } else {
+    W = { price: 26, size: 22, location: 22, details: 30 };
+  }
 
   // ── Price (with unit normalization) ────────────────────────────────────────
   const listingPrice    = parseFloat(listing.price) || 0;
@@ -808,6 +814,152 @@ export function calculateMatchScore(listing, requirement) {
 
     // Roll all medical items into the main weightedSum.
     medItems.forEach(item => {
+      breakdown.push({ category: item.label, score: item.score, weight: item.weight,
+        details: item.details, icon: item.icon });
+      weightedSum += (item.score / 100) * item.weight;
+      totalWeight += item.weight;
+    });
+  } else if (isRetailLease) {
+    // Retail Lease: per-type weighted scoring.
+    // Heavy emphasis on capacity, ADA, location characteristics (traffic + foot traffic + location type).
+    // Special features (drive-thru, hood, grease trap, auto bay, etc.) treated as regular weighted
+    // binary items, NOT hard gates — broker can still see partial matches.
+
+    const retailItems = [];
+
+    const reqAmen   = Array.isArray(rd.preferred_amenities) ? rd.preferred_amenities : [];
+    const listAmen  = Array.isArray(ld.building_amenities) ? ld.building_amenities : [];
+    const listRetailFeat = Array.isArray(ld.retail_features) ? ld.retail_features : [];
+    const hasL = (key) => listAmen.includes(key);
+    const hasRF = (key) => listRetailFeat.includes(key);
+
+    // ADA Compliant (binary)
+    if (rd.ada_req) {
+      const has = !!ld.ada_compliant;
+      retailItems.push({ label: 'ADA Compliant', score: has ? 100 : 0, weight: 8,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '♿' });
+    }
+
+    // Capacity / Max Occupancy (graduated — listing's max_capacity vs requirement's expected_capacity)
+    if (rd.expected_capacity && parseFloat(rd.expected_capacity) > 0) {
+      const want = parseFloat(rd.expected_capacity);
+      const have = parseFloat(ld.max_capacity) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      retailItems.push({ label: 'Capacity', score, weight: 7,
+        details: `Max ${ld.max_capacity ?? '—'} vs expected ${want}`, icon: '👥' });
+    }
+
+    // In-Suite Restrooms (binary)
+    if (rd.in_suite_restrooms_req) {
+      const has = !!ld.in_suite_restrooms && parseFloat(ld.in_suite_restrooms) > 0;
+      retailItems.push({ label: 'In-Suite Restrooms', score: has ? 100 : 0, weight: 5,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '🚻' });
+    }
+
+    // Traffic Count tier (high/medium/low/any) — exact tier match, no graduated falloff
+    if (rd.traffic_tier_pref && rd.traffic_tier_pref !== 'any' && ld.traffic_tier) {
+      const score = (rd.traffic_tier_pref === ld.traffic_tier) ? 100 : 0;
+      retailItems.push({ label: 'Traffic Count Tier', score, weight: 4,
+        details: `Listing: ${ld.traffic_tier} | Requested: ${rd.traffic_tier_pref}`, icon: '🚗' });
+    }
+
+    // Foot Traffic tier (high/medium/low — req "medium" accepts listing "high" or "medium")
+    if (rd.foot_traffic_pref && rd.foot_traffic_pref !== 'any' && ld.foot_traffic) {
+      let score = 0;
+      if (rd.foot_traffic_pref === 'high') score = (ld.foot_traffic === 'high') ? 100 : 0;
+      else if (rd.foot_traffic_pref === 'medium') score = (ld.foot_traffic === 'high' || ld.foot_traffic === 'medium') ? 100 : 0;
+      retailItems.push({ label: 'Foot Traffic', score, weight: 4,
+        details: `Listing: ${ld.foot_traffic} | Requested: ${rd.foot_traffic_pref}+`, icon: '🚶' });
+    }
+
+    // Location Type Match (exact-tier match; "any" passes)
+    if (rd.location_type_pref && rd.location_type_pref !== 'any' && ld.location_type) {
+      const score = (rd.location_type_pref === ld.location_type) ? 100 : 0;
+      retailItems.push({ label: 'Location Type', score, weight: 5,
+        details: `Listing: ${ld.location_type} | Requested: ${rd.location_type_pref}`, icon: '🏪' });
+    }
+
+    // Length (graduated)
+    if (rd.pref_length && parseFloat(rd.pref_length) > 0) {
+      const want = parseFloat(rd.pref_length);
+      const have = parseFloat(ld.space_length) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      retailItems.push({ label: 'Length', score, weight: 3,
+        details: `${ld.space_length ?? '—'} ft vs ${want} ft requested`, icon: '📏' });
+    }
+
+    // Width (graduated)
+    if (rd.pref_width && parseFloat(rd.pref_width) > 0) {
+      const want = parseFloat(rd.pref_width);
+      const have = parseFloat(ld.space_width) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      retailItems.push({ label: 'Width', score, weight: 3,
+        details: `${ld.space_width ?? '—'} ft vs ${want} ft requested`, icon: '📐' });
+    }
+
+    // Ceiling Height (graduated)
+    if (rd.pref_ceiling_height && parseFloat(rd.pref_ceiling_height) > 0) {
+      const want = parseFloat(rd.pref_ceiling_height);
+      const have = parseFloat(ld.ceiling_height) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      retailItems.push({ label: 'Ceiling Height', score, weight: 3,
+        details: `${ld.ceiling_height ?? '—'} ft vs ${want} ft requested`, icon: '📏' });
+    }
+
+    // Signage Required (binary — listing has signage_rights set and not "None")
+    if (rd.signage_req) {
+      const has = !!(ld.signage_rights && ld.signage_rights !== 'None');
+      retailItems.push({ label: 'Signage Rights', score: has ? 100 : 0, weight: 2,
+        details: has ? (ld.signage_rights || 'Yes') : 'None / Not specified', icon: '🪧' });
+    }
+
+    // Special Features — each requested feature scored individually, all weight 2.
+    const featureMap = [
+      { reqKey: 'drive_thru_req',      listKey: 'drive_thru',      label: 'Drive-Thru' },
+      { reqKey: 'hood_req',            listKey: 'venting_hood',    label: 'Hood / Venting' },
+      { reqKey: 'grease_trap_req',     listKey: 'grease_trap',     label: 'Grease Trap' },
+      { reqKey: 'cold_storage_req',    listKey: 'cold_storage',    label: 'Cold Storage' },
+      { reqKey: 'rear_loading_req',    listKey: 'rear_loading',    label: 'Rear Loading' },
+      { reqKey: 'outdoor_seating_req', listKey: 'outdoor_seating', label: 'Outdoor Seating' },
+      { reqKey: 'auto_bay_req',        listKey: 'auto_bay',        label: 'Auto Bay' },
+    ];
+    featureMap.forEach(f => {
+      if (rd[f.reqKey]) {
+        const has = hasRF(f.listKey);
+        retailItems.push({ label: f.label, score: has ? 100 : 0, weight: 2,
+          details: has ? 'Yes' : 'Not specified on listing', icon: '🛠️' });
+      }
+    });
+
+    // Building Class (tiered, low weight for retail)
+    if (rd.building_class_pref && rd.building_class_pref !== 'any' && ld.building_class) {
+      let score = 0;
+      const reqClass = rd.building_class_pref;
+      const listClass = ld.building_class;
+      // Class A pref accepts A only. Class B+ accepts A or B. Class C+ accepts any.
+      if (reqClass === 'A') score = listClass === 'A' ? 100 : 40;
+      else if (reqClass === 'B') score = (listClass === 'A' || listClass === 'B') ? 100 : 40;
+      else if (reqClass === 'C') score = 100;
+      retailItems.push({ label: 'Building Class', score, weight: 1,
+        details: `Class ${listClass} (requested: ${reqClass}+)`, icon: '🏛️' });
+    }
+
+    // "Other amenities pool" — anything else from preferred_amenities the requirement asked for.
+    if (reqAmen.length > 0) {
+      const matched = reqAmen.filter(a => listAmen.includes(a)).length;
+      const pct = matched / reqAmen.length;
+      let poolScore;
+      if (pct >= 1.0)  poolScore = 100;
+      else if (pct >= 0.75) poolScore = 90;
+      else if (pct >= 0.50) poolScore = 75;
+      else if (pct >= 0.25) poolScore = 55;
+      else poolScore = 15;
+      retailItems.push({ label: 'Other Amenities', score: poolScore, weight: 2,
+        details: `${matched} / ${reqAmen.length} matched`, icon: '✨' });
+    }
+
+    // Roll all retail items into the main weightedSum.
+    retailItems.forEach(item => {
       breakdown.push({ category: item.label, score: item.score, weight: item.weight,
         details: item.details, icon: item.icon });
       weightedSum += (item.score / 100) * item.weight;

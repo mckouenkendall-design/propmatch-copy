@@ -670,21 +670,28 @@ function RetailDetails({ details, setDetail }) {
       <SectionTitle>Primary Retail Specs</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Suite Number" hint="Optional"><Input value={details.suite_number || ''} onChange={e => setDetail('suite_number', e.target.value)} placeholder="e.g. Suite 150" /></Field>
-        <Field label="Sales Floor SF" hint="Sellable area (excludes storage/back-of-house)"><Num field="sales_floor_sf" placeholder="e.g. 1800" details={details} setDetail={setDetail} /></Field>
-        <Field label="Street Frontage (ft)"><Num field="frontage" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
+        <Field label="Maximum Capacity" hint="People (occupancy limit)"><Num field="max_capacity" placeholder="e.g. 50" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <SectionTitle>Space Dimensions</SectionTitle>
+      <div className="grid grid-cols-3 gap-4">
+        <Field label="Length (ft)"><Num field="space_length" placeholder="e.g. 60" details={details} setDetail={setDetail} /></Field>
+        <Field label="Width (ft)"><Num field="space_width" placeholder="e.g. 30" details={details} setDetail={setDetail} /></Field>
         <Field label="Ceiling Height (ft)"><Num field="ceiling_height" placeholder="e.g. 12" details={details} setDetail={setDetail} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-4">
+        <Field label="Street Frontage (ft)" hint="Informational"><Num field="frontage" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
         <Field label="Signage Rights">
           <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={details.signage_rights || ''} onChange={e => setDetail('signage_rights', e.target.value)}>
             <option value="" style={{ background: '#0E1318' }}>Select signage type</option>
             {['Building', 'Pylon / Monument', 'Electronic', 'Window', 'None'].map(s => <option key={s} value={s} style={{ background: '#0E1318' }}>{s}</option>)}
           </select>
         </Field>
-        <Field label="Traffic Count (vehicles/day)"><Num field="traffic_count" placeholder="e.g. 25000" details={details} setDetail={setDetail} /></Field>
       </div>
+      <ToggleGroup label="Traffic Count" value={details.traffic_tier || ''} onChange={v => setDetail('traffic_tier', v)}
+        options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }]} />
+      {details.traffic_tier && <Field label="Traffic Count (vehicles/day)" hint="Optional — informational only"><Num field="traffic_count" placeholder="e.g. 25000" details={details} setDetail={setDetail} /></Field>}
       <ToggleGroup label="Location Type" value={details.location_type || ''} onChange={v => setDetail('location_type', v)}
-        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'corner', label: 'Corner' }]} />
+        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'corner', label: 'Corner' }, { value: 'mixed_use', label: 'Within Mixed-Use Building' }]} />
       <ToggleGroup label="Foot Traffic" value={details.foot_traffic || ''} onChange={v => setDetail('foot_traffic', v)}
         options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }]} />
       <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -714,7 +721,7 @@ function RetailDetails({ details, setDetail }) {
       </div>
       <SectionTitle>Property Details & Media</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Total Parking Spaces"><Num field="total_parking_spaces" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
+        <Field label="Total Parking Spaces" hint="Informational"><Num field="total_parking_spaces" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
         <Field label="Zoning"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. C-2" /></Field>
       </div>
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}

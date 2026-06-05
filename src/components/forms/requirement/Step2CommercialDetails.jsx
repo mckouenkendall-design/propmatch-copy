@@ -529,13 +529,27 @@ function RetailRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Space Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Min Street Frontage (ft)"><Num field="min_frontage" placeholder="e.g. 25" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min Traffic Count (vehicles/day)"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Expected Capacity" hint="People (occupancy)"><Num field="expected_capacity" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Street Frontage (ft)" hint="Informational"><Num field="min_frontage" placeholder="e.g. 25" details={details} setDetail={setDetail} /></Field>
       </div>
+      <SectionTitle>Preferred Space Dimensions</SectionTitle>
+      <div className="grid grid-cols-3 gap-4">
+        <Field label="Preferred Length (ft)"><Num field="pref_length" placeholder="e.g. 60" details={details} setDetail={setDetail} /></Field>
+        <Field label="Preferred Width (ft)"><Num field="pref_width" placeholder="e.g. 30" details={details} setDetail={setDetail} /></Field>
+        <Field label="Preferred Ceiling Height (ft)"><Num field="pref_ceiling_height" placeholder="e.g. 12" details={details} setDetail={setDetail} /></Field>
+      </div>
+      <ToggleGroup label="Traffic Count" value={details.traffic_tier_pref || ''} onChange={v => setDetail('traffic_tier_pref', v)}
+        options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }, { value: 'any', label: 'Any' }]} />
+      {details.traffic_tier_pref && details.traffic_tier_pref !== 'any' && <Field label="Min Traffic Count (vehicles/day)" hint="Optional — informational only"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>}
       <ToggleGroup label="Location Type" value={details.location_type_pref || ''} onChange={v => setDetail('location_type_pref', v)}
-        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'any', label: 'Any' }]} />
+        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'mixed_use', label: 'Within Mixed-Use Building' }, { value: 'any', label: 'Any' }]} />
       <ToggleGroup label="Foot Traffic" value={details.foot_traffic_pref || ''} onChange={v => setDetail('foot_traffic_pref', v)}
         options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium+' }, { value: 'any', label: 'Any' }]} />
+      <div className="rounded-xl px-4 py-2 space-y-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="ADA Compliant Required" value={!!details.ada_req} onChange={v => setDetail('ada_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }} />
+        <Toggle label="In-Suite Restrooms Required" value={!!details.in_suite_restrooms_req} onChange={v => setDetail('in_suite_restrooms_req', v)} />
+      </div>
       <SectionTitle>Special Requirements</SectionTitle>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Drive-Thru Required" value={!!details.drive_thru_req} onChange={v => setDetail('drive_thru_req', v)} />
@@ -554,10 +568,12 @@ function RetailRequirement({ details, setDetail }) {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Signage (Building / Pylon) Required" value={!!details.signage_req} onChange={v => setDetail('signage_req', v)} />
       </div>
+      <ToggleGroup label="Building Class Preference" value={details.building_class_pref || ''} onChange={v => setDetail('building_class_pref', v)}
+        options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B+' }, { value: 'C', label: 'Class C+' }, { value: 'any', label: 'Any' }]} />
       <Field label="Business Type / Concept">
         <Input value={details.business_type || ''} onChange={e => setDetail('business_type', e.target.value)} placeholder="e.g. QSR restaurant, boutique retail, medical spa" />
       </Field>
-      <Field label="Co-Tenancy Preference" hint="Neighbors you want nearby or want to avoid">
+      <Field label="Co-Tenancy Preference" hint="Neighbors you want nearby or want to avoid (informational)">
         <Input value={details.co_tenancy_pref || ''} onChange={e => setDetail('co_tenancy_pref', e.target.value)} placeholder="e.g. near grocery anchor, avoid competing QSR" />
       </Field>
       <Field label="Additional Requirements">
