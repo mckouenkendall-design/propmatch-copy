@@ -252,7 +252,7 @@ function SaleTypeSelector({ value, onChange }) {
 // ── Building Amenities ────────────────────────────────────────────────────────
 const BUILDING_AMENITIES = [
   { value: 'access_247', label: '24/7 Access' },
-  { value: 'ada_building', label: 'ADA Compliant Building' },
+  { value: 'ada_building', label: 'ADA Compliant' },
   { value: 'fitness_center', label: 'Fitness Center / Gym' },
   { value: 'cafe_food_service', label: 'Cafe / Food Service' },
   { value: 'covered_parking', label: 'Covered / Garage Parking' },
@@ -598,9 +598,6 @@ function OfficeDetails({ details, setDetail }) {
         <Field label="Ceiling Height"><Input value={details.ceiling_height || ''} onChange={e => setDetail('ceiling_height', e.target.value)} placeholder="e.g. 9 ft" /></Field>
         <Field label="Zoning"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. B-2" /></Field>
       </div>
-      <div className="rounded-xl px-4 py-2" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Dedicated Parking Available" value={!!details.dedicated_parking} onChange={v => setDetail('dedicated_parking', v)} />
-      </div>
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
         options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
       <div className="grid grid-cols-2 gap-4">
@@ -614,7 +611,8 @@ function OfficeDetails({ details, setDetail }) {
 const PRACTICE_TYPES = ['General Practice', 'Dental', 'Cardiology', 'Orthopedic', 'Dermatology', 'Pediatrics', 'Physical Therapy', 'Urgent Care', 'Other Specialty'];
 const MEDICAL_FEATURES = [
   { value: 'xray', label: 'X-Ray Room / Shielding' }, { value: 'medical_gas', label: 'Medical Gas Lines' },
-  { value: 'sterilization', label: 'Sterilization Area' }, { value: 'ada', label: 'ADA Compliant' }, { value: 'hipaa', label: 'HIPAA Compliant Layout' },
+  { value: 'sterilization', label: 'Sterilization Area' }, { value: 'hipaa', label: 'HIPAA Compliant Layout' },
+  { value: 'lab_space', label: 'Lab Space' }, { value: 'in_suite_restrooms', label: 'In-Suite Restrooms' },
 ];
 
 function MedicalOfficeDetails({ details, setDetail }) {
@@ -627,7 +625,6 @@ function MedicalOfficeDetails({ details, setDetail }) {
         <Field label="Suite Number" hint="Optional"><Input value={details.suite_number || ''} onChange={e => setDetail('suite_number', e.target.value)} placeholder="e.g. Suite 300" /></Field>
         <Field label="Exam Rooms"><Num field="exam_rooms" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
         <Field label="Procedure Rooms"><Num field="procedure_rooms" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
-        <Field label="Lab Space (SF)"><Num field="lab_sf" placeholder="e.g. 400" details={details} setDetail={setDetail} /></Field>
         <Field label="Waiting Room Capacity"><Num field="waiting_capacity" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
       </div>
       <SectionTitle>In-Suite / Practice-Specific Features</SectionTitle>
@@ -643,11 +640,6 @@ function MedicalOfficeDetails({ details, setDetail }) {
         <Field label="Total Parking Spaces"><Num field="total_parking_spaces" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
         <Field label="Ceiling Height"><Input value={details.ceiling_height || ''} onChange={e => setDetail('ceiling_height', e.target.value)} placeholder="e.g. 9 ft" /></Field>
         <Field label="Zoning"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. O-1 Medical" /></Field>
-      </div>
-      <div className="rounded-xl px-4 py-2" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Dedicated Parking Available" value={!!details.dedicated_parking} onChange={v => setDetail('dedicated_parking', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Valet Parking Available" value={!!details.valet_parking} onChange={v => setDetail('valet_parking', v)} />
       </div>
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
         options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />

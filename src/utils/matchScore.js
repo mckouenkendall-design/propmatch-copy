@@ -435,11 +435,12 @@ export function calculateMatchScore(listing, requirement) {
   // the breakdown is informational only.
   const txKind = listing.transaction_type;
   const isOfficeLease = (listing.property_type === 'office') && (txKind === 'lease' || txKind === 'sublease');
+  const isMedicalOfficeLease = (listing.property_type === 'medical_office') && (txKind === 'lease' || txKind === 'sublease');
 
-  // Top-level weights. Office Lease uses the tuned per-type table; everything else
-  // uses the legacy generic split for now.
-  const W = isOfficeLease
-    ? { price: 21, size: 23, location: 0, details: 0 } // office lease items added individually below
+  // Top-level weights. Office Lease and Medical Office Lease use tuned per-type tables.
+  // Everything else uses the legacy generic split for now.
+  const W = (isOfficeLease || isMedicalOfficeLease)
+    ? { price: 21, size: 23, location: 0, details: 0 } // detail items added individually below
     : { price: 26, size: 22, location: 22, details: 30 };
 
   // ── Price (with unit normalization) ────────────────────────────────────────
@@ -673,6 +674,140 @@ export function calculateMatchScore(listing, requirement) {
 
     // Roll all office items into the main weightedSum.
     officeItems.forEach(item => {
+      breakdown.push({ category: item.label, score: item.score, weight: item.weight,
+        details: item.details, icon: item.icon });
+      weightedSum += (item.score / 100) * item.weight;
+      totalWeight += item.weight;
+    });
+  } else if (isMedicalOfficeLease) {
+    // Medical Office Lease: per-type weighted scoring.
+    // Tuned for medical: ADA + HIPAA are top-priority binary; clinical capacity
+    // (exam/procedure/lab/waiting/restrooms) ties at 5 each; specialty in-suite
+    // infrastructure (xray, gas, sterilization) at 3 each; building amenities
+    // matter much less to clinical tenants — Cafe/Covered Parking/Building Class
+    // are folded into the bonus pool rather than getting their own lines.
+
+    const medItems = [];
+
+    const reqAmen   = Array.isArray(rd.preferred_amenities) ? rd.preferred_amenities : [];
+    const listAmen  = Array.isArray(ld.building_amenities) ? ld.building_amenities : [];
+    const listSpaceAmen = Array.isArray(ld.amenities) ? ld.amenities : [];
+    const listMedFeat = Array.isArray(ld.medical_features) ? ld.medical_features : [];
+    const hasL = (key) => listAmen.includes(key);
+    const hasMed = (key) => listMedFeat.includes(key);
+
+    // ADA Compliant (binary, top priority, lives in building amenities)
+    if (reqAmen.includes('ada_building')) {
+      const score = hasL('ada_building') ? 100 : 0;
+      medItems.push({ label: 'ADA Compliant', score, weight: 8,
+        details: score ? 'Yes' : 'Not specified on listing', icon: '♿' });
+    }
+
+    // HIPAA Compliant Layout (binary, top priority, lives in medical_features)
+    if (rd.hipaa_req) {
+      const has = hasMed('hipaa');
+      medItems.push({ label: 'HIPAA Compliant Layout', score: has ? 100 : 0, weight: 8,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '🔒' });
+    }
+
+    // Exam Rooms (graduated, never penalized for having more)
+    if (rd.exam_rooms_needed && parseFloat(rd.exam_rooms_needed) > 0) {
+      const want = parseFloat(rd.exam_rooms_needed);
+      const have = parseFloat(ld.exam_rooms) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      medItems.push({ label: 'Exam Rooms', score, weight: 5,
+        details: `${ld.exam_rooms ?? '—'} rooms vs ${want} requested`, icon: '🩺' });
+    }
+
+    // Procedure Rooms (graduated, same rules)
+    if (rd.procedure_rooms_needed && parseFloat(rd.procedure_rooms_needed) > 0) {
+      const want = parseFloat(rd.procedure_rooms_needed);
+      const have = parseFloat(ld.procedure_rooms) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      medItems.push({ label: 'Procedure Rooms', score, weight: 5,
+        details: `${ld.procedure_rooms ?? '—'} rooms vs ${want} requested`, icon: '⚕️' });
+    }
+
+    // Lab Space (binary chip in medical_features)
+    if (rd.lab_req) {
+      const has = hasMed('lab_space');
+      medItems.push({ label: 'Lab Space', score: has ? 100 : 0, weight: 5,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '🧪' });
+    }
+
+    // Waiting Room Capacity (graduated)
+    if (rd.waiting_capacity_needed && parseFloat(rd.waiting_capacity_needed) > 0) {
+      const want = parseFloat(rd.waiting_capacity_needed);
+      const have = parseFloat(ld.waiting_capacity) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      medItems.push({ label: 'Waiting Room Capacity', score, weight: 5,
+        details: `${ld.waiting_capacity ?? '—'} seats vs ${want} requested`, icon: '🪑' });
+    }
+
+    // In-Suite Restrooms (binary chip in medical_features)
+    if (rd.in_suite_restrooms_req) {
+      const has = hasMed('in_suite_restrooms');
+      medItems.push({ label: 'In-Suite Restrooms', score: has ? 100 : 0, weight: 5,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '🚻' });
+    }
+
+    // X-Ray / Shielded Room (binary chip in medical_features)
+    if (rd.xray_req) {
+      const has = hasMed('xray');
+      medItems.push({ label: 'X-Ray / Shielded Room', score: has ? 100 : 0, weight: 3,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '☢️' });
+    }
+
+    // Medical Gas Lines (binary chip in medical_features)
+    if (rd.medical_gas_req) {
+      const has = hasMed('medical_gas');
+      medItems.push({ label: 'Medical Gas Lines', score: has ? 100 : 0, weight: 3,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '💨' });
+    }
+
+    // Sterilization Area (binary chip in medical_features)
+    if (rd.sterilization_req) {
+      const has = hasMed('sterilization');
+      medItems.push({ label: 'Sterilization Area', score: has ? 100 : 0, weight: 3,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '🧼' });
+    }
+
+    // 24/7 Access (binary, building amenities)
+    if (reqAmen.includes('access_247')) {
+      const score = hasL('access_247') ? 100 : 0;
+      medItems.push({ label: '24/7 Access', score, weight: 3,
+        details: score ? 'Yes' : 'Not specified on listing', icon: '🔓' });
+    }
+
+    // Fitness Center (binary, low priority for medical)
+    if (reqAmen.includes('fitness_center')) {
+      const score = hasL('fitness_center') ? 100 : 0;
+      medItems.push({ label: 'Fitness Center', score, weight: 1,
+        details: score ? 'Yes' : 'Not specified on listing', icon: '🏋️' });
+    }
+
+    // "Other amenities pool" — everything else the requirement asked for.
+    // Cafe / Covered Parking / Building Class / etc. fold in here for medical
+    // since they don't get their own scored lines.
+    const individuallyScoredKeys = new Set([
+      'ada_building', 'access_247', 'fitness_center',
+    ]);
+    const poolReqAmen = reqAmen.filter(a => !individuallyScoredKeys.has(a));
+    if (poolReqAmen.length > 0) {
+      const matched = poolReqAmen.filter(a => listAmen.includes(a)).length;
+      const pct = matched / poolReqAmen.length;
+      let poolScore;
+      if (pct >= 1.0)  poolScore = 100;
+      else if (pct >= 0.75) poolScore = 90;
+      else if (pct >= 0.50) poolScore = 75;
+      else if (pct >= 0.25) poolScore = 55;
+      else poolScore = 15;
+      medItems.push({ label: 'Other Amenities', score: poolScore, weight: 2,
+        details: `${matched} / ${poolReqAmen.length} matched`, icon: '✨' });
+    }
+
+    // Roll all medical items into the main weightedSum.
+    medItems.forEach(item => {
       breakdown.push({ category: item.label, score: item.score, weight: item.weight,
         details: item.details, icon: item.icon });
       weightedSum += (item.score / 100) * item.weight;
