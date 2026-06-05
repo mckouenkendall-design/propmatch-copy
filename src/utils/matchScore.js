@@ -367,21 +367,37 @@ export function calculateMatchScore(listing, requirement) {
     return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null, coverage: 0 };
   }
 
-  // Hard gate: if the requirement specifies cities and the listing's city isn't
-  // in that list, this is not a match. A wrong-city listing should never appear
-  // as a partial match — agents enter the cities they want; we honor them stiffly.
-  // (If the requirement has no cities specified, location is skipped, not gated.)
-  // Comparison strips any ", STATE" suffix so "Clarkston" on a listing matches
-  // "Clarkston, MI" stored on a requirement.
+  // Hard gate: if the requirement specifies cities and the listing's (city + state)
+  // isn't in that list, this is not a match. Agents enter the cities they want;
+  // we honor them stiffly. Comparison matches on BOTH city AND state — Clarkston MI
+  // is not the same place as Clarkston TN.
+  //
+  // Listings store city and state in two separate columns. Requirements store
+  // each entry as a single "City, ST" string. Parse both into {city, state}
+  // and compare both halves.
   const reqCitiesRaw = Array.isArray(requirement.cities)
     ? requirement.cities
     : (typeof requirement.cities === 'string'
         ? (() => { try { return JSON.parse(requirement.cities); } catch { return []; } })()
         : []);
   if (reqCitiesRaw.length > 0 && listing.city) {
-    const cityOnly = (s) => String(s || '').split(',')[0].trim().toLowerCase();
-    const listingCityKey = cityOnly(listing.city);
-    const hit = reqCitiesRaw.some(c => cityOnly(c) === listingCityKey);
+    const norm = (s) => String(s || '').trim().toLowerCase();
+    // Parse "City, ST" → { city: "city", state: "st" }
+    const parseEntry = (entry) => {
+      const parts = String(entry || '').split(',').map(p => p.trim());
+      return { city: norm(parts[0]), state: norm(parts[1] || '') };
+    };
+    const listingKey = { city: norm(listing.city), state: norm(listing.state) };
+    const hit = reqCitiesRaw.some(entry => {
+      const r = parseEntry(entry);
+      if (!r.city) return false;
+      // City must match. If requirement didn't include a state, tolerate it
+      // (older requirements may not have state). If both included a state,
+      // states must match too — prevents Clarkston MI vs Clarkston TN false match.
+      if (r.city !== listingKey.city) return false;
+      if (r.state && listingKey.state && r.state !== listingKey.state) return false;
+      return true;
+    });
     if (!hit) {
       return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null, coverage: 0 };
     }
