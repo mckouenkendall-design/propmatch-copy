@@ -560,7 +560,9 @@ export function calculateMatchScore(listing, requirement) {
     // Helpers
     const reqAmen   = Array.isArray(rd.preferred_amenities) ? rd.preferred_amenities : [];
     const listAmen  = Array.isArray(ld.building_amenities) ? ld.building_amenities : [];
+    const listSpaceAmen = Array.isArray(ld.amenities) ? ld.amenities : [];
     const hasL = (key) => listAmen.includes(key);
+    const hasS = (key) => listSpaceAmen.includes(key);
 
     // Number of Offices (graduated, only penalized when listing has FEWER than requested)
     if (rd.offices_needed && parseFloat(rd.offices_needed) > 0) {
@@ -587,9 +589,9 @@ export function calculateMatchScore(listing, requirement) {
         details: score ? 'Yes' : 'Not specified on listing', icon: '♿' });
     }
 
-    // Natural Light (binary)
+    // Natural Light (binary — lives in space amenities/in-suite features, not building amenities)
     if (reqAmen.includes('natural_light')) {
-      const score = hasL('natural_light') ? 100 : 0;
+      const score = hasS('natural_light') ? 100 : 0;
       officeItems.push({ label: 'Natural Light', score, weight: 6,
         details: score ? 'Yes' : 'Not specified on listing', icon: '☀️' });
     }
@@ -634,9 +636,9 @@ export function calculateMatchScore(listing, requirement) {
         details: `Class ${ld.building_class} (acceptable: ${acceptableClasses.join(', ')})`, icon: '🏛️' });
     }
 
-    // In-Suite Restrooms Required (toggle - dedicated weight at 5)
+    // In-Suite Restrooms (binary — now a chip in space amenities)
     if (rd.in_suite_restrooms_req) {
-      const has = !!ld.in_suite_restrooms && parseFloat(ld.in_suite_restrooms) > 0;
+      const has = hasS('in_suite_restrooms');
       officeItems.push({ label: 'In-Suite Restrooms', score: has ? 100 : 0, weight: 5,
         details: has ? 'Yes' : 'Not specified on listing', icon: '🚻' });
     }

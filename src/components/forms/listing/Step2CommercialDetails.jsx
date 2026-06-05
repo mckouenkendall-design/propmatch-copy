@@ -253,7 +253,6 @@ function SaleTypeSelector({ value, onChange }) {
 const BUILDING_AMENITIES = [
   { value: 'access_247', label: '24/7 Access' },
   { value: 'ada_building', label: 'ADA Compliant Building' },
-  { value: 'natural_light', label: 'Natural Light' },
   { value: 'fitness_center', label: 'Fitness Center / Gym' },
   { value: 'cafe_food_service', label: 'Cafe / Food Service' },
   { value: 'covered_parking', label: 'Covered / Garage Parking' },
@@ -566,7 +565,7 @@ function SpecialUseSaleInvestment({ details, setDetail }) {
 const SPACE_AMENITIES = [
   { value: 'reception', label: 'Reception Area' }, { value: 'kitchenette', label: 'Kitchenette' },
   { value: 'server_room', label: 'Server Room' }, { value: 'storage', label: 'File / Storage Room' },
-  { value: 'natural_light', label: 'Natural Light / Windows' }, { value: 'access_247', label: '24/7 Access' },
+  { value: 'natural_light', label: 'Natural Light / Windows' }, { value: 'in_suite_restrooms', label: 'In-Suite Restrooms' },
 ];
 const LAYOUT_OPTIONS = [
   { value: 'open_plan', label: 'Open Plan' }, { value: 'partitioned', label: 'Partitioned' },
@@ -576,7 +575,6 @@ const LAYOUT_OPTIONS = [
 function OfficeDetails({ details, setDetail }) {
   const amenities = details.amenities || [];
   const toggleAmenity = (val) => setDetail('amenities', amenities.includes(val) ? amenities.filter(a => a !== val) : [...amenities, val]);
-  const hasRestrooms = !!details.in_suite_restrooms;
   return (
     <>
       <SectionTitle>Layout & Capacity</SectionTitle>
@@ -584,11 +582,6 @@ function OfficeDetails({ details, setDetail }) {
         <Field label="Suite Number" hint="Optional"><Input value={details.suite_number || ''} onChange={e => setDetail('suite_number', e.target.value)} placeholder="e.g. Suite 200" /></Field>
         <Field label="Number of Offices"><Num field="offices" placeholder="e.g. 10" details={details} setDetail={setDetail} /></Field>
         <Field label="Conference Rooms"><Num field="conf_rooms" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
-      </div>
-      <div className="rounded-xl px-4 py-2 space-y-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="In-Suite Restrooms" value={hasRestrooms} onChange={v => setDetail('in_suite_restrooms', v ? 1 : 0)} />
-        {hasRestrooms && <div className="pb-2"><Field label="Restroom Pairs" hint={`${details.in_suite_restrooms || 1} Men's + ${details.in_suite_restrooms || 1} Women's`}><Num field="in_suite_restrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field></div>}
-        {!hasRestrooms && <p className="text-xs pb-2" style={{ color: 'rgba(255,255,255,0.5)' }}>Shared floor restrooms (standard)</p>}
       </div>
       <Field label="Layout Type"><div className="flex flex-wrap gap-2">{LAYOUT_OPTIONS.map(opt => <Chip key={opt.value} label={opt.label} selected={details.layout === opt.value} onClick={() => setDetail('layout', opt.value)} />)}</div></Field>
       <SectionTitle>In-Suite / Space Features</SectionTitle>
