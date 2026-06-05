@@ -437,14 +437,17 @@ export function calculateMatchScore(listing, requirement) {
   const isOfficeLease = (listing.property_type === 'office') && (txKind === 'lease' || txKind === 'sublease');
   const isMedicalOfficeLease = (listing.property_type === 'medical_office') && (txKind === 'lease' || txKind === 'sublease');
   const isRetailLease = (listing.property_type === 'retail') && (txKind === 'lease' || txKind === 'sublease');
+  const isIndustrialLease = (listing.property_type === 'industrial_flex') && (txKind === 'lease' || txKind === 'sublease');
 
-  // Top-level weights. Per-type tables for Office, Medical Office, Retail leases.
+  // Top-level weights. Per-type tables for Office, Medical Office, Retail, Industrial leases.
   // Everything else uses the legacy generic split for now.
   let W;
   if (isOfficeLease || isMedicalOfficeLease) {
     W = { price: 21, size: 23, location: 0, details: 0 };
   } else if (isRetailLease) {
     W = { price: 19, size: 20, location: 0, details: 0 };
+  } else if (isIndustrialLease) {
+    W = { price: 18, size: 23, location: 0, details: 0 };
   } else {
     W = { price: 26, size: 22, location: 22, details: 30 };
   }
@@ -960,6 +963,198 @@ export function calculateMatchScore(listing, requirement) {
 
     // Roll all retail items into the main weightedSum.
     retailItems.forEach(item => {
+      breakdown.push({ category: item.label, score: item.score, weight: item.weight,
+        details: item.details, icon: item.icon });
+      weightedSum += (item.score / 100) * item.weight;
+      totalWeight += item.weight;
+    });
+  } else if (isIndustrialLease) {
+    // Industrial / Flex Lease: per-type weighted scoring.
+    // Two ADDITIONAL hard gates beyond the standard three (type/transaction/location):
+    //   - Rail Access Required: not retrofittable, deal-killer if requirement asks and listing doesn't have
+    //   - Crane System Required: heavy infrastructure, similarly not retrofittable
+    // Floor Load and Clear Height use a HEAVY graduation curve because these can't be
+    // changed without major construction. Other graduated items use the standard curve.
+
+    // ── Industrial-specific hard gates ────────────────────────────────────
+    if (rd.rail_access_req && !ld.rail_access) {
+      return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null, coverage: 0 };
+    }
+    if (rd.crane_req) {
+      const hasCrane = !!(ld.crane_system && String(ld.crane_system).trim());
+      if (!hasCrane) {
+        return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null, coverage: 0 };
+      }
+    }
+
+    const indItems = [];
+
+    // Heavy graduation curve for Floor Load and Clear Height — under-spec is severely penalized
+    // because these are structural and can't be retrofitted without major construction.
+    // Listing >= requested = 100. Listing under = sharp falloff.
+    //   100% → 100, 90% → 80, 75% → 50, 50% → 15, 25% → 0.
+    const heavyGrad = (want, have) => {
+      if (have >= want) return 100;
+      const pct = have / want;
+      if (pct >= 0.90) return 80;
+      if (pct >= 0.75) return 50;
+      if (pct >= 0.50) return 15;
+      return 0;
+    };
+
+    // Standard graduated curve — listing >= requested = 100, under = linear falloff.
+    const stdGrad = (want, have) => {
+      if (have >= want) return 100;
+      return Math.max(0, Math.round((have / want) * 100));
+    };
+
+    // Clear Height (graduated, HEAVY) — weight 10
+    if (rd.min_clear_height && parseFloat(rd.min_clear_height) > 0) {
+      const want = parseFloat(rd.min_clear_height);
+      const have = parseFloat(ld.clear_height) || 0;
+      const score = heavyGrad(want, have);
+      indItems.push({ label: 'Clear Height', score, weight: 10,
+        details: `${ld.clear_height ?? '—'} ft vs ${want} ft requested`, icon: '📏' });
+    }
+
+    // Dock-High Doors (graduated, standard) — weight 7
+    if (rd.min_dock_doors && parseFloat(rd.min_dock_doors) > 0) {
+      const want = parseFloat(rd.min_dock_doors);
+      const have = parseFloat(ld.dock_doors) || 0;
+      const score = stdGrad(want, have);
+      indItems.push({ label: 'Dock-High Doors', score, weight: 7,
+        details: `${ld.dock_doors ?? '—'} vs ${want} requested`, icon: '🚚' });
+    }
+
+    // Floor Load (graduated, HEAVY) — weight 6
+    if (rd.min_floor_load && parseFloat(rd.min_floor_load) > 0) {
+      const want = parseFloat(rd.min_floor_load);
+      const have = parseFloat(ld.floor_load) || 0;
+      const score = heavyGrad(want, have);
+      indItems.push({ label: 'Floor Load', score, weight: 6,
+        details: `${ld.floor_load ?? '—'} lbs/sqft vs ${want} requested`, icon: '🏗️' });
+    }
+
+    // Drive-In Doors (graduated, standard) — weight 5
+    if (rd.min_drive_in_doors && parseFloat(rd.min_drive_in_doors) > 0) {
+      const want = parseFloat(rd.min_drive_in_doors);
+      const have = parseFloat(ld.drive_in_doors) || 0;
+      const score = stdGrad(want, have);
+      indItems.push({ label: 'Drive-In Doors', score, weight: 5,
+        details: `${ld.drive_in_doors ?? '—'} vs ${want} requested`, icon: '🚪' });
+    }
+
+    // Amperage (graduated by number; parse leading digits from strings like '400A') — weight 5
+    if (rd.min_amperage) {
+      const parseAmps = (s) => parseFloat(String(s || '').replace(/[^0-9.]/g, '')) || 0;
+      const want = parseAmps(rd.min_amperage);
+      const have = parseAmps(ld.power_amps);
+      if (want > 0) {
+        const score = stdGrad(want, have);
+        indItems.push({ label: 'Amperage', score, weight: 5,
+          details: `${ld.power_amps || '—'} vs ${rd.min_amperage} requested`, icon: '⚡' });
+      }
+    }
+
+    // 3-Phase Power Required (binary) — weight 5
+    if (rd.three_phase_req) {
+      const has = !!ld.three_phase;
+      indItems.push({ label: '3-Phase Power', score: has ? 100 : 0, weight: 5,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '⚡' });
+    }
+
+    // Outside Storage Permitted (binary) — weight 4
+    if (rd.outside_storage_req) {
+      const has = !!ld.outside_storage;
+      indItems.push({ label: 'Outside Storage', score: has ? 100 : 0, weight: 4,
+        details: has ? 'Permitted' : 'Not specified on listing', icon: '📦' });
+    }
+
+    // Fenced / Secured Yard (binary) — weight 3
+    if (rd.fenced_yard_req) {
+      const has = !!ld.fenced_yard;
+      indItems.push({ label: 'Fenced Yard', score: has ? 100 : 0, weight: 3,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '🔒' });
+    }
+
+    // Truck Court Depth (graduated, standard) — weight 3
+    if (rd.min_truck_court && parseFloat(rd.min_truck_court) > 0) {
+      const want = parseFloat(rd.min_truck_court);
+      const have = parseFloat(ld.truck_court_depth) || 0;
+      if (have > 0) {
+        const score = stdGrad(want, have);
+        indItems.push({ label: 'Truck Court Depth', score, weight: 3,
+          details: `${ld.truck_court_depth} ft vs ${want} ft requested`, icon: '🚛' });
+      }
+    }
+
+    // Land / Lot Size (graduated, standard) — weight 3
+    if (rd.min_acres && parseFloat(rd.min_acres) > 0) {
+      const want = parseFloat(rd.min_acres);
+      const have = parseFloat(ld.lot_acres) || 0;
+      if (have > 0) {
+        const score = stdGrad(want, have);
+        indItems.push({ label: 'Land / Lot Size', score, weight: 3,
+          details: `${ld.lot_acres} ac vs ${want} ac requested`, icon: '🌐' });
+      }
+    }
+
+    // Voltage Match (tiered: 240v / 480v / any) — weight 3
+    if (rd.voltage_pref && rd.voltage_pref !== 'any' && ld.power_voltage) {
+      const score = (rd.voltage_pref === ld.power_voltage) ? 100 : 40;
+      indItems.push({ label: 'Voltage', score, weight: 3,
+        details: `Listing: ${ld.power_voltage} | Requested: ${rd.voltage_pref}`, icon: '🔌' });
+    }
+
+    // ESFR Sprinklers (binary, via systems array) — weight 2
+    const listSystems = Array.isArray(ld.systems) ? ld.systems : [];
+    if (rd.esfr_req) {
+      const has = listSystems.includes('esfr');
+      indItems.push({ label: 'ESFR Sprinklers', score: has ? 100 : 0, weight: 2,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '💧' });
+    }
+
+    // Warehouse HVAC (binary, via systems array) — weight 2
+    if (rd.warehouse_hvac_req) {
+      const has = listSystems.includes('hvac_warehouse');
+      indItems.push({ label: 'Warehouse HVAC', score: has ? 100 : 0, weight: 2,
+        details: has ? 'Conditioned' : 'Not specified on listing', icon: '❄️' });
+    }
+
+    // Dock Equipment pool (Levelers / Seals / Restraints) — bonus curve, weight 1.5
+    const reqDockEq = [];
+    if (rd.dock_levelers_req)   reqDockEq.push('dock_levelers');
+    if (rd.dock_seals_req)      reqDockEq.push('dock_seals');
+    if (rd.dock_restraints_req) reqDockEq.push('dock_restraints');
+    if (reqDockEq.length > 0) {
+      const listDockEq = Array.isArray(ld.dock_equipment) ? ld.dock_equipment : [];
+      const matched = reqDockEq.filter(k => listDockEq.includes(k)).length;
+      const pct = matched / reqDockEq.length;
+      let score;
+      if (pct >= 1.0)  score = 100;
+      else if (pct >= 0.66) score = 80;
+      else if (pct >= 0.33) score = 50;
+      else score = 15;
+      indItems.push({ label: 'Dock Equipment', score, weight: 1.5,
+        details: `${matched}/${reqDockEq.length} matched`, icon: '⚙️' });
+    }
+
+    // Skylights (binary) — weight 1
+    if (rd.skylights_req) {
+      const has = listSystems.includes('skylights');
+      indItems.push({ label: 'Skylights', score: has ? 100 : 0, weight: 1,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '🌤️' });
+    }
+
+    // LED Lighting (binary) — weight 0.5
+    if (rd.led_lighting_req) {
+      const has = listSystems.includes('led_lighting');
+      indItems.push({ label: 'LED Lighting', score: has ? 100 : 0, weight: 0.5,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '💡' });
+    }
+
+    // Roll all industrial items into the main weightedSum.
+    indItems.forEach(item => {
       breakdown.push({ category: item.label, score: item.score, weight: item.weight,
         details: item.details, icon: item.icon });
       weightedSum += (item.score / 100) * item.weight;

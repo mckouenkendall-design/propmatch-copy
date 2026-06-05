@@ -758,8 +758,9 @@ function IndustrialFlexDetails({ details, setDetail }) {
         <Field label="Drive-In / Grade-Level Doors"><Num field="drive_in_doors" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
         <Field label="Clear Height (ft)"><Num field="clear_height" placeholder="e.g. 24" details={details} setDetail={setDetail} /></Field>
         <Field label="Truck Court Depth (ft)"><Input value={details.truck_court_depth || ''} onChange={e => setDetail('truck_court_depth', e.target.value)} placeholder="e.g. 130" /></Field>
-        <Field label="Column Spacing (ft)"><Input value={details.column_spacing || ''} onChange={e => setDetail('column_spacing', e.target.value)} placeholder="e.g. 50 x 50" /></Field>
-        <Field label="Loading Bay Size (ft)"><Input value={details.loading_bay_size || ''} onChange={e => setDetail('loading_bay_size', e.target.value)} placeholder="e.g. 100 x 50" /></Field>
+        <Field label="Column Spacing (ft)" hint="Informational"><Input value={details.column_spacing || ''} onChange={e => setDetail('column_spacing', e.target.value)} placeholder="e.g. 50 x 50" /></Field>
+        <Field label="Loading Bay Size (ft)" hint="Informational"><Input value={details.loading_bay_size || ''} onChange={e => setDetail('loading_bay_size', e.target.value)} placeholder="e.g. 100 x 50" /></Field>
+        <Field label="Total Land / Lot (acres)"><Num field="lot_acres" placeholder="e.g. 2.5" step="0.1" details={details} setDetail={setDetail} /></Field>
       </div>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Cross-Dock Capable" value={!!details.cross_dock} onChange={() => toggleBool('cross_dock')} />
@@ -817,13 +818,12 @@ function IndustrialFlexDetails({ details, setDetail }) {
       <Field label="Dock Equipment"><div className="flex flex-wrap gap-2">{DOCK_EQUIPMENT.map(d => <Chip key={d.key} label={d.label} selected={dockEq.includes(d.key)} onClick={() => toggleDockEq(d.key)} />)}</div></Field>
       <SectionTitle>Property Specs & Documentation</SectionTitle>
       <Field label="Description"><Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space, highlights, and ideal use…" rows={4} /></Field>
+      <Field label="Building Condition Notes" hint="Roof age, concrete condition, HVAC/electric/plumbing age — informational"><Textarea value={details.condition_notes || ''} onChange={e => setDetail('condition_notes', e.target.value)} placeholder="e.g. Roof replaced 2022, concrete in good shape, HVAC ~10 yrs old" rows={2} /></Field>
       <Field label="Tags" hint="Press Enter to add each tag"><TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} /></Field>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Parking"><Input value={details.parking || ''} onChange={e => setDetail('parking', e.target.value)} placeholder="e.g. 40 spaces, truck parking" /></Field>
-        <Field label="Zoning"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. M-1, I-2" /></Field>
+        <Field label="Parking" hint="Informational"><Input value={details.parking || ''} onChange={e => setDetail('parking', e.target.value)} placeholder="e.g. 40 spaces, truck parking" /></Field>
+        <Field label="Zoning" hint="Informational"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. M-1, I-2" /></Field>
       </div>
-      <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
-        options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
       <div className="grid grid-cols-2 gap-4">
         <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />

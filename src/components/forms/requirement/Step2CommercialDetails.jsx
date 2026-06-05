@@ -619,6 +619,22 @@ function IndustrialFlexRequirement({ details, setDetail }) {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Outside Storage Permitted Required" value={!!details.outside_storage_req} onChange={v => setDetail('outside_storage_req', v)} />
       </div>
+      <SectionTitle>Systems & Equipment</SectionTitle>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="ESFR Sprinklers Required" value={!!details.esfr_req} onChange={v => setDetail('esfr_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Warehouse HVAC (Conditioned) Required" value={!!details.warehouse_hvac_req} onChange={v => setDetail('warehouse_hvac_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Skylights Required" value={!!details.skylights_req} onChange={v => setDetail('skylights_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="LED Lighting Required" value={!!details.led_lighting_req} onChange={v => setDetail('led_lighting_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Dock Levelers Required" value={!!details.dock_levelers_req} onChange={v => setDetail('dock_levelers_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Dock Seals Required" value={!!details.dock_seals_req} onChange={v => setDetail('dock_seals_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Dock Restraints Required" value={!!details.dock_restraints_req} onChange={v => setDetail('dock_restraints_req', v)} />
+      </div>
       {details.crane_req && (
         <div className="grid grid-cols-2 gap-4">
           <Field label="Min Crane Capacity (tons)"><Num field="min_crane_tons" placeholder="e.g. 5" details={details} setDetail={setDetail} /></Field>
