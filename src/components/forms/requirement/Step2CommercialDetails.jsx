@@ -67,18 +67,22 @@ function Toggle({ label, value, onChange }) {
 // Preferred amenities a tenant can request. Mirrors the listing building + space amenities
 // (including Cafe / Grab-and-Go) so requirements can ask for anything a listing can advertise.
 const PREFERRED_AMENITIES = [
-  { value: 'on_site_management', label: 'On-Site Management' }, { value: 'security_247', label: '24/7 Security / Controlled Access' },
-  { value: 'concierge', label: 'Concierge Services' }, { value: 'janitorial_common', label: 'Janitorial (Common Areas)' },
-  { value: 'mail_room', label: 'Mail Room / Package Handling' }, { value: 'shared_loading_dock', label: 'Shared Loading Dock' },
-  { value: 'lobby_reception', label: 'Lobby / Reception Area' }, { value: 'shared_conference', label: 'Shared Conference Rooms' },
-  { value: 'tenant_lounge', label: 'Tenant Lounge / Break Room' }, { value: 'fitness_center', label: 'Fitness Center / Gym' },
-  { value: 'cafe_food_service', label: 'Cafe / Food Service' }, { value: 'grab_and_go', label: 'Grab-and-Go Station' },
-  { value: 'outdoor_space', label: 'Outdoor Space / Patio / Terrace' }, { value: 'fiber_optic', label: 'Fiber Optic Connectivity' },
-  { value: 'multi_isp', label: 'Multiple Internet Providers' }, { value: 'backup_generator', label: 'Backup Generator' },
-  { value: 'ada_building', label: 'ADA Compliant Building' }, { value: 'elevators', label: 'Elevators' },
-  { value: 'covered_parking', label: 'Covered / Garage Parking' }, { value: 'ev_charging', label: 'EV Charging Stations' },
-  { value: 'bicycle_storage', label: 'Bicycle Storage' }, { value: 'energy_efficient', label: 'Energy Efficient Building' },
-  { value: 'leed_certified', label: 'LEED Certified / Green Building' },
+  { value: 'access_247', label: '24/7 Access' },
+  { value: 'ada_building', label: 'ADA Compliant Building' },
+  { value: 'natural_light', label: 'Natural Light' },
+  { value: 'fitness_center', label: 'Fitness Center / Gym' },
+  { value: 'cafe_food_service', label: 'Cafe / Food Service' },
+  { value: 'covered_parking', label: 'Covered / Garage Parking' },
+  { value: 'ev_charging', label: 'EV Charging Stations' },
+  { value: 'elevators', label: 'Elevators' },
+  { value: 'shared_loading_dock', label: 'Shared Loading Dock' },
+  { value: 'shared_conference', label: 'Shared Conference Rooms' },
+  { value: 'tenant_lounge', label: 'Tenant Lounge / Break Room' },
+  { value: 'grab_and_go', label: 'Grab-and-Go Station' },
+  { value: 'outdoor_space', label: 'Outdoor Space / Patio / Terrace' },
+  { value: 'golf_simulator', label: 'Golf Simulator' },
+  { value: 'backup_generator', label: 'Backup Generator' },
+  { value: 'janitorial_common', label: 'Janitorial (Common Areas)' },
 ];
 
 const MEDICAL_SPECIALTIES = ['Primary Care', 'Dental', 'Cardiology', 'Orthopedic', 'Dermatology', 'Oncology', 'Imaging / Radiology', 'Physical Therapy', 'Dialysis', 'Urgent Care', 'Pediatrics', 'Ophthalmology', 'Other'];

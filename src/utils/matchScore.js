@@ -37,6 +37,23 @@ export function scoreRange(value, min, max) {
   return null;
 }
 
+// Price-specific scoring. Same as scoreRange but treats under-budget as 100 (never penalised).
+// Reason: paying less than the client's budget is never a downside. Only over-budget hurts.
+export function scorePriceRange(value, min, max) {
+  const v   = parseFloat(value);
+  const lo  = (min != null && min !== '' && parseFloat(min) > 0) ? parseFloat(min) : null;
+  const hi  = (max != null && max !== '' && parseFloat(max) > 0) ? parseFloat(max) : null;
+  if (isNaN(v) || v === 0) return null;
+  if (lo === null && hi === null) return null;
+  // Below min: still a 100 — under budget is always fine.
+  if (lo !== null && v < lo) return 100;
+  // In range: 100.
+  if ((lo === null || v >= lo) && (hi === null || v <= hi)) return 100;
+  // Over max: graduated falloff, 1.5x penalty (consistent with scoreRange's over-budget side).
+  if (hi !== null && v > hi) return Math.max(0, Math.round(100 - ((v - hi) / hi) * 150));
+  return null;
+}
+
 // Transaction compatibility
 function scoreTx(listingTx, reqTx) {
   if (!listingTx || !reqTx) return null;
@@ -411,9 +428,19 @@ export function calculateMatchScore(listing, requirement) {
   let weightedSum = 0;
   let totalWeight = 0;
 
-  // Phase A: single weight set across all types (Phase B will introduce per-type splits).
-  // Transaction removed as a weighted category — it is now a pure hard gate above.
-  const W = { price: 26, size: 22, location: 22, details: 30 };
+  // Phase B: per-property-type weight tables. The first type wired up is Office Lease.
+  // Other types fall back to the legacy generic split (Phase A behavior) until they get
+  // their own per-type pass. Location no longer has its own weight — it's a hard gate
+  // above; surviving listings are already perfect on city/state. The Location row in
+  // the breakdown is informational only.
+  const txKind = listing.transaction_type;
+  const isOfficeLease = (listing.property_type === 'office') && (txKind === 'lease' || txKind === 'sublease');
+
+  // Top-level weights. Office Lease uses the tuned per-type table; everything else
+  // uses the legacy generic split for now.
+  const W = isOfficeLease
+    ? { price: 21, size: 23, location: 0, details: 0 } // office lease items added individually below
+    : { price: 26, size: 22, location: 22, details: 30 };
 
   // ── Price (with unit normalization) ────────────────────────────────────────
   const listingPrice    = parseFloat(listing.price) || 0;
@@ -476,7 +503,7 @@ export function calculateMatchScore(listing, requirement) {
         priceUnit    = '$';
       }
 
-      const priceScore = scoreRange(compareValue, compareMin, compareMax);
+      const priceScore = scorePriceRange(compareValue, compareMin, compareMax);
       if (priceScore !== null) {
         breakdown.push({ category: priceLabel, score: priceScore, weight: W.price, details: priceDetails, icon: '💰' });
         weightedSum += (priceScore / 100) * W.price;
@@ -509,24 +536,158 @@ export function calculateMatchScore(listing, requirement) {
   // ── Location ──────────────────────────────────────────────────────────────
   // If we reached this point, location either matched (city in cities list) or
   // the requirement had no cities specified at all. Either way, location is not
-  // dragging the score down — show 100 in the breakdown if there was a city to match.
+  // dragging the score down — show 100 in the breakdown for display.
+  // When location is a hard gate with no own weight (e.g. Office Lease in Phase B),
+  // it's informational only and doesn't contribute to weightedSum.
   if (reqCitiesRaw.length > 0 && listing.city) {
     breakdown.push({ category: 'Location', score: 100, weight: W.location,
       details: `${listing.city} matches`, icon: '📍' });
-    weightedSum += W.location;
-    totalWeight += W.location;
+    if (W.location > 0) {
+      weightedSum += W.location;
+      totalWeight += W.location;
+    }
   }
 
   // ── Property-type details ─────────────────────────────────────────────────
-  const detailScores = scoreDetails(listing, requirement, ld, rd);
-  if (detailScores.length > 0) {
-    const detailAvg = detailScores.reduce((s, d) => s + d.score, 0) / detailScores.length;
-    const hitCount  = detailScores.filter(d => d.score >= 80).length;
-    breakdown.push({ category: 'Property Details', score: Math.round(detailAvg), weight: W.details,
-      details: `${hitCount}/${detailScores.length} factors matched`,
-      icon: '🏢', subScores: detailScores });
-    weightedSum += (detailAvg / 100) * W.details;
-    totalWeight += W.details;
+  if (isOfficeLease) {
+    // Office Lease: each detail item has its own weight from the tuned per-type table.
+    // Empty requirement fields skip entirely (weight not added to totalWeight),
+    // which renormalizes the score to whatever was actually asked for.
+    // Missing on listing when requirement asks = 0 score on that line (Option A).
+
+    const officeItems = [];
+
+    // Helpers
+    const reqAmen   = Array.isArray(rd.preferred_amenities) ? rd.preferred_amenities : [];
+    const listAmen  = Array.isArray(ld.building_amenities) ? ld.building_amenities : [];
+    const hasL = (key) => listAmen.includes(key);
+
+    // Number of Offices (graduated, only penalized when listing has FEWER than requested)
+    if (rd.offices_needed && parseFloat(rd.offices_needed) > 0) {
+      const want = parseFloat(rd.offices_needed);
+      const have = parseFloat(ld.offices) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      officeItems.push({ label: 'Number of Offices', score, weight: 8,
+        details: `${ld.offices ?? '—'} offices vs ${want} requested`, icon: '🏢' });
+    }
+
+    // Conference Rooms (graduated, same rules as offices)
+    if (rd.conf_rooms_needed && parseFloat(rd.conf_rooms_needed) > 0) {
+      const want = parseFloat(rd.conf_rooms_needed);
+      const have = parseFloat(ld.conf_rooms) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      officeItems.push({ label: 'Conference Rooms', score, weight: 8,
+        details: `${ld.conf_rooms ?? '—'} rooms vs ${want} requested`, icon: '📋' });
+    }
+
+    // ADA Compliant (binary, lives in amenity arrays)
+    if (reqAmen.includes('ada_building')) {
+      const score = hasL('ada_building') ? 100 : 0;
+      officeItems.push({ label: 'ADA Compliant', score, weight: 10,
+        details: score ? 'Yes' : 'Not specified on listing', icon: '♿' });
+    }
+
+    // Natural Light (binary)
+    if (reqAmen.includes('natural_light')) {
+      const score = hasL('natural_light') ? 100 : 0;
+      officeItems.push({ label: 'Natural Light', score, weight: 6,
+        details: score ? 'Yes' : 'Not specified on listing', icon: '☀️' });
+    }
+
+    // 24/7 Access (binary)
+    if (reqAmen.includes('access_247')) {
+      const score = hasL('access_247') ? 100 : 0;
+      officeItems.push({ label: '24/7 Access', score, weight: 5,
+        details: score ? 'Yes' : 'Not specified on listing', icon: '🔓' });
+    }
+
+    // Fitness Center (binary)
+    if (reqAmen.includes('fitness_center')) {
+      const score = hasL('fitness_center') ? 100 : 0;
+      officeItems.push({ label: 'Fitness Center', score, weight: 3,
+        details: score ? 'Yes' : 'Not specified on listing', icon: '🏋️' });
+    }
+
+    // Cafe / Food Service (binary)
+    if (reqAmen.includes('cafe_food_service')) {
+      const score = hasL('cafe_food_service') ? 100 : 0;
+      officeItems.push({ label: 'Cafe / Food Service', score, weight: 3,
+        details: score ? 'Yes' : 'Not specified on listing', icon: '☕' });
+    }
+
+    // Kitchenette is a SPACE_AMENITY (in-suite), lives on listing.amenities not building_amenities.
+    // For now skip — requirement form doesn't expose kitchenette as a separate "required" toggle.
+    // Banked.
+
+    // Covered Parking (binary)
+    if (reqAmen.includes('covered_parking')) {
+      const score = hasL('covered_parking') ? 100 : 0;
+      officeItems.push({ label: 'Covered Parking', score, weight: 2,
+        details: score ? 'Yes' : 'Not specified on listing', icon: '🅿️' });
+    }
+
+    // Building Class (tiered: requirement allows multiple acceptable classes)
+    const acceptableClasses = Array.isArray(rd.building_class_pref) ? rd.building_class_pref : [];
+    if (acceptableClasses.length > 0 && ld.building_class) {
+      const score = acceptableClasses.includes(ld.building_class) ? 100 : 40;
+      officeItems.push({ label: 'Building Class', score, weight: 2,
+        details: `Class ${ld.building_class} (acceptable: ${acceptableClasses.join(', ')})`, icon: '🏛️' });
+    }
+
+    // In-Suite Restrooms Required (toggle - dedicated weight at 5)
+    if (rd.in_suite_restrooms_req) {
+      const has = !!ld.in_suite_restrooms && parseFloat(ld.in_suite_restrooms) > 0;
+      officeItems.push({ label: 'In-Suite Restrooms', score: has ? 100 : 0, weight: 5,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '🚻' });
+    }
+
+    // Server Room / IT Infrastructure Required (toggle - small weight at 2)
+    if (rd.server_room_req) {
+      // Listing has either an it_infrastructure description or could indicate via amenities.
+      const has = !!(ld.it_infrastructure && String(ld.it_infrastructure).trim());
+      officeItems.push({ label: 'Server Room / IT', score: has ? 100 : 0, weight: 2,
+        details: has ? 'Specified' : 'Not specified on listing', icon: '💻' });
+    }
+
+    // "Other amenities pool" — the long tail of less-important amenities the requirement asked for.
+    // Excludes the ones already scored individually above.
+    const individuallyScoredKeys = new Set([
+      'ada_building','natural_light','access_247','fitness_center','cafe_food_service','covered_parking',
+    ]);
+    const poolReqAmen  = reqAmen.filter(a => !individuallyScoredKeys.has(a));
+    if (poolReqAmen.length > 0) {
+      const matched = poolReqAmen.filter(a => listAmen.includes(a)).length;
+      const pct = matched / poolReqAmen.length;
+      // Bonus pool curve: forgiving by design (these are nice-to-haves).
+      let poolScore;
+      if (pct >= 1.0)  poolScore = 100;
+      else if (pct >= 0.75) poolScore = 90;
+      else if (pct >= 0.50) poolScore = 75;
+      else if (pct >= 0.25) poolScore = 55;
+      else poolScore = 15;
+      officeItems.push({ label: 'Other Amenities', score: poolScore, weight: 6,
+        details: `${matched} / ${poolReqAmen.length} matched`, icon: '✨' });
+    }
+
+    // Roll all office items into the main weightedSum.
+    officeItems.forEach(item => {
+      breakdown.push({ category: item.label, score: item.score, weight: item.weight,
+        details: item.details, icon: item.icon });
+      weightedSum += (item.score / 100) * item.weight;
+      totalWeight += item.weight;
+    });
+  } else {
+    // Legacy generic detail path for all non-office-lease types (until they get their own pass).
+    const detailScores = scoreDetails(listing, requirement, ld, rd);
+    if (detailScores.length > 0) {
+      const detailAvg = detailScores.reduce((s, d) => s + d.score, 0) / detailScores.length;
+      const hitCount  = detailScores.filter(d => d.score >= 80).length;
+      breakdown.push({ category: 'Property Details', score: Math.round(detailAvg), weight: W.details,
+        details: `${hitCount}/${detailScores.length} factors matched`,
+        icon: '🏢', subScores: detailScores });
+      weightedSum += (detailAvg / 100) * W.details;
+      totalWeight += W.details;
+    }
   }
 
   // ── Final score: raw weighted average, no baseline floor ───────────────────
