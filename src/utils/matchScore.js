@@ -438,6 +438,7 @@ export function calculateMatchScore(listing, requirement) {
   const isMedicalOfficeLease = (listing.property_type === 'medical_office') && (txKind === 'lease' || txKind === 'sublease');
   const isRetailLease = (listing.property_type === 'retail') && (txKind === 'lease' || txKind === 'sublease');
   const isIndustrialLease = (listing.property_type === 'industrial_flex') && (txKind === 'lease' || txKind === 'sublease');
+  const isLandCommercial = (listing.property_type === 'land');
 
   // Top-level weights. Per-type tables for Office, Medical Office, Retail, Industrial leases.
   // Everything else uses the legacy generic split for now.
@@ -448,6 +449,8 @@ export function calculateMatchScore(listing, requirement) {
     W = { price: 19, size: 20, location: 0, details: 0 };
   } else if (isIndustrialLease) {
     W = { price: 18, size: 23, location: 0, details: 0 };
+  } else if (isLandCommercial) {
+    W = { price: 22, size: 25, location: 0, details: 0 };
   } else {
     W = { price: 26, size: 22, location: 22, details: 30 };
   }
@@ -1160,6 +1163,101 @@ export function calculateMatchScore(listing, requirement) {
       weightedSum += (item.score / 100) * item.weight;
       totalWeight += item.weight;
     });
+  } else if (isLandCommercial) {
+    // Land (Commercial) scoring.
+    // Core: Size, Price, Buildable, Land Condition (wetlands/flat), Site Access, Road Surface.
+    // Utilities use a BONUS mechanic — matching utilities boost the score but
+    // missing ones do NOT subtract from the base score.
+
+    const landItems = [];
+    const listTopo = Array.isArray(ld.topography) ? ld.topography : [];
+    const listUtils = Array.isArray(ld.utilities_to_site) ? ld.utilities_to_site : [];
+
+    // Buildable — heaviest binary item (weight 20)
+    if (rd.buildable_req) {
+      const has = !!ld.buildable;
+      landItems.push({ label: 'Buildable / Developable', score: has ? 100 : 0, weight: 20,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '🏗️' });
+    }
+
+    // No Wetlands (binary — miss score 40 because fixable but expensive)
+    if (rd.no_wetlands_req) {
+      const hasWetlands = listTopo.includes('wetlands');
+      const score = hasWetlands ? 40 : 100;
+      landItems.push({ label: 'No Wetlands', score, weight: 6,
+        details: hasWetlands ? 'Wetlands present (fixable but significant cost)' : 'No wetlands indicated', icon: '💧' });
+    }
+
+    // Flat / Level (binary — miss score 40 because sloped is fixable but expensive)
+    if (rd.flat_req) {
+      const isFlat = listTopo.includes('level');
+      const score = isFlat ? 100 : 40;
+      landItems.push({ label: 'Flat / Level Land', score, weight: 6,
+        details: isFlat ? 'Level / Flat' : 'Not indicated as flat (sloped is fixable but adds cost)', icon: '📐' });
+    }
+
+    // Site Access (binary — "No Direct Access" on listing = 0)
+    if (rd.site_access_req) {
+      const noAccess = ld.access_type === 'No Direct Access';
+      const score = noAccess ? 0 : 100;
+      landItems.push({ label: 'Site Access', score, weight: 6,
+        details: noAccess ? 'No direct access' : (ld.access_type || 'Not specified'), icon: '🛣️' });
+    }
+
+    // Road Surface (tiered: Paved=100, Gravel=70, Dirt=40)
+    if (rd.road_surface_pref && rd.road_surface_pref !== 'any' && ld.road_surface) {
+      let score = 100;
+      const surf = String(ld.road_surface).toLowerCase();
+      if (rd.road_surface_pref === 'paved') {
+        score = (surf.includes('paved') || surf.includes('concrete')) ? 100 : surf.includes('gravel') ? 70 : 40;
+      }
+      // 'gravel' pref = gravel or better = 100; dirt = 60
+      if (rd.road_surface_pref === 'gravel') {
+        score = (surf.includes('paved') || surf.includes('concrete') || surf.includes('gravel')) ? 100 : 60;
+      }
+      landItems.push({ label: 'Road Surface', score, weight: 6,
+        details: `${ld.road_surface} (requested: ${rd.road_surface_pref}+)`, icon: '🛤️' });
+    }
+
+    // Roll base items first
+    landItems.forEach(item => {
+      breakdown.push({ category: item.label, score: item.score, weight: item.weight,
+        details: item.details, icon: item.icon });
+      weightedSum += (item.score / 100) * item.weight;
+      totalWeight += item.weight;
+    });
+
+    // ── Utilities BONUS mechanic ──────────────────────────────────────────
+    // Unlike all other items, matching utilities ADD points but missing ones
+    // do NOT subtract. Each utility is worth 2.25 bonus points (9 total).
+    // The final score is capped at 100.
+    const reqUtils = Array.isArray(rd.utilities_req) ? rd.utilities_req : [];
+    if (reqUtils.length > 0) {
+      const utilWeight = 2.25;
+      reqUtils.forEach(u => {
+        const has = listUtils.includes(u);
+        if (has) {
+          // Only add bonus when listing HAS the utility — never subtract for missing.
+          const label = {
+            municipal_water: 'Municipal Water', sanitary_sewer: 'Sanitary Sewer',
+            electric: 'Electric', natural_gas: 'Natural Gas', fiber_internet: 'Fiber / Internet',
+          }[u] || u;
+          breakdown.push({ category: label, score: 100, weight: utilWeight,
+            details: 'At site', icon: '⚡' });
+          weightedSum += utilWeight;
+          totalWeight += utilWeight;
+        } else {
+          // Missing utility: show in breakdown with 0 but DO NOT add to totalWeight.
+          // This means the weight doesn't exist to be lost — it's purely additive.
+          const label = {
+            municipal_water: 'Municipal Water', sanitary_sewer: 'Sanitary Sewer',
+            electric: 'Electric', natural_gas: 'Natural Gas', fiber_internet: 'Fiber / Internet',
+          }[u] || u;
+          breakdown.push({ category: label, score: 0, weight: 0,
+            details: 'Not confirmed at site (bonus not earned)', icon: '⚡' });
+        }
+      });
+    }
   } else {
     // Legacy generic detail path for all non-office-lease types (until they get their own pass).
     const detailScores = scoreDetails(listing, requirement, ld, rd);

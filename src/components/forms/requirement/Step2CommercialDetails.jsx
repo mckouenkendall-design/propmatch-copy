@@ -651,47 +651,36 @@ function IndustrialFlexRequirement({ details, setDetail }) {
 }
 
 function LandRequirement({ details, setDetail }) {
-  const toggleBool = (key) => setDetail(key, !details[key]);
   const utilities = details.utilities_req || [];
   const toggleUtility = (key) => setDetail('utilities_req', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
-  const topography = details.topography_req || [];
-  const toggleTopo = (key) => setDetail('topography_req', topography.includes(key) ? topography.filter(t => t !== key) : [...topography, key]);
   return (
     <>
-      <SectionTitle>Size Requirements</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min Road Frontage (ft)"><Num field="min_frontage" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min Traffic Count (vehicles/day)"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
-      </div>
-      <Field label="Location Setting Preference">
-        <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-          value={details.location_setting_pref || ''} onChange={e => setDetail('location_setting_pref', e.target.value)}>
-          <option value="" style={{ background: '#0E1318' }}>No preference</option>
-          {['Highway Frontage', 'Main Road', 'Industrial Park', 'Suburban/Residential', 'Rural/Country'].map(o => <option key={o} value={o} style={{ background: '#0E1318' }}>{o}</option>)}
-        </select>
-      </Field>
-      <ToggleGroup label="Entitlements Needed" value={details.entitlements_needed || ''} onChange={v => setDetail('entitlements_needed', v)}
-        options={[{ value: 'raw', label: 'Raw OK' }, { value: 'shovel_ready', label: 'Shovel Ready' }, { value: 'approved', label: 'Approved Plan' }]} />
-      <SectionTitle>Utilities Required at Site</SectionTitle>
+      <SectionTitle>Buildability & Access</SectionTitle>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        {[{key:'municipal_water',label:'Municipal Water'},{key:'sanitary_sewer',label:'Sanitary Sewer'},{key:'electric',label:'Electric'},{key:'natural_gas',label:'Natural Gas'},{key:'fiber_internet',label:'Fiber / Internet'}].map((u, idx) => (
+        <Toggle label="Must Be Buildable / Developable" value={!!details.buildable_req} onChange={v => setDetail('buildable_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Must Have Direct Site Access (no landlocked parcels)" value={!!details.site_access_req} onChange={v => setDetail('site_access_req', v)} />
+      </div>
+      <SectionTitle>Site Characteristics</SectionTitle>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="No Wetlands / No Flood Zone" value={!!details.no_wetlands_req} onChange={v => setDetail('no_wetlands_req', v)} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
+        <Toggle label="Prefer Flat / Level Land" value={!!details.flat_req} onChange={v => setDetail('flat_req', v)} />
+      </div>
+      <ToggleGroup label="Road Surface Preference" value={details.road_surface_pref || ''} onChange={v => setDetail('road_surface_pref', v)}
+        options={[{ value: 'paved', label: 'Paved' }, { value: 'gravel', label: 'Gravel OK' }, { value: 'any', label: 'Any' }]} />
+      <SectionTitle>Utilities Needed at Site</SectionTitle>
+      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        {[{ key: 'municipal_water', label: 'Municipal Water' }, { key: 'sanitary_sewer', label: 'Sanitary Sewer' }, { key: 'electric', label: 'Electric' }, { key: 'natural_gas', label: 'Natural Gas' }, { key: 'fiber_internet', label: 'Fiber / Internet' }].map((u, idx) => (
           <React.Fragment key={u.key}><Toggle label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />{idx < 4 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}</React.Fragment>
         ))}
       </div>
-      <SectionTitle>Site Characteristics</SectionTitle>
-      <Field label="Topography Preferred">
-        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-          {[{key:'level',label:'Level / Flat'},{key:'wooded',label:'Wooded'},{key:'cleared',label:'Cleared'}].map((t, idx) => (
-            <React.Fragment key={t.key}><Toggle label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />{idx < 2 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}</React.Fragment>
-          ))}
-        </div>
-      </Field>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Perc Test Completed Required" value={!!details.perc_test_req} onChange={() => toggleBool('perc_test_req')} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="No Wetlands / No Flood Zone" value={!!details.no_wetlands_req} onChange={() => toggleBool('no_wetlands_req')} />
+      <SectionTitle>Informational Preferences</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min Road Frontage (ft)" hint="Informational"><Num field="min_frontage" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Traffic Count (vehicles/day)" hint="Informational"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
       </div>
-      <Field label="Zoning Acceptable">
+      <Field label="Acceptable Zoning" hint="Informational — tag each acceptable zone type">
         <TagsInput value={details.zoning_acceptable || []} onChange={v => setDetail('zoning_acceptable', v)} placeholder="e.g. B-2, M-1, any commercial (press Enter)" />
       </Field>
       <Field label="Intended Use / Development Plan">
