@@ -439,9 +439,10 @@ export function calculateMatchScore(listing, requirement) {
   const isRetailLease = (listing.property_type === 'retail') && (txKind === 'lease' || txKind === 'sublease');
   const isIndustrialLease = (listing.property_type === 'industrial_flex') && (txKind === 'lease' || txKind === 'sublease');
   const isLandCommercial = (listing.property_type === 'land');
+  const isSingleFamily = (listing.property_type === 'single_family');
 
-  // Top-level weights. Per-type tables for Office, Medical Office, Retail, Industrial leases.
-  // Everything else uses the legacy generic split for now.
+  // Top-level weights. Per-type tables for Office, Medical Office, Retail, Industrial leases,
+  // Land Commercial, Single Family. Everything else uses the legacy generic split for now.
   let W;
   if (isOfficeLease || isMedicalOfficeLease) {
     W = { price: 21, size: 23, location: 0, details: 0 };
@@ -451,6 +452,8 @@ export function calculateMatchScore(listing, requirement) {
     W = { price: 18, size: 23, location: 0, details: 0 };
   } else if (isLandCommercial) {
     W = { price: 22, size: 25, location: 0, details: 0 };
+  } else if (isSingleFamily) {
+    W = { price: 21, size: 21, location: 0, details: 0 };
   } else {
     W = { price: 26, size: 22, location: 22, details: 30 };
   }
@@ -1258,6 +1261,92 @@ export function calculateMatchScore(listing, requirement) {
         }
       });
     }
+  } else if (isSingleFamily) {
+    // Single Family scoring.
+    // Bedrooms heaviest after Size/Price — hard to change (fire-code egress implications
+    // to add a bedroom). Bathrooms matter less. Lot Size shown/scored as acreage-equivalent.
+    // Year Built is informational only (too city-dependent to score meaningfully).
+
+    const sfItems = [];
+
+    // Bedrooms (graduated, heavy weight)
+    if (rd.min_bedrooms && parseFloat(rd.min_bedrooms) > 0) {
+      const want = parseFloat(rd.min_bedrooms);
+      const have = parseFloat(ld.bedrooms) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      sfItems.push({ label: 'Bedrooms', score, weight: 20,
+        details: `${ld.bedrooms ?? '—'} vs ${want} requested`, icon: '🛏️' });
+    }
+
+    // Bathrooms (graduated)
+    if (rd.min_bathrooms && parseFloat(rd.min_bathrooms) > 0) {
+      const want = parseFloat(rd.min_bathrooms);
+      const have = parseFloat(ld.bathrooms) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      sfItems.push({ label: 'Bathrooms', score, weight: 10,
+        details: `${ld.bathrooms ?? '—'} vs ${want} requested`, icon: '🚿' });
+    }
+
+    // Lot Size (graduated, scored in acreage-equivalent terms but stored as sqft)
+    if (rd.min_lot_sqft && parseFloat(rd.min_lot_sqft) > 0) {
+      const want = parseFloat(rd.min_lot_sqft);
+      const have = parseFloat(ld.lot_sqft) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      const haveAcres = have ? (have / 43560).toFixed(2) : '—';
+      const wantAcres = (want / 43560).toFixed(2);
+      sfItems.push({ label: 'Lot Size', score, weight: 8,
+        details: `${haveAcres} ac vs ${wantAcres} ac requested`, icon: '🌳' });
+    }
+
+    // Garage Spaces (graduated)
+    if (rd.min_garage && parseFloat(rd.min_garage) > 0) {
+      const want = parseFloat(rd.min_garage);
+      const have = parseFloat(ld.garage) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      sfItems.push({ label: 'Garage Spaces', score, weight: 6,
+        details: `${ld.garage ?? '—'} vs ${want} requested`, icon: '🚗' });
+    }
+
+    // Stories/Style (tiered — exact match or "any")
+    if (rd.stories_pref && rd.stories_pref !== 'any' && ld.stories) {
+      const score = (rd.stories_pref === ld.stories) ? 100 : 40;
+      sfItems.push({ label: 'Stories', score, weight: 4,
+        details: `${ld.stories} (requested: ${rd.stories_pref})`, icon: '🏠' });
+    }
+
+    // Basement (tiered — "finished" pref wants finished or walkout; "any" always passes)
+    if (rd.basement_pref && rd.basement_pref !== 'any' && ld.basement) {
+      let score = 40;
+      if (rd.basement_pref === 'finished') {
+        score = (ld.basement === 'finished' || ld.basement === 'walkout') ? 100 : 40;
+      }
+      sfItems.push({ label: 'Basement', score, weight: 3,
+        details: `${ld.basement} (requested: ${rd.basement_pref})`, icon: '🏚️' });
+    }
+
+    // Other features pool (Property Features vs Desired Features — bonus-style curve)
+    const reqFeatures = Array.isArray(rd.desired_features) ? rd.desired_features : [];
+    const listFeatures = Array.isArray(ld.features) ? ld.features : [];
+    if (reqFeatures.length > 0) {
+      const matched = reqFeatures.filter(f => listFeatures.includes(f)).length;
+      const pct = matched / reqFeatures.length;
+      let poolScore;
+      if (pct >= 1.0)  poolScore = 100;
+      else if (pct >= 0.75) poolScore = 90;
+      else if (pct >= 0.50) poolScore = 75;
+      else if (pct >= 0.25) poolScore = 55;
+      else poolScore = 15;
+      sfItems.push({ label: 'Features & Amenities', score: poolScore, weight: 7,
+        details: `${matched} / ${reqFeatures.length} matched`, icon: '✨' });
+    }
+
+    // Roll all single family items into the main weightedSum.
+    sfItems.forEach(item => {
+      breakdown.push({ category: item.label, score: item.score, weight: item.weight,
+        details: item.details, icon: item.icon });
+      weightedSum += (item.score / 100) * item.weight;
+      totalWeight += item.weight;
+    });
   } else {
     // Legacy generic detail path for all non-office-lease types (until they get their own pass).
     const detailScores = scoreDetails(listing, requirement, ld, rd);

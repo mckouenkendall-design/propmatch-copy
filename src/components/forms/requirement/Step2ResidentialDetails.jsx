@@ -264,8 +264,8 @@ function SingleFamilyRequirement({ details, setDetail }) {
         <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 3" details={details} setDetail={setDetail} />
         <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 2" step="0.5" details={details} setDetail={setDetail} />
         <MinField label="Min Garage Spaces" field="min_garage" placeholder="e.g. 2" details={details} setDetail={setDetail} />
-        <MinField label="Min Lot Size (sqft)" field="min_lot_sqft" placeholder="e.g. 6000" details={details} setDetail={setDetail} />
-        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 1990" details={details} setDetail={setDetail} />
+        <MinField label="Min Lot Size (sqft)" field="min_lot_sqft" placeholder="e.g. 6000" hint={details.min_lot_sqft ? `≈ ${(parseFloat(details.min_lot_sqft) / 43560).toFixed(2)} acres` : "Informational-adjacent, scored"} details={details} setDetail={setDetail} />
+        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 1990" hint="Informational" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="Stories Preferred" value={details.stories_pref || ''} onChange={v => setDetail('stories_pref', v)}
         options={[{ value: 'one', label: '1 Story' }, { value: 'two', label: '2 Story' }, { value: 'any', label: 'Any' }]} />

@@ -257,10 +257,9 @@ function SingleFamilyDetails({ details, setDetail }) {
       <SectionTitle>Basic Specs</SectionTitle>
       <BedsAndBaths details={details} setDetail={setDetail} />
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2005" details={details} setDetail={setDetail} /></Field>
-        <Field label="Lot Size (sqft)"><Num field="lot_sqft" placeholder="e.g. 7500" details={details} setDetail={setDetail} /></Field>
+        <Field label="Year Built" hint="Informational"><Num field="year_built" placeholder="e.g. 2005" details={details} setDetail={setDetail} /></Field>
+        <Field label="Lot Size (sqft)" hint={details.lot_sqft ? `≈ ${(parseFloat(details.lot_sqft) / 43560).toFixed(2)} acres` : undefined}><Num field="lot_sqft" placeholder="e.g. 7500" details={details} setDetail={setDetail} /></Field>
         <Field label="Garage Spaces"><Num field="garage" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
-        <Field label="Roof Age (years)"><Num field="roof_age" placeholder="e.g. 5" details={details} setDetail={setDetail} /></Field>
         <Field label="HOA ($/mo)" hint="Leave blank if no HOA"><Num field="hoa" placeholder="e.g. 150" details={details} setDetail={setDetail} /></Field>
       </div>
       <SectionTitle>Style & Layout</SectionTitle>
@@ -268,7 +267,7 @@ function SingleFamilyDetails({ details, setDetail }) {
         options={[{ value: 'one', label: '1 Story' }, { value: 'two', label: '2 Story' }, { value: 'split', label: 'Split Level' }, { value: 'three_plus', label: '3+' }]} />
       <ToggleGroup label="Basement" value={details.basement || ''} onChange={v => setDetail('basement', v)}
         options={[{ value: 'finished', label: 'Finished' }, { value: 'unfinished', label: 'Unfinished' }, { value: 'walkout', label: 'Walk-Out' }, { value: 'none', label: 'None' }]} />
-      <Field label="Architectural Style">
+      <Field label="Architectural Style" hint="Informational">
         <div className="flex flex-wrap gap-2">
           {ARCH_STYLES.map(s => (
             <button key={s} type="button" onClick={() => setDetail('arch_style', s)}
@@ -278,6 +277,7 @@ function SingleFamilyDetails({ details, setDetail }) {
         </div>
       </Field>
       <SectionTitle>Systems</SectionTitle>
+      <p className="text-xs -mt-2 mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Informational — easy to change, not weighted in match scoring</p>
       <ToggleGroup label="Heating" value={details.heating || ''} onChange={v => setDetail('heating', v)}
         options={[{ value: 'forced_air', label: 'Forced Air' }, { value: 'radiant', label: 'Radiant' }, { value: 'heat_pump', label: 'Heat Pump' }, { value: 'baseboard', label: 'Baseboard' }]} />
       <ToggleGroup label="Cooling" value={details.cooling || ''} onChange={v => setDetail('cooling', v)}
