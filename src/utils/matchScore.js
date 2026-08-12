@@ -440,9 +440,14 @@ export function calculateMatchScore(listing, requirement) {
   const isIndustrialLease = (listing.property_type === 'industrial_flex') && (txKind === 'lease' || txKind === 'sublease');
   const isLandCommercial = (listing.property_type === 'land');
   const isSingleFamily = (listing.property_type === 'single_family');
+  const isCondo = (listing.property_type === 'condo');
+  const isApartment = (listing.property_type === 'apartment');
+  const isTownhouse = (listing.property_type === 'townhouse');
+  const isManufactured = (listing.property_type === 'manufactured');
+  const isResidentialLand = (listing.property_type === 'land_residential');
 
   // Top-level weights. Per-type tables for Office, Medical Office, Retail, Industrial leases,
-  // Land Commercial, Single Family. Everything else uses the legacy generic split for now.
+  // Land Commercial, Single Family, and residential types. Everything else uses the legacy generic split.
   let W;
   if (isOfficeLease || isMedicalOfficeLease) {
     W = { price: 21, size: 23, location: 0, details: 0 };
@@ -450,9 +455,9 @@ export function calculateMatchScore(listing, requirement) {
     W = { price: 19, size: 20, location: 0, details: 0 };
   } else if (isIndustrialLease) {
     W = { price: 18, size: 23, location: 0, details: 0 };
-  } else if (isLandCommercial) {
+  } else if (isLandCommercial || isResidentialLand) {
     W = { price: 22, size: 25, location: 0, details: 0 };
-  } else if (isSingleFamily) {
+  } else if (isSingleFamily || isCondo || isApartment || isTownhouse || isManufactured) {
     W = { price: 21, size: 21, location: 0, details: 0 };
   } else {
     W = { price: 26, size: 22, location: 22, details: 30 };
@@ -1347,6 +1352,211 @@ export function calculateMatchScore(listing, requirement) {
       weightedSum += (item.score / 100) * item.weight;
       totalWeight += item.weight;
     });
+  } else if (isCondo || isApartment) {
+    // Condo & Apartment: scored like Single Family (beds heavy, baths, parking) plus a
+    // PET POLICY HARD GATE and a building-amenities bonus pool. Apartment additionally
+    // scores Preferred Lease Term (weighted, not a hard gate — negotiable).
+
+    // ── Pet policy hard gate ──────────────────────────────────────────────
+    // If the requirement needs pets allowed and the listing says no pets, kill the match.
+    if (rd.pet_policy_req === 'allowed' && ld.pet_policy === 'none') {
+      return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null, coverage: 0 };
+    }
+
+    const resItems = [];
+
+    // Bedrooms (graduated, heavy)
+    if (rd.min_bedrooms && parseFloat(rd.min_bedrooms) > 0) {
+      const want = parseFloat(rd.min_bedrooms);
+      const have = parseFloat(ld.bedrooms) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      resItems.push({ label: 'Bedrooms', score, weight: 20,
+        details: `${ld.bedrooms ?? '—'} vs ${want} requested`, icon: '🛏️' });
+    }
+
+    // Bathrooms (graduated)
+    if (rd.min_bathrooms && parseFloat(rd.min_bathrooms) > 0) {
+      const want = parseFloat(rd.min_bathrooms);
+      const have = parseFloat(ld.bathrooms) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      resItems.push({ label: 'Bathrooms', score, weight: 10,
+        details: `${ld.bathrooms ?? '—'} vs ${want} requested`, icon: '🚿' });
+    }
+
+    // Parking (binary — requirement asks, listing has any parking that isn't 'none')
+    if (rd.parking_req === 'required' || rd.parking_req === true) {
+      const has = !!(ld.parking && ld.parking !== 'none');
+      resItems.push({ label: 'Parking', score: has ? 100 : 0, weight: 6,
+        details: has ? (ld.parking || 'Yes') : 'None / Not specified', icon: '🚗' });
+    }
+
+    // Apartment only: Preferred Lease Term (graduated, negotiable — not a hard gate)
+    if (isApartment && rd.lease_term_pref && parseFloat(rd.lease_term_pref) > 0) {
+      const want = parseFloat(rd.lease_term_pref);
+      const have = parseFloat(ld.lease_term) || 0;
+      // Closeness score: within 2 months = 100, else graduated by difference.
+      let score = 0;
+      if (have > 0) {
+        const diff = Math.abs(have - want);
+        if (diff <= 2) score = 100;
+        else if (diff <= 4) score = 75;
+        else if (diff <= 6) score = 50;
+        else score = 25;
+      }
+      resItems.push({ label: 'Lease Term', score, weight: 5,
+        details: `${ld.lease_term ?? '—'} mo vs ${want} mo preferred`, icon: '📅' });
+    }
+
+    // Building amenities pool (bonus curve)
+    const reqAmen = Array.isArray(rd.desired_amenities) ? rd.desired_amenities : [];
+    const listAmen = Array.isArray(ld.amenities) ? ld.amenities : [];
+    if (reqAmen.length > 0) {
+      const matched = reqAmen.filter(a => listAmen.includes(a)).length;
+      const pct = matched / reqAmen.length;
+      let poolScore;
+      if (pct >= 1.0)  poolScore = 100;
+      else if (pct >= 0.75) poolScore = 90;
+      else if (pct >= 0.50) poolScore = 75;
+      else if (pct >= 0.25) poolScore = 55;
+      else poolScore = 15;
+      resItems.push({ label: 'Building Amenities', score: poolScore, weight: 10,
+        details: `${matched} / ${reqAmen.length} matched`, icon: '✨' });
+    }
+
+    resItems.forEach(item => {
+      breakdown.push({ category: item.label, score: item.score, weight: item.weight,
+        details: item.details, icon: item.icon });
+      weightedSum += (item.score / 100) * item.weight;
+      totalWeight += item.weight;
+    });
+  } else if (isTownhouse) {
+    // Townhouse: simplest residential — Bedrooms + Bathrooms scored, everything else
+    // informational (garage, stories, basement, position, HOA all informational per spec).
+
+    const thItems = [];
+
+    if (rd.min_bedrooms && parseFloat(rd.min_bedrooms) > 0) {
+      const want = parseFloat(rd.min_bedrooms);
+      const have = parseFloat(ld.bedrooms) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      thItems.push({ label: 'Bedrooms', score, weight: 20,
+        details: `${ld.bedrooms ?? '—'} vs ${want} requested`, icon: '🛏️' });
+    }
+
+    if (rd.min_bathrooms && parseFloat(rd.min_bathrooms) > 0) {
+      const want = parseFloat(rd.min_bathrooms);
+      const have = parseFloat(ld.bathrooms) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      thItems.push({ label: 'Bathrooms', score, weight: 10,
+        details: `${ld.bathrooms ?? '—'} vs ${want} requested`, icon: '🚿' });
+    }
+
+    thItems.forEach(item => {
+      breakdown.push({ category: item.label, score: item.score, weight: item.weight,
+        details: item.details, icon: item.icon });
+      weightedSum += (item.score / 100) * item.weight;
+      totalWeight += item.weight;
+    });
+  } else if (isManufactured) {
+    // Manufactured / Mobile: Bedrooms + Bathrooms heavy, Lot Size important.
+    // AGE RESTRICTION HARD GATE: if the community is age-restricted (55+) and the
+    // requirement doesn't confirm the buyer meets it, the match dies.
+
+    // ── Age restriction hard gate ─────────────────────────────────────────
+    if (ld.age_restriction === '55_plus' && rd.age_restriction_pref !== '55_plus' && rd.age_restriction_pref !== 'any') {
+      return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false, matchLabel: null, coverage: 0 };
+    }
+
+    const mfItems = [];
+
+    if (rd.min_bedrooms && parseFloat(rd.min_bedrooms) > 0) {
+      const want = parseFloat(rd.min_bedrooms);
+      const have = parseFloat(ld.bedrooms) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      mfItems.push({ label: 'Bedrooms', score, weight: 20,
+        details: `${ld.bedrooms ?? '—'} vs ${want} requested`, icon: '🛏️' });
+    }
+
+    if (rd.min_bathrooms && parseFloat(rd.min_bathrooms) > 0) {
+      const want = parseFloat(rd.min_bathrooms);
+      const have = parseFloat(ld.bathrooms) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      mfItems.push({ label: 'Bathrooms', score, weight: 12,
+        details: `${ld.bathrooms ?? '—'} vs ${want} requested`, icon: '🚿' });
+    }
+
+    // Lot Size (graduated) — Manufactured buyers care about lot; stored as lot_sqft
+    if (rd.min_lot_sqft && parseFloat(rd.min_lot_sqft) > 0) {
+      const want = parseFloat(rd.min_lot_sqft);
+      const have = parseFloat(ld.lot_sqft) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      mfItems.push({ label: 'Lot Size', score, weight: 8,
+        details: `${ld.lot_sqft ?? '—'} sqft vs ${want} requested`, icon: '🌳' });
+    }
+
+    mfItems.forEach(item => {
+      breakdown.push({ category: item.label, score: item.score, weight: item.weight,
+        details: item.details, icon: item.icon });
+      weightedSum += (item.score / 100) * item.weight;
+      totalWeight += item.weight;
+    });
+  } else if (isResidentialLand) {
+    // Residential Land: same treatment as Land Commercial.
+    // Buildable heaviest, no-wetlands + flat as partial-binary (miss=40), site access,
+    // road surface tiered, utilities as bonus.
+
+    const rlItems = [];
+    const listTopo = Array.isArray(ld.topography_tags) ? ld.topography_tags : [];
+    const listUtils = Array.isArray(ld.utilities_at_site) ? ld.utilities_at_site : [];
+
+    // Buildable — heaviest (uses buildable_area presence or explicit buildable flag)
+    if (rd.buildable_req) {
+      const has = !!(ld.buildable || (ld.buildable_area && parseFloat(ld.buildable_area) > 0));
+      rlItems.push({ label: 'Buildable / Developable', score: has ? 100 : 0, weight: 20,
+        details: has ? 'Yes' : 'Not specified on listing', icon: '🏗️' });
+    }
+
+    // No Wetlands (miss=40, fixable but expensive)
+    if (rd.no_wetlands_req) {
+      const hasWetlands = listTopo.includes('wetlands');
+      rlItems.push({ label: 'No Wetlands', score: hasWetlands ? 40 : 100, weight: 6,
+        details: hasWetlands ? 'Wetlands present (fixable but costly)' : 'No wetlands indicated', icon: '💧' });
+    }
+
+    // Paved Road Access (binary)
+    if (rd.paved_road_req) {
+      const surf = String(ld.road_surface || '').toLowerCase();
+      const paved = surf.includes('paved') || surf.includes('concrete');
+      rlItems.push({ label: 'Paved Road Access', score: paved ? 100 : 40, weight: 6,
+        details: paved ? (ld.road_surface || 'Paved') : (ld.road_surface || 'Not paved'), icon: '🛣️' });
+    }
+
+    // Utilities BONUS mechanic (each match +2.25, missing never subtracts)
+    const reqUtils = Array.isArray(rd.utilities_req) ? rd.utilities_req : [];
+
+    rlItems.forEach(item => {
+      breakdown.push({ category: item.label, score: item.score, weight: item.weight,
+        details: item.details, icon: item.icon });
+      weightedSum += (item.score / 100) * item.weight;
+      totalWeight += item.weight;
+    });
+
+    if (reqUtils.length > 0) {
+      const utilWeight = 2.25;
+      const uLabels = {
+        municipal_water: 'Municipal Water', sanitary_sewer: 'Sanitary Sewer',
+        electric: 'Electric', natural_gas: 'Natural Gas', fiber_internet: 'Fiber / Internet',
+      };
+      reqUtils.forEach(u => {
+        if (listUtils.includes(u)) {
+          breakdown.push({ category: uLabels[u] || u, score: 100, weight: utilWeight, details: 'At site', icon: '⚡' });
+          weightedSum += utilWeight;
+          totalWeight += utilWeight;
+        } else {
+          breakdown.push({ category: uLabels[u] || u, score: 0, weight: 0, details: 'Not confirmed (bonus not earned)', icon: '⚡' });
+        }
+      });
+    }
   } else {
     // Legacy generic detail path for all non-office-lease types (until they get their own pass).
     const detailScores = scoreDetails(listing, requirement, ld, rd);

@@ -94,10 +94,7 @@ function TagsInput({ value = [], onChange, placeholder }) {
 function MinField({ label, field, placeholder, hint, details, setDetail, step }) {
   return (
     <Field label={label} hint={hint}>
-      <div className="flex items-center gap-2">
-        <span className="text-xs whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.5)' }}>Min</span>
-        <Num field={field} placeholder={placeholder} details={details} setDetail={setDetail} step={step} />
-      </div>
+      <Num field={field} placeholder={placeholder} details={details} setDetail={setDetail} step={step} />
     </Field>
   );
 }
@@ -157,9 +154,9 @@ function CondoRequirementSaleInvestment({ details, setDetail }) {
       <RentalCriteriaSection details={details} setDetail={setDetail} />
       <SectionTitle>Unit Preferences</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
-        <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Min Floor #" field="min_floor" placeholder="e.g. 3" hint="Optional — leave blank if any floor OK" details={details} setDetail={setDetail} />
+        <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
+        <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
+        <MinField label="Floor #" field="min_floor" placeholder="e.g. 3" hint="Optional — leave blank if any floor OK" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="Parking" value={details.parking_pref || ''} onChange={v => setDetail('parking_pref', v)}
         options={[{ value: 'assigned', label: 'Assigned' }, { value: 'garage', label: 'Garage' }, { value: 'any', label: 'Any' }]} />
@@ -184,9 +181,9 @@ function TownhouseRequirementSaleInvestment({ details, setDetail }) {
       <RentalCriteriaSection details={details} setDetail={setDetail} />
       <SectionTitle>Property Preferences</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
-        <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1.5" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Min Garage Spaces" field="min_garage" placeholder="e.g. 1" details={details} setDetail={setDetail} />
+        <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
+        <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 1.5" step="0.5" details={details} setDetail={setDetail} />
+        <MinField label="Garage Spaces" field="min_garage" placeholder="e.g. 1" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="Position Preference" value={details.position_pref || ''} onChange={v => setDetail('position_pref', v)}
         options={[{ value: 'end', label: 'End Unit' }, { value: 'any', label: 'Any' }]} />
@@ -221,9 +218,9 @@ function ManufacturedRequirementSaleInvestment({ details, setDetail }) {
 
       <SectionTitle>Property Preferences</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
-        <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 1990" hint="Post-1976 HUD code is critical for financing" details={details} setDetail={setDetail} />
+        <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
+        <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
+        <MinField label="Year Built" field="min_year_built" placeholder="e.g. 1990" hint="Post-1976 HUD code is critical for financing" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="Land Ownership Preference" value={details.land_ownership_pref || ''} onChange={v => setDetail('land_ownership_pref', v)}
         options={[{ value: 'owned', label: 'Land Owned Only' }, { value: 'leased', label: 'Lot Lease OK' }, { value: 'any', label: 'Either' }]} />
@@ -261,11 +258,11 @@ function SingleFamilyRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Size & Layout Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 3" details={details} setDetail={setDetail} />
-        <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 2" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Min Garage Spaces" field="min_garage" placeholder="e.g. 2" details={details} setDetail={setDetail} />
-        <MinField label="Min Lot Size (sqft)" field="min_lot_sqft" placeholder="e.g. 6000" hint={details.min_lot_sqft ? `≈ ${(parseFloat(details.min_lot_sqft) / 43560).toFixed(2)} acres` : "Informational-adjacent, scored"} details={details} setDetail={setDetail} />
-        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 1990" hint="Informational" details={details} setDetail={setDetail} />
+        <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 3" details={details} setDetail={setDetail} />
+        <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 2" step="0.5" details={details} setDetail={setDetail} />
+        <MinField label="Garage Spaces" field="min_garage" placeholder="e.g. 2" details={details} setDetail={setDetail} />
+        <MinField label="Lot Size (sqft)" field="min_lot_sqft" placeholder="e.g. 6000" hint={details.min_lot_sqft ? `≈ ${(parseFloat(details.min_lot_sqft) / 43560).toFixed(2)} acres` : "Informational-adjacent, scored"} details={details} setDetail={setDetail} />
+        <MinField label="Year Built" field="min_year_built" placeholder="e.g. 1990" hint="Informational" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="Stories Preferred" value={details.stories_pref || ''} onChange={v => setDetail('stories_pref', v)}
         options={[{ value: 'one', label: '1 Story' }, { value: 'two', label: '2 Story' }, { value: 'any', label: 'Any' }]} />
@@ -304,11 +301,11 @@ function CondoRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Unit Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
-        <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
+        <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
+        <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
         <Field label="Max HOA ($/mo)"><Num field="max_hoa" placeholder="e.g. 600" details={details} setDetail={setDetail} /></Field>
-        <MinField label="Min Floor #" field="min_floor" placeholder="e.g. 3" hint="Optional" details={details} setDetail={setDetail} />
-        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 2000" details={details} setDetail={setDetail} />
+        <MinField label="Floor #" field="min_floor" placeholder="e.g. 3" hint="Optional" details={details} setDetail={setDetail} />
+        <MinField label="Year Built" field="min_year_built" placeholder="e.g. 2000" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="View Preference" value={details.view_pref || ''} onChange={v => setDetail('view_pref', v)}
         options={[{ value: 'city', label: 'City' }, { value: 'water', label: 'Water' }, { value: 'any', label: 'Any' }]} />
@@ -354,10 +351,11 @@ function ApartmentRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Unit Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
-        <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Min Floor #" field="min_floor" placeholder="e.g. 2" hint="Optional" details={details} setDetail={setDetail} />
-        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 2010" details={details} setDetail={setDetail} />
+        <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
+        <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
+        <MinField label="Floor #" field="min_floor" placeholder="e.g. 2" hint="Optional" details={details} setDetail={setDetail} />
+        <Field label="Preferred Lease Term (months)"><Num field="lease_term_pref" placeholder="e.g. 12" details={details} setDetail={setDetail} /></Field>
+        <MinField label="Year Built" field="min_year_built" placeholder="e.g. 2010" hint="Informational" details={details} setDetail={setDetail} />
       </div>
       <SectionTitle>Utilities Needed in Rent</SectionTitle>
       <div className="flex flex-wrap gap-2">
@@ -451,10 +449,10 @@ function TownhouseRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Property Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
-        <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1.5" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Min Garage Spaces" field="min_garage" placeholder="e.g. 1" details={details} setDetail={setDetail} />
-        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 2000" details={details} setDetail={setDetail} />
+        <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
+        <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 1.5" step="0.5" details={details} setDetail={setDetail} />
+        <MinField label="Garage Spaces" field="min_garage" placeholder="e.g. 1" details={details} setDetail={setDetail} />
+        <MinField label="Year Built" field="min_year_built" placeholder="e.g. 2000" details={details} setDetail={setDetail} />
         <Field label="Max HOA ($/mo)"><Num field="max_hoa" placeholder="e.g. 300" details={details} setDetail={setDetail} /></Field>
       </div>
       <ToggleGroup label="Stories Preferred" value={details.stories_pref || ''} onChange={v => setDetail('stories_pref', v)}
@@ -484,9 +482,9 @@ function ManufacturedRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Property Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
-        <MinField label="Min Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Min Year Built" field="min_year_built" placeholder="e.g. 2000" details={details} setDetail={setDetail} />
+        <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
+        <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
+        <MinField label="Year Built" field="min_year_built" placeholder="e.g. 2000" details={details} setDetail={setDetail} />
       </div>
       <ToggleGroup label="Land Ownership Required" value={details.land_ownership_req || ''} onChange={v => setDetail('land_ownership_req', v)}
         options={[{ value: 'owned', label: 'Land Owned' }, { value: 'leased', label: 'Lot Lease OK' }, { value: 'any', label: 'Either' }]} />
@@ -526,9 +524,9 @@ function ResidentialLandRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Size Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Acreage" field="min_acres" placeholder="e.g. 0.25" step="0.01" details={details} setDetail={setDetail} />
+        <MinField label="Acreage" field="min_acres" placeholder="e.g. 0.25" step="0.01" details={details} setDetail={setDetail} />
         <Field label="Max Acreage"><Num field="max_acres" placeholder="e.g. 2.0" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <MinField label="Min Road Frontage (ft)" field="min_frontage" placeholder="e.g. 60" details={details} setDetail={setDetail} />
+        <MinField label="Road Frontage (ft)" field="min_frontage" placeholder="e.g. 60" details={details} setDetail={setDetail} />
         <Field label="Max HOA ($/yr)" hint="Leave blank if no HOA required"><Num field="max_hoa_annual" placeholder="e.g. 500" details={details} setDetail={setDetail} /></Field>
       </div>
       <ToggleGroup label="Entitlements Needed" value={details.entitlements_needed || ''} onChange={v => setDetail('entitlements_needed', v)}

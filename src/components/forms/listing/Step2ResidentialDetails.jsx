@@ -333,10 +333,9 @@ function CondoDetails({ details, setDetail }) {
       <BedsAndBaths details={details} setDetail={setDetail} />
       <div className="grid grid-cols-2 gap-4">
         <Field label="Unit Number" hint="Optional"><Input value={details.unit_number || ''} onChange={e => setDetail('unit_number', e.target.value)} placeholder="e.g. Unit 804" /></Field>
-        <Field label="Floor #"><Num field="floor_num" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
-        <Field label="Total Floors in Building"><Num field="total_floors" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
-        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2015" details={details} setDetail={setDetail} /></Field>
-        <Field label="HOA ($/mo)"><Num field="hoa" placeholder="e.g. 450" details={details} setDetail={setDetail} /></Field>
+        <Field label="Floor #" hint="Informational"><Num field="floor_num" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
+        <Field label="Total Floors in Building" hint="Informational"><Num field="total_floors" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
+        <Field label="Year Built" hint="Informational"><Num field="year_built" placeholder="e.g. 2015" details={details} setDetail={setDetail} /></Field>
       </div>
       <SectionTitle>Parking & Storage</SectionTitle>
       <ToggleGroup label="Parking" value={details.parking || ''} onChange={v => setDetail('parking', v)}
@@ -540,9 +539,8 @@ function TownhouseDetails({ details, setDetail }) {
       <SectionTitle>Basic Specs</SectionTitle>
       <BedsAndBaths details={details} setDetail={setDetail} />
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2010" details={details} setDetail={setDetail} /></Field>
-        <Field label="Garage Spaces"><Num field="garage" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
-        <Field label="HOA ($/mo)"><Num field="hoa" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
+        <Field label="Year Built" hint="Informational"><Num field="year_built" placeholder="e.g. 2010" details={details} setDetail={setDetail} /></Field>
+        <Field label="Garage Spaces" hint="Informational"><Num field="garage" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
       </div>
       <SectionTitle>Layout & Features</SectionTitle>
       <ToggleGroup label="Stories" value={details.stories || ''} onChange={v => setDetail('stories', v)}
