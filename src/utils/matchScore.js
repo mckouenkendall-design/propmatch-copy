@@ -12,6 +12,59 @@ export function parseDetails(post) {
   return post.property_details;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CLIENT WEIGHT OVERRIDES (Agent-Adjustable Importance)
+// An agent can override the importance of any scored item for their specific
+// client. Overrides live inside the requirement's property_details.client_weights
+// as { itemLabel: importanceLevel }. Missing entries fall back to defaults.
+//
+//   none        → weight × 0     (item removed from scoring for this client)
+//   low         → weight × 0.3   (client barely cares)
+//   normal      → weight × 1     (PropMatch default — unchanged)
+//   high        → weight × 1.5   (client cares more than usual)
+//   dealbreaker → hard gate      (listing must match or score = 0, hidden)
+//
+// Relative ordering between items is preserved: three items all set to "high"
+// each scale up by the same factor, so their importance to each other stays
+// exactly as our Phase B research determined.
+// ─────────────────────────────────────────────────────────────────────────────
+export const IMPORTANCE_MULTIPLIERS = {
+  none: 0,
+  low: 0.3,
+  normal: 1,
+  high: 1.5,
+  dealbreaker: 1, // weight unchanged; the hard-gate behavior is handled separately
+};
+
+// Normalize an item label to a stable key for looking up client overrides.
+// "In-Suite Restrooms" → "in_suite_restrooms", "24/7 Access" → "24_7_access"
+export function weightKey(label) {
+  return String(label || '')
+    .toLowerCase()
+    .replace(/\//g, '_')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+// Read the client's override for a given item label. Returns one of the
+// importance level strings, or null if the client didn't override this item.
+export function clientOverrideFor(label, clientWeights) {
+  if (!clientWeights || typeof clientWeights !== 'object') return null;
+  const key = weightKey(label);
+  const val = clientWeights[key];
+  if (val && IMPORTANCE_MULTIPLIERS[val] !== undefined) return val;
+  return null;
+}
+
+// Given an item's base weight and the client's override (if any), return the
+// effective weight to use. "dealbreaker" keeps the base weight (the hard-gate
+// check happens elsewhere), "none" zeroes it out, etc.
+export function effectiveWeight(label, baseWeight, clientWeights) {
+  const override = clientOverrideFor(label, clientWeights);
+  if (!override) return baseWeight; // no override → default weight
+  return baseWeight * IMPORTANCE_MULTIPLIERS[override];
+}
+
 // Score a numeric value against a min/max range — returns 0-100 or null
 export function scoreRange(value, min, max) {
   const v   = parseFloat(value);
@@ -422,6 +475,12 @@ export function calculateMatchScore(listing, requirement) {
 
   const ld = parseDetails(listing);
   const rd = parseDetails(requirement);
+
+  // Client weight overrides set by the agent for this specific requirement.
+  // Lives in property_details.client_weights. Null/absent = use default weights.
+  // Applied as a post-processing step after all per-type scoring is done, so the
+  // individual scoring branches never need to know about overrides.
+  const clientWeights = (rd && typeof rd.client_weights === 'object') ? rd.client_weights : null;
 
   const breakdown = [];
   const rangeData = {};
@@ -1571,22 +1630,63 @@ export function calculateMatchScore(listing, requirement) {
     }
   }
 
+  // ── Apply client weight overrides (if the agent set any) ───────────────────
+  // Recompute the weighted sum from the breakdown, applying each item's client
+  // importance override. This runs once, over the finished breakdown, so no
+  // per-type scoring branch needs to know overrides exist. When there are no
+  // overrides, the numbers are identical to the default computation above.
+  let effectiveBreakdown = breakdown;
+  let effWeightedSum = weightedSum;
+  let effTotalWeight = totalWeight;
+
+  if (clientWeights) {
+    effectiveBreakdown = [];
+    effWeightedSum = 0;
+    effTotalWeight = 0;
+
+    for (const item of breakdown) {
+      const label = item.category;
+      const override = clientOverrideFor(label, clientWeights);
+
+      // Dealbreaker hard gate: client flagged this item essential, so the
+      // listing must essentially satisfy it. Binary items score 100 (has it) or
+      // 0 (doesn't). Graduated items (bedrooms, clear height, etc.) must be at
+      // or very near what's needed — we require >= 85 (the "Strong" bar). A place
+      // with 3 bedrooms when the client's dealbreaker is 5 scores 60 → fails.
+      if (override === 'dealbreaker' && item.score < 85) {
+        return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false,
+          matchLabel: null, coverage: 0 };
+      }
+
+      const w = effectiveWeight(label, item.weight, clientWeights);
+
+      // "none" → weight 0 → drop the item entirely (client doesn't care).
+      if (w <= 0) continue;
+
+      effectiveBreakdown.push({ ...item, weight: w });
+      effWeightedSum += (item.score / 100) * w;
+      effTotalWeight += w;
+    }
+  }
+
   // ── Final score: raw weighted average, no baseline floor ───────────────────
   // If nothing scored (no requirement fields filled), default to 0 — there's
-  // nothing to evaluate so it's not a match.
-  const finalScore = totalWeight > 0
-    ? Math.min(100, Math.max(0, Math.round((weightedSum / totalWeight) * 100)))
+  // nothing to evaluate so it's not a match. The weighted-average form means
+  // scaling weights up or down (via client overrides) never pushes the score
+  // outside 0-100 — numerator and denominator move together.
+  const finalScore = effTotalWeight > 0
+    ? Math.min(100, Math.max(0, Math.round((effWeightedSum / effTotalWeight) * 100)))
     : 0;
 
   // Coverage = how many dimensions actually contributed to this score.
   // Used in the UI to show "score based on N dimensions" so users can tell
   // whether a 95 came from 2 fields (sketchy) or 18 fields (solid).
-  const coverage = breakdown.length;
+  const coverage = effectiveBreakdown.length;
 
   const isMatch    = finalScore >= 45;
   const matchLabel = isMatch ? getScoreLabel(finalScore) : null;
 
-  return { totalScore: finalScore, breakdown, rangeData, isMatch, matchLabel, coverage };
+  return { totalScore: finalScore, breakdown: effectiveBreakdown, rangeData, isMatch, matchLabel, coverage };
 }
 
 export function getScoreColor(score) {

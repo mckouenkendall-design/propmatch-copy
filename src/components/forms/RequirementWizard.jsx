@@ -9,6 +9,8 @@ import ReqStep1 from './requirement/Step1General';
 import ReqStep2Commercial from './requirement/Step2CommercialDetails';
 import ReqStep2Residential from './requirement/Step2ResidentialDetails';
 import ReqStep3 from './requirement/Step3Notes';
+import ClientPriorityRanker from './requirement/ClientPriorityRanker';
+import { defaultWeightsForPropertyType, itemsForPropertyType } from '@/utils/clientWeightDefaults';
 
 const STEPS = ['General', 'Details', 'Post'];
 
@@ -41,6 +43,9 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   const [step, setStep] = useState(1);
   const [submitError, setSubmitError] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  // Priority ranker flow: 'modal' shows the choose-your-path modal after Step 1,
+  // 'ranker' shows the actual ranking screen, null means neither is showing.
+  const [priorityView, setPriorityView] = useState(null);
 
   const parseInitialData = (data) => {
     if (!data) return null;
@@ -53,6 +58,10 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
       // price_is_tbd lives inside property_details so we don't need a DB migration.
       // Hoist it to top-level form state for the UI.
       price_is_tbd: !!pd.price_is_tbd,
+      // client_weights (agent's per-client importance overrides) also live in
+      // property_details. Hoist to top-level form state so the ranker can edit them.
+      // Editing an existing requirement or loading a template carries them forward.
+      client_weights: (pd.client_weights && typeof pd.client_weights === 'object') ? pd.client_weights : null,
       mapAreas: data.mapAreas || (() => { try { return JSON.parse(data.area_map_data || '[]'); } catch { return []; } })(),
     };
   };
@@ -72,6 +81,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     min_size_sqft: '',
     max_size_sqft: '',
     property_details: {},
+    client_weights: null,
     required_amenities: [],
     notes: '',
     status: 'active',
@@ -106,6 +116,14 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     submitData.title = generateTitle(data);
     // Fold price_is_tbd into property_details so we don't need a DB column for it.
     const pd = { ...(data.property_details || {}), price_is_tbd: !!data.price_is_tbd };
+    // Fold client_weights (agent's per-client importance overrides) into
+    // property_details too. Null when the agent used PropMatch defaults — the
+    // scoring engine falls back to built-in weights when this is absent.
+    if (data.client_weights && typeof data.client_weights === 'object') {
+      pd.client_weights = data.client_weights;
+    } else {
+      delete pd.client_weights;
+    }
     submitData.property_details = JSON.stringify(pd);
     submitData.created_by = data.created_by || user?.email;
 
@@ -198,8 +216,65 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   });
 
   const update = (patch) => setFormData(prev => ({ ...prev, ...patch }));
-  const next = () => setStep(s => Math.min(s + 1, 3));
+
+  // Does this property type support custom priority ranking? (special_use and
+  // multi_family have no per-type scoring yet, so we skip the modal for them.)
+  const supportsRanking = itemsForPropertyType(formData.property_type).length > 0;
+
+  // Step 1 → Step 2 transition. If the property type supports ranking and the
+  // agent hasn't already set custom weights, show the choose-your-path modal.
+  const advanceFromStep1 = () => {
+    if (step === 1 && supportsRanking && !formData.client_weights) {
+      setPriorityView('modal');
+    } else {
+      setStep(s => Math.min(s + 1, 3));
+    }
+  };
+
+  const next = () => {
+    if (step === 1) advanceFromStep1();
+    else setStep(s => Math.min(s + 1, 3));
+  };
   const back = () => step === 1 ? onClose('back') : setStep(s => s - 1);
+
+  // Modal choice: use PropMatch defaults → skip ranker, go to Step 2.
+  const chooseDefaults = () => {
+    setPriorityView(null);
+    setStep(2);
+  };
+
+  // Modal choice: customize → seed weights with defaults, open the ranker.
+  const chooseCustomize = () => {
+    if (!formData.client_weights) {
+      update({ client_weights: defaultWeightsForPropertyType(formData.property_type) });
+    }
+    setPriorityView('ranker');
+  };
+
+  // Update one item's importance level in the ranker.
+  const setWeight = (key, level) => {
+    setFormData(prev => ({
+      ...prev,
+      client_weights: { ...(prev.client_weights || {}), [key]: level },
+    }));
+  };
+
+  // Reset ranker back to PropMatch defaults for this property type.
+  const resetWeights = () => {
+    update({ client_weights: defaultWeightsForPropertyType(formData.property_type) });
+  };
+
+  // Finish ranking → continue to Step 2.
+  const finishRanker = () => {
+    setPriorityView(null);
+    setStep(2);
+  };
+
+  // Back out of the ranker to the modal; back out of the modal to Step 1.
+  const priorityBack = () => {
+    if (priorityView === 'ranker') setPriorityView('modal');
+    else { setPriorityView(null); /* stay on step 1 */ }
+  };
 
   const COMMERCIAL_TYPES = ['office','medical_office','retail','industrial_flex','land','special_use'];
   const RESIDENTIAL_TYPES = ['single_family','condo','apartment','multi_family','multi_family_5','townhouse','manufactured','land_residential'];
@@ -218,14 +293,16 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
           <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" onClick={back}>
+                <Button variant="ghost" size="icon" onClick={priorityView ? priorityBack : back}>
                   <ArrowLeft className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
                 </Button>
                 <div>
                   <h2 className="text-xl font-bold capitalize" style={{ color: 'white' }}>
                     {editMode ? 'Edit Requirement' : `${cat} Requirement`}
                   </h2>
-                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Step {step} of 3</p>
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                    {priorityView ? 'Client Priorities' : `Step ${step} of 3`}
+                  </p>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -253,14 +330,64 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
                 </Button>
               </div>
             </div>
-            <FormProgress currentStep={step} steps={STEPS} />
+            {!priorityView && <FormProgress currentStep={step} steps={STEPS} />}
           </div>
 
           <div className="px-6 py-6">
-            {step === 1 && <ReqStep1 data={formData} update={update} onNext={next} />}
-            {step === 2 && cat === 'commercial' && <ReqStep2Commercial data={formData} update={update} onNext={next} />}
-            {step === 2 && cat === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
-            {step === 3 && (
+            {/* Priority ranker: choose-your-path modal (fires after Step 1) */}
+            {priorityView === 'modal' && (
+              <div>
+                <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: 700, color: 'white', marginBottom: '8px' }}>
+                  How should we score matches for this client?
+                </h3>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.55)', marginBottom: '20px', lineHeight: 1.5 }}>
+                  PropMatch ranks what usually matters most for a {(itemsForPropertyType(formData.property_type).length > 0 ? 'this property type' : 'match')}. You can use our recommended ranking, or tailor it to what your specific client cares about.
+                </p>
+                <button type="button" onClick={chooseCustomize}
+                  style={{ width: '100%', textAlign: 'left', padding: '16px', marginBottom: '12px', borderRadius: '12px',
+                    border: `1.5px solid ${'#00DBC5'}`, background: 'rgba(0,219,197,0.08)', cursor: 'pointer' }}>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: '#00DBC5', marginBottom: '4px' }}>
+                    Rank what matters most to your client
+                  </div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                    Adjust importance per item. Mark dealbreakers. The match score reflects YOUR client's priorities.
+                  </div>
+                </button>
+                <button type="button" onClick={chooseDefaults}
+                  style={{ width: '100%', textAlign: 'left', padding: '16px', borderRadius: '12px',
+                    border: '1.5px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', cursor: 'pointer' }}>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
+                    Use PropMatch default ranking
+                  </div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                    Our recommended scoring for this property type. You can always customize later.
+                  </div>
+                </button>
+              </div>
+            )}
+
+            {/* Priority ranker: the actual ranking screen */}
+            {priorityView === 'ranker' && (
+              <div>
+                <ClientPriorityRanker
+                  propertyType={formData.property_type}
+                  weights={formData.client_weights}
+                  onChange={setWeight}
+                  onReset={resetWeights}
+                />
+                <button type="button" onClick={finishRanker}
+                  style={{ width: '100%', marginTop: '20px', padding: '13px', borderRadius: '10px', border: 'none',
+                    background: '#00DBC5', color: '#0E1318', fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, cursor: 'pointer' }}>
+                  Save Priorities & Continue
+                </button>
+              </div>
+            )}
+
+            {/* Normal wizard steps (hidden while a priority view is active) */}
+            {!priorityView && step === 1 && <ReqStep1 data={formData} update={update} onNext={next} />}
+            {!priorityView && step === 2 && cat === 'commercial' && <ReqStep2Commercial data={formData} update={update} onNext={next} />}
+            {!priorityView && step === 2 && cat === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
+            {!priorityView && step === 3 && (
               <>
                 <ReqStep3
                   data={formData}
@@ -280,7 +407,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
             )}
           </div>
 
-          {step === 2 && (
+          {!priorityView && step === 2 && (
             <div className="px-6 pb-4">
               <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Fields left blank will be treated as "No Preference" and will not impact the Match Score.</p>
             </div>
