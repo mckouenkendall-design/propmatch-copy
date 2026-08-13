@@ -52,7 +52,7 @@ export const CLIENT_WEIGHT_DEFAULTS = {
       { key: 'covered_parking', label: 'Covered Parking', default: 'low' },
       { key: 'building_class', label: 'Building Class', default: 'low' },
       { key: 'server_room_it', label: 'Server Room / IT', default: 'low' },
-      { key: 'other_amenities', label: 'Other Amenities', default: 'low' },
+      { key: 'other_amenities', label: 'Other Amenities', default: 'low', expandable: 'office_amenities' },
     ],
   },
   medical_office: {
@@ -157,7 +157,7 @@ export const CLIENT_WEIGHT_DEFAULTS = {
       { key: 'garage_spaces', label: 'Garage Spaces', default: 'normal' },
       { key: 'stories', label: 'Stories', default: 'normal' },
       { key: 'basement', label: 'Basement', default: 'low' },
-      { key: 'features_amenities', label: 'Features & Amenities', default: 'normal' },
+      { key: 'features_amenities', label: 'Features & Amenities', default: 'normal', expandable: 'sf_features' },
     ],
   },
   condo: {
@@ -167,7 +167,7 @@ export const CLIENT_WEIGHT_DEFAULTS = {
       { key: 'bathrooms', label: 'Bathrooms', default: 'high' },
       { key: 'parking', label: 'Parking', default: 'normal' },
       { key: 'pet_policy', label: 'Pet Policy', default: 'dealbreaker' },
-      { key: 'building_amenities', label: 'Building Amenities', default: 'high' },
+      { key: 'building_amenities', label: 'Building Amenities', default: 'high', expandable: 'condo_amenities' },
     ],
   },
   apartment: {
@@ -178,7 +178,7 @@ export const CLIENT_WEIGHT_DEFAULTS = {
       { key: 'parking', label: 'Parking', default: 'normal' },
       { key: 'lease_term', label: 'Lease Term', default: 'normal' },
       { key: 'pet_policy', label: 'Pet Policy', default: 'dealbreaker' },
-      { key: 'building_amenities', label: 'Building Amenities', default: 'high' },
+      { key: 'building_amenities', label: 'Building Amenities', default: 'high', expandable: 'apt_amenities' },
     ],
   },
   townhouse: {
@@ -198,6 +198,67 @@ export const CLIENT_WEIGHT_DEFAULTS = {
     ],
   },
 };
+
+// Individual amenities behind each "expandable" pooled item. When an agent
+// expands one of these, they can rank each amenity individually. These mirror
+// the chip lists in the Step 2 listing forms so the keys line up with scoring.
+export const AMENITY_GROUPS = {
+  office_amenities: [
+    { key: 'ev_charging', label: 'EV Charging Stations' },
+    { key: 'elevators', label: 'Elevators' },
+    { key: 'shared_loading_dock', label: 'Shared Loading Dock' },
+    { key: 'shared_conference', label: 'Shared Conference Rooms' },
+    { key: 'tenant_lounge', label: 'Tenant Lounge / Break Room' },
+    { key: 'grab_and_go', label: 'Grab-and-Go Station' },
+    { key: 'outdoor_space', label: 'Outdoor Space / Patio / Terrace' },
+    { key: 'golf_simulator', label: 'Golf Simulator' },
+    { key: 'backup_generator', label: 'Backup Generator' },
+    { key: 'janitorial_common', label: 'Janitorial (Common Areas)' },
+  ],
+  sf_features: [
+    { key: 'pool', label: 'Pool' },
+    { key: 'hot_tub', label: 'Hot Tub / Spa' },
+    { key: 'deck', label: 'Deck / Patio' },
+    { key: 'fence', label: 'Fenced Yard' },
+    { key: 'fireplace', label: 'Fireplace' },
+    { key: 'ac', label: 'Central A/C' },
+    { key: 'generator', label: 'Generator' },
+    { key: 'solar', label: 'Solar Panels' },
+    { key: 'sprinklers', label: 'Irrigation / Sprinklers' },
+    { key: 'mudroom', label: 'Mudroom' },
+    { key: 'bonus_room', label: 'Bonus Room / Loft' },
+    { key: 'home_office', label: 'Dedicated Home Office' },
+  ],
+  condo_amenities: [
+    { key: 'gym', label: 'Fitness Center' },
+    { key: 'pool', label: 'Pool' },
+    { key: 'rooftop', label: 'Rooftop Deck' },
+    { key: 'doorman', label: 'Doorman / Concierge' },
+    { key: 'lounge', label: 'Resident Lounge' },
+    { key: 'business_ctr', label: 'Business Center' },
+    { key: 'bike_storage', label: 'Bike Storage' },
+    { key: 'ev_charging', label: 'EV Charging' },
+    { key: 'dog_wash', label: 'Dog Wash Station' },
+    { key: 'package_room', label: 'Package Room' },
+  ],
+  apt_amenities: [
+    { key: 'gym', label: 'Fitness Center' },
+    { key: 'pool', label: 'Pool' },
+    { key: 'rooftop', label: 'Rooftop Deck' },
+    { key: 'doorman', label: 'Doorman / Concierge' },
+    { key: 'package_room', label: 'Package Room' },
+    { key: 'bike_storage', label: 'Bike Storage' },
+    { key: 'ev_charging', label: 'EV Charging' },
+    { key: 'coworking', label: 'Co-Working Space' },
+    { key: 'dog_park', label: 'Dog Park / Pet Area' },
+    { key: 'game_room', label: 'Game Room / Lounge' },
+  ],
+};
+
+// Fetch the amenity sub-items for an expandable group id (or [] if none).
+export function amenityGroup(groupId) {
+  return AMENITY_GROUPS[groupId] || [];
+}
 
 // Build the full ordered item list for a property type: universal gates first,
 // then Size/Price, then the type-specific items. Returns [] for unknown types

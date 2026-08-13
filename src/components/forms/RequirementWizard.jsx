@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
@@ -46,6 +46,15 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   // Priority ranker flow: 'modal' shows the choose-your-path modal after Step 1,
   // 'ranker' shows the actual ranking screen, null means neither is showing.
   const [priorityView, setPriorityView] = useState(null);
+
+  // Scroll the wizard back to the top whenever the step or priority view changes.
+  // Without this, moving to a new step keeps the previous scroll position, which
+  // can drop the user into the middle or bottom of the next step.
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: 'auto' });
+    else window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [step, priorityView]);
 
   const parseInitialData = (data) => {
     if (!data) return null;
@@ -264,16 +273,18 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     update({ client_weights: defaultWeightsForPropertyType(formData.property_type) });
   };
 
-  // Finish ranking → continue to Step 2.
+  // Finish ranking → in the create flow continue to Step 2; in edit mode the
+  // ranker was opened from Step 1 directly, so return there.
   const finishRanker = () => {
     setPriorityView(null);
-    setStep(2);
+    setStep(editMode ? 1 : 2);
   };
 
-  // Back out of the ranker to the modal; back out of the modal to Step 1.
+  // Back out of the ranker: in the create flow go back to the modal; in edit
+  // mode the ranker was opened straight from Step 1, so just close it.
   const priorityBack = () => {
-    if (priorityView === 'ranker') setPriorityView('modal');
-    else { setPriorityView(null); /* stay on step 1 */ }
+    if (priorityView === 'ranker' && !editMode) setPriorityView('modal');
+    else setPriorityView(null);
   };
 
   const COMMERCIAL_TYPES = ['office','medical_office','retail','industrial_flex','land','special_use'];
@@ -287,7 +298,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     : (formData.property_category || category || 'commercial');
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center p-4 overflow-y-auto">
+    <div ref={scrollRef} className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center p-4 overflow-y-auto">
       <div className="w-full max-w-2xl my-8">
         <div style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }} className="rounded-2xl shadow-2xl overflow-hidden">
           <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
@@ -334,38 +345,6 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
           </div>
 
           <div className="px-6 py-6">
-            {/* Priority ranker: choose-your-path modal (fires after Step 1) */}
-            {priorityView === 'modal' && (
-              <div>
-                <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: 700, color: 'white', marginBottom: '8px' }}>
-                  How should we score matches for this client?
-                </h3>
-                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.55)', marginBottom: '20px', lineHeight: 1.5 }}>
-                  PropMatch ranks what usually matters most for a {(itemsForPropertyType(formData.property_type).length > 0 ? 'this property type' : 'match')}. You can use our recommended ranking, or tailor it to what your specific client cares about.
-                </p>
-                <button type="button" onClick={chooseCustomize}
-                  style={{ width: '100%', textAlign: 'left', padding: '16px', marginBottom: '12px', borderRadius: '12px',
-                    border: `1.5px solid ${'#00DBC5'}`, background: 'rgba(0,219,197,0.08)', cursor: 'pointer' }}>
-                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: '#00DBC5', marginBottom: '4px' }}>
-                    Rank what matters most to your client
-                  </div>
-                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
-                    Adjust importance per item. Mark dealbreakers. The match score reflects YOUR client's priorities.
-                  </div>
-                </button>
-                <button type="button" onClick={chooseDefaults}
-                  style={{ width: '100%', textAlign: 'left', padding: '16px', borderRadius: '12px',
-                    border: '1.5px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', cursor: 'pointer' }}>
-                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
-                    Use PropMatch default ranking
-                  </div>
-                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
-                    Our recommended scoring for this property type. You can always customize later.
-                  </div>
-                </button>
-              </div>
-            )}
-
             {/* Priority ranker: the actual ranking screen */}
             {priorityView === 'ranker' && (
               <div>
@@ -384,7 +363,25 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
             )}
 
             {/* Normal wizard steps (hidden while a priority view is active) */}
-            {!priorityView && step === 1 && <ReqStep1 data={formData} update={update} onNext={next} />}
+            {!priorityView && step === 1 && (
+              <>
+                <ReqStep1 data={formData} update={update} onNext={next} />
+                {editMode && supportsRanking && (
+                  <button type="button"
+                    onClick={() => {
+                      if (!formData.client_weights) {
+                        update({ client_weights: defaultWeightsForPropertyType(formData.property_type) });
+                      }
+                      setPriorityView('ranker');
+                    }}
+                    style={{ width: '100%', marginTop: '16px', padding: '12px', borderRadius: '10px',
+                      border: '1.5px solid rgba(0,219,197,0.4)', background: 'rgba(0,219,197,0.06)',
+                      color: '#00DBC5', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                    {formData.client_weights ? 'Edit Client Priorities' : 'Set Client Priorities'} →
+                  </button>
+                )}
+              </>
+            )}
             {!priorityView && step === 2 && cat === 'commercial' && <ReqStep2Commercial data={formData} update={update} onNext={next} />}
             {!priorityView && step === 2 && cat === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
             {!priorityView && step === 3 && (
@@ -414,6 +411,47 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
           )}
         </div>
       </div>
+
+      {/* Choose-your-path modal — centered overlay above the wizard */}
+      {priorityView === 'modal' && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.55)' }}
+          onClick={() => setPriorityView(null)}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: '560px', background: '#1a1f25',
+              border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.5)', padding: '28px 24px' }}>
+            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '19px', fontWeight: 700, color: 'white', marginBottom: '8px', textAlign: 'center' }}>
+              How should we score matches for this client?
+            </h3>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.55)', marginBottom: '22px', lineHeight: 1.5, textAlign: 'center' }}>
+              Use PropMatch's recommended ranking, or tailor it to what your specific client cares about.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button type="button" onClick={chooseCustomize}
+                style={{ flex: '1 1 220px', textAlign: 'left', padding: '18px', borderRadius: '14px',
+                  border: '1.5px solid #00DBC5', background: 'rgba(0,219,197,0.08)', cursor: 'pointer' }}>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: '#00DBC5', marginBottom: '6px' }}>
+                  You Rank What Matters Most to Your Client
+                </div>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                  Adjust importance per item. Mark dealbreakers. The match score reflects Your client's priorities.
+                </div>
+              </button>
+              <button type="button" onClick={chooseDefaults}
+                style={{ flex: '1 1 220px', textAlign: 'left', padding: '18px', borderRadius: '14px',
+                  border: '1.5px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', cursor: 'pointer' }}>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: 'white', marginBottom: '6px' }}>
+                  Use PropMatch Default Ranking
+                </div>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                  Our recommended scoring for this property type. You can always customize later.
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
