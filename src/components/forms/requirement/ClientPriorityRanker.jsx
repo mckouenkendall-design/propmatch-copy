@@ -133,7 +133,7 @@ export default function ClientPriorityRanker({ propertyType, weights, onChange, 
       <div style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
           <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 700, color: 'white', margin: 0 }}>
-            You Rank What Matters Most to Your Client
+            YOU Rank What Matters Most to YOUR Client
           </h3>
           <button type="button" onClick={onReset}
             style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>

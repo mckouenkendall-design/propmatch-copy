@@ -436,28 +436,28 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
           justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.55)' }}
           onClick={() => setPriorityView(null)}>
           <div onClick={e => e.stopPropagation()}
-            style={{ width: '100%', maxWidth: '680px', background: '#1a1f25',
+            style={{ width: '100%', maxWidth: '820px', background: '#1a1f25',
               border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.5)', padding: '40px 36px' }}>
+              boxShadow: '0 24px 60px rgba(0,0,0,0.5)', padding: '44px 44px' }}>
             <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 700, color: 'white', marginBottom: '10px', textAlign: 'center' }}>
               How should we score matches for this client?
             </h3>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.55)', marginBottom: '28px', lineHeight: 1.5, textAlign: 'center' }}>
               Use PropMatch's recommended ranking, or tailor it to what your specific client cares about.
             </p>
-            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
               <button type="button" onClick={chooseCustomize}
-                style={{ flex: '1 1 260px', textAlign: 'left', padding: '22px', borderRadius: '16px',
+                style={{ flex: '1 1 320px', textAlign: 'left', padding: '24px', borderRadius: '16px',
                   border: '1.5px solid #00DBC5', background: 'rgba(0,219,197,0.08)', cursor: 'pointer' }}>
                 <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 700, color: '#00DBC5', marginBottom: '8px' }}>
-                  You Rank What Matters Most to Your Client
+                  YOU Rank What Matters Most to YOUR Client
                 </div>
                 <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.45 }}>
                   Adjust importance per item. Mark dealbreakers. The match score reflects your client's priorities.
                 </div>
               </button>
               <button type="button" onClick={chooseDefaults}
-                style={{ flex: '1 1 260px', textAlign: 'left', padding: '22px', borderRadius: '16px',
+                style={{ flex: '1 1 320px', textAlign: 'left', padding: '24px', borderRadius: '16px',
                   border: '1.5px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', cursor: 'pointer' }}>
                 <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 700, color: 'white', marginBottom: '8px' }}>
                   Use PropMatch Default Ranking
