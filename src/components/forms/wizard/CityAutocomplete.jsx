@@ -7,6 +7,11 @@ export default function CityAutocomplete({ value, onChange, placeholder = 'e.g. 
   const [query, setQuery]           = useState(value || '');
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen]             = useState(false);
+  // Track whether the current input value was selected from the dropdown.
+  // Enter only adds the city when this is true — typing freeform text and
+  // hitting Enter is blocked to prevent nonsense city entries.
+  const [selectedFromDropdown, setSelectedFromDropdown] = useState(false);
+  const [showMustSelectHint, setShowMustSelectHint] = useState(false);
   const timer     = useRef(null);
   const containerRef = useRef(null);
 
@@ -20,6 +25,9 @@ export default function CityAutocomplete({ value, onChange, placeholder = 'e.g. 
     const val = e.target.value;
     setQuery(val);
     onChange(val);
+    // User typed manually — no longer a confirmed dropdown selection.
+    setSelectedFromDropdown(false);
+    setShowMustSelectHint(false);
 
     clearTimeout(timer.current);
     if (val.length < 2) { setSuggestions([]); setOpen(false); return; }
@@ -60,6 +68,8 @@ export default function CityAutocomplete({ value, onChange, placeholder = 'e.g. 
     setSuggestions([]);
     setOpen(false);
     onChange(label);
+    setSelectedFromDropdown(true);
+    setShowMustSelectHint(false);
     // Immediately add as a selected area — no Enter needed
     if (onSelect) onSelect(label);
     else if (onEnter) onEnter(label);
@@ -69,7 +79,14 @@ export default function CityAutocomplete({ value, onChange, placeholder = 'e.g. 
     if (e.key === 'Enter') {
       e.preventDefault();
       setOpen(false);
-      if (onEnter && query.trim()) onEnter(query.trim());
+      if (selectedFromDropdown && onEnter && query.trim()) {
+        onEnter(query.trim());
+        setSelectedFromDropdown(false);
+      } else if (query.trim()) {
+        // User typed freeform text and hit Enter without selecting a suggestion.
+        setShowMustSelectHint(true);
+        setTimeout(() => setShowMustSelectHint(false), 3000);
+      }
     }
     if (e.key === 'Escape') setOpen(false);
   };
@@ -83,8 +100,13 @@ export default function CityAutocomplete({ value, onChange, placeholder = 'e.g. 
         onFocus={() => suggestions.length > 0 && setOpen(true)}
         placeholder={placeholder}
         autoComplete="off"
-        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+        style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${showMustSelectHint ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)'}`, color: 'white' }}
       />
+      {showMustSelectHint && (
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#f87171', marginTop: '4px', position: 'absolute', left: 0 }}>
+          Please select a city from the dropdown suggestions.
+        </p>
+      )}
       {open && suggestions.length > 0 && (
         <div style={{ position:'absolute', zIndex:9999, top:'calc(100% + 4px)', left:0, right:0, background:'#161d25', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'10px', boxShadow:'0 12px 40px rgba(0,0,0,0.5)', overflow:'hidden' }}>
           {suggestions.map((feature, i) => {

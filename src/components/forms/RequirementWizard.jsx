@@ -46,6 +46,10 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   // Priority ranker flow: 'modal' shows the choose-your-path modal after Step 1,
   // 'ranker' shows the actual ranking screen, null means neither is showing.
   const [priorityView, setPriorityView] = useState(null);
+  // Track whether the agent made changes in the ranker without saving.
+  // Used to prompt "Save changes?" when they back out without finishing.
+  const [rankerDirty, setRankerDirty] = useState(false);
+  const [showUnsavedPrompt, setShowUnsavedPrompt] = useState(false);
 
   // Scroll the wizard back to the top whenever the step or priority view changes.
   // Without this, moving to a new step keeps the previous scroll position, which
@@ -266,24 +270,38 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
       ...prev,
       client_weights: { ...(prev.client_weights || {}), [key]: level },
     }));
+    setRankerDirty(true);
   };
 
   // Reset ranker back to PropMatch defaults for this property type.
   const resetWeights = () => {
     update({ client_weights: defaultWeightsForPropertyType(formData.property_type) });
+    setRankerDirty(false);
   };
 
   // Finish ranking → in the create flow continue to Step 2; in edit mode the
   // ranker was opened from Step 1 directly, so return there.
   const finishRanker = () => {
+    setRankerDirty(false);
     setPriorityView(null);
     setStep(editMode ? 1 : 2);
   };
 
-  // Back out of the ranker: in the create flow go back to the modal; in edit
-  // mode the ranker was opened straight from Step 1, so just close it.
+  // Back out of the ranker: if they made changes without saving, prompt first.
   const priorityBack = () => {
+    if (priorityView === 'ranker' && rankerDirty) {
+      setShowUnsavedPrompt(true);
+      return;
+    }
     if (priorityView === 'ranker' && !editMode) setPriorityView('modal');
+    else setPriorityView(null);
+  };
+
+  // Unsaved prompt: discard changes and go back.
+  const discardAndBack = () => {
+    setShowUnsavedPrompt(false);
+    setRankerDirty(false);
+    if (!editMode) setPriorityView('modal');
     else setPriorityView(null);
   };
 
@@ -299,7 +317,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
 
   return (
     <div ref={scrollRef} className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-2xl my-8">
+      <div className="w-full max-w-2xl my-8" style={{ display: priorityView === 'modal' ? 'none' : 'block' }}>
         <div style={{ background: '#1a1f25', border: '1px solid rgba(255,255,255,0.1)' }} className="rounded-2xl shadow-2xl overflow-hidden">
           <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex items-center justify-between mb-4">
@@ -418,35 +436,64 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
           justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.55)' }}
           onClick={() => setPriorityView(null)}>
           <div onClick={e => e.stopPropagation()}
-            style={{ width: '100%', maxWidth: '560px', background: '#1a1f25',
+            style={{ width: '100%', maxWidth: '680px', background: '#1a1f25',
               border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.5)', padding: '28px 24px' }}>
-            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '19px', fontWeight: 700, color: 'white', marginBottom: '8px', textAlign: 'center' }}>
+              boxShadow: '0 24px 60px rgba(0,0,0,0.5)', padding: '40px 36px' }}>
+            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 700, color: 'white', marginBottom: '10px', textAlign: 'center' }}>
               How should we score matches for this client?
             </h3>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.55)', marginBottom: '22px', lineHeight: 1.5, textAlign: 'center' }}>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.55)', marginBottom: '28px', lineHeight: 1.5, textAlign: 'center' }}>
               Use PropMatch's recommended ranking, or tailor it to what your specific client cares about.
             </p>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
               <button type="button" onClick={chooseCustomize}
-                style={{ flex: '1 1 220px', textAlign: 'left', padding: '18px', borderRadius: '14px',
+                style={{ flex: '1 1 260px', textAlign: 'left', padding: '22px', borderRadius: '16px',
                   border: '1.5px solid #00DBC5', background: 'rgba(0,219,197,0.08)', cursor: 'pointer' }}>
-                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: '#00DBC5', marginBottom: '6px' }}>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 700, color: '#00DBC5', marginBottom: '8px' }}>
                   You Rank What Matters Most to Your Client
                 </div>
-                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
-                  Adjust importance per item. Mark dealbreakers. The match score reflects Your client's priorities.
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.45 }}>
+                  Adjust importance per item. Mark dealbreakers. The match score reflects your client's priorities.
                 </div>
               </button>
               <button type="button" onClick={chooseDefaults}
-                style={{ flex: '1 1 220px', textAlign: 'left', padding: '18px', borderRadius: '14px',
+                style={{ flex: '1 1 260px', textAlign: 'left', padding: '22px', borderRadius: '16px',
                   border: '1.5px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', cursor: 'pointer' }}>
-                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: 700, color: 'white', marginBottom: '6px' }}>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 700, color: 'white', marginBottom: '8px' }}>
                   Use PropMatch Default Ranking
                 </div>
-                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.45 }}>
                   Our recommended scoring for this property type. You can always customize later.
                 </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unsaved priority changes prompt */}
+      {showUnsavedPrompt && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 70, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.6)' }}>
+          <div style={{ width: '100%', maxWidth: '400px', background: '#1a1f25',
+            border: '1px solid rgba(255,255,255,0.12)', borderRadius: '18px',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.5)', padding: '28px 24px', textAlign: 'center' }}>
+            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '17px', fontWeight: 700, color: 'white', marginBottom: '8px' }}>
+              Save your priority changes?
+            </h3>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.55)', marginBottom: '22px', lineHeight: 1.5 }}>
+              You adjusted this client's priorities but haven't saved them. Save before going back?
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button type="button" onClick={discardAndBack}
+                style={{ flex: 1, padding: '11px', borderRadius: '10px', border: '1.5px solid rgba(255,255,255,0.15)',
+                  background: 'transparent', color: 'rgba(255,255,255,0.7)', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                Discard
+              </button>
+              <button type="button" onClick={() => { setShowUnsavedPrompt(false); finishRanker(); }}
+                style={{ flex: 1, padding: '11px', borderRadius: '10px', border: 'none',
+                  background: '#00DBC5', color: '#0E1318', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
+                Save
               </button>
             </div>
           </div>
