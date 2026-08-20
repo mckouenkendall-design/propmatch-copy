@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
-import { ArrowRight, Upload, FileText, X, TrendingUp, Building } from 'lucide-react';
+import { ArrowRight, Upload, FileText, X } from 'lucide-react';
 
 const ACCENT = '#00DBC5';
 
@@ -223,32 +223,6 @@ function TagsInput({ value = [], onChange }) {
   );
 }
 
-// ── Sale Type Selector ────────────────────────────────────────────────────────
-function SaleTypeSelector({ value, onChange }) {
-  const opts = [
-    { value: 'owner_user', Icon: Building, label: 'Owner / User', desc: 'Buyer will occupy and operate from this property' },
-    { value: 'investment', Icon: TrendingUp, label: 'Investment', desc: 'Buyer is purchasing for income and returns' },
-  ];
-  return (
-    <div style={{ marginBottom: '4px' }}>
-      <p className="text-sm font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.9)' }}>Sale Type</p>
-      <div style={{ display: 'flex', gap: '12px' }}>
-        {opts.map(opt => {
-          const selected = value === opt.value;
-          return (
-            <button key={opt.value} type="button" onClick={() => onChange(opt.value)}
-              style={{ flex: 1, padding: '16px', borderRadius: '12px', border: `2px solid ${selected ? ACCENT : 'rgba(255,255,255,0.15)'}`, background: selected ? `${ACCENT}12` : 'rgba(255,255,255,0.03)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
-              <opt.Icon style={{ width: '20px', height: '20px', color: selected ? ACCENT : 'rgba(255,255,255,0.5)', marginBottom: '8px' }} />
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: selected ? ACCENT : 'white', margin: '0 0 4px' }}>{opt.label}</p>
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>{opt.desc}</p>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // ── Building Amenities ────────────────────────────────────────────────────────
 const BUILDING_AMENITIES = [
   { value: 'access_247', label: '24/7 Access' },
@@ -285,274 +259,74 @@ function BuildingAmenitiesSection({ details, setDetail }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SALE — INVESTMENT LISTING COMPONENTS
+// INVESTMENT FINANCIALS — appended at the bottom of any commercial SALE listing.
+// No separate "sale type" mode anymore: the normal detail form always shows, and
+// when the transaction is a sale we add this compact financials block underneath.
+// Only the core financial number fields (Option A) — no extra sale profile toggles.
 // ══════════════════════════════════════════════════════════════════════════════
 
-function OfficeSaleInvestment({ details, setDetail }) {
+// Core financial fields per property type. Each entry: { field, label, placeholder, hint?, step? }
+const SALE_FINANCIAL_FIELDS = {
+  office: [
+    { field: 'sale_noi', label: 'NOI / Year ($)', placeholder: 'e.g. 180000', hint: 'Net Operating Income — gross income minus operating expenses' },
+    { field: 'sale_cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.5', step: '0.1', hint: 'Class A: 4–6% · Class B: 6–8% · Class C: 8–10%' },
+    { field: 'sale_occupancy', label: 'Occupancy (%)', placeholder: 'e.g. 92' },
+    { field: 'sale_nra', label: 'Net Rentable Area (SF)', placeholder: 'e.g. 25000' },
+    { field: 'sale_num_tenants', label: 'Number of Tenants', placeholder: 'e.g. 6' },
+    { field: 'sale_walt', label: 'WALT (years)', placeholder: 'e.g. 3.5', step: '0.1', hint: 'Weighted Avg Lease Term' },
+    { field: 'sale_recent_capex', label: 'Recent CapEx ($)', placeholder: 'e.g. 200000', hint: 'Major improvements in last 3 years' },
+  ],
+  medical_office: [
+    { field: 'sale_noi', label: 'NOI / Year ($)', placeholder: 'e.g. 220000' },
+    { field: 'sale_cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.5', step: '0.1', hint: 'National avg institutional quality: ~6.3%' },
+    { field: 'sale_occupancy', label: 'Occupancy (%)', placeholder: 'e.g. 95' },
+    { field: 'sale_walt', label: 'WALT (years)', placeholder: 'e.g. 7.5', step: '0.1', hint: 'Medical tenants avg 7–10 yr leases' },
+    { field: 'sale_num_tenants', label: 'Number of Tenants', placeholder: 'e.g. 4' },
+    { field: 'sale_rent_escalation', label: 'Annual Rent Escalations (%)', placeholder: 'e.g. 2.5', step: '0.1', hint: '2–3% is standard for MOBs' },
+    { field: 'sale_total_sf', label: 'Total SF', placeholder: 'e.g. 18000' },
+  ],
+  retail: [
+    { field: 'sale_noi', label: 'NOI / Year ($)', placeholder: 'e.g. 150000' },
+    { field: 'sale_cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.0', step: '0.1', hint: 'Based on actual in-place income' },
+    { field: 'sale_occupancy', label: 'Occupancy (%)', placeholder: 'e.g. 94' },
+    { field: 'sale_gla', label: 'Gross Leasable Area — GLA (SF)', placeholder: 'e.g. 12000' },
+    { field: 'sale_num_tenants', label: 'Number of Tenants', placeholder: 'e.g. 8' },
+    { field: 'sale_avg_lease_term', label: 'Avg Remaining Lease Term (yrs)', placeholder: 'e.g. 4.5', step: '0.1' },
+    { field: 'sale_traffic_count', label: 'Traffic Count (vehicles/day)', placeholder: 'e.g. 28000' },
+  ],
+  industrial_flex: [
+    { field: 'sale_noi', label: 'NOI / Year ($)', placeholder: 'e.g. 120000', hint: 'Leave blank if vacant / owner-occupied' },
+    { field: 'sale_cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.5', step: '0.1' },
+    { field: 'sale_occupancy', label: 'Occupancy (%)', placeholder: 'e.g. 100' },
+    { field: 'sale_walt', label: 'WALT (years)', placeholder: 'e.g. 4.0', step: '0.1' },
+    { field: 'sale_price_per_sf', label: 'Asking Price / SF ($)', placeholder: 'e.g. 95', hint: 'Used when vacant or owner-occupied' },
+    { field: 'sale_total_sf', label: 'Total SF', placeholder: 'e.g. 40000' },
+    { field: 'sale_office_pct', label: 'Office % of Total SF', placeholder: 'e.g. 20', hint: 'Flex: ~25–30% · Pure warehouse: 5–10%' },
+    { field: 'sale_land_acres', label: 'Total Land / Lot (acres)', placeholder: 'e.g. 3.5', step: '0.1' },
+  ],
+  special_use: [
+    { field: 'sale_noi', label: 'NOI / Year ($)', placeholder: 'e.g. 180000' },
+    { field: 'sale_cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 7.0', step: '0.1', hint: 'Self-storage: 5–10% · Hotels vary widely' },
+    { field: 'sale_occupancy', label: 'Occupancy (%)', placeholder: 'e.g. 90' },
+    { field: 'sale_total_sf', label: 'Total SF', placeholder: 'e.g. 15000' },
+  ],
+};
+
+function InvestmentFinancials({ type, details, setDetail }) {
+  const fields = SALE_FINANCIAL_FIELDS[type];
+  if (!fields) return null;
   return (
     <>
       <SectionTitle>Investment Financials</SectionTitle>
-      <div style={{ background: 'rgba(0,219,197,0.06)', border: `1px solid ${ACCENT}25`, borderRadius: '10px', padding: '12px 14px', marginBottom: '4px' }}>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: 0 }}>⚡ Use trailing 12-month <strong>actual</strong> income — not pro forma projections. Buyers will verify.</p>
+      <div style={{ background: 'rgba(0,219,197,0.06)', border: `1px solid ${ACCENT}25`, borderRadius: '10px', padding: '12px 14px', marginBottom: '12px' }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: 0 }}>⚡ Optional — fill in if this is an income/investment sale. Use trailing 12-month <strong>actual</strong> income, not pro forma. Buyers will verify.</p>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="NOI / Year ($)" hint="Net Operating Income — gross income minus operating expenses"><Num field="sale_noi" placeholder="e.g. 180000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Cap Rate (%)" hint="Class A: 4–6% · Class B: 6–8% · Class C: 8–10%"><Num field="sale_cap_rate" placeholder="e.g. 6.5" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Occupancy (%)" hint="Current occupied %"><Num field="sale_occupancy" placeholder="e.g. 92" details={details} setDetail={setDetail} /></Field>
-        <Field label="Net Rentable Area (SF)"><Num field="sale_nra" placeholder="e.g. 25000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Number of Tenants"><Num field="sale_num_tenants" placeholder="e.g. 6" details={details} setDetail={setDetail} /></Field>
-        <Field label="WALT (years)" hint="Weighted Avg Lease Term — target 3+ yrs"><Num field="sale_walt" placeholder="e.g. 3.5" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2005" details={details} setDetail={setDetail} /></Field>
-        <Field label="Recent CapEx ($)" hint="Major improvements in last 3 years"><Num field="sale_recent_capex" placeholder="e.g. 200000" details={details} setDetail={setDetail} /></Field>
-      </div>
-
-      <SectionTitle>Property Profile</SectionTitle>
-      <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
-        options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
-      <ToggleGroup label="Lease Type" value={details.sale_lease_type || ''} onChange={v => setDetail('sale_lease_type', v)}
-        options={[{ value: 'nnn', label: 'NNN' }, { value: 'modified_gross', label: 'Modified Gross' }, { value: 'full_service', label: 'Full Service' }]} />
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Value-Add Opportunity" value={!!details.sale_value_add} onChange={v => setDetail('sale_value_add', v)} />
-      </div>
-      <Field label="Tenant Quality / Notes" hint="Major tenant names, credit quality, lease expiration schedule">
-        <Textarea value={details.sale_tenant_notes || ''} onChange={e => setDetail('sale_tenant_notes', e.target.value)}
-          placeholder="e.g. Anchor is a national credit tenant with 5 yrs remaining on NNN lease. 3 small tenants on month-to-month." rows={3} />
-      </Field>
-      <Field label="Description">
-        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)}
-          placeholder="Describe the investment opportunity, highlights, and why this is a strong acquisition…" rows={4} />
-      </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
-        <FileUpload label="Rent Roll / OM (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload offering memorandum or rent roll" />
-      </div>
-    </>
-  );
-}
-
-const MEDICAL_SPECIALTIES = ['Primary Care', 'Dental', 'Cardiology', 'Orthopedic', 'Dermatology', 'Oncology', 'Imaging / Radiology', 'Physical Therapy', 'Dialysis', 'Urgent Care', 'Pediatrics', 'Ophthalmology', 'Other'];
-
-function MedicalOfficeSaleInvestment({ details, setDetail }) {
-  const specialties = details.sale_tenant_specialties || [];
-  const toggleSpecialty = (s) => setDetail('sale_tenant_specialties', specialties.includes(s) ? specialties.filter(x => x !== s) : [...specialties, s]);
-  return (
-    <>
-      <SectionTitle>Investment Financials</SectionTitle>
-      <div style={{ background: 'rgba(0,219,197,0.06)', border: `1px solid ${ACCENT}25`, borderRadius: '10px', padding: '12px 14px', marginBottom: '4px' }}>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: 0 }}>⚡ MOB cap rates Q1 2026: hospital-system tenants 6–6.5% · Multi-tenant quality 6.5–7.5% · Short leases / lower quality 7.5–8.5%</p>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="NOI / Year ($)"><Num field="sale_noi" placeholder="e.g. 220000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Cap Rate (%)" hint="National avg institutional quality: ~6.3%"><Num field="sale_cap_rate" placeholder="e.g. 6.5" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Occupancy (%)"><Num field="sale_occupancy" placeholder="e.g. 95" details={details} setDetail={setDetail} /></Field>
-        <Field label="WALT (years)" hint="Medical tenants avg 7–10 yr leases"><Num field="sale_walt" placeholder="e.g. 7.5" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Number of Tenants"><Num field="sale_num_tenants" placeholder="e.g. 4" details={details} setDetail={setDetail} /></Field>
-        <Field label="Annual Rent Escalations (%)" hint="2–3% is standard for MOBs"><Num field="sale_rent_escalation" placeholder="e.g. 2.5" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2012" details={details} setDetail={setDetail} /></Field>
-        <Field label="Total SF"><Num field="sale_total_sf" placeholder="e.g. 18000" details={details} setDetail={setDetail} /></Field>
-      </div>
-
-      <SectionTitle>Medical Property Profile</SectionTitle>
-      <Field label="Tenant Specialty Mix (select all that apply)">
-        <div className="flex flex-wrap gap-2">
-          {MEDICAL_SPECIALTIES.map(s => <Chip key={s} label={s} selected={specialties.includes(s)} onClick={() => toggleSpecialty(s)} />)}
-        </div>
-      </Field>
-      <ToggleGroup label="Campus Location" value={details.sale_campus || ''} onChange={v => setDetail('sale_campus', v)}
-        options={[{ value: 'on_campus', label: 'On-Campus (Hospital)' }, { value: 'off_campus', label: 'Off-Campus / Ambulatory' }, { value: 'adjacent', label: 'Hospital-Adjacent' }]} />
-      <ToggleGroup label="Lease Structure" value={details.sale_lease_type || ''} onChange={v => setDetail('sale_lease_type', v)}
-        options={[{ value: 'nnn', label: 'NNN' }, { value: 'gross', label: 'Gross' }, { value: 'mixed', label: 'Mixed' }]} />
-      <ToggleGroup label="Tenancy" value={details.sale_tenancy || ''} onChange={v => setDetail('sale_tenancy', v)}
-        options={[{ value: 'single', label: 'Single Tenant' }, { value: 'multi', label: 'Multi-Tenant' }]} />
-      <Field label="Tenant Credit / Notes">
-        <Textarea value={details.sale_tenant_notes || ''} onChange={e => setDetail('sale_tenant_notes', e.target.value)}
-          placeholder="e.g. Anchor is a regional hospital system on a 10-yr NNN. Two specialty practices on 5-yr modified gross leases." rows={3} />
-      </Field>
-      <Field label="Description">
-        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)}
-          placeholder="Describe the investment opportunity and what makes this MOB attractive…" rows={3} />
-      </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
-        <FileUpload label="Offering Memorandum (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload OM or rent roll" />
-      </div>
-    </>
-  );
-}
-
-function RetailSaleInvestment({ details, setDetail }) {
-  return (
-    <>
-      <SectionTitle>Investment Financials</SectionTitle>
-      <div style={{ background: 'rgba(0,219,197,0.06)', border: `1px solid ${ACCENT}25`, borderRadius: '10px', padding: '12px 14px', marginBottom: '4px' }}>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: 0 }}>⚡ Retail cap rates 2025: prime NNN single-tenant sub-5% · Well-located 5.5–7.5% · Dollar stores / pharmacies 7%+</p>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="NOI / Year ($)"><Num field="sale_noi" placeholder="e.g. 150000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Cap Rate (%)" hint="Based on actual in-place income"><Num field="sale_cap_rate" placeholder="e.g. 6.0" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Occupancy (%)"><Num field="sale_occupancy" placeholder="e.g. 94" details={details} setDetail={setDetail} /></Field>
-        <Field label="Gross Leasable Area — GLA (SF)"><Num field="sale_gla" placeholder="e.g. 12000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Number of Tenants"><Num field="sale_num_tenants" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
-        <Field label="Avg Remaining Lease Term (yrs)"><Num field="sale_avg_lease_term" placeholder="e.g. 4.5" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Traffic Count (vehicles/day)"><Num field="sale_traffic_count" placeholder="e.g. 28000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 1998" details={details} setDetail={setDetail} /></Field>
-      </div>
-
-      <SectionTitle>Retail Property Profile</SectionTitle>
-      <Field label="Anchor Tenant Name" hint="Leave blank for single-tenant NNN — enter tenant name instead">
-        <Input value={details.sale_anchor_tenant || ''} onChange={e => setDetail('sale_anchor_tenant', e.target.value)} placeholder="e.g. Kroger, Walgreens, Dollar General" />
-      </Field>
-      <ToggleGroup label="Lease Type" value={details.sale_lease_type || ''} onChange={v => setDetail('sale_lease_type', v)}
-        options={[{ value: 'nnn', label: 'NNN' }, { value: 'modified_gross', label: 'Modified Gross' }, { value: 'gross', label: 'Gross' }, { value: 'mixed', label: 'Mixed' }]} />
-      <div className="rounded-xl px-4 py-2" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Grocery-Anchored" value={!!details.sale_grocery_anchored} onChange={v => setDetail('sale_grocery_anchored', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Co-Tenancy Clauses Present" value={!!details.sale_co_tenancy_clauses} onChange={v => setDetail('sale_co_tenancy_clauses', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Value-Add Opportunity" value={!!details.sale_value_add} onChange={v => setDetail('sale_value_add', v)} />
-      </div>
-      <Field label="Tenant / Lease Notes">
-        <Textarea value={details.sale_tenant_notes || ''} onChange={e => setDetail('sale_tenant_notes', e.target.value)}
-          placeholder="e.g. Anchor on 10-yr NNN with 8 yrs remaining. 7 inline tenants on 3–5 yr modified gross leases. No co-tenancy clauses." rows={3} />
-      </Field>
-      <Field label="Description">
-        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)}
-          placeholder="Describe the investment opportunity and what makes this retail asset compelling…" rows={3} />
-      </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
-        <FileUpload label="Offering Memorandum (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload OM or rent roll" />
-      </div>
-    </>
-  );
-}
-
-function IndustrialFlexSaleInvestment({ details, setDetail }) {
-  return (
-    <>
-      <SectionTitle>Investment Financials</SectionTitle>
-      <div style={{ background: 'rgba(0,219,197,0.06)', border: `1px solid ${ACCENT}25`, borderRadius: '10px', padding: '12px 14px', marginBottom: '4px' }}>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: 0 }}>⚡ Industrial cap rates 2025: 5–9.5% depending on size, location, and tenancy. Vacant / owner-occupied: priced on $/SF not cap rate.</p>
-      </div>
-      <div className="rounded-xl px-4 py-1 mb-4" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Currently Tenanted (income-producing)" value={!!details.sale_tenanted} onChange={v => setDetail('sale_tenanted', v)} />
-      </div>
-
-      {details.sale_tenanted && (
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <Field label="NOI / Year ($)"><Num field="sale_noi" placeholder="e.g. 120000" details={details} setDetail={setDetail} /></Field>
-          <Field label="Cap Rate (%)"><Num field="sale_cap_rate" placeholder="e.g. 6.5" step="0.1" details={details} setDetail={setDetail} /></Field>
-          <Field label="Occupancy (%)"><Num field="sale_occupancy" placeholder="e.g. 100" details={details} setDetail={setDetail} /></Field>
-          <Field label="WALT (years)" hint="Industrial leases typically 1–10 yrs"><Num field="sale_walt" placeholder="e.g. 4.0" step="0.1" details={details} setDetail={setDetail} /></Field>
-        </div>
-      )}
-
-      {!details.sale_tenanted && (
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <Field label="Asking Price / SF ($)" hint="Used when vacant or owner-occupied"><Num field="sale_price_per_sf" placeholder="e.g. 95" details={details} setDetail={setDetail} /></Field>
-        </div>
-      )}
-
-      <SectionTitle>Physical Profile</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Total SF"><Num field="sale_total_sf" placeholder="e.g. 40000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Clear Height (ft)" hint="14–18 ft = flex/light · 24–32+ ft = distribution"><Num field="sale_clear_height" placeholder="e.g. 24" details={details} setDetail={setDetail} /></Field>
-        <Field label="Dock-High Doors"><Num field="sale_dock_doors" placeholder="e.g. 4" details={details} setDetail={setDetail} /></Field>
-        <Field label="Drive-In / Grade-Level Doors"><Num field="sale_drive_in_doors" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
-        <Field label="Office % of Total SF" hint="Flex: ~25–30% · Pure warehouse: 5–10%"><Num field="sale_office_pct" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
-        <Field label="Total Land / Lot (acres)"><Num field="sale_land_acres" placeholder="e.g. 3.5" step="0.1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2008" details={details} setDetail={setDetail} /></Field>
-      </div>
-      <ToggleGroup label="Lease Type" value={details.sale_lease_type || ''} onChange={v => setDetail('sale_lease_type', v)}
-        options={[{ value: 'nnn', label: 'NNN' }, { value: 'modified_gross', label: 'Modified Gross' }, { value: 'gross', label: 'Gross' }]} />
-      <ToggleGroup label="Tenancy" value={details.sale_tenancy || ''} onChange={v => setDetail('sale_tenancy', v)}
-        options={[{ value: 'single', label: 'Single Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'vacant', label: 'Vacant' }]} />
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="3-Phase Power" value={!!details.three_phase} onChange={v => setDetail('three_phase', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Value-Add Opportunity" value={!!details.sale_value_add} onChange={v => setDetail('sale_value_add', v)} />
-      </div>
-      <Field label="Description">
-        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)}
-          placeholder="Describe the investment opportunity, building specs, and tenant situation…" rows={3} />
-      </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
-        <FileUpload label="Offering Memorandum (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload OM or rent roll" />
-      </div>
-    </>
-  );
-}
-
-const SPECIAL_USE_TYPES = ['Religious/Church', 'Educational/School', 'Hospitality/Hotel', 'Event Center/Banquet', 'Sports/Recreation', 'Automotive/Specialty', 'Self-Storage', 'Car Wash', 'Gas Station / Convenience', 'Other'];
-
-function SpecialUseSaleInvestment({ details, setDetail }) {
-  const useType = details.specific_use || '';
-  const isHotel = useType === 'Hospitality/Hotel';
-  const isSelfStorage = useType === 'Self-Storage';
-  return (
-    <>
-      <SectionTitle>Special Use Type</SectionTitle>
-      <Field label="Property Type">
-        <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-          value={useType} onChange={e => setDetail('specific_use', e.target.value)}>
-          <option value="" style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>Select type</option>
-          {SPECIAL_USE_TYPES.map(t => <option key={t} value={t} style={{ background: '#0E1318', color: 'rgba(255,255,255,0.85)' }}>{t}</option>)}
-        </select>
-      </Field>
-
-      <SectionTitle>Investment Financials</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="NOI / Year ($)"><Num field="sale_noi" placeholder="e.g. 180000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Cap Rate (%)" hint="Self-storage: 5–10% · Hotels vary widely"><Num field="sale_cap_rate" placeholder="e.g. 7.0" step="0.1" details={details} setDetail={setDetail} /></Field>
-      </div>
-
-      {isHotel && (
-        <>
-          <SectionTitle>Hotel Metrics</SectionTitle>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Number of Rooms"><Num field="sale_num_rooms" placeholder="e.g. 80" details={details} setDetail={setDetail} /></Field>
-            <Field label="Occupancy (%)"><Num field="sale_occupancy" placeholder="e.g. 72" details={details} setDetail={setDetail} /></Field>
-            <Field label="ADR — Avg Daily Rate ($)" hint="Average rate per occupied room"><Num field="sale_adr" placeholder="e.g. 120" details={details} setDetail={setDetail} /></Field>
-            <Field label="RevPAR ($)" hint="Revenue Per Available Room — key hotel metric"><Num field="sale_revpar" placeholder="e.g. 86" details={details} setDetail={setDetail} /></Field>
-          </div>
-          <ToggleGroup label="Brand / Flag" value={details.sale_hotel_brand || ''} onChange={v => setDetail('sale_hotel_brand', v)}
-            options={[{ value: 'branded', label: 'Branded / Flagged' }, { value: 'independent', label: 'Independent' }]} />
-        </>
-      )}
-
-      {isSelfStorage && (
-        <>
-          <SectionTitle>Self-Storage Metrics</SectionTitle>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Total Units"><Num field="sale_total_units" placeholder="e.g. 250" details={details} setDetail={setDetail} /></Field>
-            <Field label="Occupied Units"><Num field="sale_occupied_units" placeholder="e.g. 230" details={details} setDetail={setDetail} /></Field>
-            <Field label="Avg Monthly Unit Rent ($)"><Num field="sale_avg_unit_rent" placeholder="e.g. 90" details={details} setDetail={setDetail} /></Field>
-            <Field label="Climate Controlled Units %"><Num field="sale_climate_pct" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
-          </div>
-          <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-            <Toggle label="Value-Add Opportunity (below-market rents, vacant lots)" value={!!details.sale_value_add} onChange={v => setDetail('sale_value_add', v)} />
-          </div>
-        </>
-      )}
-
-      {!isHotel && !isSelfStorage && (
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Occupancy (%)"><Num field="sale_occupancy" placeholder="e.g. 90" details={details} setDetail={setDetail} /></Field>
-          <Field label="Total SF"><Num field="sale_total_sf" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
-          <Field label="Seating / Capacity" hint="Rooms, seats, beds as applicable"><Num field="seating_capacity" placeholder="e.g. 300" details={details} setDetail={setDetail} /></Field>
-          <Field label="Year Built"><Num field="year_built" placeholder="e.g. 1995" details={details} setDetail={setDetail} /></Field>
-        </div>
-      )}
-
-      <Field label="Description">
-        <Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)}
-          placeholder="Describe the investment opportunity, operation, and what makes this special use property attractive…" rows={3} />
-      </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
-        <FileUpload label="Offering Memorandum (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload OM" />
+        {fields.map(f => (
+          <Field key={f.field} label={f.label} hint={f.hint}>
+            <Num field={f.field} placeholder={f.placeholder} step={f.step} details={details} setDetail={setDetail} />
+          </Field>
+        ))}
       </div>
     </>
   );
@@ -993,12 +767,10 @@ export default function ListStep2Commercial({ data, update, onNext }) {
   const setDetail = (key, val) => update({ property_details: { ...details, [key]: val } });
   const type = data.property_type;
 
+  // Commercial sales show the normal detail form plus an Investment Financials
+  // block appended at the bottom. Land is investment-agnostic (no financials block).
   const isSale = data.transaction_type === 'sale';
-  // Land is investment-agnostic — no sale type toggle needed (always same fields)
-  const showSaleToggle = isSale && type !== 'land';
-  // Default commercial sale to investment
-  const saleType = showSaleToggle ? (details.sale_type || 'investment') : '';
-  const isInvestment = showSaleToggle && saleType === 'investment';
+  const showFinancials = isSale && type !== 'land';
 
   return (
     <div className="space-y-6">
@@ -1006,19 +778,14 @@ export default function ListStep2Commercial({ data, update, onNext }) {
         Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong> space.
       </p>
 
-      {showSaleToggle && (
-        <SaleTypeSelector
-          value={saleType}
-          onChange={v => setDetail('sale_type', v)}
-        />
-      )}
-
-      {type === 'office' && (isInvestment ? <OfficeSaleInvestment details={details} setDetail={setDetail} /> : <OfficeDetails details={details} setDetail={setDetail} />)}
-      {type === 'medical_office' && (isInvestment ? <MedicalOfficeSaleInvestment details={details} setDetail={setDetail} /> : <MedicalOfficeDetails details={details} setDetail={setDetail} />)}
-      {type === 'retail' && (isInvestment ? <RetailSaleInvestment details={details} setDetail={setDetail} /> : <RetailDetails details={details} setDetail={setDetail} />)}
-      {type === 'industrial_flex' && (isInvestment ? <IndustrialFlexSaleInvestment details={details} setDetail={setDetail} /> : <IndustrialFlexDetails details={details} setDetail={setDetail} />)}
+      {type === 'office' && <OfficeDetails details={details} setDetail={setDetail} />}
+      {type === 'medical_office' && <MedicalOfficeDetails details={details} setDetail={setDetail} />}
+      {type === 'retail' && <RetailDetails details={details} setDetail={setDetail} />}
+      {type === 'industrial_flex' && <IndustrialFlexDetails details={details} setDetail={setDetail} />}
       {type === 'land' && <LandDetails details={details} setDetail={setDetail} />}
-      {type === 'special_use' && (isInvestment ? <SpecialUseSaleInvestment details={details} setDetail={setDetail} /> : <SpecialUseDetails details={details} setDetail={setDetail} />)}
+      {type === 'special_use' && <SpecialUseDetails details={details} setDetail={setDetail} />}
+
+      {showFinancials && <InvestmentFinancials type={type} details={details} setDetail={setDetail} />}
 
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: ACCENT }}>

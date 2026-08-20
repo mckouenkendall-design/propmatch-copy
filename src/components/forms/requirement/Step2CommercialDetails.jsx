@@ -141,299 +141,63 @@ function MinField({ label, field, placeholder, hint, details, setDetail, step })
 }
 
 // ── SALE TYPE SELECTOR ───────────────────────────────────────────────────────
-function SaleTypeSelector({ value, onChange }) {
-  const opts = [
-    { val: 'owner_user', icon: '🏢', label: 'Owner / User', desc: 'Will occupy and operate from this property' },
-    { val: 'investment', icon: '📈', label: 'Investment', desc: 'Purchasing for income and returns' },
-  ];
+// ══════════════════════════════════════════════════════════════════════════════
+// INVESTMENT CRITERIA — appended at the bottom of a commercial SALE requirement.
+// No separate sale-type mode: the normal lease-requirement form always shows, and
+// when the transaction is a sale we add this compact minimums block underneath.
+// Option A — just the core min financial fields, no extra asset-preference toggles.
+// ══════════════════════════════════════════════════════════════════════════════
+
+const REQ_FINANCIAL_FIELDS = {
+  office: [
+    { field: 'min_noi', label: 'Min NOI / Year ($)', placeholder: 'e.g. 100000', hint: 'Net Operating Income' },
+    { field: 'min_cap_rate', label: 'Min Cap Rate (%)', placeholder: 'e.g. 6.0', step: '0.1', hint: 'Class A: 4–6% · Class B: 6–8%' },
+    { field: 'min_occupancy', label: 'Min Occupancy (%)', placeholder: 'e.g. 85' },
+    { field: 'min_walt', label: 'Min WALT (years)', placeholder: 'e.g. 3', step: '0.1', hint: 'Weighted Average Lease Term' },
+    { field: 'min_nra_sf', label: 'Min Net Rentable Area (SF)', placeholder: 'e.g. 15000' },
+  ],
+  medical_office: [
+    { field: 'min_noi', label: 'Min NOI / Year ($)', placeholder: 'e.g. 150000' },
+    { field: 'min_cap_rate', label: 'Min Cap Rate (%)', placeholder: 'e.g. 5.5', step: '0.1', hint: 'MOB avg: ~6.3% Q1 2026' },
+    { field: 'min_occupancy', label: 'Min Occupancy (%)', placeholder: 'e.g. 90' },
+    { field: 'min_walt', label: 'Min WALT (years)', placeholder: 'e.g. 5', step: '0.1', hint: 'Medical tenants sign 7–15 yr leases' },
+    { field: 'min_rent_escalations', label: 'Min Annual Rent Escalations (%)', placeholder: 'e.g. 2.0', step: '0.1' },
+  ],
+  retail: [
+    { field: 'min_noi', label: 'Min NOI / Year ($)', placeholder: 'e.g. 120000' },
+    { field: 'min_cap_rate', label: 'Min Cap Rate (%)', placeholder: 'e.g. 5.5', step: '0.1', hint: 'Well-located: 5.5–7.5%' },
+    { field: 'min_occupancy', label: 'Min Occupancy (%)', placeholder: 'e.g. 90' },
+    { field: 'min_gla_sf', label: 'Min GLA (SF)', placeholder: 'e.g. 20000' },
+    { field: 'min_avg_lease_remaining', label: 'Min Avg Lease Term Remaining (yrs)', placeholder: 'e.g. 3', step: '0.1' },
+    { field: 'min_traffic_count', label: 'Min Traffic Count (vehicles/day)', placeholder: 'e.g. 20000' },
+  ],
+  industrial_flex: [
+    { field: 'min_noi', label: 'Min NOI / Year ($)', placeholder: 'e.g. 200000', hint: 'Leave blank if targeting vacant / owner-occupied' },
+    { field: 'min_cap_rate', label: 'Min Cap Rate (%)', placeholder: 'e.g. 5.5', step: '0.1', hint: 'Industrial: 5–9.5% by type/market' },
+    { field: 'max_price_per_sf', label: 'Max Price / SF ($)', placeholder: 'e.g. 110', hint: 'Use when targeting vacant or owner-occupied deals' },
+    { field: 'min_occupancy', label: 'Min Occupancy (%)', placeholder: 'e.g. 85' },
+    { field: 'min_walt', label: 'Min WALT (years)', placeholder: 'e.g. 2', step: '0.1' },
+  ],
+  special_use: [
+    { field: 'min_noi', label: 'Min NOI / Year ($)', placeholder: 'e.g. 150000' },
+    { field: 'min_cap_rate', label: 'Min Cap Rate (%)', placeholder: 'e.g. 6.5', step: '0.1' },
+  ],
+};
+
+function InvestmentCriteria({ type, details, setDetail }) {
+  const fields = REQ_FINANCIAL_FIELDS[type];
+  if (!fields) return null;
   return (
-    <div className="space-y-3">
-      <SectionTitle>Sale Type Looking For</SectionTitle>
-      <div className="grid grid-cols-2 gap-3">
-        {opts.map(opt => (
-          <button key={opt.val} type="button" onClick={() => onChange(opt.val)}
-            style={{ padding: '16px', borderRadius: '12px', border: `2px solid ${value === opt.val ? ACCENT : 'rgba(255,255,255,0.15)'}`, background: value === opt.val ? `${ACCENT}12` : 'rgba(255,255,255,0.04)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
-            <div style={{ fontSize: '22px', marginBottom: '8px' }}>{opt.icon}</div>
-            <p style={{ fontSize: '14px', fontWeight: 600, color: value === opt.val ? ACCENT : 'white', margin: '0 0 4px' }}>{opt.label}</p>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>{opt.desc}</p>
-          </button>
+    <>
+      <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
+      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
+      <div className="grid grid-cols-2 gap-4">
+        {fields.map(f => (
+          f.field === 'max_price_per_sf'
+            ? <Field key={f.field} label={f.label} hint={f.hint}><Num field={f.field} placeholder={f.placeholder} step={f.step} details={details} setDetail={setDetail} /></Field>
+            : <MinField key={f.field} label={f.label} field={f.field} placeholder={f.placeholder} step={f.step} hint={f.hint} details={details} setDetail={setDetail} />
         ))}
       </div>
-    </div>
-  );
-}
-
-// ── SALE INVESTMENT REQUIREMENT COMPONENTS ───────────────────────────────────
-// All financial fields are MINIMUMS — buyer must see at least this threshold to match
-
-function OfficeRequirementSaleInvestment({ details, setDetail }) {
-  const classes = details.building_class_pref || [];
-  const toggleClass = (v) => setDetail('building_class_pref', classes.includes(v) ? classes.filter(c => c !== v) : [...classes, v]);
-  return (
-    <>
-      <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
-      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
-      <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 100000" hint="Net Operating Income" details={details} setDetail={setDetail} />
-        <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 6.0" step="0.1" hint="Class A: 4–6% · Class B: 6–8%" details={details} setDetail={setDetail} />
-        <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 85" details={details} setDetail={setDetail} />
-        <MinField label="Min WALT (years)" field="min_walt" placeholder="e.g. 3" step="0.1" hint="Weighted Average Lease Term" details={details} setDetail={setDetail} />
-        <MinField label="Min Net Rentable Area (SF)" field="min_nra_sf" placeholder="e.g. 15000" details={details} setDetail={setDetail} />
-      </div>
-      <SectionTitle>Asset Preferences</SectionTitle>
-      <Field label="Building Class (select all acceptable)">
-        <div className="flex flex-wrap gap-2">
-          {[{v:'A',l:'Class A'},{v:'B',l:'Class B'},{v:'C',l:'Class C'}].map(o => (
-            <Chip key={o.v} label={o.l} selected={classes.includes(o.v)} onClick={() => toggleClass(o.v)} />
-          ))}
-        </div>
-      </Field>
-      <ToggleGroup label="Lease Type Preference" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
-        options={[{ value: 'nnn', label: 'NNN' }, { value: 'modified_gross', label: 'Modified Gross' }, { value: 'full_service', label: 'Full Service' }, { value: 'any', label: 'Any' }]} />
-      <ToggleGroup label="Tenancy Preference" value={details.tenancy_pref || ''} onChange={v => setDetail('tenancy_pref', v)}
-        options={[{ value: 'single', label: 'Single-Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'any', label: 'Either' }]} />
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Open to Value-Add Opportunities" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
-      </div>
-      <Field label="Notes / Investment Strategy">
-        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
-          placeholder="e.g. Targeting 6.5%+ cap, prefer stabilized assets, open to light value-add with strong tenancy…" rows={3} />
-      </Field>
-    </>
-  );
-}
-
-function MOBRequirementSaleInvestment({ details, setDetail }) {
-  const specialties = details.preferred_specialties || [];
-  const toggleSpecialty = (s) => setDetail('preferred_specialties', specialties.includes(s) ? specialties.filter(x => x !== s) : [...specialties, s]);
-  return (
-    <>
-      <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
-      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
-      <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 150000" details={details} setDetail={setDetail} />
-        <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 5.5" step="0.1" hint="MOB avg: ~6.3% Q1 2026" details={details} setDetail={setDetail} />
-        <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 90" details={details} setDetail={setDetail} />
-        <MinField label="Min WALT (years)" field="min_walt" placeholder="e.g. 5" step="0.1" hint="Medical tenants sign 7–15 yr leases" details={details} setDetail={setDetail} />
-        <MinField label="Min Annual Rent Escalations (%)" field="min_rent_escalations" placeholder="e.g. 2.0" step="0.1" details={details} setDetail={setDetail} />
-      </div>
-      <SectionTitle>Property Preferences</SectionTitle>
-      <ToggleGroup label="Campus Location Preference" value={details.campus_pref || ''} onChange={v => setDetail('campus_pref', v)}
-        options={[{ value: 'on_campus', label: 'On-Campus' }, { value: 'adjacent', label: 'Adjacent' }, { value: 'off_campus', label: 'Off-Campus' }, { value: 'any', label: 'Any' }]} />
-      <ToggleGroup label="Lease Structure Preference" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
-        options={[{ value: 'nnn', label: 'NNN' }, { value: 'gross', label: 'Gross' }, { value: 'any', label: 'Any' }]} />
-      <ToggleGroup label="Tenancy" value={details.tenancy_pref || ''} onChange={v => setDetail('tenancy_pref', v)}
-        options={[{ value: 'single', label: 'Single Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'any', label: 'Any' }]} />
-      <Field label="Preferred Tenant Specialties (select all that apply)">
-        <div className="flex flex-wrap gap-2">
-          {MEDICAL_SPECIALTIES.map(s => <Chip key={s} label={s} selected={specialties.includes(s)} onClick={() => toggleSpecialty(s)} />)}
-        </div>
-      </Field>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Open to Value-Add Opportunities" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
-      </div>
-      <Field label="Notes / Investment Strategy">
-        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
-          placeholder="e.g. Targeting NNN leased MOBs near hospital systems, 7+ yr WALT preferred…" rows={3} />
-      </Field>
-    </>
-  );
-}
-
-function RetailRequirementSaleInvestment({ details, setDetail }) {
-  return (
-    <>
-      <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
-      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
-      <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 120000" details={details} setDetail={setDetail} />
-        <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 5.5" step="0.1" hint="Well-located: 5.5–7.5%" details={details} setDetail={setDetail} />
-        <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 90" details={details} setDetail={setDetail} />
-        <MinField label="Min GLA (SF)" field="min_gla_sf" placeholder="e.g. 20000" details={details} setDetail={setDetail} />
-        <MinField label="Min Avg Lease Term Remaining (yrs)" field="min_avg_lease_remaining" placeholder="e.g. 3" step="0.1" details={details} setDetail={setDetail} />
-        <MinField label="Min Traffic Count (vehicles/day)" field="min_traffic_count" placeholder="e.g. 20000" details={details} setDetail={setDetail} />
-      </div>
-      <SectionTitle>Asset Preferences</SectionTitle>
-      <ToggleGroup label="Lease Type Preference" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
-        options={[{ value: 'nnn', label: 'NNN' }, { value: 'modified_gross', label: 'Modified Gross' }, { value: 'gross', label: 'Gross' }, { value: 'any', label: 'Any' }]} />
-      <ToggleGroup label="Tenancy Preference" value={details.tenancy_pref || ''} onChange={v => setDetail('tenancy_pref', v)}
-        options={[{ value: 'single', label: 'Single-Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'any', label: 'Either' }]} />
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Grocery-Anchored Required" value={!!details.grocery_anchored_req} onChange={v => setDetail('grocery_anchored_req', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Avoid Co-Tenancy Clauses" value={!!details.avoid_co_tenancy_clauses} onChange={v => setDetail('avoid_co_tenancy_clauses', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Open to Value-Add / Repositioning" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
-      </div>
-      <Field label="Preferred Anchor Tenants">
-        <TagsInput value={details.preferred_anchors || []} onChange={v => setDetail('preferred_anchors', v)} placeholder="e.g. Walgreens, Dollar General (press Enter)" />
-      </Field>
-      <Field label="Notes / Investment Strategy">
-        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
-          placeholder="e.g. Targeting grocery-anchored centers, NNN leases, 6%+ cap, stable metro markets…" rows={3} />
-      </Field>
-    </>
-  );
-}
-
-function IndustrialFlexRequirementSaleInvestment({ details, setDetail }) {
-  return (
-    <>
-      <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
-      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
-      <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 200000" hint="Leave blank if targeting vacant / owner-occupied" details={details} setDetail={setDetail} />
-        <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 5.5" step="0.1" hint="Industrial: 5–9.5% by type/market" details={details} setDetail={setDetail} />
-        <Field label="Max Price / SF ($)" hint="Use when targeting vacant or owner-occupied deals"><Num field="max_price_per_sf" placeholder="e.g. 110" details={details} setDetail={setDetail} /></Field>
-        <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 85" details={details} setDetail={setDetail} />
-        <MinField label="Min WALT (years)" field="min_walt" placeholder="e.g. 2" step="0.1" details={details} setDetail={setDetail} />
-      </div>
-      <SectionTitle>Physical Profile (Minimums)</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Clear Height (ft)" field="min_clear_height" placeholder="e.g. 24" details={details} setDetail={setDetail} />
-        <MinField label="Min Dock-High Doors" field="min_dock_doors" placeholder="e.g. 4" details={details} setDetail={setDetail} />
-        <MinField label="Min Drive-In Doors" field="min_drive_in_doors" placeholder="e.g. 1" details={details} setDetail={setDetail} />
-        <MinField label="Min Floor Load (lbs/sqft)" field="min_floor_load" placeholder="e.g. 250" details={details} setDetail={setDetail} />
-        <MinField label="Min Land / Lot (acres)" field="min_acres" placeholder="e.g. 2" step="0.1" details={details} setDetail={setDetail} />
-      </div>
-      <SectionTitle>Asset Preferences</SectionTitle>
-      <ToggleGroup label="Tenancy Preference" value={details.tenancy_pref || ''} onChange={v => setDetail('tenancy_pref', v)}
-        options={[{ value: 'single', label: 'Single Tenant' }, { value: 'multi', label: 'Multi-Tenant' }, { value: 'vacant', label: 'Vacant OK' }, { value: 'any', label: 'Any' }]} />
-      <ToggleGroup label="Lease Type Preference" value={details.lease_type_pref || ''} onChange={v => setDetail('lease_type_pref', v)}
-        options={[{ value: 'nnn', label: 'NNN' }, { value: 'modified_gross', label: 'Modified Gross' }, { value: 'gross', label: 'Gross' }, { value: 'any', label: 'Any' }]} />
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="3-Phase Power Required" value={!!details.three_phase_req} onChange={v => setDetail('three_phase_req', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Rail Access Required" value={!!details.rail_access_req} onChange={v => setDetail('rail_access_req', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Open to Value-Add Opportunities" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
-      </div>
-      <Field label="Notes / Investment Strategy">
-        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
-          placeholder="e.g. Targeting Class A/B NNN industrial, 5.5%+ cap, 24 ft+ clear height, strong logistics corridor…" rows={3} />
-      </Field>
-    </>
-  );
-}
-
-const SPECIAL_SALE_REQ_TYPES = [
-  { value: 'self_storage', label: 'Self-Storage' },
-  { value: 'hotel', label: 'Hotel / Motel' },
-  { value: 'gas_station', label: 'Gas Station / C-Store' },
-  { value: 'car_wash', label: 'Car Wash' },
-  { value: 'church_school', label: 'Church / School / Civic' },
-  { value: 'any', label: 'Open to Any Special Use' },
-];
-
-function SpecialUseRequirementSaleInvestment({ details, setDetail }) {
-  const subType = details.sale_sub_type || '';
-  return (
-    <>
-      <SectionTitle>Special Use Type Sought</SectionTitle>
-      <Field label="What type of special use investment are you targeting?">
-        <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-          value={subType} onChange={e => setDetail('sale_sub_type', e.target.value)}>
-          <option value="" style={{ background: '#0E1318' }}>Select type</option>
-          {SPECIAL_SALE_REQ_TYPES.map(t => <option key={t.value} value={t.value} style={{ background: '#0E1318' }}>{t.label}</option>)}
-        </select>
-      </Field>
-
-      {/* Self-Storage criteria */}
-      {subType === 'self_storage' && (
-        <>
-          <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement.</p>
-          <div className="grid grid-cols-2 gap-4">
-            <MinField label="Min Units / Spaces" field="min_units" placeholder="e.g. 150" details={details} setDetail={setDetail} />
-            <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 85" details={details} setDetail={setDetail} />
-            <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 120000" details={details} setDetail={setDetail} />
-            <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 6.5" step="0.1" details={details} setDetail={setDetail} />
-          </div>
-          <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-            <Toggle label="Climate-Controlled Units Required" value={!!details.climate_req} onChange={v => setDetail('climate_req', v)} />
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-            <Toggle label="Open to Value-Add Opportunities" value={!!details.value_add_ok} onChange={v => setDetail('value_add_ok', v)} />
-          </div>
-        </>
-      )}
-
-      {/* Hotel criteria */}
-      {subType === 'hotel' && (
-        <>
-          <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement.</p>
-          <div className="grid grid-cols-2 gap-4">
-            <MinField label="Min Rooms" field="min_rooms" placeholder="e.g. 60" details={details} setDetail={setDetail} />
-            <MinField label="Min Occupancy (%)" field="min_occupancy" placeholder="e.g. 65" details={details} setDetail={setDetail} />
-            <MinField label="Min RevPAR ($)" field="min_revpar" placeholder="e.g. 80" hint="Revenue Per Available Room" details={details} setDetail={setDetail} />
-            <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 500000" details={details} setDetail={setDetail} />
-            <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 7.5" step="0.1" details={details} setDetail={setDetail} />
-          </div>
-          <ToggleGroup label="Brand Preference" value={details.hotel_brand_pref || ''} onChange={v => setDetail('hotel_brand_pref', v)}
-            options={[{ value: 'branded', label: 'Branded / Flagged' }, { value: 'independent', label: 'Independent' }, { value: 'any', label: 'Any' }]} />
-        </>
-      )}
-
-      {/* Gas station criteria */}
-      {subType === 'gas_station' && (
-        <>
-          <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement.</p>
-          <div className="grid grid-cols-2 gap-4">
-            <MinField label="Min Monthly Fuel Volume (gallons)" field="min_fuel_gallons" placeholder="e.g. 80000" details={details} setDetail={setDetail} />
-            <MinField label="Min C-Store Revenue / Year ($)" field="min_cstore_revenue" placeholder="e.g. 200000" details={details} setDetail={setDetail} />
-            <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 100000" details={details} setDetail={setDetail} />
-            <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 6.5" step="0.1" details={details} setDetail={setDetail} />
-          </div>
-          <ToggleGroup label="Property Ownership Preference" value={details.ownership_pref || ''} onChange={v => setDetail('ownership_pref', v)}
-            options={[{ value: 'fee_simple', label: 'Fee Simple Only' }, { value: 'land_lease', label: 'Land Lease OK' }, { value: 'any', label: 'Any' }]} />
-        </>
-      )}
-
-      {/* Car wash criteria */}
-      {subType === 'car_wash' && (
-        <>
-          <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement.</p>
-          <div className="grid grid-cols-2 gap-4">
-            <MinField label="Min Active Memberships" field="min_memberships" placeholder="e.g. 500" details={details} setDetail={setDetail} />
-            <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 300000" details={details} setDetail={setDetail} />
-            <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 6.0" step="0.1" details={details} setDetail={setDetail} />
-          </div>
-          <ToggleGroup label="Car Wash Type Preference" value={details.carwash_type_pref || ''} onChange={v => setDetail('carwash_type_pref', v)}
-            options={[{ value: 'express', label: 'Express / Tunnel' }, { value: 'full_service', label: 'Full Service' }, { value: 'any', label: 'Any' }]} />
-        </>
-      )}
-
-      {/* Church / School criteria */}
-      {subType === 'church_school' && (
-        <>
-          <SectionTitle>Property Criteria</SectionTitle>
-          <div className="grid grid-cols-2 gap-4">
-            <MinField label="Min Seating / Capacity" field="min_seating" placeholder="e.g. 200" details={details} setDetail={setDetail} />
-            <MinField label="Min Acreage" field="min_acres" placeholder="e.g. 1.0" step="0.1" details={details} setDetail={setDetail} />
-            <MinField label="Min Parking Spaces" field="min_parking" placeholder="e.g. 100" details={details} setDetail={setDetail} />
-          </div>
-        </>
-      )}
-
-      {/* Any / Generic special use criteria */}
-      {subType === 'any' && (
-        <>
-          <SectionTitle>Investment Criteria (Minimums)</SectionTitle>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement.</p>
-          <div className="grid grid-cols-2 gap-4">
-            <MinField label="Min NOI / Year ($)" field="min_noi" placeholder="e.g. 150000" details={details} setDetail={setDetail} />
-            <MinField label="Min Cap Rate (%)" field="min_cap_rate" placeholder="e.g. 6.5" step="0.1" details={details} setDetail={setDetail} />
-          </div>
-        </>
-      )}
-
-      <Field label="Notes / Acquisition Criteria">
-        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
-          placeholder="Describe your ideal acquisition — target returns, market type, size, value-add appetite…" rows={3} />
-      </Field>
     </>
   );
 }
@@ -740,12 +504,9 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
   const type      = data.property_type;
   const isSale    = data.transaction_type === 'sale';
 
-  // Default to investment for commercial sale (land: no default — force pick)
-  const saleTypeDefault = type === 'land' ? null : 'investment';
-  const saleType = details.sale_type || saleTypeDefault;
-
-  const showLease      = !isSale || saleType === 'owner_user';
-  const showInvestment = isSale && saleType === 'investment';
+  // Commercial sales show the normal requirement form plus an Investment Criteria
+  // block appended at the bottom. Land is investment-agnostic (no criteria block).
+  const showCriteria = isSale && type !== 'land';
 
   return (
     <div className="space-y-6">
@@ -753,31 +514,14 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
         Tell us what you need in a <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong>{isSale ? ' purchase' : ' space'}.
       </p>
 
-      {isSale && (
-        <SaleTypeSelector value={saleType} onChange={v => setDetail('sale_type', v)} />
-      )}
+      {type === 'office'          && <OfficeRequirement        details={details} setDetail={setDetail} />}
+      {type === 'medical_office'  && <MedicalOfficeRequirement details={details} setDetail={setDetail} />}
+      {type === 'retail'          && <RetailRequirement        details={details} setDetail={setDetail} />}
+      {type === 'industrial_flex' && <IndustrialFlexRequirement details={details} setDetail={setDetail} />}
+      {type === 'land'            && <LandRequirement          details={details} setDetail={setDetail} />}
+      {type === 'special_use'     && <SpecialUseRequirement    details={details} setDetail={setDetail} />}
 
-      {showLease && (
-        <>
-          {type === 'office'          && <OfficeRequirement        details={details} setDetail={setDetail} />}
-          {type === 'medical_office'  && <MedicalOfficeRequirement details={details} setDetail={setDetail} />}
-          {type === 'retail'          && <RetailRequirement        details={details} setDetail={setDetail} />}
-          {type === 'industrial_flex' && <IndustrialFlexRequirement details={details} setDetail={setDetail} />}
-          {type === 'land'            && <LandRequirement          details={details} setDetail={setDetail} />}
-          {type === 'special_use'     && <SpecialUseRequirement    details={details} setDetail={setDetail} />}
-        </>
-      )}
-
-      {showInvestment && (
-        <>
-          {type === 'office'          && <OfficeRequirementSaleInvestment          details={details} setDetail={setDetail} />}
-          {type === 'medical_office'  && <MOBRequirementSaleInvestment             details={details} setDetail={setDetail} />}
-          {type === 'retail'          && <RetailRequirementSaleInvestment          details={details} setDetail={setDetail} />}
-          {type === 'industrial_flex' && <IndustrialFlexRequirementSaleInvestment  details={details} setDetail={setDetail} />}
-          {type === 'land'            && <LandRequirement                          details={details} setDetail={setDetail} />}
-          {type === 'special_use'     && <SpecialUseRequirementSaleInvestment      details={details} setDetail={setDetail} />}
-        </>
-      )}
+      {showCriteria && <InvestmentCriteria type={type} details={details} setDetail={setDetail} />}
 
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: '#00DBC5' }}>

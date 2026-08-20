@@ -100,150 +100,6 @@ function MinField({ label, field, placeholder, hint, details, setDetail, step })
 }
 
 // ── SALE TYPE SELECTOR (Residential) ─────────────────────────────────────────
-function ResidentialSaleTypeSelector({ value, onChange }) {
-  const opts = [
-    { val: 'personal_residence', icon: '🏠', label: 'Personal Residence', desc: 'Will live in this property' },
-    { val: 'investment', icon: '📈', label: 'Investment / Rental', desc: 'Purchasing as a rental or income property' },
-  ];
-  return (
-    <div className="space-y-3">
-      <SectionTitle>Purchase Intent</SectionTitle>
-      <div className="grid grid-cols-2 gap-3">
-        {opts.map(opt => (
-          <button key={opt.val} type="button" onClick={() => onChange(opt.val)}
-            style={{ padding: '16px', borderRadius: '12px', border: `2px solid ${value === opt.val ? ACCENT : 'rgba(255,255,255,0.15)'}`, background: value === opt.val ? `${ACCENT}12` : 'rgba(255,255,255,0.04)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
-            <div style={{ fontSize: '22px', marginBottom: '8px' }}>{opt.icon}</div>
-            <p style={{ fontSize: '14px', fontWeight: 600, color: value === opt.val ? ACCENT : 'white', margin: '0 0 4px' }}>{opt.label}</p>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>{opt.desc}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── SALE INVESTMENT REQUIREMENT COMPONENTS ────────────────────────────────────
-
-// Shared rental income criteria section (condo, apartment, townhouse)
-function RentalCriteriaSection({ details, setDetail, typeLabel }) {
-  return (
-    <>
-      <SectionTitle>Rental Income Criteria (Minimums)</SectionTitle>
-      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
-      <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Monthly Rent ($)" field="min_monthly_rent" placeholder="e.g. 1400"
-          hint="In-place rent or market rent if vacant" details={details} setDetail={setDetail} />
-        <MinField label="Min Annual Gross Rent ($)" field="min_annual_rent" placeholder="e.g. 16800" details={details} setDetail={setDetail} />
-        <MinField label="Max HOA ($/mo)" field="max_hoa" placeholder="e.g. 500"
-          hint="Upper limit you'll accept" details={details} setDetail={setDetail} />
-      </div>
-      <ToggleGroup label="Rental Status Preference" value={details.rental_status_pref || ''} onChange={v => setDetail('rental_status_pref', v)}
-        options={[{ value: 'occupied', label: 'Occupied (tenant in place)' }, { value: 'vacant', label: 'Vacant (ready to lease)' }, { value: 'any', label: 'Either' }]} />
-      <ToggleGroup label="Condition Acceptable" value={details.condition_pref || ''} onChange={v => setDetail('condition_pref', v)}
-        options={[{ value: 'turnkey', label: 'Turnkey Only' }, { value: 'light_value_add', label: 'Light Value-Add OK' }, { value: 'any', label: 'Any Condition' }]} />
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="HOA Must Allow Rentals" value={!!details.hoa_rentals_req} onChange={v => setDetail('hoa_rentals_req', v)} />
-      </div>
-    </>
-  );
-}
-
-function CondoRequirementSaleInvestment({ details, setDetail }) {
-  return (
-    <>
-      <RentalCriteriaSection details={details} setDetail={setDetail} />
-      <SectionTitle>Unit Preferences</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 1" details={details} setDetail={setDetail} />
-        <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Floor #" field="min_floor" placeholder="e.g. 3" hint="Optional — leave blank if any floor OK" details={details} setDetail={setDetail} />
-      </div>
-      <ToggleGroup label="Parking" value={details.parking_pref || ''} onChange={v => setDetail('parking_pref', v)}
-        options={[{ value: 'assigned', label: 'Assigned' }, { value: 'garage', label: 'Garage' }, { value: 'any', label: 'Any' }]} />
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="In-Unit Laundry Required" value={!!details.in_unit_laundry_req} onChange={v => setDetail('in_unit_laundry_req', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Balcony / Outdoor Space Required" value={!!details.balcony_req} onChange={v => setDetail('balcony_req', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Property Management in Place Preferred" value={!!details.management_pref} onChange={v => setDetail('management_pref', v)} />
-      </div>
-      <Field label="Notes / Strategy">
-        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
-          placeholder="e.g. Targeting cash-flowing condos, long-term hold, prefer buildings that allow STR…" rows={2} />
-      </Field>
-    </>
-  );
-}
-
-function TownhouseRequirementSaleInvestment({ details, setDetail }) {
-  return (
-    <>
-      <RentalCriteriaSection details={details} setDetail={setDetail} />
-      <SectionTitle>Property Preferences</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
-        <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 1.5" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Garage Spaces" field="min_garage" placeholder="e.g. 1" details={details} setDetail={setDetail} />
-      </div>
-      <ToggleGroup label="Position Preference" value={details.position_pref || ''} onChange={v => setDetail('position_pref', v)}
-        options={[{ value: 'end', label: 'End Unit' }, { value: 'any', label: 'Any' }]} />
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Private Patio / Yard Required" value={!!details.patio_req} onChange={v => setDetail('patio_req', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="In-Unit Laundry Required" value={!!details.in_unit_laundry_req} onChange={v => setDetail('in_unit_laundry_req', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Property Management in Place Preferred" value={!!details.management_pref} onChange={v => setDetail('management_pref', v)} />
-      </div>
-      <Field label="Notes / Strategy">
-        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
-          placeholder="e.g. Looking for cash-flowing townhouses, 2BR+ preferred for tenant demand…" rows={2} />
-      </Field>
-    </>
-  );
-}
-
-function ManufacturedRequirementSaleInvestment({ details, setDetail }) {
-  return (
-    <>
-      <SectionTitle>Rental Income Criteria (Minimums)</SectionTitle>
-      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Leave blank if not a hard requirement — more flexibility = more matches.</p>
-      <div className="grid grid-cols-2 gap-4">
-        <MinField label="Min Monthly Rent ($)" field="min_monthly_rent" placeholder="e.g. 750" details={details} setDetail={setDetail} />
-        <MinField label="Min Annual Gross Rent ($)" field="min_annual_rent" placeholder="e.g. 9000" details={details} setDetail={setDetail} />
-      </div>
-      <ToggleGroup label="Rental Status Preference" value={details.rental_status_pref || ''} onChange={v => setDetail('rental_status_pref', v)}
-        options={[{ value: 'occupied', label: 'Occupied' }, { value: 'vacant', label: 'Vacant' }, { value: 'any', label: 'Either' }]} />
-      <ToggleGroup label="Condition Acceptable" value={details.condition_pref || ''} onChange={v => setDetail('condition_pref', v)}
-        options={[{ value: 'turnkey', label: 'Turnkey Only' }, { value: 'light_value_add', label: 'Light Value-Add OK' }, { value: 'any', label: 'Any Condition' }]} />
-
-      <SectionTitle>Property Preferences</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 2" details={details} setDetail={setDetail} />
-        <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 1" step="0.5" details={details} setDetail={setDetail} />
-        <MinField label="Year Built" field="min_year_built" placeholder="e.g. 1990" hint="Post-1976 HUD code is critical for financing" details={details} setDetail={setDetail} />
-      </div>
-      <ToggleGroup label="Land Ownership Preference" value={details.land_ownership_pref || ''} onChange={v => setDetail('land_ownership_pref', v)}
-        options={[{ value: 'owned', label: 'Land Owned Only' }, { value: 'leased', label: 'Lot Lease OK' }, { value: 'any', label: 'Either' }]} />
-      {details.land_ownership_pref !== 'owned' && (
-        <Field label="Max Monthly Lot Rent ($)" hint="Only applies if lot-leased OK">
-          <Num field="max_lot_rent" placeholder="e.g. 500" details={details} setDetail={setDetail} />
-        </Field>
-      )}
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="HUD Tag / Title Required" value={!!details.hud_tag_req} onChange={v => setDetail('hud_tag_req', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Property Management in Place Preferred" value={!!details.management_pref} onChange={v => setDetail('management_pref', v)} />
-      </div>
-      <Field label="Notes / Strategy">
-        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
-          placeholder="e.g. Looking for land-owned manufactured homes for stable long-term rental income…" rows={2} />
-      </Field>
-    </>
-  );
-}
-
-// ── EXISTING LEASE / PERSONAL RESIDENCE REQUIREMENT COMPONENTS (unchanged) ────
-
 function SingleFamilyRequirement({ details, setDetail }) {
   const features = details.desired_features || [];
   const toggleFeature = (key) => setDetail('desired_features', features.includes(key) ? features.filter(k => k !== key) : [...features, key]);
@@ -578,20 +434,6 @@ export default function ReqStep2Residential({ data, update, onNext }) {
   const details   = data.property_details || {};
   const setDetail = (key, val) => update({ property_details: { ...details, [key]: val } });
   const type      = data.property_type;
-  const isSale    = data.transaction_type === 'sale';
-
-  // Which types need the sale type selector
-  const needsSelector = isSale && ['condo', 'apartment', 'townhouse', 'manufactured'].includes(type);
-
-  // Multi-family always investment when sale
-  const alwaysInvestment = isSale && ['multi_family', 'multi_family_5'].includes(type);
-
-  // SFR and land never show investment fields
-  const alwaysResidence = ['single_family', 'land_residential'].includes(type);
-
-  const saleType = details.sale_type || null;
-  const showResidence = !isSale || alwaysResidence || saleType === 'personal_residence';
-  const showInvestment = isSale && (alwaysInvestment || saleType === 'investment');
 
   return (
     <div className="space-y-6">
@@ -599,37 +441,14 @@ export default function ReqStep2Residential({ data, update, onNext }) {
         Tell us what you need in a <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong>.
       </p>
 
-      {/* Sale type selector — only for ambiguous residential types */}
-      {needsSelector && (
-        <ResidentialSaleTypeSelector value={saleType} onChange={v => setDetail('sale_type', v)} />
-      )}
-
-      {/* Personal residence / lease requirement content */}
-      {showResidence && (
-        <>
-          {type === 'single_family'    && <SingleFamilyRequirement    details={details} setDetail={setDetail} />}
-          {type === 'condo'            && <CondoRequirement           details={details} setDetail={setDetail} />}
-          {type === 'apartment'        && <ApartmentRequirement       details={details} setDetail={setDetail} />}
-          {type === 'multi_family'     && <MultiFamily24Requirement   details={details} setDetail={setDetail} />}
-          {type === 'multi_family_5'   && <MultiFamily5PlusRequirement details={details} setDetail={setDetail} />}
-          {type === 'townhouse'        && <TownhouseRequirement       details={details} setDetail={setDetail} />}
-          {type === 'manufactured'     && <ManufacturedRequirement    details={details} setDetail={setDetail} />}
-          {type === 'land_residential' && <ResidentialLandRequirement details={details} setDetail={setDetail} />}
-        </>
-      )}
-
-      {/* Investment sale requirement content */}
-      {showInvestment && (
-        <>
-          {type === 'condo'          && <CondoRequirementSaleInvestment        details={details} setDetail={setDetail} />}
-          {type === 'apartment'      && <CondoRequirementSaleInvestment        details={details} setDetail={setDetail} />}
-          {type === 'townhouse'      && <TownhouseRequirementSaleInvestment    details={details} setDetail={setDetail} />}
-          {type === 'manufactured'   && <ManufacturedRequirementSaleInvestment details={details} setDetail={setDetail} />}
-          {/* Multi-family always investment — existing components already have investment fields */}
-          {type === 'multi_family'   && <MultiFamily24Requirement    details={details} setDetail={setDetail} />}
-          {type === 'multi_family_5' && <MultiFamily5PlusRequirement details={details} setDetail={setDetail} />}
-        </>
-      )}
+      {type === 'single_family'    && <SingleFamilyRequirement    details={details} setDetail={setDetail} />}
+      {type === 'condo'            && <CondoRequirement           details={details} setDetail={setDetail} />}
+      {type === 'apartment'        && <ApartmentRequirement       details={details} setDetail={setDetail} />}
+      {type === 'multi_family'     && <MultiFamily24Requirement   details={details} setDetail={setDetail} />}
+      {type === 'multi_family_5'   && <MultiFamily5PlusRequirement details={details} setDetail={setDetail} />}
+      {type === 'townhouse'        && <TownhouseRequirement       details={details} setDetail={setDetail} />}
+      {type === 'manufactured'     && <ManufacturedRequirement    details={details} setDetail={setDetail} />}
+      {type === 'land_residential' && <ResidentialLandRequirement details={details} setDetail={setDetail} />}
 
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: '#00DBC5' }}>

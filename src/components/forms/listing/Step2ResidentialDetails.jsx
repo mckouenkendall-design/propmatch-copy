@@ -90,163 +90,6 @@ function BedsAndBaths({ details, setDetail }) {
 }
 
 // ── SALE TYPE SELECTOR (Residential) ─────────────────────────────────────────
-function ResidentialSaleTypeSelector({ value, onChange }) {
-  const opts = [
-    { val: 'personal_residence', icon: '🏠', label: 'Personal Residence', desc: 'Buyer will live in this property' },
-    { val: 'investment', icon: '📈', label: 'Investment / Rental', desc: 'Buyer purchasing as a rental or income property' },
-  ];
-  return (
-    <div className="space-y-3">
-      <SectionTitle>Sale Type</SectionTitle>
-      <div className="grid grid-cols-2 gap-3">
-        {opts.map(opt => (
-          <button key={opt.val} type="button" onClick={() => onChange(opt.val)}
-            style={{ padding: '16px', borderRadius: '12px', border: `2px solid ${value === opt.val ? ACCENT : 'rgba(255,255,255,0.15)'}`, background: value === opt.val ? `${ACCENT}12` : 'rgba(255,255,255,0.04)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
-            <div style={{ fontSize: '22px', marginBottom: '8px' }}>{opt.icon}</div>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: value === opt.val ? ACCENT : 'white', margin: '0 0 4px' }}>{opt.label}</p>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>{opt.desc}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── SALE INVESTMENT COMPONENTS ────────────────────────────────────────────────
-
-// Shared rental income section used by condo, townhouse, apartment as investment
-function RentalIncomeSection({ details, setDetail }) {
-  return (
-    <>
-      <SectionTitle>Rental Income</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Current Monthly Rent ($)" hint="Enter market rent if currently vacant">
-          <Num field="monthly_rent" placeholder="e.g. 1800" details={details} setDetail={setDetail} />
-        </Field>
-        <Field label="Annual Gross Rent ($)">
-          <Num field="annual_gross_rent" placeholder="e.g. 21600" details={details} setDetail={setDetail} />
-        </Field>
-        <Field label="HOA ($/mo)">
-          <Num field="hoa" placeholder="e.g. 350" details={details} setDetail={setDetail} />
-        </Field>
-      </div>
-      <ToggleGroup label="Rental Status" value={details.rental_status || ''} onChange={v => setDetail('rental_status', v)}
-        options={[{ value: 'occupied', label: 'Currently Occupied' }, { value: 'vacant', label: 'Vacant' }]} />
-      {details.rental_status === 'occupied' && (
-        <Field label="Lease Term Remaining (months)">
-          <Num field="lease_remaining" placeholder="e.g. 8" details={details} setDetail={setDetail} />
-        </Field>
-      )}
-      <ToggleGroup label="Condition" value={details.condition || ''} onChange={v => setDetail('condition', v)}
-        options={[{ value: 'turnkey', label: 'Turnkey' }, { value: 'light_value_add', label: 'Light Value-Add' }, { value: 'heavy_value_add', label: 'Heavy Value-Add' }]} />
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Property Management in Place" value={!!details.managed} onChange={v => setDetail('managed', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="HOA Allows Rentals" value={!!details.hoa_allows_rentals} onChange={v => setDetail('hoa_allows_rentals', v)} />
-      </div>
-    </>
-  );
-}
-
-function CondoSaleInvestment({ details, setDetail }) {
-  return (
-    <>
-      <RentalIncomeSection details={details} setDetail={setDetail} />
-      <SectionTitle>Unit Details</SectionTitle>
-      <BedsAndBaths details={details} setDetail={setDetail} />
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Floor #"><Num field="floor_num" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
-        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2012" details={details} setDetail={setDetail} /></Field>
-        <Field label="Unit Number" hint="Optional"><Input value={details.unit_number || ''} onChange={e => setDetail('unit_number', e.target.value)} placeholder="e.g. Unit 804" /></Field>
-      </div>
-      <ToggleGroup label="Parking" value={details.parking || ''} onChange={v => setDetail('parking', v)}
-        options={[{ value: 'assigned', label: 'Assigned' }, { value: 'garage', label: 'Garage' }, { value: 'none', label: 'None' }]} />
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="In-Unit Laundry" value={!!details.in_unit_laundry} onChange={v => setDetail('in_unit_laundry', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Balcony / Terrace" value={!!details.balcony} onChange={v => setDetail('balcony', v)} />
-      </div>
-      <Field label="HOA Includes">
-        <TagsInput value={details.hoa_includes || []} onChange={v => setDetail('hoa_includes', v)} placeholder="e.g. Water, Trash, Building Insurance (press Enter)" />
-      </Field>
-    </>
-  );
-}
-
-function TownhouseSaleInvestment({ details, setDetail }) {
-  return (
-    <>
-      <RentalIncomeSection details={details} setDetail={setDetail} />
-      <SectionTitle>Property Details</SectionTitle>
-      <BedsAndBaths details={details} setDetail={setDetail} />
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Garage Spaces"><Num field="garage" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2010" details={details} setDetail={setDetail} /></Field>
-        <Field label="HOA Includes">
-          <TagsInput value={details.hoa_includes || []} onChange={v => setDetail('hoa_includes', v)} placeholder="e.g. Exterior Maintenance, Snow Removal (press Enter)" />
-        </Field>
-      </div>
-      <ToggleGroup label="Stories" value={details.stories || ''} onChange={v => setDetail('stories', v)}
-        options={[{ value: 'two', label: '2 Story' }, { value: 'three', label: '3 Story' }, { value: 'other', label: 'Other' }]} />
-      <ToggleGroup label="Position in Building" value={details.position || ''} onChange={v => setDetail('position', v)}
-        options={[{ value: 'end', label: 'End Unit' }, { value: 'middle', label: 'Middle Unit' }, { value: 'corner', label: 'Corner' }]} />
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Private Patio / Yard" value={!!details.patio} onChange={v => setDetail('patio', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="In-Unit Laundry" value={!!details.in_unit_laundry} onChange={v => setDetail('in_unit_laundry', v)} />
-      </div>
-    </>
-  );
-}
-
-function ManufacturedSaleInvestment({ details, setDetail }) {
-  return (
-    <>
-      <SectionTitle>Rental Income</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Current Monthly Rent ($)" hint="Enter market rent if vacant">
-          <Num field="monthly_rent" placeholder="e.g. 900" details={details} setDetail={setDetail} />
-        </Field>
-        <Field label="Annual Gross Rent ($)">
-          <Num field="annual_gross_rent" placeholder="e.g. 10800" details={details} setDetail={setDetail} />
-        </Field>
-      </div>
-      <ToggleGroup label="Rental Status" value={details.rental_status || ''} onChange={v => setDetail('rental_status', v)}
-        options={[{ value: 'occupied', label: 'Currently Occupied' }, { value: 'vacant', label: 'Vacant' }]} />
-      <ToggleGroup label="Condition" value={details.condition || ''} onChange={v => setDetail('condition', v)}
-        options={[{ value: 'turnkey', label: 'Turnkey' }, { value: 'light_value_add', label: 'Light Value-Add' }, { value: 'heavy_value_add', label: 'Heavy Value-Add' }]} />
-
-      <SectionTitle>Land & Property Details</SectionTitle>
-      <ToggleGroup label="Land Ownership" value={details.land_ownership || ''} onChange={v => setDetail('land_ownership', v)}
-        options={[{ value: 'owned', label: 'Land Owned' }, { value: 'leased', label: 'Leased Lot' }]} />
-      {details.land_ownership === 'leased' && (
-        <Field label="Monthly Lot Rent ($)">
-          <Num field="lot_rent" placeholder="e.g. 450" details={details} setDetail={setDetail} />
-        </Field>
-      )}
-      <BedsAndBaths details={details} setDetail={setDetail} />
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2005" details={details} setDetail={setDetail} /></Field>
-        <Field label="Size (sqft)"><Num field="size_sqft" placeholder="e.g. 1200" details={details} setDetail={setDetail} /></Field>
-      </div>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="HUD Tag / Title Present" value={!!details.hud_tag} onChange={v => setDetail('hud_tag', v)} />
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Property Management in Place" value={!!details.managed} onChange={v => setDetail('managed', v)} />
-      </div>
-    </>
-  );
-}
-
-// ── EXISTING LEASE COMPONENTS (unchanged) ────────────────────────────────────
-const ARCH_STYLES = ['Colonial','Ranch','Cape Cod','Craftsman','Modern','Tudor','Split Level','Contemporary','Victorian','Mediterranean'];
-const SF_FEATURES = [
-  { key: 'pool', label: 'Pool' }, { key: 'hot_tub', label: 'Hot Tub / Spa' }, { key: 'deck', label: 'Deck / Patio' },
-  { key: 'fence', label: 'Fenced Yard' }, { key: 'fireplace', label: 'Fireplace' }, { key: 'ac', label: 'Central A/C' },
-  { key: 'generator', label: 'Generator' }, { key: 'solar', label: 'Solar Panels' }, { key: 'sprinklers', label: 'Irrigation / Sprinklers' },
-  { key: 'mudroom', label: 'Mudroom' }, { key: 'bonus_room', label: 'Bonus Room / Loft' }, { key: 'home_office', label: 'Dedicated Home Office' },
-];
-
 function SingleFamilyDetails({ details, setDetail }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   const features = details.features || [];
@@ -701,21 +544,6 @@ export default function ListStep2Residential({ data, update, onNext }) {
   const details   = data.property_details || {};
   const setDetail = (key, val) => update({ property_details: { ...details, [key]: val } });
   const type      = data.property_type;
-  const isSale    = data.transaction_type === 'sale';
-
-  // Which types need the sale type selector
-  const needsSelector = isSale && ['condo', 'apartment', 'townhouse', 'manufactured'].includes(type);
-
-  // Multi-family always investment when sale (no selector needed)
-  const alwaysInvestment = isSale && ['multi_family', 'multi_family_5'].includes(type);
-
-  // SFR and land never show investment fields
-  const alwaysResidence = ['single_family', 'land_residential'].includes(type);
-
-  // Determine effective sale type
-  const saleType = details.sale_type || null;
-  const showResidence = !isSale || alwaysResidence || saleType === 'personal_residence';
-  const showInvestment = isSale && (alwaysInvestment || saleType === 'investment');
 
   return (
     <div className="space-y-6">
@@ -723,37 +551,14 @@ export default function ListStep2Residential({ data, update, onNext }) {
         Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong>.
       </p>
 
-      {/* Sale type selector — only for ambiguous residential types */}
-      {needsSelector && (
-        <ResidentialSaleTypeSelector value={saleType} onChange={v => setDetail('sale_type', v)} />
-      )}
-
-      {/* Existing lease/residence content */}
-      {showResidence && (
-        <>
-          {type === 'single_family'    && <SingleFamilyDetails     details={details} setDetail={setDetail} />}
-          {type === 'condo'            && <CondoDetails            details={details} setDetail={setDetail} />}
-          {type === 'apartment'        && <ApartmentDetails        details={details} setDetail={setDetail} />}
-          {type === 'multi_family'     && <MultiFamily24Details    details={details} setDetail={setDetail} />}
-          {type === 'multi_family_5'   && <MultiFamily5PlusDetails details={details} setDetail={setDetail} />}
-          {type === 'townhouse'        && <TownhouseDetails        details={details} setDetail={setDetail} />}
-          {type === 'manufactured'     && <ManufacturedDetails     details={details} setDetail={setDetail} />}
-          {type === 'land_residential' && <ResidentialLandDetails  details={details} setDetail={setDetail} />}
-        </>
-      )}
-
-      {/* Investment sale content */}
-      {showInvestment && (
-        <>
-          {type === 'condo'          && <CondoSaleInvestment       details={details} setDetail={setDetail} />}
-          {type === 'apartment'      && <CondoSaleInvestment       details={details} setDetail={setDetail} />}
-          {type === 'townhouse'      && <TownhouseSaleInvestment   details={details} setDetail={setDetail} />}
-          {type === 'manufactured'   && <ManufacturedSaleInvestment details={details} setDetail={setDetail} />}
-          {/* Multi-family already has investment fields built in */}
-          {type === 'multi_family'   && <MultiFamily24Details      details={details} setDetail={setDetail} />}
-          {type === 'multi_family_5' && <MultiFamily5PlusDetails   details={details} setDetail={setDetail} />}
-        </>
-      )}
+      {type === 'single_family'    && <SingleFamilyDetails     details={details} setDetail={setDetail} />}
+      {type === 'condo'            && <CondoDetails            details={details} setDetail={setDetail} />}
+      {type === 'apartment'        && <ApartmentDetails        details={details} setDetail={setDetail} />}
+      {type === 'multi_family'     && <MultiFamily24Details    details={details} setDetail={setDetail} />}
+      {type === 'multi_family_5'   && <MultiFamily5PlusDetails details={details} setDetail={setDetail} />}
+      {type === 'townhouse'        && <TownhouseDetails        details={details} setDetail={setDetail} />}
+      {type === 'manufactured'     && <ManufacturedDetails     details={details} setDetail={setDetail} />}
+      {type === 'land_residential' && <ResidentialLandDetails  details={details} setDetail={setDetail} />}
 
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: ACCENT }}>
