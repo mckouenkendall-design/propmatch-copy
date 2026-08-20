@@ -40,19 +40,35 @@ const SIZE_PRICE = [
 export const CLIENT_WEIGHT_DEFAULTS = {
   office: {
     label: 'Office (Lease)',
+    sizePriceWhy: {
+      size: "Square footage is the starting point for almost every office decision. Too small and the team doesn't fit. Too large and the client is paying for space they'll never use. We weight this heavily because it sets the ceiling on everything else.",
+      price: "Rent is a fixed monthly commitment that compounds over a multi-year lease. A space that's over budget on day one only gets harder to justify as the lease goes on. We weight this heavily because no other factor matters if the numbers don't work.",
+    },
     items: [
-      { key: 'ada_compliant', label: 'ADA Compliant', default: 'high' },
-      { key: 'number_of_offices', label: 'Number of Offices', default: 'high' },
-      { key: 'conference_rooms', label: 'Conference Rooms', default: 'high' },
-      { key: 'natural_light', label: 'Natural Light', default: 'normal' },
-      { key: '24_7_access', label: '24/7 Access', default: 'normal' },
-      { key: 'in_suite_restrooms', label: 'In-Suite Restrooms', default: 'normal' },
-      { key: 'fitness_center', label: 'Fitness Center', default: 'low' },
-      { key: 'cafe_food_service', label: 'Cafe / Food Service', default: 'low' },
-      { key: 'covered_parking', label: 'Covered Parking', default: 'low' },
-      { key: 'building_class', label: 'Building Class', default: 'low' },
-      { key: 'server_room_it', label: 'Server Room / IT', default: 'low' },
-      { key: 'other_amenities', label: 'Other Amenities', default: 'low', expandable: 'office_amenities' },
+      { key: 'ada_compliant', label: 'ADA Compliant', default: 'high',
+        why: "ADA compliance is a federal legal requirement for most commercial tenants, not a preference. Retrofitting a non-compliant building is expensive and slow. We weight this high because it's either there or it isn't, and if it isn't, someone is paying to fix it." },
+      { key: 'number_of_offices', label: 'Number of Offices', default: 'high',
+        why: "Private offices are physical rooms with walls and doors. You can reconfigure furniture but you can't add rooms without a build-out, permits, and landlord approval. We weight this high because what the space has today is largely what your client is getting." },
+      { key: 'conference_rooms', label: 'Conference Rooms', default: 'high',
+        why: "Conference rooms are harder to add than most tenants expect. They require walls, soundproofing, and often sprinkler adjustments. We weight this high because it directly affects how the team functions day to day and can't easily be improvised." },
+      { key: 'natural_light', label: 'Natural Light', default: 'normal',
+        why: "Natural light comes from the building's orientation, floor plan, and window placement. None of those change after a lease is signed. We weight this because some clients won't take a space without it, and it genuinely affects employee wellbeing and retention." },
+      { key: '24_7_access', label: '24/7 Access', default: 'normal',
+        why: "24/7 access is a building-level policy set by the landlord and property management. Some buildings simply don't allow after-hours entry regardless of what a tenant wants. We weight this because for clients who need it, a building that doesn't offer it is a non-starter." },
+      { key: 'in_suite_restrooms', label: 'In-Suite Restrooms', default: 'normal',
+        why: "In-suite restrooms mean your client's team never has to share facilities with other tenants on the floor. This is a building layout decision that can't be changed. We weight this because it matters significantly in certain industries and client cultures." },
+      { key: 'fitness_center', label: 'Fitness Center', default: 'low',
+        why: "An on-site fitness center is a building amenity that tenants use to attract and retain employees. It's not critical, but it's a meaningful differentiator for clients in competitive talent markets. We weight this lower because most teams can work around its absence." },
+      { key: 'cafe_food_service', label: 'Cafe / Food Service', default: 'low',
+        why: "On-site food service changes how teams spend their lunch breaks and whether employees stay on-campus during the day. It's a nice-to-have that some clients treat as important for culture. We weight this lower because it's rarely a dealbreaker and there are usually alternatives nearby." },
+      { key: 'covered_parking', label: 'Covered Parking', default: 'low',
+        why: "Covered parking is a fixed building feature that can't be added after the fact. For clients in colder climates or with frequent client visits, it matters more than people initially think. We weight this lower because it's a convenience factor rather than an operational one." },
+      { key: 'building_class', label: 'Building Class', default: 'low',
+        why: "Building class reflects the age, condition, finishes, and overall quality of the property. It affects brand perception, client impressions, and sometimes the caliber of neighboring tenants. We weight this lower because class preference varies widely and a great B building often beats a mediocre A." },
+      { key: 'server_room_it', label: 'Server Room / IT', default: 'low',
+        why: "Dedicated server rooms and structured IT infrastructure are expensive and difficult to add after a lease is signed. For tech-dependent teams, the existing infrastructure is the baseline they're building on. We weight this lower because not every tenant needs it, but for those who do, it matters a lot." },
+      { key: 'other_amenities', label: 'Other Amenities', default: 'low', expandable: 'office_amenities',
+        why: "The remaining building amenities, things like EV charging, tenant lounges, rooftop access, and backup generators, add quality of life without being core to how a business operates. We weight the group together because collectively they paint a picture of how well the building is managed and invested in." },
     ],
   },
   medical_office: {
@@ -276,10 +292,16 @@ export function amenityGroup(groupId) {
 // Build the full ordered item list for a property type: universal gates first,
 // then Size/Price, then the type-specific items. Returns [] for unknown types
 // (e.g. special_use, multi_family) which don't have per-type scoring yet.
+// If the type defines sizePriceWhy, those tooltip strings are merged into the
+// shared Size and Price items (which otherwise carry no type-specific copy).
 export function itemsForPropertyType(propertyType) {
   const typeConfig = CLIENT_WEIGHT_DEFAULTS[propertyType];
   if (!typeConfig) return [];
-  return [...UNIVERSAL_GATES, ...SIZE_PRICE, ...typeConfig.items];
+  const spWhy = typeConfig.sizePriceWhy || {};
+  const sizePrice = SIZE_PRICE.map(item => (
+    spWhy[item.key] ? { ...item, why: spWhy[item.key] } : item
+  ));
+  return [...UNIVERSAL_GATES, ...sizePrice, ...typeConfig.items];
 }
 
 // Build the default client_weights object for a property type — every item at

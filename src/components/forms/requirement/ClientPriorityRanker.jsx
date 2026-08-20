@@ -57,6 +57,7 @@ function LevelButtons({ itemKey, value, defaultLevel, onChange, compact }) {
 // reveals the individual amenities beneath it.
 function RankerRow({ item, weights, onChange }) {
   const [open, setOpen] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
 
   if (item.default === 'locked') {
     return (
@@ -79,8 +80,21 @@ function RankerRow({ item, weights, onChange }) {
   return (
     <div style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.9)' }}>
-          {item.label}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.9)' }}>
+            {item.label}
+          </span>
+          {item.why && (
+            <button type="button" onClick={() => setShowWhy(w => !w)} aria-label="Why we weight this"
+              style={{ width: '17px', height: '17px', borderRadius: '999px', flexShrink: 0,
+                border: `1px solid ${showWhy ? ACCENT : 'rgba(255,255,255,0.35)'}`,
+                background: showWhy ? `${ACCENT}22` : 'transparent',
+                color: showWhy ? ACCENT : 'rgba(255,255,255,0.55)',
+                fontFamily: "'Georgia', serif", fontSize: '11px', fontStyle: 'italic', fontWeight: 700,
+                lineHeight: 1, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              i
+            </button>
+          )}
         </div>
         {item.expandable && (
           <button type="button" onClick={() => setOpen(o => !o)}
@@ -91,6 +105,15 @@ function RankerRow({ item, weights, onChange }) {
           </button>
         )}
       </div>
+
+      {item.why && showWhy && (
+        <div style={{ marginBottom: '10px', padding: '10px 12px', borderRadius: '8px',
+          background: 'rgba(0,219,197,0.06)', border: `1px solid ${ACCENT}22` }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.5 }}>
+            {item.why}
+          </p>
+        </div>
+      )}
 
       <LevelButtons itemKey={item.key} value={weights?.[item.key]} defaultLevel={item.default} onChange={onChange} />
 
