@@ -946,70 +946,125 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
 // ─── Match Group Card ─────────────────────────────────────────────────────────
 function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
   const [previewIdx,setPreviewIdx]=useState(0);
+  const [hov,setHov]=useState(false);
   const myIsListing=myPost.postType==='listing', myColor=myIsListing?ACCENT:LAVENDER;
-  const best=matches[previewIdx], scoreColor=getScoreColor(best.totalScore), label=getScoreLabel(best.totalScore);
-  const matchPost=myIsListing?best.requirement:best.listing;
-  const sz=44,r=18,circ=2*Math.PI*r,dash=(best.totalScore/100)*circ;
-  const strong=matches.filter(m=>m.totalScore>=70).length;
-  const good=matches.filter(m=>m.totalScore>=50&&m.totalScore<70).length;
-  const fair=matches.filter(m=>m.totalScore<50).length;
+  const best=matches[previewIdx], scoreColor=getScoreColor(best.totalScore);
+
+  // Pull the hero photo off MY post (this is the card for the agent's own listing/requirement).
+  const myPd = parseDetails(myPost);
+  const heroPhoto = (() => {
+    const toArr = (v) => {
+      if (Array.isArray(v) && v.length) return v;
+      if (typeof v === 'string') { try { const p = JSON.parse(v); if (Array.isArray(p) && p.length) return p; } catch {} }
+      return null;
+    };
+    const fromPd = toArr(myPd?.photo_urls);
+    if (fromPd) return fromPd[0];
+    if (myPd?.photo_url) return myPd.photo_url;
+    if (myPost.photo_url) return myPost.photo_url;
+    return null;
+  })();
+
+  // Residential types show bed/bath; commercial types don't.
+  const RESIDENTIAL = ['single_family','condo','apartment','multi_family','multi_family_5','townhouse','manufactured','land_residential'];
+  const isResidential = RESIDENTIAL.includes(myPost.property_type);
+  const beds = myPd?.bedrooms ?? myPd?.beds;
+  const baths = myPd?.bathrooms ?? myPd?.baths;
+  const sqft = myPost.size_sqft ? `${parseFloat(myPost.size_sqft).toLocaleString()} SF` : null;
+  const ptLabel = PT[myPost.property_type] || myPost.property_type;
+  const priceLine = priceStr(myPost, myIsListing);
+  const addressLine = myIsListing
+    ? [myPost.address, myPost.city, myPost.state].filter(Boolean).join(', ')
+    : (myPost.cities?.join(', ') || '');
+
+  // Build the middle detail line (residential: bed/bath/sqft/type, commercial: sqft/type)
+  const detailBits = isResidential
+    ? [beds!=null?`${beds} bd`:null, baths!=null?`${baths} ba`:null, sqft, ptLabel].filter(Boolean)
+    : [sqft, ptLabel].filter(Boolean);
+
+  const sz=52,r=22,circ=2*Math.PI*r,dash=(best.totalScore/100)*circ;
 
   return(
-    <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'20px', transition:'all 0.2s', position:'relative' }}
-      onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.06)';e.currentTarget.style.borderColor=`${myColor}35`;}}
-      onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.08)';}}>
+    <div
+      onClick={()=>onOpen(myPost,best,previewIdx)}
+      onMouseEnter={()=>setHov(true)}
+      onMouseLeave={()=>setHov(false)}
+      style={{
+        display:'flex', height:'190px', borderRadius:'14px', overflow:'hidden', cursor:'pointer',
+        background:'rgba(255,255,255,0.04)',
+        border:`2px solid ${hov?scoreColor:scoreColor+'55'}`,
+        boxShadow:hov?`0 0 22px ${scoreColor}40`:`0 0 10px ${scoreColor}18`,
+        transition:'all 0.2s', position:'relative'
+      }}>
 
-      {/* THEIR POST (on top) - score circle + preview navigation */}
-      <div style={{ marginBottom:'14px' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'8px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'5px' }}><div style={{ width:'6px',height:'6px',borderRadius:'50%',background:myIsListing?LAVENDER:ACCENT }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:'rgba(255,255,255,0.35)' }}>Their {myIsListing?'Requirement':'Listing'}</span></div>
-          {matches.length>1&&(<div style={{ display:'flex',alignItems:'center',gap:'4px' }}>
-            <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i-1+matches.length)%matches.length);}} style={{ background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'5px',padding:'3px 5px',cursor:'pointer',display:'flex' }}><ChevronLeft style={{width:'12px',height:'12px',color:'rgba(255,255,255,0.5)'}}/></button>
-            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.3)',minWidth:'32px',textAlign:'center' }}>{previewIdx+1}/{matches.length}</span>
-            <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i+1)%matches.length);}} style={{ background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'5px',padding:'3px 5px',cursor:'pointer',display:'flex' }}><ChevronRight style={{width:'12px',height:'12px',color:'rgba(255,255,255,0.5)'}}/></button>
-          </div>)}
+      {/* LEFT 80%: hero photo (top 2/3) + details (bottom 1/3) */}
+      <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0 }}>
+
+        {/* Hero photo — top two-thirds */}
+        <div style={{ flex:'2 1 0', position:'relative', background:'#0E1318', overflow:'hidden' }}>
+          {heroPhoto
+            ? <img src={heroPhoto} alt={myPost.title} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+            : <div style={{ width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center' }}>
+                <Image style={{ width:'32px',height:'32px',color:'rgba(255,255,255,0.15)' }}/>
+              </div>}
+          {/* "Someone is looking" tag + your-post label on the photo */}
+          <div style={{ position:'absolute',top:'10px',left:'10px',display:'flex',gap:'6px',alignItems:'center' }}>
+            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,color:'#0E1318',background:myColor,borderRadius:'20px',padding:'3px 9px',boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
+              Your {myIsListing?'Listing':'Requirement'}
+            </span>
+            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'white',background:'rgba(0,0,0,0.55)',backdropFilter:'blur(4px)',borderRadius:'20px',padding:'3px 9px' }}>
+              Someone is looking
+            </span>
+          </div>
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-          <div style={{ position:'relative',width:sz,height:sz,flexShrink:0 }}>
-            <svg width={sz} height={sz} style={{transform:'rotate(-90deg)'}}><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="4"/><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={scoreColor} strokeWidth="4" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/></svg>
-            <div style={{ position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center' }}><span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'11px',fontWeight:700,color:scoreColor }}>{best.totalScore}</span></div>
-          </div>
-          <div style={{ flex:1,minWidth:0 }}>
-            <p style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',fontWeight:500,color:'white',margin:'0 0 2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{matchPost.title}</p>
-            <div style={{ display:'flex',alignItems:'center',gap:'6px' }}>
-              <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)' }}>{priceStr(matchPost,!myIsListing)}</span>
-              {label&&<span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,color:scoreColor,background:`${scoreColor}12`,border:`1px solid ${scoreColor}30`,borderRadius:'20px',padding:'2px 8px' }}>{label}</span>}
-            </div>
-          </div>
+
+        {/* Details — bottom third */}
+        <div style={{ flex:'1 1 0', padding:'8px 14px', display:'flex', flexDirection:'column', justifyContent:'center', gap:'2px', background:'rgba(255,255,255,0.02)' }}>
+          {priceLine && <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'15px',fontWeight:700,color:'white',lineHeight:1.1 }}>{priceLine}</div>}
+          {detailBits.length>0 && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.6)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{detailBits.join(' \u00b7 ')}</div>}
+          {addressLine && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.4)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{addressLine}</div>}
         </div>
       </div>
-      <div style={{ height:'1px',background:'rgba(255,255,255,0.06)',margin:'0 0 14px' }}/>
-      {/* YOUR POST (below) - match count badge */}
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'12px', marginBottom:'14px' }}>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'3px' }}><div style={{ width:'6px',height:'6px',borderRadius:'50%',background:myColor }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:myColor }}>Your {myIsListing?'Listing':'Requirement'}</span></div>
-          <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'15px',fontWeight:500,color:'white',margin:'0 0 2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{myPost.title}</h3>
-          <p style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:0 }}>{priceStr(myPost,myIsListing)}{myIsListing&&myPost.size_sqft?` · ${parseFloat(myPost.size_sqft).toLocaleString()} SF`:''}{myPost.city?` · ${myPost.city}`:''}</p>
-        </div>
-        <div style={{ display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'5px',flexShrink:0 }}>
-          <div style={{ display:'flex',alignItems:'center',gap:'5px',padding:'4px 10px',background:`${myColor}10`,border:`1px solid ${myColor}25`,borderRadius:'20px' }}>
-            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:700,color:myColor }}>{matches.length}</span>
-            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.35)' }}>{matches.length===1?'match':'matches'}</span>
+
+      {/* RIGHT 20%: score + See More + arrow */}
+      <div style={{
+        width:'20%', minWidth:'96px', maxWidth:'140px', flexShrink:0,
+        display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'8px',
+        padding:'12px 8px', background:`${scoreColor}0E`, borderLeft:`1px solid ${scoreColor}30`
+      }}>
+        {/* Score circle */}
+        <div style={{ position:'relative',width:sz,height:sz }}>
+          <svg width={sz} height={sz} style={{transform:'rotate(-90deg)'}}>
+            <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="4"/>
+            <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={scoreColor} strokeWidth="4" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
+          </svg>
+          <div style={{ position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center' }}>
+            <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'15px',fontWeight:700,color:scoreColor }}>{best.totalScore}</span>
           </div>
-          {matches.length > 1 && (
-            <div style={{ display:'flex',alignItems:'center',gap:'7px' }}>
-              {strong>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:ACCENT,boxShadow:`0 0 5px ${ACCENT}80` }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:ACCENT }}>{strong}</span></div>}
-              {good>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:'#F59E0B' }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'#F59E0B' }}>{good}</span></div>}
-              {fair>0&&<div style={{ display:'flex',alignItems:'center',gap:'3px' }}><div style={{ width:'7px',height:'7px',borderRadius:'50%',background:'rgba(255,255,255,0.25)' }}/><span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'rgba(255,255,255,0.4)' }}>{fair}</span></div>}
-            </div>
-          )}
         </div>
+
+        {/* See More + arrow */}
+        <div style={{ display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1.15 }}>
+          <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',fontWeight:600,color:scoreColor }}>See</span>
+          <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',fontWeight:600,color:scoreColor }}>More</span>
+          <ChevronLeft style={{ width:'18px',height:'18px',color:scoreColor,marginTop:'2px' }}/>
+        </div>
+
+        {/* Multiple matches indicator */}
+        {matches.length>1 && (
+          <div style={{ display:'flex',alignItems:'center',gap:'4px',marginTop:'2px' }}>
+            <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i-1+matches.length)%matches.length);}}
+              style={{ background:'rgba(255,255,255,0.08)',border:'none',borderRadius:'4px',padding:'2px',cursor:'pointer',display:'flex' }}>
+              <ChevronLeft style={{width:'11px',height:'11px',color:'rgba(255,255,255,0.6)'}}/>
+            </button>
+            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'rgba(255,255,255,0.5)' }}>{previewIdx+1}/{matches.length}</span>
+            <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i+1)%matches.length);}}
+              style={{ background:'rgba(255,255,255,0.08)',border:'none',borderRadius:'4px',padding:'2px',cursor:'pointer',display:'flex' }}>
+              <ChevronRight style={{width:'11px',height:'11px',color:'rgba(255,255,255,0.6)'}}/>
+            </button>
+          </div>
+        )}
       </div>
-      <button onClick={()=>onOpen(myPost,best,previewIdx)} style={{ width:'100%',padding:'10px',background:`${myColor}10`,border:`1px solid ${myColor}25`,borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:500,color:myColor,cursor:'pointer',transition:'all 0.15s' }}
-        onMouseEnter={e=>{e.currentTarget.style.background=`${myColor}20`;e.currentTarget.style.borderColor=`${myColor}50`;}}
-        onMouseLeave={e=>{e.currentTarget.style.background=`${myColor}10`;e.currentTarget.style.borderColor=`${myColor}25`;}}>
-        View Full Match Details
-      </button>
     </div>
   );
 }
