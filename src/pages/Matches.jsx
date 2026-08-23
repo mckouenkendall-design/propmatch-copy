@@ -1104,7 +1104,7 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
         <div style={{ display:'flex', gap:'3px', height:'260px', position:'relative' }}>
           {/* Hero photo left */}
           <div style={{ flex:'1.6 1 0', position:'relative', overflow:'hidden' }}>
-            {hero ? <img src={hero} alt={myPost.title} style={{ width:'100%',height:'100%',objectFit:'contain',display:'block',background:'#0E1318' }}/> : photoPlaceholder}
+            {hero ? <img src={hero} alt={myPost.title} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/> : photoPlaceholder}
             {/* Score badge floating top-right of hero */}
             <div style={{ position:'absolute', top:'12px', right:'12px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px',
               background:'rgba(14,19,24,0.82)', backdropFilter:'blur(6px)', borderRadius:'14px', padding:'8px 12px', border:`1.5px solid ${scoreColor}`, boxShadow:`0 0 16px ${scoreColor}55` }}>
@@ -1116,7 +1116,7 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
           <div style={{ flex:'1 1 0', display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'1fr 1fr', gap:'3px' }}>
             {[0,1,2,3].map(i=>(
               <div key={i} style={{ position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                {grid[i] ? <img src={grid[i]} alt={`Photo ${i+2}`} style={{ width:'100%',height:'100%',objectFit:'contain',display:'block',background:'#0E1318' }}/> : photoPlaceholder}
+                {grid[i] ? <img src={grid[i]} alt={`Photo ${i+2}`} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/> : photoPlaceholder}
               </div>
             ))}
           </div>
