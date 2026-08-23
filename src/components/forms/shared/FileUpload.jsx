@@ -34,6 +34,15 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
     return details[field] ? [details[field]] : [];
   }, [details, field, isPhotos]);
 
+  // Always read current photos fresh from details to avoid stale closure issues
+  // in async callbacks. Never use the memoized `urls` inside async functions.
+  const getCurrentPhotos = () => {
+    const arr = details['photo_urls'];
+    if (Array.isArray(arr) && arr.length) return arr;
+    if (details['photo_url']) return [details['photo_url']];
+    return [];
+  };
+
   // Save a new ordered photo array and keep photo_url mirrored to the first.
   const savePhotos = (next) => {
     setDetail('photo_urls', next);
@@ -41,22 +50,19 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
   };
 
   const uploadFiles = async (files) => {
-    const fileArr = Array.isArray(files) ? files : Array.from(files || []);
-    console.log('uploadFiles called with', fileArr.length, 'files');
-    if (fileArr.length === 0) return;
+    if (!files || files.length === 0) return;
     setUploading(true);
     setError('');
     try {
       // Upload resiliently: one failure shouldn't drop the whole batch.
       const results = await Promise.allSettled(
-        fileArr.map(file => uploadFile(file).then(r => r.file_url))
+        Array.from(files).map(file => uploadFile(file).then(r => r.file_url))
       );
-      console.log('allSettled results:', results);
       const ok = results.filter(r => r.status === 'fulfilled').map(r => r.value);
       const failed = results.length - ok.length;
 
       if (isPhotos) {
-        if (ok.length) savePhotos([...urls, ...ok]);
+        if (ok.length) savePhotos([...getCurrentPhotos(), ...ok]);
       } else if (ok.length) {
         setDetail(field, ok[0]);
       }
@@ -95,7 +101,7 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
   const handleDrop = (e) => {
     e.preventDefault(); e.stopPropagation();
     setDragOver(false);
-    if (e.dataTransfer.files?.length) uploadFiles(Array.from(e.dataTransfer.files));
+    if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files);
   };
   const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); };
   const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); };
@@ -117,12 +123,7 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
           transition: 'all 0.15s', background: dragOver ? `${ACCENT}08` : 'rgba(255,255,255,0.03)',
         }}>
         <input ref={ref} type="file" accept={accept} multiple={isPhotos} className="hidden"
-          onChange={e => {
-            const files = Array.from(e.target.files || []);
-            console.log('FileUpload onChange fired, files:', files.length, files.map(f => f.name));
-            e.target.value = '';
-            if (files.length) uploadFiles(files);
-          }} />
+          onChange={e => { uploadFiles(e.target.files); e.target.value = ''; }} />
         {uploading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <Loader2 style={{ width: '16px', height: '16px', color: ACCENT }} className="animate-spin" />
