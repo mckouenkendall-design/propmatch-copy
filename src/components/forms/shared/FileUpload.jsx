@@ -41,32 +41,26 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
   };
 
   const uploadFiles = async (files) => {
-    if (!files || files.length === 0) return;
+    const fileArr = Array.isArray(files) ? files : Array.from(files || []);
+    if (fileArr.length === 0) return;
     setUploading(true);
     setError('');
     try {
       // Upload resiliently: one failure shouldn't drop the whole batch.
       const results = await Promise.allSettled(
-        Array.from(files).map(file => uploadFile(file).then(r => r.file_url))
+        fileArr.map(file => uploadFile(file).then(r => r.file_url))
       );
       const ok = results.filter(r => r.status === 'fulfilled').map(r => r.value);
-      const failures = results.filter(r => r.status === 'rejected');
+      const failed = results.length - ok.length;
 
       if (isPhotos) {
         if (ok.length) savePhotos([...urls, ...ok]);
       } else if (ok.length) {
         setDetail(field, ok[0]);
       }
-
-      if (failures.length > 0) {
-        // Surface the actual error so we can diagnose bucket/policy issues.
-        const firstMsg = failures[0]?.reason?.message || failures[0]?.reason || 'Unknown error';
-        console.error('Upload failures:', failures.map(f => f.reason));
-        setError(`${failures.length} file${failures.length > 1 ? 's' : ''} failed: ${firstMsg}`);
-      }
-    } catch (err) {
-      console.error('Upload error:', err);
-      setError(`Upload failed: ${err?.message || String(err)}`);
+      if (failed > 0) setError(`${failed} file${failed > 1 ? 's' : ''} failed to upload. Please try again.`);
+    } catch {
+      setError('Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -99,7 +93,7 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
   const handleDrop = (e) => {
     e.preventDefault(); e.stopPropagation();
     setDragOver(false);
-    if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files);
+    if (e.dataTransfer.files?.length) uploadFiles(Array.from(e.dataTransfer.files));
   };
   const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); };
   const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); };
@@ -121,7 +115,14 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
           transition: 'all 0.15s', background: dragOver ? `${ACCENT}08` : 'rgba(255,255,255,0.03)',
         }}>
         <input ref={ref} type="file" accept={accept} multiple={isPhotos} className="hidden"
-          onChange={e => { uploadFiles(e.target.files); e.target.value = ''; }} />
+          onChange={e => {
+            // Copy files to a plain array FIRST before clearing the input.
+            // Some browsers destroy the FileList when e.target.value is reset,
+            // so if we clear first the async uploadFiles gets an empty list.
+            const files = Array.from(e.target.files || []);
+            e.target.value = '';
+            if (files.length) uploadFiles(files);
+          }} />
         {uploading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <Loader2 style={{ width: '16px', height: '16px', color: ACCENT }} className="animate-spin" />
