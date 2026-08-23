@@ -51,6 +51,7 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
       const results = await Promise.allSettled(
         fileArr.map(file => uploadFile(file).then(r => r.file_url))
       );
+      console.log('allSettled results:', results);
       const ok = results.filter(r => r.status === 'fulfilled').map(r => r.value);
       const failed = results.length - ok.length;
 
