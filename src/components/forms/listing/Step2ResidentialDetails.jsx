@@ -89,7 +89,15 @@ function BedsAndBaths({ details, setDetail }) {
   );
 }
 
-// ── SALE TYPE SELECTOR (Residential) ─────────────────────────────────────────
+// ── Single Family ────────────────────────────────────────────────────────────
+const ARCH_STYLES = ['Colonial','Ranch','Cape Cod','Craftsman','Modern','Tudor','Split Level','Contemporary','Victorian','Mediterranean'];
+const SF_FEATURES = [
+  { key: 'pool', label: 'Pool' }, { key: 'hot_tub', label: 'Hot Tub / Spa' }, { key: 'deck', label: 'Deck / Patio' },
+  { key: 'fence', label: 'Fenced Yard' }, { key: 'fireplace', label: 'Fireplace' }, { key: 'ac', label: 'Central A/C' },
+  { key: 'generator', label: 'Generator' }, { key: 'solar', label: 'Solar Panels' }, { key: 'sprinklers', label: 'Irrigation / Sprinklers' },
+  { key: 'mudroom', label: 'Mudroom' }, { key: 'bonus_room', label: 'Bonus Room / Loft' }, { key: 'home_office', label: 'Dedicated Home Office' },
+];
+
 function SingleFamilyDetails({ details, setDetail }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   const features = details.features || [];
