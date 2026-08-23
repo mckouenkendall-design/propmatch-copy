@@ -1,11 +1,11 @@
-import { supabase, uploadFile } from '@/api/supabaseClient';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
-import { ArrowRight, Upload, FileText, X } from 'lucide-react';
+import { ArrowRight, X } from 'lucide-react';
+import FileUpload from '@/components/forms/shared/FileUpload';
 
 const ACCENT = '#00DBC5';
 
@@ -81,122 +81,6 @@ function SectionTitle({ children }) {
   );
 }
 
-function FileUpload({ label, accept, field, details, setDetail, hint }) {
-  const ref = useRef();
-  const [uploading, setUploading] = React.useState(false);
-  const [dragOver, setDragOver] = React.useState(false);
-
-  // Support both old single photo_url and new photo_urls array
-  const urls = React.useMemo(() => {
-    if (field === 'photo_url') {
-      const arr = details['photo_urls'];
-      if (Array.isArray(arr) && arr.length) return arr;
-      if (details['photo_url']) return [details['photo_url']];
-      return [];
-    }
-    return details[field] ? [details[field]] : [];
-  }, [details, field]);
-
-  const uploadFiles = async (files) => {
-    if (!files || files.length === 0) return;
-    setUploading(true);
-    try {
-      const uploaded = await Promise.all(
-        Array.from(files).map(file => uploadFile(file).then(r => r.file_url))
-      );
-      if (field === 'photo_url') {
-        const combined = [...urls, ...uploaded];
-        setDetail('photo_urls', combined);
-        setDetail('photo_url', combined[0]); // keep first for backwards compat
-      } else {
-        setDetail(field, uploaded[0]);
-      }
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removePhoto = (idx) => {
-    const next = urls.filter((_, i) => i !== idx);
-    setDetail('photo_urls', next);
-    setDetail('photo_url', next[0] || '');
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(false);
-    if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(false);
-  };
-
-  return (
-    <Field label={label} hint={hint}>
-      {/* Drop zone */}
-      <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onClick={() => ref.current.click()}
-        style={{
-          border: `2px dashed ${dragOver ? ACCENT : urls.length ? ACCENT + '80' : 'rgba(255,255,255,0.2)'}`,
-          borderRadius: '12px',
-          padding: '20px',
-          textAlign: 'center',
-          cursor: 'pointer',
-          transition: 'all 0.15s',
-          background: dragOver ? `${ACCENT}08` : 'rgba(255,255,255,0.03)',
-        }}>
-        <input ref={ref} type="file" accept={accept} multiple className="hidden"
-          onChange={e => uploadFiles(e.target.files)} />
-        {uploading ? (
-          <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Uploading…</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-            <Upload style={{ width: '20px', height: '20px', color: 'rgba(255,255,255,0.3)' }} />
-            <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>
-              {urls.length ? 'Add more photos' : 'Click or drag & drop photos here'}
-            </p>
-            <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>
-              Drop files directly into this box · Multiple photos supported
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Photo thumbnails */}
-      {urls.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
-          {urls.map((url, idx) => (
-            <div key={idx} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)', flexShrink: 0 }}>
-              <img src={url} alt={`Photo ${idx+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              <button
-                type="button"
-                onClick={e => { e.stopPropagation(); removePhoto(idx); }}
-                style={{ position: 'absolute', top: '3px', right: '3px', width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X style={{ width: '10px', height: '10px', color: 'white' }} />
-              </button>
-              {idx === 0 && (
-                <div style={{ position: 'absolute', bottom: '3px', left: '3px', fontFamily: "'Inter',sans-serif", fontSize: '9px', fontWeight: 700, color: 'white', background: `${ACCENT}cc`, borderRadius: '3px', padding: '1px 4px' }}>MAIN</div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </Field>
-  );
-}
 
 function TagsInput({ value = [], onChange }) {
   const [input, setInput] = React.useState('');

@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
 import { ArrowRight, X } from 'lucide-react';
+import FileUpload from '@/components/forms/shared/FileUpload';
 
 const ACCENT = '#00DBC5';
 
@@ -567,6 +568,13 @@ export default function ListStep2Residential({ data, update, onNext }) {
       {type === 'townhouse'        && <TownhouseDetails        details={details} setDetail={setDetail} />}
       {type === 'manufactured'     && <ManufacturedDetails     details={details} setDetail={setDetail} />}
       {type === 'land_residential' && <ResidentialLandDetails  details={details} setDetail={setDetail} />}
+
+      {/* Photos + brochure — shown for every residential type */}
+      <SectionTitle>Photos &amp; Brochure</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="First photo is the main one shown on your match card" />
+        <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Optional PDF brochure" />
+      </div>
 
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: ACCENT }}>

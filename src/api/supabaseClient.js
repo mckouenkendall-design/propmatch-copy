@@ -82,7 +82,10 @@ export const supabase = new Proxy(supabaseClient, {
 export const rawSupabase = supabaseClient
 
 export const uploadFile = async (file) => {
-  const fileName = `${Date.now()}-${file.name}`
+  // Unique suffix prevents collisions when several files upload at once (same-ms Date.now()).
+  const rand = Math.random().toString(36).slice(2, 10)
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const fileName = `${Date.now()}-${rand}-${safeName}`
   const { error } = await supabase.storage
     .from('uploads')
     .upload(fileName, file, { cacheControl: '3600', upsert: false })

@@ -585,32 +585,36 @@ function BigScoreCircle({ score }) {
 }
 
 // ─── Animated Big Score (reveal) ────────────────────────────────────────────
-// Sweeps the arc from 0 to the score and counts the number up over ~1s, then
-// locks in with a glow pulse. Used in the match reveal sequence.
-function AnimatedBigScore({ score, run }) {
+// Counts the number up from 0 and sweeps the arc, starting the instant the
+// component mounts (no gating delay), then locks in with a one-time glow pulse.
+// `runKey` changes when the match changes, which restarts the animation.
+function AnimatedBigScore({ score, runKey }) {
   const color = getScoreColor(score), label = getScoreLabel(score);
   const sz=120, r=48, circ=2*Math.PI*r;
+  const target = Math.max(0, Math.min(100, Math.round(score || 0)));
   const [display,setDisplay]=useState(0);
   const [locked,setLocked]=useState(false);
 
   useEffect(()=>{
-    if(!run) return;
+    // Restart cleanly every time the modal opens or the match changes.
     setDisplay(0); setLocked(false);
-    const dur=1000, t0=performance.now();
-    let raf;
+    if (target <= 0) { setLocked(true); return; }
+    const dur=1400;
+    let raf, t0;
     const tick=(now)=>{
-      const p=Math.min(1,(now-t0)/dur);
-      const eased=1-Math.pow(1-p,3);
-      setDisplay(Math.round(eased*score));
-      if(p<1){ raf=requestAnimationFrame(tick); }
-      else { setDisplay(score); setLocked(true); }
+      if (t0 === undefined) t0 = now;   // anchor on first frame → no negative/jump
+      const p = Math.min(1, (now - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);   // easeOutCubic
+      setDisplay(Math.max(0, Math.round(eased * target)));
+      if (p < 1) { raf = requestAnimationFrame(tick); }
+      else { setDisplay(target); setLocked(true); }
     };
-    raf=requestAnimationFrame(tick);
-    return ()=>cancelAnimationFrame(raf);
-  },[run,score]);
+    raf = requestAnimationFrame(tick);
+    return ()=>{ if (raf) cancelAnimationFrame(raf); };
+  },[runKey,target]);
 
   const dash=(display/100)*circ;
-  const uid=`asg${score}`;
+  const uid=`asg${target}`;
   return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'12px' }}>
       <style>{`
@@ -625,7 +629,7 @@ function AnimatedBigScore({ score, run }) {
         <svg width={sz} height={sz} className={locked?`${uid}locked`:''} style={{ transform:'rotate(-90deg)' }}>
           <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="11"/>
           <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth="11"
-            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
+            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" style={{ transition:'stroke-dasharray 0.05s linear' }}/>
         </svg>
         <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
           <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:700, color, lineHeight:1 }}>{display}</span>
@@ -900,18 +904,19 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
   const [showShare,setShowShare]=useState(false),[showPDFOptions,setShowPDFOptions]=useState(false),[viewingAgent,setViewingAgent]=useState(null);
 
   // ── Match reveal sequence (total 3.72s) ──
-  // stage 0: modal in, hero photo only (0 - 0.5s)
-  // stage 1: score sweeps 0->value + counts up, locks with glow (0.5 - 1.5s)
-  // stage 2: details panel (both posts) rises up (1.5 - 2.2s)
-  // stage 3: range bars + agent block fade/stagger in (2.2 - 3.72s)
-  // stage 4: fully settled, static
+  // The score counter starts immediately on open (handled inside AnimatedBigScore,
+  // ~1.4s count-up). These stages layer the rest in underneath it:
+  // stage 1: details panel (both posts) rises up (1.5s)
+  // stage 2: range bars fade in (2.4s)
+  // stage 3: agent contact block fades in (3.0s)
+  // stage 4: fully settled, static (3.72s)
   const [stage,setStage]=useState(0);
   useEffect(()=>{
     setStage(0);
     const timers=[
-      setTimeout(()=>setStage(1),500),
-      setTimeout(()=>setStage(2),1500),
-      setTimeout(()=>setStage(3),2200),
+      setTimeout(()=>setStage(1),1500),
+      setTimeout(()=>setStage(2),2400),
+      setTimeout(()=>setStage(3),3000),
       setTimeout(()=>setStage(4),3720),
     ];
     return ()=>timers.forEach(clearTimeout);
@@ -964,17 +969,17 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
         <div style={{ flex:1, overflowY:'auto' }}>
           {tab==='analysis'&&(
             <div style={{ padding:'28px 32px' }}>
-              <div style={{ display:'flex', justifyContent:'center', marginBottom:'32px' }}><AnimatedBigScore score={totalScore} run={stage>=1}/></div>
+              <div style={{ display:'flex', justifyContent:'center', marginBottom:'32px' }}><AnimatedBigScore score={totalScore} runKey={`${matchIndex}-${matchPost?.id}`}/></div>
               <div style={{
                 display:'flex', gap:'16px', marginBottom:'36px',
-                opacity:stage>=2?1:0, transform:stage>=2?'translateY(0)':'translateY(24px)',
+                opacity:stage>=1?1:0, transform:stage>=1?'translateY(0)':'translateY(24px)',
                 transition:'opacity 0.6s ease, transform 0.6s ease'
               }}>
                 <PostBlock post={myPost} isListing={myIsListing} label={myLabel} color={myColor} onViewPhotos={setLightboxPhoto}/>
                 <PostBlock post={matchPost} isListing={!myIsListing} label={theirLabel} color={theirColor} onViewPhotos={setLightboxPhoto}/>
               </div>
               {rangeBars.length>0&&(
-                <div style={{ marginBottom:'32px', opacity:stage>=3?1:0, transform:stage>=3?'translateY(0)':'translateY(20px)', transition:'opacity 0.6s ease 0.05s, transform 0.6s ease 0.05s' }}>
+                <div style={{ marginBottom:'32px', opacity:stage>=2?1:0, transform:stage>=2?'translateY(0)':'translateY(20px)', transition:'opacity 0.6s ease 0.05s, transform 0.6s ease 0.05s' }}>
                   <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.3)', margin:'0 0 20px' }}>How Your Listing Fits Their Requirements</p>
                   {rangeBars.map((bar,i)=><RangeBar key={i} value={bar.value} min={bar.min} max={bar.max} label={bar.label} score={bar.score} isMoney={bar.isMoney}/>)}
                 </div>
@@ -1099,7 +1104,7 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
         <div style={{ display:'flex', gap:'3px', height:'260px', position:'relative' }}>
           {/* Hero photo left */}
           <div style={{ flex:'1.6 1 0', position:'relative', overflow:'hidden' }}>
-            {hero ? <img src={hero} alt={myPost.title} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/> : photoPlaceholder}
+            {hero ? <img src={hero} alt={myPost.title} style={{ width:'100%',height:'100%',objectFit:'contain',display:'block',background:'#0E1318' }}/> : photoPlaceholder}
             {/* Score badge floating top-right of hero */}
             <div style={{ position:'absolute', top:'12px', right:'12px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px',
               background:'rgba(14,19,24,0.82)', backdropFilter:'blur(6px)', borderRadius:'14px', padding:'8px 12px', border:`1.5px solid ${scoreColor}`, boxShadow:`0 0 16px ${scoreColor}55` }}>
@@ -1111,7 +1116,7 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
           <div style={{ flex:'1 1 0', display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'1fr 1fr', gap:'3px' }}>
             {[0,1,2,3].map(i=>(
               <div key={i} style={{ position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                {grid[i] ? <img src={grid[i]} alt={`Photo ${i+2}`} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/> : photoPlaceholder}
+                {grid[i] ? <img src={grid[i]} alt={`Photo ${i+2}`} style={{ width:'100%',height:'100%',objectFit:'contain',display:'block',background:'#0E1318' }}/> : photoPlaceholder}
               </div>
             ))}
           </div>
