@@ -551,7 +551,9 @@ function ResidentialLandDetails({ details, setDetail }) {
 // ── MAIN EXPORT ──────────────────────────────────────────────────────────────
 export default function ListStep2Residential({ data, update, onNext }) {
   const details   = data.property_details || {};
-  const setDetail = (key, val) => update({ property_details: { ...details, [key]: val } });
+  const dataRef = React.useRef(data);
+  dataRef.current = data;
+  const setDetail = (key, val) => update({ property_details: { ...(dataRef.current.property_details || {}), [key]: val } });
   const type      = data.property_type;
 
   return (
@@ -572,7 +574,9 @@ export default function ListStep2Residential({ data, update, onNext }) {
       {/* Photos + brochure — shown for every residential type */}
       <SectionTitle>Photos &amp; Brochure</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="First photo is the main one shown on your match card" />
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail}
+          onSavePhotos={next => update({ property_details: { ...(dataRef.current.property_details || {}), photo_urls: next, photo_url: next[0] || '' } })}
+          hint="First photo is the main one shown on your match card" />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Optional PDF brochure" />
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -648,7 +648,11 @@ function SpecialUseDetails({ details, setDetail }) {
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function ListStep2Commercial({ data, update, onNext }) {
   const details = data.property_details || {};
-  const setDetail = (key, val) => update({ property_details: { ...details, [key]: val } });
+  // Use a ref so setDetail always reads the freshest property_details, even
+  // inside async callbacks that closed over an old render's snapshot.
+  const dataRef = React.useRef(data);
+  dataRef.current = data;
+  const setDetail = (key, val) => update({ property_details: { ...(dataRef.current.property_details || {}), [key]: val } });
   const type = data.property_type;
 
   // Commercial sales show the normal detail form plus an Investment Financials
@@ -670,6 +674,14 @@ export default function ListStep2Commercial({ data, update, onNext }) {
       {type === 'special_use' && <SpecialUseDetails details={details} setDetail={setDetail} />}
 
       {showFinancials && <InvestmentFinancials type={type} details={details} setDetail={setDetail} />}
+
+      <SectionTitle>Photos &amp; Brochure</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail}
+          onSavePhotos={next => update({ property_details: { ...(dataRef.current.property_details || {}), photo_urls: next, photo_url: next[0] || '' } })}
+          hint="First photo is the main one shown on your match card" />
+        <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
+      </div>
 
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: ACCENT }}>

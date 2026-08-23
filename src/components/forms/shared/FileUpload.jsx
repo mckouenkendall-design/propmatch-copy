@@ -15,7 +15,7 @@ const ACCENT = '#00DBC5';
 // Multi-photo mode adds an inline "Arrange Photos" panel: tap to reveal
 // per-photo left/right controls plus a "Make main" action. First photo is
 // always the hero on the match card.
-export default function FileUpload({ label, accept, field, details, setDetail, hint }) {
+export default function FileUpload({ label, accept, field, details, setDetail, onSavePhotos, hint }) {
   const ref = useRef();
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -34,8 +34,20 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
     return details[field] ? [details[field]] : [];
   }, [details, field, isPhotos]);
 
-  // Always read current photos fresh from details to avoid stale closure issues
-  // in async callbacks. Never use the memoized `urls` inside async functions.
+  // Save photos atomically — both photo_urls and photo_url in one update call.
+  // If parent passes onSavePhotos, use that for a true single-update. Otherwise
+  // fall back to two setDetail calls (risks stale closure but works for simple cases).
+  const savePhotos = (next) => {
+    if (onSavePhotos) {
+      onSavePhotos(next);
+    } else {
+      setDetail('photo_urls', next);
+      setDetail('photo_url', next[0] || '');
+    }
+  };
+
+  // Get the current photo list fresh from props (not from memoized urls)
+  // so async callbacks always see the latest state.
   const getCurrentPhotos = () => {
     const arr = details['photo_urls'];
     if (Array.isArray(arr) && arr.length) return arr;
@@ -43,32 +55,37 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
     return [];
   };
 
-  // Save a new ordered photo array and keep photo_url mirrored to the first.
-  const savePhotos = (next) => {
-    setDetail('photo_urls', next);
-    setDetail('photo_url', next[0] || '');
-  };
-
   const uploadFiles = async (files) => {
-    if (!files || files.length === 0) return;
+    const fileArr = Array.isArray(files) ? files : Array.from(files || []);
+    if (fileArr.length === 0) return;
     setUploading(true);
     setError('');
     try {
-      // Upload resiliently: one failure shouldn't drop the whole batch.
       const results = await Promise.allSettled(
-        Array.from(files).map(file => uploadFile(file).then(r => r.file_url))
+        fileArr.map(file => uploadFile(file).then(r => r.file_url))
       );
       const ok = results.filter(r => r.status === 'fulfilled').map(r => r.value);
-      const failed = results.length - ok.length;
+      const failures = results.filter(r => r.status === 'rejected');
 
       if (isPhotos) {
-        if (ok.length) savePhotos([...getCurrentPhotos(), ...ok]);
+        if (ok.length) {
+          const current = getCurrentPhotos();
+          console.log('current photos at save time:', current);
+          console.log('new URLs to add:', ok);
+          savePhotos([...current, ...ok]);
+        }
       } else if (ok.length) {
         setDetail(field, ok[0]);
       }
-      if (failed > 0) setError(`${failed} file${failed > 1 ? 's' : ''} failed to upload. Please try again.`);
-    } catch {
-      setError('Upload failed. Please try again.');
+
+      if (failures.length > 0) {
+        const firstMsg = failures[0]?.reason?.message || String(failures[0]?.reason) || 'Unknown error';
+        console.error('Upload failures:', failures);
+        setError(`${failures.length} file${failures.length > 1 ? 's' : ''} failed: ${firstMsg}`);
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      setError(`Upload failed: ${err?.message || String(err)}`);
     } finally {
       setUploading(false);
     }
