@@ -50,16 +50,23 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
         Array.from(files).map(file => uploadFile(file).then(r => r.file_url))
       );
       const ok = results.filter(r => r.status === 'fulfilled').map(r => r.value);
-      const failed = results.length - ok.length;
+      const failures = results.filter(r => r.status === 'rejected');
 
       if (isPhotos) {
         if (ok.length) savePhotos([...urls, ...ok]);
       } else if (ok.length) {
         setDetail(field, ok[0]);
       }
-      if (failed > 0) setError(`${failed} file${failed > 1 ? 's' : ''} failed to upload. Please try again.`);
-    } catch {
-      setError('Upload failed. Please try again.');
+
+      if (failures.length > 0) {
+        // Surface the actual error so we can diagnose bucket/policy issues.
+        const firstMsg = failures[0]?.reason?.message || failures[0]?.reason || 'Unknown error';
+        console.error('Upload failures:', failures.map(f => f.reason));
+        setError(`${failures.length} file${failures.length > 1 ? 's' : ''} failed: ${firstMsg}`);
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      setError(`Upload failed: ${err?.message || String(err)}`);
     } finally {
       setUploading(false);
     }
