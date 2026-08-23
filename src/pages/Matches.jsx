@@ -584,6 +584,65 @@ function BigScoreCircle({ score }) {
   );
 }
 
+// ─── Animated Big Score (reveal) ────────────────────────────────────────────
+// Sweeps the arc from 0 to the score and counts the number up over ~1s, then
+// locks in with a glow pulse. Used in the match reveal sequence.
+function AnimatedBigScore({ score, run }) {
+  const color = getScoreColor(score), label = getScoreLabel(score);
+  const sz=120, r=48, circ=2*Math.PI*r;
+  const [display,setDisplay]=useState(0);
+  const [locked,setLocked]=useState(false);
+
+  useEffect(()=>{
+    if(!run) return;
+    setDisplay(0); setLocked(false);
+    const dur=1000, t0=performance.now();
+    let raf;
+    const tick=(now)=>{
+      const p=Math.min(1,(now-t0)/dur);
+      const eased=1-Math.pow(1-p,3);
+      setDisplay(Math.round(eased*score));
+      if(p<1){ raf=requestAnimationFrame(tick); }
+      else { setDisplay(score); setLocked(true); }
+    };
+    raf=requestAnimationFrame(tick);
+    return ()=>cancelAnimationFrame(raf);
+  },[run,score]);
+
+  const dash=(display/100)*circ;
+  const uid=`asg${score}`;
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'12px' }}>
+      <style>{`
+        @keyframes ${uid}pulse{
+          0%{filter:drop-shadow(0 0 6px ${color}70) drop-shadow(0 0 18px ${color}40)}
+          50%{filter:drop-shadow(0 0 16px ${color}b0) drop-shadow(0 0 40px ${color}70)}
+          100%{filter:drop-shadow(0 0 6px ${color}70) drop-shadow(0 0 18px ${color}40)}
+        }
+        .${uid}locked{animation:${uid}pulse 1.2s ease-in-out}
+      `}</style>
+      <div style={{ position:'relative', width:sz, height:sz }}>
+        <svg width={sz} height={sz} className={locked?`${uid}locked`:''} style={{ transform:'rotate(-90deg)' }}>
+          <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="11"/>
+          <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth="11"
+            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
+        </svg>
+        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+          <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:700, color, lineHeight:1 }}>{display}</span>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', color:'rgba(255,255,255,0.28)', letterSpacing:'0.09em', marginTop:'3px' }}>MATCH</span>
+        </div>
+      </div>
+      <span style={{
+        fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em',
+        color, background:`${color}15`, border:`1px solid ${color}35`, borderRadius:'30px', padding:'5px 18px',
+        boxShadow:`0 0 18px ${color}35`, opacity:locked?1:0, transition:'opacity 0.4s'
+      }}>
+        {label||'\u00a0'}
+      </span>
+    </div>
+  );
+}
+
 // ─── Range Bar ────────────────────────────────────────────────────────────────
 function RangeBar({ value, min, max, label, score, isMoney }) {
   if (value == null || (min == null && max == null)) return null;
@@ -840,6 +899,24 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
   const [lightboxPhoto,setLightboxPhoto]=useState(null),[showCompose,setShowCompose]=useState(false);
   const [showShare,setShowShare]=useState(false),[showPDFOptions,setShowPDFOptions]=useState(false),[viewingAgent,setViewingAgent]=useState(null);
 
+  // ── Match reveal sequence (total 3.72s) ──
+  // stage 0: modal in, hero photo only (0 - 0.5s)
+  // stage 1: score sweeps 0->value + counts up, locks with glow (0.5 - 1.5s)
+  // stage 2: details panel (both posts) rises up (1.5 - 2.2s)
+  // stage 3: range bars + agent block fade/stagger in (2.2 - 3.72s)
+  // stage 4: fully settled, static
+  const [stage,setStage]=useState(0);
+  useEffect(()=>{
+    setStage(0);
+    const timers=[
+      setTimeout(()=>setStage(1),500),
+      setTimeout(()=>setStage(2),1500),
+      setTimeout(()=>setStage(3),2200),
+      setTimeout(()=>setStage(4),3720),
+    ];
+    return ()=>timers.forEach(clearTimeout);
+  },[matchIndex,matchPost?.id]);
+
   const myIsListing=myPost.postType==='listing',myColor=myIsListing?ACCENT:LAVENDER,theirColor=myIsListing?LAVENDER:ACCENT;
   const listing=myIsListing?myPost:matchPost, requirement=myIsListing?matchPost:myPost;
   const {totalScore,breakdown}=matchResult;
@@ -887,18 +964,22 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
         <div style={{ flex:1, overflowY:'auto' }}>
           {tab==='analysis'&&(
             <div style={{ padding:'28px 32px' }}>
-              <div style={{ display:'flex', justifyContent:'center', marginBottom:'32px' }}><BigScoreCircle score={totalScore}/></div>
-              <div style={{ display:'flex', gap:'16px', marginBottom:'36px' }}>
+              <div style={{ display:'flex', justifyContent:'center', marginBottom:'32px' }}><AnimatedBigScore score={totalScore} run={stage>=1}/></div>
+              <div style={{
+                display:'flex', gap:'16px', marginBottom:'36px',
+                opacity:stage>=2?1:0, transform:stage>=2?'translateY(0)':'translateY(24px)',
+                transition:'opacity 0.6s ease, transform 0.6s ease'
+              }}>
                 <PostBlock post={myPost} isListing={myIsListing} label={myLabel} color={myColor} onViewPhotos={setLightboxPhoto}/>
                 <PostBlock post={matchPost} isListing={!myIsListing} label={theirLabel} color={theirColor} onViewPhotos={setLightboxPhoto}/>
               </div>
               {rangeBars.length>0&&(
-                <div style={{ marginBottom:'32px' }}>
+                <div style={{ marginBottom:'32px', opacity:stage>=3?1:0, transform:stage>=3?'translateY(0)':'translateY(20px)', transition:'opacity 0.6s ease 0.05s, transform 0.6s ease 0.05s' }}>
                   <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.3)', margin:'0 0 20px' }}>How Your Listing Fits Their Requirements</p>
                   {rangeBars.map((bar,i)=><RangeBar key={i} value={bar.value} min={bar.min} max={bar.max} label={bar.label} score={bar.score} isMoney={bar.isMoney}/>)}
                 </div>
               )}
-              <div style={{ background:`${theirColor}06`, border:`1px solid ${theirColor}20`, borderRadius:'14px', padding:'20px' }}>
+              <div style={{ background:`${theirColor}06`, border:`1px solid ${theirColor}20`, borderRadius:'14px', padding:'20px', opacity:stage>=3?1:0, transform:stage>=3?'translateY(0)':'translateY(20px)', transition:'opacity 0.6s ease 0.18s, transform 0.6s ease 0.18s' }}>
                 <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.3)', margin:'0 0 14px' }}>{myIsListing?'Representing Agent':'Listing Agent'}</p>
                 <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'14px' }}>
                   <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:theirColor, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'18px', fontWeight:700 }}>
@@ -950,20 +1031,22 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
   const myIsListing=myPost.postType==='listing', myColor=myIsListing?ACCENT:LAVENDER;
   const best=matches[previewIdx], scoreColor=getScoreColor(best.totalScore);
 
-  // Pull the hero photo off MY post (this is the card for the agent's own listing/requirement).
+  // Pull all photos off MY post (this is the card for the agent's own listing/requirement).
   const myPd = parseDetails(myPost);
-  const heroPhoto = (() => {
+  const photos = (() => {
     const toArr = (v) => {
       if (Array.isArray(v) && v.length) return v;
       if (typeof v === 'string') { try { const p = JSON.parse(v); if (Array.isArray(p) && p.length) return p; } catch {} }
       return null;
     };
     const fromPd = toArr(myPd?.photo_urls);
-    if (fromPd) return fromPd[0];
-    if (myPd?.photo_url) return myPd.photo_url;
-    if (myPost.photo_url) return myPost.photo_url;
-    return null;
+    if (fromPd) return fromPd;
+    const single = myPd?.photo_url || myPost.photo_url;
+    if (single) return [single];
+    return [];
   })();
+  const hero = photos[0] || null;
+  const grid = photos.slice(1,5); // up to 4 for the 2x2
 
   // Residential types show bed/bath; commercial types don't.
   const RESIDENTIAL = ['single_family','condo','apartment','multi_family','multi_family_5','townhouse','manufactured','land_residential'];
@@ -976,94 +1059,86 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
   const addressLine = myIsListing
     ? [myPost.address, myPost.city, myPost.state].filter(Boolean).join(', ')
     : (myPost.cities?.join(', ') || '');
-
-  // Build the middle detail line (residential: bed/bath/sqft/type, commercial: sqft/type)
   const detailBits = isResidential
     ? [beds!=null?`${beds} bd`:null, baths!=null?`${baths} ba`:null, sqft, ptLabel].filter(Boolean)
     : [sqft, ptLabel].filter(Boolean);
 
-  const sz=52,r=22,circ=2*Math.PI*r,dash=(best.totalScore/100)*circ;
+  const nMatches = matches.length;
+  const phraseCount = nMatches>1 ? `${nMatches} people are looking for ` : 'Someone is looking for ';
+
+  const photoPlaceholder = (
+    <div style={{ width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',background:'#0E1318' }}>
+      <Image style={{ width:'26px',height:'26px',color:'rgba(255,255,255,0.12)' }}/>
+    </div>
+  );
 
   return(
-    <div
-      onClick={()=>onOpen(myPost,best,previewIdx)}
-      onMouseEnter={()=>setHov(true)}
-      onMouseLeave={()=>setHov(false)}
-      style={{
-        display:'flex', height:'190px', borderRadius:'14px', overflow:'hidden', cursor:'pointer',
-        background:'rgba(255,255,255,0.04)',
-        border:`2px solid ${hov?scoreColor:scoreColor+'55'}`,
-        boxShadow:hov?`0 0 22px ${scoreColor}40`:`0 0 10px ${scoreColor}18`,
-        transition:'all 0.2s', position:'relative'
-      }}>
+    <div>
+      {/* Clickable phrase ABOVE the card */}
+      <button onClick={()=>onOpen(myPost,best,previewIdx)}
+        style={{ display:'flex',alignItems:'center',gap:'8px',background:'transparent',border:'none',cursor:'pointer',padding:'0 4px 8px',width:'100%',textAlign:'left' }}>
+        <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'15px',fontWeight:500,color:'rgba(255,255,255,0.7)' }}>
+          {phraseCount}<span style={{ fontWeight:800,color:ACCENT,letterSpacing:'0.02em' }}>YOUR LISTING</span>
+        </span>
+        <ChevronRight style={{ width:'16px',height:'16px',color:ACCENT,flexShrink:0 }}/>
+      </button>
 
-      {/* LEFT 80%: hero photo (top 2/3) + details (bottom 1/3) */}
-      <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0 }}>
+      {/* The card */}
+      <div
+        onClick={()=>onOpen(myPost,best,previewIdx)}
+        onMouseEnter={()=>setHov(true)}
+        onMouseLeave={()=>setHov(false)}
+        style={{
+          borderRadius:'16px', overflow:'hidden', cursor:'pointer', background:'rgba(255,255,255,0.04)',
+          border:`2px solid ${hov?scoreColor:scoreColor+'55'}`,
+          boxShadow:hov?`0 0 26px ${scoreColor}45`:`0 0 12px ${scoreColor}1e`,
+          transition:'all 0.2s', position:'relative'
+        }}>
 
-        {/* Hero photo — top two-thirds */}
-        <div style={{ flex:'2 1 0', position:'relative', background:'#0E1318', overflow:'hidden' }}>
-          {heroPhoto
-            ? <img src={heroPhoto} alt={myPost.title} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-            : <div style={{ width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center' }}>
-                <Image style={{ width:'32px',height:'32px',color:'rgba(255,255,255,0.15)' }}/>
-              </div>}
-          {/* "Someone is looking" tag + your-post label on the photo */}
-          <div style={{ position:'absolute',top:'10px',left:'10px',display:'flex',gap:'6px',alignItems:'center' }}>
-            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:700,color:'#0E1318',background:myColor,borderRadius:'20px',padding:'3px 9px',boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
-              Your {myIsListing?'Listing':'Requirement'}
-            </span>
-            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'white',background:'rgba(0,0,0,0.55)',backdropFilter:'blur(4px)',borderRadius:'20px',padding:'3px 9px' }}>
-              Someone is looking
-            </span>
+        {/* Photo zone — top two-thirds */}
+        <div style={{ display:'flex', gap:'3px', height:'260px', position:'relative' }}>
+          {/* Hero photo left */}
+          <div style={{ flex:'1.6 1 0', position:'relative', overflow:'hidden' }}>
+            {hero ? <img src={hero} alt={myPost.title} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/> : photoPlaceholder}
+            {/* Score badge floating top-right of hero */}
+            <div style={{ position:'absolute', top:'12px', right:'12px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px',
+              background:'rgba(14,19,24,0.82)', backdropFilter:'blur(6px)', borderRadius:'14px', padding:'8px 12px', border:`1.5px solid ${scoreColor}`, boxShadow:`0 0 16px ${scoreColor}55` }}>
+              <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'24px', fontWeight:800, color:scoreColor, lineHeight:1 }}>{best.totalScore}</span>
+              <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'8px', fontWeight:700, letterSpacing:'0.12em', color:'rgba(255,255,255,0.5)' }}>MATCH</span>
+            </div>
+          </div>
+          {/* 2x2 grid right */}
+          <div style={{ flex:'1 1 0', display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'1fr 1fr', gap:'3px' }}>
+            {[0,1,2,3].map(i=>(
+              <div key={i} style={{ position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                {grid[i] ? <img src={grid[i]} alt={`Photo ${i+2}`} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/> : photoPlaceholder}
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Details — bottom third */}
-        <div style={{ flex:'1 1 0', padding:'8px 14px', display:'flex', flexDirection:'column', justifyContent:'center', gap:'2px', background:'rgba(255,255,255,0.02)' }}>
-          {priceLine && <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'15px',fontWeight:700,color:'white',lineHeight:1.1 }}>{priceLine}</div>}
-          {detailBits.length>0 && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.6)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{detailBits.join(' \u00b7 ')}</div>}
-          {addressLine && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.4)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{addressLine}</div>}
-        </div>
-      </div>
-
-      {/* RIGHT 20%: score + See More + arrow */}
-      <div style={{
-        width:'20%', minWidth:'96px', maxWidth:'140px', flexShrink:0,
-        display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'8px',
-        padding:'12px 8px', background:`${scoreColor}0E`, borderLeft:`1px solid ${scoreColor}30`
-      }}>
-        {/* Score circle */}
-        <div style={{ position:'relative',width:sz,height:sz }}>
-          <svg width={sz} height={sz} style={{transform:'rotate(-90deg)'}}>
-            <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="4"/>
-            <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={scoreColor} strokeWidth="4" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
-          </svg>
-          <div style={{ position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center' }}>
-            <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'15px',fontWeight:700,color:scoreColor }}>{best.totalScore}</span>
+        {/* Details strip — bottom third */}
+        <div style={{ padding:'12px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', background:'rgba(255,255,255,0.02)', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ minWidth:0, flex:1 }}>
+            {priceLine && <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'18px',fontWeight:700,color:'white',lineHeight:1.15 }}>{priceLine}</div>}
+            {detailBits.length>0 && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.6)',margin:'2px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{detailBits.join(' \u00b7 ')}</div>}
+            {addressLine && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:'2px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{addressLine}</div>}
           </div>
+          {/* Multiple-match navigator */}
+          {nMatches>1 && (
+            <div style={{ display:'flex',alignItems:'center',gap:'6px',flexShrink:0 }}>
+              <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i-1+nMatches)%nMatches);}}
+                style={{ background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'6px',padding:'4px 6px',cursor:'pointer',display:'flex' }}>
+                <ChevronLeft style={{width:'13px',height:'13px',color:'rgba(255,255,255,0.6)'}}/>
+              </button>
+              <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.4)',minWidth:'30px',textAlign:'center' }}>{previewIdx+1}/{nMatches}</span>
+              <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i+1)%nMatches);}}
+                style={{ background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'6px',padding:'4px 6px',cursor:'pointer',display:'flex' }}>
+                <ChevronRight style={{width:'13px',height:'13px',color:'rgba(255,255,255,0.6)'}}/>
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* See More + arrow */}
-        <div style={{ display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1.15 }}>
-          <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',fontWeight:600,color:scoreColor }}>See</span>
-          <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',fontWeight:600,color:scoreColor }}>More</span>
-          <ChevronLeft style={{ width:'18px',height:'18px',color:scoreColor,marginTop:'2px' }}/>
-        </div>
-
-        {/* Multiple matches indicator */}
-        {matches.length>1 && (
-          <div style={{ display:'flex',alignItems:'center',gap:'4px',marginTop:'2px' }}>
-            <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i-1+matches.length)%matches.length);}}
-              style={{ background:'rgba(255,255,255,0.08)',border:'none',borderRadius:'4px',padding:'2px',cursor:'pointer',display:'flex' }}>
-              <ChevronLeft style={{width:'11px',height:'11px',color:'rgba(255,255,255,0.6)'}}/>
-            </button>
-            <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'10px',fontWeight:600,color:'rgba(255,255,255,0.5)' }}>{previewIdx+1}/{matches.length}</span>
-            <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i+1)%matches.length);}}
-              style={{ background:'rgba(255,255,255,0.08)',border:'none',borderRadius:'4px',padding:'2px',cursor:'pointer',display:'flex' }}>
-              <ChevronRight style={{width:'11px',height:'11px',color:'rgba(255,255,255,0.6)'}}/>
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -1143,7 +1218,7 @@ export default function Matches() {
 
   const navigate=(dir)=>{if(!modalState)return;const t=modalState.matches.length;setModalState(s=>({...s,matchIndex:(s.matchIndex+dir+t)%t}));};
   return(
-    <div style={{ maxWidth:'860px', margin:'0 auto', padding:'48px 32px' }}>
+    <div style={{ maxWidth:'1200px', margin:'0 auto', padding:'48px 32px' }}>
       <div style={{ marginBottom:'32px' }}>
         <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:300, color:'white', margin:'0 0 6px' }}>{filterSaved?'Saved Matches':'My Matches'}</h1>
         <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.4)', margin:0 }}>{filterSaved?'Your bookmarked matches. Toggle between listings and requirements below.':'Matches scoring 30% or higher. Click any card to open the full analysis.'}</p>
