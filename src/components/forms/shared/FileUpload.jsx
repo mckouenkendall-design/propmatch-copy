@@ -42,6 +42,7 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
 
   const uploadFiles = async (files) => {
     const fileArr = Array.isArray(files) ? files : Array.from(files || []);
+    console.log('uploadFiles called with', fileArr.length, 'files');
     if (fileArr.length === 0) return;
     setUploading(true);
     setError('');
@@ -116,10 +117,8 @@ export default function FileUpload({ label, accept, field, details, setDetail, h
         }}>
         <input ref={ref} type="file" accept={accept} multiple={isPhotos} className="hidden"
           onChange={e => {
-            // Copy files to a plain array FIRST before clearing the input.
-            // Some browsers destroy the FileList when e.target.value is reset,
-            // so if we clear first the async uploadFiles gets an empty list.
             const files = Array.from(e.target.files || []);
+            console.log('FileUpload onChange fired, files:', files.length, files.map(f => f.name));
             e.target.value = '';
             if (files.length) uploadFiles(files);
           }} />
