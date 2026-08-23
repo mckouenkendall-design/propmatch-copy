@@ -1051,7 +1051,7 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
     return [];
   })();
   const hero = photos[0] || null;
-  const grid = photos.slice(1,5); // up to 4 for the 2x2
+  const grid = photos.slice(1,4); // up to 3 extra photos on the right (photos 2, 3, 4)
 
   // Residential types show bed/bath; commercial types don't.
   const RESIDENTIAL = ['single_family','condo','apartment','multi_family','multi_family_5','townhouse','manufactured','land_residential'];
@@ -1079,22 +1079,12 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
 
   return(
     <div>
-      {/* Clickable phrase ABOVE the card */}
-      <button onClick={()=>onOpen(myPost,best,previewIdx)}
-        style={{ display:'flex',alignItems:'center',gap:'8px',background:'transparent',border:'none',cursor:'pointer',padding:'0 4px 8px',width:'100%',textAlign:'left' }}>
-        <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'15px',fontWeight:500,color:'rgba(255,255,255,0.7)' }}>
-          {phraseCount}<span style={{ fontWeight:800,color:ACCENT,letterSpacing:'0.02em' }}>YOUR LISTING</span>
-        </span>
-        <ChevronRight style={{ width:'16px',height:'16px',color:ACCENT,flexShrink:0 }}/>
-      </button>
-
-      {/* The card */}
+      {/* The card (not clickable — only the phrase in the details strip opens it) */}
       <div
-        onClick={()=>onOpen(myPost,best,previewIdx)}
         onMouseEnter={()=>setHov(true)}
         onMouseLeave={()=>setHov(false)}
         style={{
-          borderRadius:'16px', overflow:'hidden', cursor:'pointer', background:'rgba(255,255,255,0.04)',
+          borderRadius:'16px', overflow:'hidden', background:'rgba(255,255,255,0.04)',
           border:`2px solid ${hov?scoreColor:scoreColor+'55'}`,
           boxShadow:hov?`0 0 26px ${scoreColor}45`:`0 0 12px ${scoreColor}1e`,
           transition:'all 0.2s', position:'relative'
@@ -1112,22 +1102,61 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
               <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'8px', fontWeight:700, letterSpacing:'0.12em', color:'rgba(255,255,255,0.5)' }}>MATCH</span>
             </div>
           </div>
-          {/* 2x2 grid right */}
-          <div style={{ flex:'1 1 0', display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'1fr 1fr', gap:'3px' }}>
-            {[0,1,2,3].map(i=>(
-              <div key={i} style={{ position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                {grid[i] ? <img src={grid[i]} alt={`Photo ${i+2}`} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/> : photoPlaceholder}
-              </div>
-            ))}
-          </div>
+          {/* Adaptive right side — only rendered when there are extra photos beyond the hero */}
+          {grid.length>0 && (
+            <div style={{ flex:'1 1 0', display:'flex', flexDirection:'column', gap:'3px' }}>
+              {grid.length===1 && (
+                <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                  <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                </div>
+              )}
+              {grid.length===2 && (
+                <>
+                  <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                    <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                  </div>
+                  <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                    <img src={grid[1]} alt="Photo 3" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                  </div>
+                </>
+              )}
+              {grid.length>=3 && (
+                <>
+                  {/* Photo 2 takes the top half */}
+                  <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                    <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                  </div>
+                  {/* Photos 3 and 4 split the bottom half (3 gets full width if no 4th) */}
+                  <div style={{ flex:1, display:'flex', gap:'3px' }}>
+                    <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                      <img src={grid[1]} alt="Photo 3" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                    </div>
+                    {grid[2] && (
+                      <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                        <img src={grid[2]} alt="Photo 4" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Details strip — bottom third */}
+        {/* Details strip — bottom third. The phrase is the only clickable element. */}
         <div style={{ padding:'12px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', background:'rgba(255,255,255,0.02)', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
           <div style={{ minWidth:0, flex:1 }}>
             {priceLine && <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'18px',fontWeight:700,color:'white',lineHeight:1.15 }}>{priceLine}</div>}
             {detailBits.length>0 && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.6)',margin:'2px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{detailBits.join(' \u00b7 ')}</div>}
             {addressLine && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:'2px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{addressLine}</div>}
+            {/* Clickable phrase — the ONLY thing that opens the match */}
+            <button onClick={()=>onOpen(myPost,best,previewIdx)}
+              style={{ display:'inline-flex',alignItems:'center',gap:'6px',background:'transparent',border:'none',cursor:'pointer',padding:'8px 0 0',textAlign:'left' }}>
+              <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',fontWeight:500,color:'rgba(255,255,255,0.7)' }}>
+                {phraseCount}<span style={{ fontWeight:800,color:ACCENT,letterSpacing:'0.02em' }}>YOUR LISTING</span>
+              </span>
+              <ChevronRight style={{ width:'15px',height:'15px',color:ACCENT,flexShrink:0 }}/>
+            </button>
           </div>
           {/* Multiple-match navigator */}
           {nMatches>1 && (
