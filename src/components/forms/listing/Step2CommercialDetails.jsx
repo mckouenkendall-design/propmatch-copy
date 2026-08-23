@@ -230,7 +230,7 @@ const LAYOUT_OPTIONS = [
   { value: 'executive_suite', label: 'Executive Suite' }, { value: 'mixed', label: 'Mixed' }, { value: 'other', label: 'Other' },
 ];
 
-function OfficeDetails({ details, setDetail }) {
+function OfficeDetails({ details, setDetail, onSavePhotos }) {
   const amenities = details.amenities || [];
   const toggleAmenity = (val) => setDetail('amenities', amenities.includes(val) ? amenities.filter(a => a !== val) : [...amenities, val]);
   return (
@@ -259,7 +259,7 @@ function OfficeDetails({ details, setDetail }) {
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
         options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} hint="Upload a primary photo" />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -273,7 +273,7 @@ const MEDICAL_FEATURES = [
   { value: 'lab_space', label: 'Lab Space' }, { value: 'in_suite_restrooms', label: 'In-Suite Restrooms' },
 ];
 
-function MedicalOfficeDetails({ details, setDetail }) {
+function MedicalOfficeDetails({ details, setDetail, onSavePhotos }) {
   const features = details.medical_features || [];
   const toggleFeature = (val) => setDetail('medical_features', features.includes(val) ? features.filter(f => f !== val) : [...features, val]);
   return (
@@ -302,7 +302,7 @@ function MedicalOfficeDetails({ details, setDetail }) {
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
         options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} hint="Upload a primary photo" />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -318,7 +318,7 @@ const RETAIL_SPECIAL_FEATURES = [
   { key: 'vault', label: 'Secure Vault / Safe Room' }, { key: 'medical_flooring', label: 'Medical Grade Flooring' }, { key: 'auto_bay', label: 'Auto Bay / Garage Doors' },
 ];
 
-function RetailDetails({ details, setDetail }) {
+function RetailDetails({ details, setDetail, onSavePhotos }) {
   const [featuresOpen, setFeaturesOpen] = React.useState(false);
   const features = details.retail_features || [];
   const toggleFeature = (key) => setDetail('retail_features', features.includes(key) ? features.filter(k => k !== key) : [...features, key]);
@@ -388,7 +388,7 @@ function RetailDetails({ details, setDetail }) {
       <Field label="Description"><Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space, its highlights, and what makes it ideal for tenants…" rows={4} /></Field>
       <Field label="Tags" hint="Press Enter to add each tag"><TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} /></Field>
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} hint="Upload a primary photo" />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -402,7 +402,7 @@ const SYSTEMS_CHECKLIST = [
 ];
 const DOCK_EQUIPMENT = [{ key: 'dock_levelers', label: 'Levelers' }, { key: 'dock_seals', label: 'Seals' }, { key: 'dock_restraints', label: 'Restraints' }];
 
-function IndustrialFlexDetails({ details, setDetail }) {
+function IndustrialFlexDetails({ details, setDetail, onSavePhotos }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   const systems = details.systems || [];
   const toggleSystem = (key) => setDetail('systems', systems.includes(key) ? systems.filter(s => s !== key) : [...systems, key]);
@@ -483,14 +483,14 @@ function IndustrialFlexDetails({ details, setDetail }) {
         <Field label="Zoning" hint="Informational"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. M-1, I-2" /></Field>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} hint="Upload a primary photo" />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
   );
 }
 
-function LandDetails({ details, setDetail }) {
+function LandDetails({ details, setDetail, onSavePhotos }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   const utilities = details.utilities_to_site || [];
   const toggleUtility = (key) => setDetail('utilities_to_site', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
@@ -564,7 +564,7 @@ function LandDetails({ details, setDetail }) {
       <Field label="Description"><Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the site, its highlights, and development potential…" rows={4} /></Field>
       <Field label="Tags" hint="Press Enter to add each tag"><TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} /></Field>
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} hint="Upload a primary photo" />
         <FileUpload label="Brochure / Site Plan (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF" />
       </div>
     </>
@@ -585,7 +585,7 @@ const SPECIAL_USE_BUILDING_AMENITIES = [
   { value: 'energy_efficient', label: 'Energy Efficient Building' }, { value: 'leed_certified', label: 'LEED Certified / Green Building' },
 ];
 
-function SpecialUseDetails({ details, setDetail }) {
+function SpecialUseDetails({ details, setDetail, onSavePhotos }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   const buildingAmenities = details.building_amenities || [];
   const toggleBuildingAmenity = (val) => setDetail('building_amenities', buildingAmenities.includes(val) ? buildingAmenities.filter(a => a !== val) : [...buildingAmenities, val]);
@@ -638,7 +638,7 @@ function SpecialUseDetails({ details, setDetail }) {
       <Field label="Description"><Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the property, its unique features, and ideal use…" rows={4} /></Field>
       <Field label="Tags" hint="Press Enter to add each tag"><TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} /></Field>
       <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} hint="Upload a primary photo" />
+        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} hint="Upload a primary photo" />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
       </div>
     </>
@@ -659,6 +659,7 @@ export default function ListStep2Commercial({ data, update, onNext }) {
   // block appended at the bottom. Land is investment-agnostic (no financials block).
   const isSale = data.transaction_type === 'sale';
   const showFinancials = isSale && type !== 'land';
+  const onSavePhotos = (next) => update({ property_details: { ...(dataRef.current.property_details || {}), photo_urls: next, photo_url: next[0] || '' } });
 
   return (
     <div className="space-y-6">
@@ -666,22 +667,14 @@ export default function ListStep2Commercial({ data, update, onNext }) {
         Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong> space.
       </p>
 
-      {type === 'office' && <OfficeDetails details={details} setDetail={setDetail} />}
-      {type === 'medical_office' && <MedicalOfficeDetails details={details} setDetail={setDetail} />}
-      {type === 'retail' && <RetailDetails details={details} setDetail={setDetail} />}
-      {type === 'industrial_flex' && <IndustrialFlexDetails details={details} setDetail={setDetail} />}
-      {type === 'land' && <LandDetails details={details} setDetail={setDetail} />}
-      {type === 'special_use' && <SpecialUseDetails details={details} setDetail={setDetail} />}
+      {type === 'office' && <OfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
+      {type === 'medical_office' && <MedicalOfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
+      {type === 'retail' && <RetailDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
+      {type === 'industrial_flex' && <IndustrialFlexDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
+      {type === 'land' && <LandDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
+      {type === 'special_use' && <SpecialUseDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
 
       {showFinancials && <InvestmentFinancials type={type} details={details} setDetail={setDetail} />}
-
-      <SectionTitle>Photos &amp; Brochure</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail}
-          onSavePhotos={next => update({ property_details: { ...(dataRef.current.property_details || {}), photo_urls: next, photo_url: next[0] || '' } })}
-          hint="First photo is the main one shown on your match card" />
-        <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
-      </div>
 
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: ACCENT }}>
