@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import {
@@ -1020,7 +1020,7 @@ function CascadeReveal({ items, trigger, step=90, children }) {
   ));
 }
 
-function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex, totalMatches, onPrev, onNext, onClose, savedHook }) {
+function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex, totalMatches, onPrev, onNext, onClose, savedHook, onEditMyPost }) {
   const [tab,setTab]=useState('analysis'),[openSections,setOpen]=useState({core:true});
   const [lightboxPhoto,setLightboxPhoto]=useState(null),[showCompose,setShowCompose]=useState(false);
   const [showShare,setShowShare]=useState(false),[showPDFOptions,setShowPDFOptions]=useState(false),[viewingAgent,setViewingAgent]=useState(null);
@@ -1079,7 +1079,6 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', flexShrink:0 }}>
             {iconBtn(()=>savedHook.toggle(listing.id,requirement.id),isMatchSaved?'Unsave':'Save match',isMatchSaved?<BookmarkCheck style={{ width:'14px', height:'14px', color:ACCENT }}/>:<Bookmark style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,isMatchSaved?'Saved':'Save',isMatchSaved)}
-            {iconBtn(()=>window.open('/Inventory','_blank'),'View your post in Inventory',<ExternalLink style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,'View Post',false)}
             {iconBtn(()=>setShowShare(true),'Share match',<Share2 style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,'Share',false)}
             {iconBtn(()=>setShowPDFOptions(true),'Export PDF',<Printer style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,'PDF',false)}
             <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'6px', cursor:'pointer', display:'flex' }}><X style={{ width:'16px', height:'16px', color:'rgba(255,255,255,0.5)' }}/></button>
@@ -1092,11 +1091,22 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
 
               {summaryRows.length>0&&(
                 <div style={{ marginBottom:'30px' }}>
-                  {/* Column headers: listing side (teal) vs requirement side (lavender) */}
+                  {/* Column headers: listing side (teal) vs requirement side (lavender).
+                      The agent's OWN post header is clickable → opens its edit screen. */}
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 56px 1fr', alignItems:'center', marginBottom:'6px' }}>
-                    <div style={{ textAlign:'right', paddingRight:'18px', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:ACCENT }}>{myIsListing?'Your Listing':'Their Listing'}</div>
+                    <button type="button" disabled={!myIsListing} onClick={()=>myIsListing&&onEditMyPost&&onEditMyPost()}
+                      style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:'5px', paddingRight:'18px', background:'transparent', border:'none', cursor:myIsListing?'pointer':'default', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:ACCENT, textAlign:'right' }}
+                      onMouseEnter={e=>{if(myIsListing)e.currentTarget.style.textDecoration='underline';}}
+                      onMouseLeave={e=>{e.currentTarget.style.textDecoration='none';}}>
+                      {myIsListing?'Your Listing':'Their Listing'}{myIsListing&&<ExternalLink style={{width:'11px',height:'11px'}}/>}
+                    </button>
                     <div/>
-                    <div style={{ textAlign:'left', paddingLeft:'18px', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:LAVENDER }}>{myIsListing?'Their Requirements':"Your Client's Requirements"}</div>
+                    <button type="button" disabled={myIsListing} onClick={()=>!myIsListing&&onEditMyPost&&onEditMyPost()}
+                      style={{ display:'flex', alignItems:'center', justifyContent:'flex-start', gap:'5px', paddingLeft:'18px', background:'transparent', border:'none', cursor:!myIsListing?'pointer':'default', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:LAVENDER, textAlign:'left' }}
+                      onMouseEnter={e=>{if(!myIsListing)e.currentTarget.style.textDecoration='underline';}}
+                      onMouseLeave={e=>{e.currentTarget.style.textDecoration='none';}}>
+                      {!myIsListing&&<ExternalLink style={{width:'11px',height:'11px'}}/>}{myIsListing?'Their Requirements':"Your Client's Requirements"}
+                    </button>
                   </div>
                   {/* Full scoring breakdown, revealed top-down (heaviest factor first) */}
                   <div>
@@ -1341,6 +1351,7 @@ export default function Matches() {
   const {user}=useAuth();
   const [activeTab,setActiveTab]=useState('listings'),[filterSaved,setFilterSaved]=useState(false),[modalState,setModalState]=useState(null);
   const location = useLocation();
+  const routerNavigate = useNavigate();
   const openPostId = location.state?.openPostId;
   const showSaved = location.state?.showSaved;
   useEffect(()=>{if(showSaved)setFilterSaved(true);},[showSaved]);
@@ -1447,7 +1458,7 @@ export default function Matches() {
         const {myPost,matches,matchIndex}=modalState;
         const current=matches[matchIndex],myIsListing=myPost.postType==='listing';
         const matchPost=myIsListing?current.requirement:current.listing;
-        return <MatchModal myPost={myPost} matchPost={matchPost} matchResult={current} posterProfile={profileMap[matchPost.created_by]} matchIndex={matchIndex} totalMatches={matches.length} onPrev={()=>navigate(-1)} onNext={()=>navigate(1)} onClose={()=>setModalState(null)} savedHook={savedHook}/>;
+        return <MatchModal myPost={myPost} matchPost={matchPost} matchResult={current} posterProfile={profileMap[matchPost.created_by]} matchIndex={matchIndex} totalMatches={matches.length} onPrev={()=>navigate(-1)} onNext={()=>navigate(1)} onClose={()=>setModalState(null)} savedHook={savedHook} onEditMyPost={()=>routerNavigate('/Inventory',{state:{openPostId:myPost.id}})}/>;
       })()}
     </div>
   );
