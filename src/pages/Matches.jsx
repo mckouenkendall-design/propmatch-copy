@@ -693,6 +693,42 @@ function RangeBar({ value, min, max, label, score, isMoney }) {
   );
 }
 
+// ─── Comparison Row (clean, dot-connector design for the Match Summary) ──────
+// Listing value on the left, requirement value/range on the right, a single dot
+// in the center colored by how well they match. No bars, no waves — just the
+// values and one dot. Typography does the work.
+function ComparisonRow({ label, value, min, max, score, isMoney }) {
+  const sc = getScoreColor(score);
+  const fmt = (n) => {
+    if (n == null) return null;
+    if (isMoney) return fmtMoney(n);
+    if (n >= 1000) return Math.round(n).toLocaleString();
+    return (Math.round(n * 100) / 100).toLocaleString();
+  };
+  const listingStr = fmt(parseFloat(value));
+  let reqStr;
+  if (min != null && max != null) reqStr = `${fmt(min)}\u2013${fmt(max)}`;
+  else if (min != null) reqStr = `${fmt(min)}+`;
+  else if (max != null) reqStr = `Up to ${fmt(max)}`;
+  else reqStr = '\u2014';
+
+  return (
+    <div style={{ display:'grid', gridTemplateColumns:'1fr auto 1fr', alignItems:'center', gap:'0', padding:'2px 0' }}>
+      <div style={{ textAlign:'right', paddingRight:'18px' }}>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.28)', marginBottom:'2px' }}>{label}</div>
+        <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:700, color:'white' }}>{listingStr}</div>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', width:'56px' }}>
+        <div style={{ width:'11px', height:'11px', borderRadius:'50%', background:sc, boxShadow:`0 0 10px ${sc}90`, border:`2px solid #0E1318` }}/>
+      </div>
+      <div style={{ textAlign:'left', paddingLeft:'18px' }}>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.28)', marginBottom:'2px' }}>Needs</div>
+        <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:700, color:'rgba(255,255,255,0.85)' }}>{reqStr}</div>
+      </div>
+    </div>
+  );
+}
+
 function buildRangeBars(listing, requirement, breakdown) {
   const ld=parseDetails(listing), rd=parseDetails(requirement);
   const getScore=(kw)=>{ const f=breakdown?.find(b=>b.category?.toLowerCase().includes(kw.toLowerCase())); return f?f.score:null; };
@@ -899,26 +935,52 @@ SCORE BREAKDOWN: ${bStr}\n\nRules:\n1. Be concise and analytical. Reference actu
 }
 
 // ─── Match Modal ──────────────────────────────────────────────────────────────
+// ─── Scatter Reveal ──────────────────────────────────────────────────────────
+// Renders children that "scatter" into place: each child appears at a small
+// randomized delay (not sequential) so the group lands like tossed sand rather
+// than marching in. Each child just pops (quick opacity + tiny scale), no slide.
+// `trigger` starting true kicks off the reveal; `seed` (the runKey) reshuffles.
+function ScatterReveal({ items, trigger, baseDelay=0, spread=260, children }) {
+  const [shown, setShown] = useState(() => items.map(() => false));
+  const delaysRef = useRef([]);
+
+  useEffect(() => {
+    // Assign each item a random delay within the spread window.
+    delaysRef.current = items.map(() => baseDelay + Math.random() * spread);
+    setShown(items.map(() => false));
+    if (!trigger) return;
+    const timers = delaysRef.current.map((d, i) =>
+      setTimeout(() => setShown(prev => { const n = [...prev]; n[i] = true; return n; }), d)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [trigger, items.length]);
+
+  return items.map((item, i) => (
+    <div key={i} style={{
+      opacity: shown[i] ? 1 : 0,
+      transform: shown[i] ? 'scale(1)' : 'scale(0.94)',
+      transition: 'opacity 0.22s ease, transform 0.22s ease',
+    }}>
+      {children(item, i)}
+    </div>
+  ));
+}
+
 function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex, totalMatches, onPrev, onNext, onClose, savedHook }) {
   const [tab,setTab]=useState('analysis'),[openSections,setOpen]=useState({core:true});
   const [lightboxPhoto,setLightboxPhoto]=useState(null),[showCompose,setShowCompose]=useState(false);
   const [showShare,setShowShare]=useState(false),[showPDFOptions,setShowPDFOptions]=useState(false),[viewingAgent,setViewingAgent]=useState(null);
 
-  // ── Match reveal sequence (total 3.72s) ──
-  // The score counter starts immediately on open (handled inside AnimatedBigScore,
-  // ~1.4s count-up). These stages layer the rest in underneath it:
-  // stage 1: details panel (both posts) rises up (1.5s)
-  // stage 2: range bars fade in (2.4s)
-  // stage 3: agent contact block fades in (3.0s)
-  // stage 4: fully settled, static (3.72s)
+  // ── Match reveal ──
+  // Score counter runs immediately on open (inside AnimatedBigScore, ~2.2s).
+  // stage 1 (at ~1.3s): comparison rows scatter into place like tossed sand
+  // stage 2 (at ~2.2s): agent contact block settles in
   const [stage,setStage]=useState(0);
   useEffect(()=>{
     setStage(0);
     const timers=[
-      setTimeout(()=>setStage(1),1500),
-      setTimeout(()=>setStage(2),2400),
-      setTimeout(()=>setStage(3),3000),
-      setTimeout(()=>setStage(4),3720),
+      setTimeout(()=>setStage(1),1300),
+      setTimeout(()=>setStage(2),2200),
     ];
     return ()=>timers.forEach(clearTimeout);
   },[matchIndex,matchPost?.id]);
@@ -944,7 +1006,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
     </button>
   );
 
-  const TABS=[{key:'analysis',label:'Match Analysis'},{key:'specs',label:'Full Specs'},{key:'breakdown',label:'Breakdown'}];
+  const TABS=[{key:'analysis',label:'Match Summary'},{key:'specs',label:myIsListing?'Their Requirement':'Their Listing'}];
 
   return(<>
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.88)', backdropFilter:'blur(8px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }} onClick={onClose}>
@@ -970,22 +1032,28 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
         <div style={{ flex:1, overflowY:'auto' }}>
           {tab==='analysis'&&(
             <div style={{ padding:'28px 32px' }}>
-              <div style={{ display:'flex', justifyContent:'center', marginBottom:'32px' }}><AnimatedBigScore score={totalScore} runKey={`${matchIndex}-${matchPost?.id}`}/></div>
-              <div style={{
-                display:'flex', gap:'16px', marginBottom:'36px',
-                opacity:stage>=1?1:0, transform:stage>=1?'translateY(0)':'translateY(24px)',
-                transition:'opacity 0.6s ease, transform 0.6s ease'
-              }}>
-                <PostBlock post={myPost} isListing={myIsListing} label={myLabel} color={myColor} onViewPhotos={setLightboxPhoto}/>
-                <PostBlock post={matchPost} isListing={!myIsListing} label={theirLabel} color={theirColor} onViewPhotos={setLightboxPhoto}/>
-              </div>
+              <div style={{ display:'flex', justifyContent:'center', marginBottom:'28px' }}><AnimatedBigScore score={totalScore} runKey={`${matchIndex}-${matchPost?.id}`}/></div>
+
               {rangeBars.length>0&&(
-                <div style={{ marginBottom:'32px', opacity:stage>=2?1:0, transform:stage>=2?'translateY(0)':'translateY(20px)', transition:'opacity 0.6s ease 0.05s, transform 0.6s ease 0.05s' }}>
-                  <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.3)', margin:'0 0 20px' }}>How Your Listing Fits Their Requirements</p>
-                  {rangeBars.map((bar,i)=><RangeBar key={i} value={bar.value} min={bar.min} max={bar.max} label={bar.label} score={bar.score} isMoney={bar.isMoney}/>)}
+                <div style={{ marginBottom:'30px' }}>
+                  {/* Column headers: listing side (teal) vs requirement side (lavender) */}
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 56px 1fr', alignItems:'center', marginBottom:'18px' }}>
+                    <div style={{ textAlign:'right', paddingRight:'18px', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:ACCENT }}>{myIsListing?'Your Listing':'Their Listing'}</div>
+                    <div/>
+                    <div style={{ textAlign:'left', paddingLeft:'18px', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:LAVENDER }}>{myIsListing?'Their Needs':'Your Client'}</div>
+                  </div>
+                  {/* Scatter-revealed comparison rows */}
+                  <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
+                    <ScatterReveal items={rangeBars} trigger={stage>=1} baseDelay={0} spread={280}>
+                      {(bar,i)=>(
+                        <ComparisonRow label={bar.label} value={bar.value} min={bar.min} max={bar.max} score={bar.score} isMoney={bar.isMoney}/>
+                      )}
+                    </ScatterReveal>
+                  </div>
                 </div>
               )}
-              <div style={{ background:`${theirColor}06`, border:`1px solid ${theirColor}20`, borderRadius:'14px', padding:'20px', opacity:stage>=3?1:0, transform:stage>=3?'translateY(0)':'translateY(20px)', transition:'opacity 0.6s ease 0.18s, transform 0.6s ease 0.18s' }}>
+
+              <div style={{ background:`${theirColor}06`, border:`1px solid ${theirColor}20`, borderRadius:'14px', padding:'20px', opacity:stage>=2?1:0, transform:stage>=2?'translateY(0)':'translateY(14px)', transition:'opacity 0.5s ease, transform 0.5s ease' }}>
                 <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.3)', margin:'0 0 14px' }}>{myIsListing?'Representing Agent':'Listing Agent'}</p>
                 <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'14px' }}>
                   <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:theirColor, flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', color:'#111827', fontSize:'18px', fontWeight:700 }}>
@@ -1002,7 +1070,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
                   <button onClick={()=>setShowCompose(true)} style={{ display:'flex',alignItems:'center',gap:'7px',padding:'8px 16px',background:theirColor,border:'none',borderRadius:'8px',fontFamily:"'Inter',sans-serif",fontSize:'13px',fontWeight:600,color:'#111827',cursor:'pointer' }}><MessageCircle style={{width:'13px',height:'13px'}}/> Send Message</button>
                 </div>
               </div>
-              <button onClick={()=>setTab('specs')} style={{ width:'100%', marginTop:'16px', padding:'10px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.35)', cursor:'pointer' }}>View complete field-by-field specs &rarr;</button>
+              <button onClick={()=>setTab('specs')} style={{ width:'100%', marginTop:'16px', padding:'10px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'8px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.35)', cursor:'pointer' }}>View {myIsListing?'their full requirement':'their full listing'} &rarr;</button>
             </div>
           )}
           {tab==='specs'&&(
@@ -1012,13 +1080,6 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
               <div style={{height:'20px'}}/>
             </div>
           )}
-          <div style={{ display:tab==='breakdown'?'block':'none', padding:'28px 32px' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'20px' }}>
-              <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:ACCENT }}/>
-              <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.4)' }}>AI Match Breakdown</span>
-            </div>
-            <AIBreakdown listing={listing} requirement={requirement} matchResult={matchResult} onStartConversation={()=>setShowCompose(true)}/>
-          </div>
         </div>
       </div>
     </div>
