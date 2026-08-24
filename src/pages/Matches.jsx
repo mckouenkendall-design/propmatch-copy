@@ -7,7 +7,7 @@ import {
   Building2, Search, TrendingUp, X, Mail, Phone, MessageCircle,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   Check, FileText, Loader2, Image,
-  Bookmark, BookmarkCheck, Share2, Printer, Copy, CheckCheck
+  Bookmark, BookmarkCheck, Share2, Printer, Copy, CheckCheck, ExternalLink
 } from 'lucide-react';
 import { calculateMatchScore, getScoreColor, getScoreLabel, parseDetails } from '@/utils/matchScore';
 import FloatingMessageCompose from '@/components/messages/FloatingMessageCompose';
@@ -712,7 +712,7 @@ function ComparisonRow({ label, leftValue, rightValue, score }) {
         <div style={{ width:'11px', height:'11px', borderRadius:'50%', background:sc, boxShadow:`0 0 10px ${sc}90`, border:`2px solid #0E1318` }}/>
       </div>
       <div style={{ textAlign:'left', paddingLeft:'18px' }}>
-        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.3)', marginBottom:'3px' }}>Needs</div>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.3)', marginBottom:'3px' }}>{label}</div>
         <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'15px', fontWeight:700, color:'rgba(255,255,255,0.85)', lineHeight:1.2 }}>{rightValue}</div>
       </div>
     </div>
@@ -1079,6 +1079,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', flexShrink:0 }}>
             {iconBtn(()=>savedHook.toggle(listing.id,requirement.id),isMatchSaved?'Unsave':'Save match',isMatchSaved?<BookmarkCheck style={{ width:'14px', height:'14px', color:ACCENT }}/>:<Bookmark style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,isMatchSaved?'Saved':'Save',isMatchSaved)}
+            {iconBtn(()=>window.open('/Inventory','_blank'),'View your post in Inventory',<ExternalLink style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,'View Post',false)}
             {iconBtn(()=>setShowShare(true),'Share match',<Share2 style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,'Share',false)}
             {iconBtn(()=>setShowPDFOptions(true),'Export PDF',<Printer style={{ width:'14px', height:'14px', color:'rgba(255,255,255,0.5)' }}/>,'PDF',false)}
             <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'6px', cursor:'pointer', display:'flex' }}><X style={{ width:'16px', height:'16px', color:'rgba(255,255,255,0.5)' }}/></button>
@@ -1095,7 +1096,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 56px 1fr', alignItems:'center', marginBottom:'6px' }}>
                     <div style={{ textAlign:'right', paddingRight:'18px', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:ACCENT }}>{myIsListing?'Your Listing':'Their Listing'}</div>
                     <div/>
-                    <div style={{ textAlign:'left', paddingLeft:'18px', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:LAVENDER }}>{myIsListing?'Their Needs':'Your Client'}</div>
+                    <div style={{ textAlign:'left', paddingLeft:'18px', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:LAVENDER }}>{myIsListing?'Their Requirements':"Your Client's Requirements"}</div>
                   </div>
                   {/* Full scoring breakdown, revealed top-down (heaviest factor first) */}
                   <div>

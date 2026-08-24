@@ -236,8 +236,10 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
 
   // Step 1 → Step 2 transition. If the property type supports ranking and the
   // agent hasn't already set custom weights, show the choose-your-path modal.
+  // Skip the modal entirely in edit mode — the agent can use "Edit Client
+  // Priorities" if they want to change weights on an existing requirement.
   const advanceFromStep1 = () => {
-    if (step === 1 && supportsRanking && !formData.client_weights) {
+    if (step === 1 && supportsRanking && !formData.client_weights && !editMode) {
       setPriorityView('modal');
     } else {
       setStep(s => Math.min(s + 1, 3));
