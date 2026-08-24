@@ -592,27 +592,28 @@ function AnimatedBigScore({ score, runKey }) {
   const color = getScoreColor(score), label = getScoreLabel(score);
   const sz=120, r=48, circ=2*Math.PI*r;
   const target = Math.max(0, Math.min(100, Math.round(score || 0)));
-  const [display,setDisplay]=useState(0);
+  const [progress,setProgress]=useState(0);   // 0..1 drives number and arc together
   const [locked,setLocked]=useState(false);
 
   useEffect(()=>{
     // Restart cleanly every time the modal opens or the match changes.
-    setDisplay(0); setLocked(false);
+    setProgress(0); setLocked(false);
     if (target <= 0) { setLocked(true); return; }
-    const dur=1400;
+    const dur=2200;
     let raf, t0;
     const tick=(now)=>{
       if (t0 === undefined) t0 = now;   // anchor on first frame → no negative/jump
       const p = Math.min(1, (now - t0) / dur);
       const eased = 1 - Math.pow(1 - p, 3);   // easeOutCubic
-      setDisplay(Math.max(0, Math.round(eased * target)));
+      setProgress(eased);   // drives both the number and the arc from one value
       if (p < 1) { raf = requestAnimationFrame(tick); }
-      else { setDisplay(target); setLocked(true); }
+      else { setProgress(1); setLocked(true); }
     };
     raf = requestAnimationFrame(tick);
     return ()=>{ if (raf) cancelAnimationFrame(raf); };
   },[runKey,target]);
 
+  const display = Math.round(progress * target);
   const dash=(display/100)*circ;
   const uid=`asg${target}`;
   return (
@@ -629,7 +630,7 @@ function AnimatedBigScore({ score, runKey }) {
         <svg width={sz} height={sz} className={locked?`${uid}locked`:''} style={{ transform:'rotate(-90deg)' }}>
           <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="11"/>
           <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth="11"
-            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" style={{ transition:'stroke-dasharray 0.05s linear' }}/>
+            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
         </svg>
         <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
           <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:700, color, lineHeight:1 }}>{display}</span>
@@ -1033,6 +1034,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
 function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
   const [previewIdx,setPreviewIdx]=useState(0);
   const [hov,setHov]=useState(false);
+  const [phraseHov,setPhraseHov]=useState(false);
   const myIsListing=myPost.postType==='listing', myColor=myIsListing?ACCENT:LAVENDER;
   const best=matches[previewIdx], scoreColor=getScoreColor(best.totalScore);
 
@@ -1085,9 +1087,9 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
         onMouseLeave={()=>setHov(false)}
         style={{
           borderRadius:'16px', overflow:'hidden', background:'rgba(255,255,255,0.04)',
-          border:`2px solid ${hov?scoreColor:scoreColor+'55'}`,
-          boxShadow:hov?`0 0 26px ${scoreColor}45`:`0 0 12px ${scoreColor}1e`,
-          transition:'all 0.2s', position:'relative'
+          border:`2px solid ${phraseHov ? scoreColor+'33' : (hov?scoreColor:scoreColor+'55')}`,
+          boxShadow:phraseHov ? `0 0 8px ${scoreColor}12` : (hov?`0 0 26px ${scoreColor}45`:`0 0 12px ${scoreColor}1e`),
+          transition:'all 0.25s', position:'relative'
         }}>
 
         {/* Photo zone — top two-thirds */}
@@ -1149,14 +1151,26 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
             {priceLine && <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'18px',fontWeight:700,color:'white',lineHeight:1.15 }}>{priceLine}</div>}
             {detailBits.length>0 && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.6)',margin:'2px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{detailBits.join(' \u00b7 ')}</div>}
             {addressLine && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:'2px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{addressLine}</div>}
-            {/* Clickable phrase — the ONLY thing that opens the match */}
-            <button onClick={()=>onOpen(myPost,best,previewIdx)}
-              style={{ display:'inline-flex',alignItems:'center',gap:'6px',background:'transparent',border:'none',cursor:'pointer',padding:'8px 0 0',textAlign:'left' }}>
-              <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',fontWeight:500,color:'rgba(255,255,255,0.7)' }}>
-                {phraseCount}<span style={{ fontWeight:800,color:ACCENT,letterSpacing:'0.02em' }}>YOUR LISTING</span>
-              </span>
-              <ChevronRight style={{ width:'15px',height:'15px',color:ACCENT,flexShrink:0 }}/>
-            </button>
+            {/* Clickable phrase — the ONLY thing that opens the match. Always has a
+                bright teal border + glow; fills in on hover; is the card's focal point. */}
+            <div style={{ marginTop:'10px' }}>
+              <button onClick={()=>onOpen(myPost,best,previewIdx)}
+                onMouseEnter={()=>setPhraseHov(true)}
+                onMouseLeave={()=>setPhraseHov(false)}
+                style={{
+                  display:'inline-flex', alignItems:'center', gap:'7px', cursor:'pointer', textAlign:'left',
+                  padding:'8px 14px', borderRadius:'10px',
+                  border:`1.5px solid ${ACCENT}`,
+                  background:phraseHov ? `${ACCENT}22` : `${ACCENT}0d`,
+                  boxShadow:phraseHov ? `0 0 20px ${ACCENT}77, 0 0 6px ${ACCENT}55` : `0 0 14px ${ACCENT}55`,
+                  transition:'all 0.2s'
+                }}>
+                <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',fontWeight:500,color:'rgba(255,255,255,0.85)' }}>
+                  {phraseCount}<span style={{ fontWeight:800,color:ACCENT,letterSpacing:'0.02em' }}>YOUR LISTING</span>
+                </span>
+                <ChevronRight style={{ width:'15px',height:'15px',color:ACCENT,flexShrink:0 }}/>
+              </button>
+            </div>
           </div>
           {/* Multiple-match navigator */}
           {nMatches>1 && (
