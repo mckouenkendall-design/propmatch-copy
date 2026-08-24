@@ -1087,7 +1087,7 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
   const NoPhotos = () => (
     <div style={{ width:'100%',height:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'10px',background:'#0E1318' }}>
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'3px',
-        background:'rgba(14,19,24,0.6)', borderRadius:'16px', padding:'14px 22px', border:`1.5px solid ${scoreColor}`, boxShadow:`0 0 20px ${scoreColor}55` }}>
+        background:'rgba(14,19,24,0.6)', borderRadius:'16px', padding:'14px 22px', border:`2px solid ${scoreColor}`, boxShadow:`0 0 20px ${scoreColor}55` }}>
         <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'40px', fontWeight:800, color:scoreColor, lineHeight:1 }}>{best.totalScore}</span>
         <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, letterSpacing:'0.12em', color:'rgba(255,255,255,0.5)' }}>MATCH</span>
       </div>
@@ -1103,8 +1103,8 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
         onMouseLeave={()=>setHov(false)}
         style={{
           borderRadius:'16px', overflow:'hidden', background:'rgba(255,255,255,0.04)',
-          border:`2px solid ${phraseHov ? scoreColor+'33' : (hov?scoreColor:scoreColor+'55')}`,
-          boxShadow:phraseHov ? `0 0 8px ${scoreColor}12` : (hov?`0 0 26px ${scoreColor}45`:`0 0 12px ${scoreColor}1e`),
+          border:`2px solid ${phraseHov ? myColor+'33' : (hov?myColor:myColor+'55')}`,
+          boxShadow:phraseHov ? `0 0 8px ${myColor}12` : (hov?`0 0 26px ${myColor}45`:`0 0 12px ${myColor}1e`),
           transition:'all 0.25s', position:'relative'
         }}>
 
@@ -1120,7 +1120,7 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
                 <img src={hero} alt={listingPost.title} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
                 {/* Score badge floating top-right of hero */}
                 <div style={{ position:'absolute', top:'12px', right:'12px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px',
-                  background:'rgba(14,19,24,0.82)', backdropFilter:'blur(6px)', borderRadius:'14px', padding:'8px 12px', border:`1.5px solid ${scoreColor}`, boxShadow:`0 0 16px ${scoreColor}55` }}>
+                  background:'rgba(14,19,24,0.82)', backdropFilter:'blur(6px)', borderRadius:'14px', padding:'8px 12px', border:`2px solid ${scoreColor}`, boxShadow:`0 0 16px ${scoreColor}55` }}>
                   <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'24px', fontWeight:800, color:scoreColor, lineHeight:1 }}>{best.totalScore}</span>
                   <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'8px', fontWeight:700, letterSpacing:'0.12em', color:'rgba(255,255,255,0.5)' }}>MATCH</span>
                 </div>
