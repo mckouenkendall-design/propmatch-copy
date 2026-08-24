@@ -697,36 +697,94 @@ function RangeBar({ value, min, max, label, score, isMoney }) {
 // Listing value on the left, requirement value/range on the right, a single dot
 // in the center colored by how well they match. No bars, no waves — just the
 // values and one dot. Typography does the work.
-function ComparisonRow({ label, value, min, max, score, isMoney }) {
+// ─── Comparison Row ──────────────────────────────────────────────────────────
+// One scoring factor. Listing value on the left, requirement value on the right,
+// a single dot in the center colored by match quality. label sits under the left.
+function ComparisonRow({ label, leftValue, rightValue, score }) {
   const sc = getScoreColor(score);
-  const fmt = (n) => {
+  return (
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 56px 1fr', alignItems:'center', gap:'0', padding:'9px 0', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ textAlign:'right', paddingRight:'18px' }}>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.3)', marginBottom:'3px' }}>{label}</div>
+        <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'15px', fontWeight:700, color:'white', lineHeight:1.2 }}>{leftValue}</div>
+      </div>
+      <div style={{ display:'flex', justifyContent:'center' }}>
+        <div style={{ width:'11px', height:'11px', borderRadius:'50%', background:sc, boxShadow:`0 0 10px ${sc}90`, border:`2px solid #0E1318` }}/>
+      </div>
+      <div style={{ textAlign:'left', paddingLeft:'18px' }}>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.3)', marginBottom:'3px' }}>Needs</div>
+        <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'15px', fontWeight:700, color:'rgba(255,255,255,0.85)', lineHeight:1.2 }}>{rightValue}</div>
+      </div>
+    </div>
+  );
+}
+
+// Build the full set of summary rows from the complete scoring breakdown,
+// sorted by weight descending (heaviest factor first). Every factor that fed
+// the score gets a row — numeric fields show value vs range, categorical
+// fields show the matched value vs what was required.
+function buildSummaryRows(listing, requirement, matchResult) {
+  const { breakdown = [], rangeData = {} } = matchResult || {};
+  const ld = parseDetails(listing), rd = parseDetails(requirement);
+  const fmtNum = (n, isMoney) => {
     if (n == null) return null;
     if (isMoney) return fmtMoney(n);
     if (n >= 1000) return Math.round(n).toLocaleString();
     return (Math.round(n * 100) / 100).toLocaleString();
   };
-  const listingStr = fmt(parseFloat(value));
-  let reqStr;
-  if (min != null && max != null) reqStr = `${fmt(min)}\u2013${fmt(max)}`;
-  else if (min != null) reqStr = `${fmt(min)}+`;
-  else if (max != null) reqStr = `Up to ${fmt(max)}`;
-  else reqStr = '\u2014';
+  const rangeStr = (min, max, isMoney) => {
+    if (min != null && max != null) return `${fmtNum(min,isMoney)}\u2013${fmtNum(max,isMoney)}`;
+    if (min != null) return `${fmtNum(min,isMoney)}+`;
+    if (max != null) return `Up to ${fmtNum(max,isMoney)}`;
+    return 'Open';
+  };
 
-  return (
-    <div style={{ display:'grid', gridTemplateColumns:'1fr auto 1fr', alignItems:'center', gap:'0', padding:'2px 0' }}>
-      <div style={{ textAlign:'right', paddingRight:'18px' }}>
-        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.28)', marginBottom:'2px' }}>{label}</div>
-        <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:700, color:'white' }}>{listingStr}</div>
-      </div>
-      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', width:'56px' }}>
-        <div style={{ width:'11px', height:'11px', borderRadius:'50%', background:sc, boxShadow:`0 0 10px ${sc}90`, border:`2px solid #0E1318` }}/>
-      </div>
-      <div style={{ textAlign:'left', paddingLeft:'18px' }}>
-        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.28)', marginBottom:'2px' }}>Needs</div>
-        <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:700, color:'rgba(255,255,255,0.85)' }}>{reqStr}</div>
-      </div>
-    </div>
-  );
+  const rows = [];
+  breakdown.forEach(item => {
+    const cat = item.category || '';
+    const lc = cat.toLowerCase();
+    let leftValue, rightValue, label = cat;
+
+    // Location: show the matched city/state on both sides.
+    if (lc === 'location') {
+      const loc = [listing.city, listing.state].filter(Boolean).join(', ');
+      leftValue = loc || 'Matches';
+      rightValue = loc || 'Matches';
+      label = 'Location';
+    }
+    // Price: use rangeData for clean two-sided numbers.
+    else if (rangeData.price && (lc.includes('price') || lc.includes('monthly') || lc.includes('rent'))) {
+      const p = rangeData.price;
+      leftValue = fmtNum(p.value, true);
+      rightValue = rangeStr(p.min, p.max, true);
+      label = p.label || cat;
+    }
+    // Size.
+    else if (rangeData.size && lc.includes('size')) {
+      const s = rangeData.size;
+      leftValue = `${fmtNum(s.value)} SF`;
+      rightValue = s.min != null || s.max != null ? `${rangeStr(s.min, s.max)} SF` : 'Open';
+      label = 'Size';
+    }
+    // Everything else (amenities, features, layout, class): the details string
+    // is the listing side; the requirement side is "Required" since it was asked for.
+    else {
+      leftValue = item.details || (item.score >= 50 ? 'Yes' : 'No');
+      rightValue = 'Required';
+      label = cat;
+    }
+    rows.push({ label, leftValue, rightValue, score: item.score, weight: item.weight || 0, icon: item.icon, isLocation: lc === 'location' });
+  });
+
+  // Sort by weight descending — heaviest factor first — but location always pins
+  // to the very top (it's the hard gate that makes the match possible at all,
+  // even when its own display weight is 0 for some property types).
+  rows.sort((a, b) => {
+    if (a.isLocation && !b.isLocation) return -1;
+    if (b.isLocation && !a.isLocation) return 1;
+    return (b.weight || 0) - (a.weight || 0);
+  });
+  return rows;
 }
 
 function buildRangeBars(listing, requirement, breakdown) {
@@ -935,31 +993,27 @@ SCORE BREAKDOWN: ${bStr}\n\nRules:\n1. Be concise and analytical. Reference actu
 }
 
 // ─── Match Modal ──────────────────────────────────────────────────────────────
-// ─── Scatter Reveal ──────────────────────────────────────────────────────────
-// Renders children that "scatter" into place: each child appears at a small
-// randomized delay (not sequential) so the group lands like tossed sand rather
-// than marching in. Each child just pops (quick opacity + tiny scale), no slide.
-// `trigger` starting true kicks off the reveal; `seed` (the runKey) reshuffles.
-function ScatterReveal({ items, trigger, baseDelay=0, spread=260, children }) {
-  const [shown, setShown] = useState(() => items.map(() => false));
-  const delaysRef = useRef([]);
+// ─── Cascade Reveal ──────────────────────────────────────────────────────────
+// Reveals children top-to-bottom at an even cadence (no randomness). The top
+// row (heaviest-weighted factor) lands first, then each one below in sequence —
+// a clean, satisfying "settling" that reads well on screen and exports cleanly.
+function CascadeReveal({ items, trigger, step=90, children }) {
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
-    // Assign each item a random delay within the spread window.
-    delaysRef.current = items.map(() => baseDelay + Math.random() * spread);
-    setShown(items.map(() => false));
+    setCount(0);
     if (!trigger) return;
-    const timers = delaysRef.current.map((d, i) =>
-      setTimeout(() => setShown(prev => { const n = [...prev]; n[i] = true; return n; }), d)
+    const timers = items.map((_, i) =>
+      setTimeout(() => setCount(c => Math.max(c, i + 1)), i * step)
     );
     return () => timers.forEach(clearTimeout);
   }, [trigger, items.length]);
 
   return items.map((item, i) => (
     <div key={i} style={{
-      opacity: shown[i] ? 1 : 0,
-      transform: shown[i] ? 'scale(1)' : 'scale(0.94)',
-      transition: 'opacity 0.22s ease, transform 0.22s ease',
+      opacity: i < count ? 1 : 0,
+      transform: i < count ? 'translateY(0)' : 'translateY(-8px)',
+      transition: 'opacity 0.28s ease, transform 0.28s ease',
     }}>
       {children(item, i)}
     </div>
@@ -973,14 +1027,14 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
 
   // ── Match reveal ──
   // Score counter runs immediately on open (inside AnimatedBigScore, ~2.2s).
-  // stage 1 (at ~1.3s): comparison rows scatter into place like tossed sand
-  // stage 2 (at ~2.2s): agent contact block settles in
+  // stage 1 (at ~1.3s): comparison rows cascade in top-down (heaviest first)
+  // stage 2 (at ~2.6s): agent contact block settles in below
   const [stage,setStage]=useState(0);
   useEffect(()=>{
     setStage(0);
     const timers=[
       setTimeout(()=>setStage(1),1300),
-      setTimeout(()=>setStage(2),2200),
+      setTimeout(()=>setStage(2),2600),
     ];
     return ()=>timers.forEach(clearTimeout);
   },[matchIndex,matchPost?.id]);
@@ -994,6 +1048,7 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
   const posterCompany=matchPost.company_name||posterProfile?.brokerage_name;
   const posterPhoto=posterProfile?.profile_photo_url;
   const rangeBars=useMemo(()=>buildRangeBars(listing,requirement,breakdown),[listing,requirement,breakdown]);
+  const summaryRows=useMemo(()=>buildSummaryRows(listing,requirement,matchResult),[listing,requirement,matchResult]);
   const specSections=useMemo(()=>buildSpecSections(listing,requirement,myIsListing),[listing,requirement,myIsListing]);
   const myLabel=myIsListing?'Your Listing':'Your Requirement', theirLabel=myIsListing?'Their Requirement':'Their Listing';
   const isMatchSaved=savedHook.isSaved(listing.id,requirement.id);
@@ -1034,21 +1089,21 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
             <div style={{ padding:'28px 32px' }}>
               <div style={{ display:'flex', justifyContent:'center', marginBottom:'28px' }}><AnimatedBigScore score={totalScore} runKey={`${matchIndex}-${matchPost?.id}`}/></div>
 
-              {rangeBars.length>0&&(
+              {summaryRows.length>0&&(
                 <div style={{ marginBottom:'30px' }}>
                   {/* Column headers: listing side (teal) vs requirement side (lavender) */}
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 56px 1fr', alignItems:'center', marginBottom:'18px' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 56px 1fr', alignItems:'center', marginBottom:'6px' }}>
                     <div style={{ textAlign:'right', paddingRight:'18px', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:ACCENT }}>{myIsListing?'Your Listing':'Their Listing'}</div>
                     <div/>
                     <div style={{ textAlign:'left', paddingLeft:'18px', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:LAVENDER }}>{myIsListing?'Their Needs':'Your Client'}</div>
                   </div>
-                  {/* Scatter-revealed comparison rows */}
-                  <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
-                    <ScatterReveal items={rangeBars} trigger={stage>=1} baseDelay={0} spread={280}>
-                      {(bar,i)=>(
-                        <ComparisonRow label={bar.label} value={bar.value} min={bar.min} max={bar.max} score={bar.score} isMoney={bar.isMoney}/>
+                  {/* Full scoring breakdown, revealed top-down (heaviest factor first) */}
+                  <div>
+                    <CascadeReveal items={summaryRows} trigger={stage>=1} step={90}>
+                      {(row,i)=>(
+                        <ComparisonRow label={row.label} leftValue={row.leftValue} rightValue={row.rightValue} score={row.score}/>
                       )}
-                    </ScatterReveal>
+                    </CascadeReveal>
                   </div>
                 </div>
               )}
