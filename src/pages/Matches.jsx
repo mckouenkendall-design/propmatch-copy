@@ -1038,44 +1038,60 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
   const myIsListing=myPost.postType==='listing', myColor=myIsListing?ACCENT:LAVENDER;
   const best=matches[previewIdx], scoreColor=getScoreColor(best.totalScore);
 
-  // Pull all photos off MY post (this is the card for the agent's own listing/requirement).
-  const myPd = parseDetails(myPost);
+  // The card always showcases the LISTING (it has photos + real property specs).
+  // On the listing side that's my own post; on the requirement side it's the
+  // matching listing (best.listing). Requirements have no photos to show.
+  const listingPost = myIsListing ? myPost : (best.listing || myPost);
+
+  // Pull all photos off the listing.
+  const listPd = parseDetails(listingPost);
   const photos = (() => {
     const toArr = (v) => {
       if (Array.isArray(v) && v.length) return v;
       if (typeof v === 'string') { try { const p = JSON.parse(v); if (Array.isArray(p) && p.length) return p; } catch {} }
       return null;
     };
-    const fromPd = toArr(myPd?.photo_urls);
+    const fromPd = toArr(listPd?.photo_urls);
     if (fromPd) return fromPd;
-    const single = myPd?.photo_url || myPost.photo_url;
+    const single = listPd?.photo_url || listingPost.photo_url;
     if (single) return [single];
     return [];
   })();
   const hero = photos[0] || null;
   const grid = photos.slice(1,4); // up to 3 extra photos on the right (photos 2, 3, 4)
+  const hasPhotos = photos.length > 0;
 
-  // Residential types show bed/bath; commercial types don't.
+  // Specs come from the listing.
   const RESIDENTIAL = ['single_family','condo','apartment','multi_family','multi_family_5','townhouse','manufactured','land_residential'];
-  const isResidential = RESIDENTIAL.includes(myPost.property_type);
-  const beds = myPd?.bedrooms ?? myPd?.beds;
-  const baths = myPd?.bathrooms ?? myPd?.baths;
-  const sqft = myPost.size_sqft ? `${parseFloat(myPost.size_sqft).toLocaleString()} SF` : null;
-  const ptLabel = PT[myPost.property_type] || myPost.property_type;
-  const priceLine = priceStr(myPost, myIsListing);
-  const addressLine = myIsListing
-    ? [myPost.address, myPost.city, myPost.state].filter(Boolean).join(', ')
-    : (myPost.cities?.join(', ') || '');
+  const isResidential = RESIDENTIAL.includes(listingPost.property_type);
+  const beds = listPd?.bedrooms ?? listPd?.beds;
+  const baths = listPd?.bathrooms ?? listPd?.baths;
+  const sqft = listingPost.size_sqft ? `${parseFloat(listingPost.size_sqft).toLocaleString()} SF` : null;
+  const ptLabel = PT[listingPost.property_type] || listingPost.property_type;
+  const priceLine = priceStr(listingPost, true);
+  const addressLine = [listingPost.address, listingPost.city, listingPost.state].filter(Boolean).join(', ');
   const detailBits = isResidential
     ? [beds!=null?`${beds} bd`:null, baths!=null?`${baths} ba`:null, sqft, ptLabel].filter(Boolean)
     : [sqft, ptLabel].filter(Boolean);
 
   const nMatches = matches.length;
-  const phraseCount = nMatches>1 ? `${nMatches} people are looking for ` : 'Someone is looking for ';
 
-  const photoPlaceholder = (
-    <div style={{ width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',background:'#0E1318' }}>
-      <Image style={{ width:'26px',height:'26px',color:'rgba(255,255,255,0.12)' }}/>
+  // Phrase flips by side. Listing side: someone wants YOUR LISTING.
+  // Requirement side: someone HAS a listing matching YOUR CLIENT'S REQUIREMENT.
+  const phrasePrefix = myIsListing
+    ? (nMatches>1 ? `${nMatches} people are looking for ` : 'Someone is looking for ')
+    : (nMatches>1 ? `${nMatches} listings match ` : 'Someone has a listing matching ');
+  const phraseBold = myIsListing ? 'YOUR LISTING' : "YOUR CLIENT'S REQUIREMENT";
+
+  // No-photo state: dark area with the score centered + "No photos listed".
+  const NoPhotos = () => (
+    <div style={{ width:'100%',height:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'10px',background:'#0E1318' }}>
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'3px',
+        background:'rgba(14,19,24,0.6)', borderRadius:'16px', padding:'14px 22px', border:`1.5px solid ${scoreColor}`, boxShadow:`0 0 20px ${scoreColor}55` }}>
+        <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'40px', fontWeight:800, color:scoreColor, lineHeight:1 }}>{best.totalScore}</span>
+        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, letterSpacing:'0.12em', color:'rgba(255,255,255,0.5)' }}>MATCH</span>
+      </div>
+      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.35)' }}>No photos listed</span>
     </div>
   );
 
@@ -1092,56 +1108,63 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
           transition:'all 0.25s', position:'relative'
         }}>
 
-        {/* Photo zone — top two-thirds */}
-        <div style={{ display:'flex', gap:'3px', height:'260px', position:'relative' }}>
-          {/* Hero photo left */}
-          <div style={{ flex:'1.6 1 0', position:'relative', overflow:'hidden' }}>
-            {hero ? <img src={hero} alt={myPost.title} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/> : photoPlaceholder}
-            {/* Score badge floating top-right of hero */}
-            <div style={{ position:'absolute', top:'12px', right:'12px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px',
-              background:'rgba(14,19,24,0.82)', backdropFilter:'blur(6px)', borderRadius:'14px', padding:'8px 12px', border:`1.5px solid ${scoreColor}`, boxShadow:`0 0 16px ${scoreColor}55` }}>
-              <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'24px', fontWeight:800, color:scoreColor, lineHeight:1 }}>{best.totalScore}</span>
-              <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'8px', fontWeight:700, letterSpacing:'0.12em', color:'rgba(255,255,255,0.5)' }}>MATCH</span>
-            </div>
-          </div>
-          {/* Adaptive right side — only rendered when there are extra photos beyond the hero */}
-          {grid.length>0 && (
-            <div style={{ flex:'1 1 0', display:'flex', flexDirection:'column', gap:'3px' }}>
-              {grid.length===1 && (
-                <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                  <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+        {/* Photo zone — taller for more image room */}
+        <div style={{ display:'flex', gap:'3px', height:'300px', position:'relative' }}>
+          {!hasPhotos ? (
+            /* No photos: full-width dark area with the score as the focal point */
+            <div style={{ flex:1 }}><NoPhotos/></div>
+          ) : (
+            <>
+              {/* Hero photo left */}
+              <div style={{ flex:'1.6 1 0', position:'relative', overflow:'hidden' }}>
+                <img src={hero} alt={listingPost.title} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                {/* Score badge floating top-right of hero */}
+                <div style={{ position:'absolute', top:'12px', right:'12px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px',
+                  background:'rgba(14,19,24,0.82)', backdropFilter:'blur(6px)', borderRadius:'14px', padding:'8px 12px', border:`1.5px solid ${scoreColor}`, boxShadow:`0 0 16px ${scoreColor}55` }}>
+                  <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'24px', fontWeight:800, color:scoreColor, lineHeight:1 }}>{best.totalScore}</span>
+                  <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'8px', fontWeight:700, letterSpacing:'0.12em', color:'rgba(255,255,255,0.5)' }}>MATCH</span>
+                </div>
+              </div>
+              {/* Adaptive right side — only rendered when there are extra photos beyond the hero */}
+              {grid.length>0 && (
+                <div style={{ flex:'1 1 0', display:'flex', flexDirection:'column', gap:'3px' }}>
+                  {grid.length===1 && (
+                    <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                      <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                    </div>
+                  )}
+                  {grid.length===2 && (
+                    <>
+                      <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                        <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                      </div>
+                      <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                        <img src={grid[1]} alt="Photo 3" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                      </div>
+                    </>
+                  )}
+                  {grid.length>=3 && (
+                    <>
+                      {/* Photo 2 takes the top half */}
+                      <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                        <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                      </div>
+                      {/* Photos 3 and 4 split the bottom half (3 gets full width if no 4th) */}
+                      <div style={{ flex:1, display:'flex', gap:'3px' }}>
+                        <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                          <img src={grid[1]} alt="Photo 3" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                        </div>
+                        {grid[2] && (
+                          <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                            <img src={grid[2]} alt="Photo 4" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
-              {grid.length===2 && (
-                <>
-                  <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                    <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                  </div>
-                  <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                    <img src={grid[1]} alt="Photo 3" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                  </div>
-                </>
-              )}
-              {grid.length>=3 && (
-                <>
-                  {/* Photo 2 takes the top half */}
-                  <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                    <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                  </div>
-                  {/* Photos 3 and 4 split the bottom half (3 gets full width if no 4th) */}
-                  <div style={{ flex:1, display:'flex', gap:'3px' }}>
-                    <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                      <img src={grid[1]} alt="Photo 3" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                    </div>
-                    {grid[2] && (
-                      <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                        <img src={grid[2]} alt="Photo 4" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+            </>
           )}
         </div>
 
@@ -1156,22 +1179,23 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
           {/* Right side: the clickable phrase (focal point), plus multi-match nav below it */}
           <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'10px', flexShrink:0 }}>
             {/* Clickable phrase — the ONLY thing that opens the match. Always has a
-                bright teal border + glow; fills in on hover; is the card's focal point. */}
+                bright colored border + glow; fills in on hover; is the card's focal point.
+                Teal for listings, lavender for requirements. */}
             <button onClick={()=>onOpen(myPost,best,previewIdx)}
               onMouseEnter={()=>setPhraseHov(true)}
               onMouseLeave={()=>setPhraseHov(false)}
               style={{
                 display:'inline-flex', alignItems:'center', gap:'7px', cursor:'pointer', textAlign:'left',
                 padding:'10px 16px', borderRadius:'10px',
-                border:`1.5px solid ${ACCENT}`,
-                background:phraseHov ? `${ACCENT}22` : `${ACCENT}0d`,
-                boxShadow:phraseHov ? `0 0 20px ${ACCENT}77, 0 0 6px ${ACCENT}55` : `0 0 14px ${ACCENT}55`,
+                border:`1.5px solid ${myColor}`,
+                background:phraseHov ? `${myColor}22` : `${myColor}0d`,
+                boxShadow:phraseHov ? `0 0 20px ${myColor}77, 0 0 6px ${myColor}55` : `0 0 14px ${myColor}55`,
                 transition:'all 0.2s'
               }}>
               <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',fontWeight:500,color:'rgba(255,255,255,0.85)' }}>
-                {phraseCount}<span style={{ fontWeight:800,color:ACCENT,letterSpacing:'0.02em' }}>YOUR LISTING</span>
+                {phrasePrefix}<span style={{ fontWeight:800,color:myColor,letterSpacing:'0.02em' }}>{phraseBold}</span>
               </span>
-              <ChevronRight style={{ width:'15px',height:'15px',color:ACCENT,flexShrink:0 }}/>
+              <ChevronRight style={{ width:'15px',height:'15px',color:myColor,flexShrink:0 }}/>
             </button>
 
             {/* Multiple-match navigator */}
