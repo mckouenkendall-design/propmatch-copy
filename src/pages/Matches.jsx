@@ -1151,41 +1151,44 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
             {priceLine && <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'18px',fontWeight:700,color:'white',lineHeight:1.15 }}>{priceLine}</div>}
             {detailBits.length>0 && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.6)',margin:'2px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{detailBits.join(' \u00b7 ')}</div>}
             {addressLine && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:'2px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{addressLine}</div>}
+          </div>
+
+          {/* Right side: the clickable phrase (focal point), plus multi-match nav below it */}
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'10px', flexShrink:0 }}>
             {/* Clickable phrase — the ONLY thing that opens the match. Always has a
                 bright teal border + glow; fills in on hover; is the card's focal point. */}
-            <div style={{ marginTop:'10px' }}>
-              <button onClick={()=>onOpen(myPost,best,previewIdx)}
-                onMouseEnter={()=>setPhraseHov(true)}
-                onMouseLeave={()=>setPhraseHov(false)}
-                style={{
-                  display:'inline-flex', alignItems:'center', gap:'7px', cursor:'pointer', textAlign:'left',
-                  padding:'8px 14px', borderRadius:'10px',
-                  border:`1.5px solid ${ACCENT}`,
-                  background:phraseHov ? `${ACCENT}22` : `${ACCENT}0d`,
-                  boxShadow:phraseHov ? `0 0 20px ${ACCENT}77, 0 0 6px ${ACCENT}55` : `0 0 14px ${ACCENT}55`,
-                  transition:'all 0.2s'
-                }}>
-                <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',fontWeight:500,color:'rgba(255,255,255,0.85)' }}>
-                  {phraseCount}<span style={{ fontWeight:800,color:ACCENT,letterSpacing:'0.02em' }}>YOUR LISTING</span>
-                </span>
-                <ChevronRight style={{ width:'15px',height:'15px',color:ACCENT,flexShrink:0 }}/>
-              </button>
-            </div>
+            <button onClick={()=>onOpen(myPost,best,previewIdx)}
+              onMouseEnter={()=>setPhraseHov(true)}
+              onMouseLeave={()=>setPhraseHov(false)}
+              style={{
+                display:'inline-flex', alignItems:'center', gap:'7px', cursor:'pointer', textAlign:'left',
+                padding:'10px 16px', borderRadius:'10px',
+                border:`1.5px solid ${ACCENT}`,
+                background:phraseHov ? `${ACCENT}22` : `${ACCENT}0d`,
+                boxShadow:phraseHov ? `0 0 20px ${ACCENT}77, 0 0 6px ${ACCENT}55` : `0 0 14px ${ACCENT}55`,
+                transition:'all 0.2s'
+              }}>
+              <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',fontWeight:500,color:'rgba(255,255,255,0.85)' }}>
+                {phraseCount}<span style={{ fontWeight:800,color:ACCENT,letterSpacing:'0.02em' }}>YOUR LISTING</span>
+              </span>
+              <ChevronRight style={{ width:'15px',height:'15px',color:ACCENT,flexShrink:0 }}/>
+            </button>
+
+            {/* Multiple-match navigator */}
+            {nMatches>1 && (
+              <div style={{ display:'flex',alignItems:'center',gap:'6px' }}>
+                <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i-1+nMatches)%nMatches);}}
+                  style={{ background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'6px',padding:'4px 6px',cursor:'pointer',display:'flex' }}>
+                  <ChevronLeft style={{width:'13px',height:'13px',color:'rgba(255,255,255,0.6)'}}/>
+                </button>
+                <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.4)',minWidth:'30px',textAlign:'center' }}>{previewIdx+1}/{nMatches}</span>
+                <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i+1)%nMatches);}}
+                  style={{ background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'6px',padding:'4px 6px',cursor:'pointer',display:'flex' }}>
+                  <ChevronRight style={{width:'13px',height:'13px',color:'rgba(255,255,255,0.6)'}}/>
+                </button>
+              </div>
+            )}
           </div>
-          {/* Multiple-match navigator */}
-          {nMatches>1 && (
-            <div style={{ display:'flex',alignItems:'center',gap:'6px',flexShrink:0 }}>
-              <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i-1+nMatches)%nMatches);}}
-                style={{ background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'6px',padding:'4px 6px',cursor:'pointer',display:'flex' }}>
-                <ChevronLeft style={{width:'13px',height:'13px',color:'rgba(255,255,255,0.6)'}}/>
-              </button>
-              <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.4)',minWidth:'30px',textAlign:'center' }}>{previewIdx+1}/{nMatches}</span>
-              <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i+1)%nMatches);}}
-                style={{ background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'6px',padding:'4px 6px',cursor:'pointer',display:'flex' }}>
-                <ChevronRight style={{width:'13px',height:'13px',color:'rgba(255,255,255,0.6)'}}/>
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>
