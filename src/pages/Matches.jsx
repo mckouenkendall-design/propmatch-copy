@@ -10,6 +10,7 @@ import {
   Bookmark, BookmarkCheck, Share2, Printer, Copy, CheckCheck, ExternalLink
 } from 'lucide-react';
 import { calculateMatchScore, getScoreColor, getScoreLabel, parseDetails } from '@/utils/matchScore';
+import { itemsForPropertyType, IMPORTANCE_LABELS } from '@/utils/clientWeightDefaults';
 import FloatingMessageCompose from '@/components/messages/FloatingMessageCompose';
 import AgentContactModal from '@/components/shared/AgentContactModal';
 
@@ -997,6 +998,266 @@ SCORE BREAKDOWN: ${bStr}\n\nRules:\n1. Be concise and analytical. Reference actu
 // Reveals children top-to-bottom at an even cadence (no randomness). The top
 // row (heaviest-weighted factor) lands first, then each one below in sequence —
 // a clean, satisfying "settling" that reads well on screen and exports cleanly.
+// ─── Post Profile (Zillow-style single-post view for the second tab) ─────────
+// Renders ONE post (the other agent's) as a clean, organized profile. For a
+// listing it reads like a Zillow property page (photo strip + sections). For a
+// requirement it reads as "here's what this client needs" with the agent's
+// priority weighting shown.
+
+const TIMELINE_LABELS = {
+  asap:'ASAP', flexible:'Flexible', '1_3_months':'1\u20133 months',
+  '3_6_months':'3\u20136 months', '6_9_months':'6\u20139 months', '9_plus_months':'9+ months',
+};
+
+// One label/value row inside a section. Skips itself when value is empty.
+function ProfileRow({ label, value }) {
+  if (value == null || value === '' || (Array.isArray(value) && !value.length)) return null;
+  const display = Array.isArray(value) ? value.join(', ') : value;
+  return (
+    <div style={{ display:'grid', gridTemplateColumns:'160px 1fr', gap:'12px', padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
+      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.4)' }}>{label}</span>
+      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:'white', wordBreak:'break-word' }}>{display}</span>
+    </div>
+  );
+}
+
+function ProfileSection({ title, children }) {
+  const kids = React.Children.toArray(children).filter(Boolean);
+  if (!kids.length) return null;
+  return (
+    <div style={{ marginBottom:'26px' }}>
+      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.09em', color:'rgba(255,255,255,0.32)', margin:'0 0 8px' }}>{title}</p>
+      <div>{kids}</div>
+    </div>
+  );
+}
+
+// Chip grid for amenities/features.
+function ChipGrid({ items }) {
+  if (!items || !items.length) return null;
+  return (
+    <div style={{ display:'flex', flexWrap:'wrap', gap:'7px' }}>
+      {items.map((it,i)=>(
+        <span key={i} style={{ display:'inline-flex', alignItems:'center', gap:'5px', padding:'5px 11px', background:'rgba(0,219,197,0.07)', border:'1px solid rgba(0,219,197,0.2)', borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.8)', textTransform:'capitalize' }}>
+          <Check style={{ width:'11px', height:'11px', color:ACCENT }}/>{String(it).replace(/_/g,' ')}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function PostProfile({ post, isListingPost, onViewPhotos }) {
+  const pd = parseDetails(post);
+  const money = (n)=> n!=null&&n!==''? `$${parseFloat(n).toLocaleString()}` : null;
+  const sqftStr = (n)=> n!=null&&n!==''? `${parseFloat(n).toLocaleString()} SF` : null;
+  const pt = post.property_type;
+  const isResidential = ['single_family','condo','apartment','multi_family','multi_family_5','townhouse','manufactured','land_residential'].includes(pt);
+
+  // ── photos (listing only) ──
+  const photos = (() => {
+    const toArr=(v)=>{ if(Array.isArray(v)&&v.length)return v; if(typeof v==='string'){try{const p=JSON.parse(v);if(Array.isArray(p)&&p.length)return p;}catch{}} return null; };
+    const fromPd=toArr(pd?.photo_urls); if(fromPd)return fromPd;
+    const single=pd?.photo_url||post.photo_url; return single?[single]:[];
+  })();
+  const [activePhoto,setActivePhoto]=useState(0);
+  const brochureUrl = pd?.brochure_url;
+
+  // ── header line ──
+  const priceLine = priceStr(post, isListingPost);
+  const locationLine = isListingPost
+    ? [post.address, post.city, post.state].filter(Boolean).join(', ')
+    : (() => { let c=post.cities; if(typeof c==='string'){try{c=JSON.parse(c);}catch{c=c.split(',').map(x=>x.trim());}} return Array.isArray(c)?c.join(', '):c||''; })();
+  const sizeLine = isListingPost
+    ? sqftStr(post.size_sqft)
+    : ((post.min_size_sqft||post.max_size_sqft)?`${fmtN(post.min_size_sqft)||'0'}\u2013${fmtN(post.max_size_sqft)||'\u221e'} SF`:null);
+  const timeline = !isListingPost && post.timeline ? (TIMELINE_LABELS[post.timeline]||post.timeline) : null;
+
+  return (
+    <div style={{ padding:'0 0 8px' }}>
+      {/* Photo gallery — listings only */}
+      {isListingPost && photos.length>0 && (
+        <div style={{ marginBottom:'22px' }}>
+          <div onClick={()=>onViewPhotos&&onViewPhotos(photos)} style={{ width:'100%', height:'320px', borderRadius:'14px', overflow:'hidden', background:'#0E1318', cursor:'pointer', position:'relative' }}>
+            <img src={photos[activePhoto]} alt={post.title} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+            {photos.length>1 && (
+              <div style={{ position:'absolute', bottom:'12px', right:'12px', background:'rgba(14,19,24,0.8)', backdropFilter:'blur(4px)', borderRadius:'20px', padding:'5px 12px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:600, color:'white' }}>
+                {activePhoto+1} / {photos.length}
+              </div>
+            )}
+          </div>
+          {photos.length>1 && (
+            <div style={{ display:'flex', gap:'8px', marginTop:'10px', overflowX:'auto', paddingBottom:'4px' }}>
+              {photos.map((url,i)=>(
+                <button key={i} onClick={()=>setActivePhoto(i)} style={{ flexShrink:0, width:'92px', height:'64px', borderRadius:'8px', overflow:'hidden', border:`2px solid ${i===activePhoto?ACCENT:'transparent'}`, cursor:'pointer', padding:0, background:'#0E1318' }}>
+                  <img src={url} alt={`Photo ${i+1}`} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ marginBottom:'24px' }}>
+        {priceLine && <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'28px', fontWeight:800, color:'white', lineHeight:1.1, marginBottom:'6px' }}>{priceLine}</div>}
+        <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', alignItems:'center' }}>
+          {[PT[pt]||pt, TX[post.transaction_type]||post.transaction_type, sizeLine, timeline&&`Move-in: ${timeline}`].filter(Boolean).map((chip,i)=>(
+            <span key={i} style={{ padding:'4px 11px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color:'rgba(255,255,255,0.7)' }}>{chip}</span>
+          ))}
+        </div>
+        {locationLine && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.5)', margin:'10px 0 0' }}>{locationLine}</p>}
+      </div>
+
+      {isListingPost ? <ListingProfileBody post={post} pd={pd} pt={pt} isResidential={isResidential} money={money} sqftStr={sqftStr} brochureUrl={brochureUrl}/>
+                     : <RequirementProfileBody post={post} pd={pd} pt={pt} isResidential={isResidential} money={money} sqftStr={sqftStr}/>}
+    </div>
+  );
+}
+
+// Listing body — Zillow-style sections.
+function ListingProfileBody({ post, pd, pt, isResidential, money, sqftStr, brochureUrl }) {
+  const yesNo = (v)=> v?'Yes':null;
+  return (
+    <>
+      <ProfileSection title="Overview">
+        <ProfileRow label="Property Type" value={PT[pt]||pt}/>
+        <ProfileRow label="Transaction" value={TX[post.transaction_type]||post.transaction_type}/>
+        <ProfileRow label="Price" value={priceStr(post,true)}/>
+        <ProfileRow label="Size" value={sqftStr(post.size_sqft)}/>
+        <ProfileRow label="Address" value={post.address}/>
+        <ProfileRow label="City / State" value={[post.city,post.state].filter(Boolean).join(', ')}/>
+        <ProfileRow label="Zip Code" value={post.zip_code}/>
+        <ProfileRow label="Status" value={post.status||'Active'}/>
+      </ProfileSection>
+
+      {(post.transaction_type==='lease'||post.transaction_type==='sublease')&&(
+        <ProfileSection title="Lease Terms">
+          <ProfileRow label="Lease Type" value={LL[pd.lease_type]||pd.lease_type}/>
+          <ProfileRow label="Lease Term" value={pd.lease_term}/>
+          <ProfileRow label="Available" value={pd.available_date}/>
+        </ProfileSection>
+      )}
+
+      {/* Type-specific details */}
+      <ProfileSection title="Property Details">
+        {pt==='office'&&<><ProfileRow label="Private Offices" value={pd.offices}/><ProfileRow label="Conference Rooms" value={pd.conf_rooms}/><ProfileRow label="Building Class" value={pd.building_class&&`Class ${pd.building_class}`}/><ProfileRow label="Total Parking" value={pd.total_parking_spaces}/><ProfileRow label="Parking Ratio" value={pd.parking_ratio}/><ProfileRow label="Ceiling Height" value={pd.ceiling_height}/><ProfileRow label="Suite Number" value={pd.suite_number}/><ProfileRow label="Zoning" value={pd.zoning}/></>}
+        {pt==='medical_office'&&<><ProfileRow label="Exam Rooms" value={pd.exam_rooms}/><ProfileRow label="Procedure Rooms" value={pd.procedure_rooms}/><ProfileRow label="Lab Space" value={pd.lab_sf&&`${pd.lab_sf} SF`}/><ProfileRow label="Building Class" value={pd.building_class&&`Class ${pd.building_class}`}/><ProfileRow label="Suite Number" value={pd.suite_number}/><ProfileRow label="Zoning" value={pd.zoning}/></>}
+        {pt==='retail'&&<><ProfileRow label="Sales Floor" value={pd.sales_floor_sf&&`${pd.sales_floor_sf} SF`}/><ProfileRow label="Street Frontage" value={pd.frontage&&`${pd.frontage} ft`}/><ProfileRow label="Traffic Count" value={pd.traffic_count&&`${parseInt(pd.traffic_count).toLocaleString()}/day`}/><ProfileRow label="Suite Number" value={pd.suite_number}/><ProfileRow label="Zoning" value={pd.zoning}/></>}
+        {pt==='industrial_flex'&&<><ProfileRow label="Loading Docks" value={pd.dock_doors}/><ProfileRow label="Drive-In Doors" value={pd.drive_in_doors}/><ProfileRow label="Clear Height" value={pd.clear_height&&`${pd.clear_height} ft`}/><ProfileRow label="3-Phase Power" value={pd.three_phase?'Available':null}/><ProfileRow label="Crane System" value={pd.crane_system}/><ProfileRow label="Zoning" value={pd.zoning}/></>}
+        {['single_family','condo','apartment','townhouse','manufactured'].includes(pt)&&<><ProfileRow label="Bedrooms" value={pd.bedrooms}/><ProfileRow label="Bathrooms" value={pd.bathrooms}/><ProfileRow label="Year Built" value={pd.year_built}/><ProfileRow label="Architectural Style" value={pd.arch_style}/><ProfileRow label="HOA" value={pd.hoa&&`$${parseFloat(pd.hoa).toLocaleString()}/mo`}/><ProfileRow label="Parking" value={pd.parking}/></>}
+        {(pt==='multi_family'||pt==='multi_family_5')&&<><ProfileRow label="Total Units" value={pd.total_units}/><ProfileRow label="Cap Rate" value={pd.cap_rate&&`${pd.cap_rate}%`}/><ProfileRow label="Occupancy" value={pd.occupancy_pct&&`${pd.occupancy_pct}%`}/><ProfileRow label="NOI" value={pd.noi&&`$${parseFloat(pd.noi).toLocaleString()}`}/></>}
+        {pt==='land_residential'&&<><ProfileRow label="Lot Size" value={pd.lot_size}/><ProfileRow label="Zoning" value={pd.zoning}/><ProfileRow label="Utilities" value={pd.utilities_at_site}/></>}
+      </ProfileSection>
+
+      {/* Amenities / features */}
+      {(() => {
+        const amen=[...(pd.building_amenities||[]),...(pd.amenities||[]),...(pd.features||[]),...(pd.medical_features||[]),...(pd.retail_features||[])];
+        return amen.length? <ProfileSection title="Features & Amenities"><ChipGrid items={amen}/></ProfileSection> : null;
+      })()}
+
+      {/* Financials for investment sales */}
+      {(post.transaction_type==='sale'||post.transaction_type==='purchase')&&(pd.cap_rate||pd.noi||pd.sale_cap_rate||pd.sale_noi)&&(
+        <ProfileSection title="Financial Details">
+          <ProfileRow label="Cap Rate" value={(pd.cap_rate||pd.sale_cap_rate)&&`${pd.cap_rate||pd.sale_cap_rate}%`}/>
+          <ProfileRow label="NOI" value={(pd.noi||pd.sale_noi)&&`$${parseFloat(pd.noi||pd.sale_noi).toLocaleString()}`}/>
+        </ProfileSection>
+      )}
+
+      {(post.description||pd.description)&&(
+        <ProfileSection title="Description">
+          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.7)', lineHeight:1.7, margin:0 }}>{post.description||pd.description}</p>
+        </ProfileSection>
+      )}
+
+      {brochureUrl&&(
+        <a href={brochureUrl} target="_blank" rel="noreferrer" style={{ display:'inline-flex', alignItems:'center', gap:'8px', padding:'10px 18px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'10px', fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:600, color:'white', textDecoration:'none' }}>
+          <FileText style={{ width:'15px', height:'15px' }}/> Download Brochure
+        </a>
+      )}
+    </>
+  );
+}
+
+// Requirement body — what the client needs + the agent's priority weighting.
+function RequirementProfileBody({ post, pd, pt, isResidential, money, sqftStr }) {
+  const range=(min,max,unit='')=>{ if(min==null&&max==null)return null; return `${fmtN(min)||'0'}\u2013${fmtN(max)||'\u221e'}${unit}`; };
+  const weights = pd.client_weights && typeof pd.client_weights==='object' ? pd.client_weights : null;
+
+  return (
+    <>
+      <ProfileSection title="Space Requirements">
+        <ProfileRow label="Size Range" value={range(post.min_size_sqft,post.max_size_sqft,' SF')}/>
+        {pt==='office'&&<><ProfileRow label="Min. Private Offices" value={pd.min_offices}/><ProfileRow label="Min. Conference Rooms" value={pd.min_conf_rooms}/><ProfileRow label="Acceptable Classes" value={pd.building_classes?.length&&`Class ${pd.building_classes.join('/')}`}/><ProfileRow label="Min. Parking" value={pd.min_total_parking_spaces}/></>}
+        {pt==='medical_office'&&<><ProfileRow label="Min. Exam Rooms" value={pd.min_exam_rooms}/><ProfileRow label="Min. Procedure Rooms" value={pd.min_procedure_rooms}/><ProfileRow label="Min. Lab Space" value={pd.min_lab_sf&&`${pd.min_lab_sf} SF`}/></>}
+        {pt==='retail'&&<><ProfileRow label="Min. Sales Floor" value={pd.min_sales_floor_sf&&`${pd.min_sales_floor_sf} SF`}/><ProfileRow label="Min. Frontage" value={pd.min_frontage&&`${pd.min_frontage} ft`}/><ProfileRow label="Min. Traffic Count" value={pd.min_traffic_count&&`${parseInt(pd.min_traffic_count).toLocaleString()}/day`}/></>}
+        {pt==='industrial_flex'&&<><ProfileRow label="Min. Loading Docks" value={pd.min_dock_doors}/><ProfileRow label="Min. Drive-In Doors" value={pd.min_drive_in_doors}/><ProfileRow label="Min. Clear Height" value={pd.min_clear_height&&`${pd.min_clear_height} ft`}/><ProfileRow label="3-Phase Power" value={pd.three_phase_required?'Required':null}/></>}
+        {['single_family','condo','apartment','townhouse','manufactured'].includes(pt)&&<><ProfileRow label="Bedrooms" value={range(pd.min_bedrooms,pd.max_bedrooms)}/><ProfileRow label="Bathrooms" value={range(pd.min_bathrooms,pd.max_bathrooms)}/><ProfileRow label="Min. Year Built" value={pd.min_year_built&&`After ${pd.min_year_built}`}/><ProfileRow label="Max HOA" value={pd.max_hoa&&`$${parseFloat(pd.max_hoa).toLocaleString()}/mo`}/></>}
+        {(pt==='multi_family'||pt==='multi_family_5')&&<><ProfileRow label="Unit Count" value={range(pd.min_units,pd.max_units)}/><ProfileRow label="Min. Cap Rate" value={pd.min_cap_rate&&`Min ${pd.min_cap_rate}%`}/></>}
+      </ProfileSection>
+
+      <ProfileSection title="Terms">
+        <ProfileRow label="Budget" value={priceStr(post,false)}/>
+        <ProfileRow label="Transaction" value={TX[post.transaction_type]||post.transaction_type}/>
+        <ProfileRow label="Lease Type" value={pd.lease_types?.length?pd.lease_types.map(t=>LL[t]||t).join(', '):(LL[pd.lease_type]||pd.lease_type)}/>
+        <ProfileRow label="Lease Term" value={pd.lease_term||pd.min_lease_term}/>
+        <ProfileRow label="Move-in Timeline" value={post.timeline&&(TIMELINE_LABELS[post.timeline]||post.timeline)}/>
+      </ProfileSection>
+
+      {/* Must-haves and nice-to-haves split by weight */}
+      {(() => {
+        const musts=[...(pd.building_amenities_required||[]),...(pd.must_haves||[])];
+        const nice=[...(pd.nice_to_haves||[]),...(pd.preferred_amenities||[])];
+        return (musts.length||nice.length)? (
+          <ProfileSection title="Preferences">
+            {musts.length>0&&<div style={{ marginBottom:nice.length?'14px':0 }}><p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.4)', margin:'0 0 8px' }}>Must-Haves</p><ChipGrid items={musts}/></div>}
+            {nice.length>0&&<div><p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.4)', margin:'0 0 8px' }}>Nice-to-Have</p><ChipGrid items={nice}/></div>}
+          </ProfileSection>
+        ) : null;
+      })()}
+
+      {/* How the agent weighted this client's priorities */}
+      <ClientPriorities pt={pt} weights={weights}/>
+
+      {(post.notes||pd.intended_use)&&(
+        <ProfileSection title="Agent Notes">
+          <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.7)', lineHeight:1.7, margin:0 }}>{post.notes||pd.intended_use}</p>
+        </ProfileSection>
+      )}
+    </>
+  );
+}
+
+// Shows how the requirement agent weighted each factor for their client.
+function ClientPriorities({ pt, weights }) {
+  const items = useMemo(()=>{ try{ return itemsForPropertyType(pt)||[]; }catch{ return []; } },[pt]);
+  if (!items.length) return null;
+
+  const levelColor = (lvl)=> lvl==='dealbreaker'||lvl==='locked'?'#00DBC5': lvl==='high'?'#00DBC5': lvl==='normal'?'#F59E0B': 'rgba(255,255,255,0.3)';
+  const usingDefaults = !weights;
+
+  return (
+    <ProfileSection title={`Client Priorities${usingDefaults?' (PropMatch Default Ranking)':' (Custom Ranking)'}`}>
+      <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
+        {items.map((item,i)=>{
+          const lvl = (weights && weights[item.key]) || item.default;
+          if (!lvl || lvl==='none') return null;
+          const label = IMPORTANCE_LABELS[lvl]||lvl;
+          const col = levelColor(lvl);
+          return (
+            <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 0', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
+              <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.75)' }}>{item.label}</span>
+              <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
+                <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:600, color:col }}>{label}</span>
+                <div style={{ width:'9px', height:'9px', borderRadius:'50%', background:col, boxShadow:`0 0 7px ${col}80` }}/>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </ProfileSection>
+  );
+}
+
 function CascadeReveal({ items, trigger, step=90, children }) {
   const [count, setCount] = useState(0);
 
@@ -1140,9 +1401,8 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
             </div>
           )}
           {tab==='specs'&&(
-            <div style={{ padding:'20px 28px' }}>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.3)', margin:'0 0 16px', lineHeight:1.6 }}>Left: <span style={{color:myColor,fontWeight:600}}>{myLabel}</span> &middot; Right: <span style={{color:theirColor,fontWeight:600}}>{theirLabel}</span></p>
-              {specSections.map(s=><AccordionSection key={s.key} section={s} myColor={myColor} theirColor={theirColor} myLabel={myLabel} theirLabel={theirLabel} open={!!openSections[s.key]} onToggle={()=>setOpen(p=>({...p,[s.key]:!p[s.key]}))}/>)}
+            <div style={{ padding:'24px 32px' }}>
+              <PostProfile post={matchPost} isListingPost={!myIsListing} onViewPhotos={setLightboxPhoto}/>
               <div style={{height:'20px'}}/>
             </div>
           )}
