@@ -8,6 +8,24 @@ import { ArrowRight, X } from 'lucide-react';
 
 const ACCENT = '#818cf8'; // lavender — requirement color
 
+// ── Phase 1: Sale Type, Sale Conditions, Business interest (buyer side) ───────
+// The buyer's agent picks which sale types they'll consider (multi-select) and
+// which sale conditions matter to their client.
+const SALE_TYPES = [
+  { value: 'investment',            label: 'Investment' },
+  { value: 'investment_nnn',        label: 'Investment NNN' },
+  { value: 'owner_user',            label: 'Owner User' },
+  { value: 'investment_or_owner',   label: 'Investment or Owner User' },
+];
+const SALE_TYPES_LAND = SALE_TYPES.filter(t => t.value !== 'investment_nnn');
+
+const SALE_CONDITIONS = [
+  '1031 Exchange', 'Build to Suit', 'Building in Shell Condition', 'Bulk/Portfolio Sale',
+  'Deferred Maintenance', 'Distress Sale', 'Ground Lease (Leased Fee)', 'Ground Lease (Leasehold)',
+  'High Vacancy Property', 'Lease Option', 'Redevelopment Project', 'REO Sale',
+  'Sale Leaseback', 'Short Sale',
+];
+
 function CollapsiblePanel({ title, summary, children, defaultOpen }) {
   const [open, setOpen] = React.useState(defaultOpen || false);
   return (
@@ -183,6 +201,60 @@ const REQ_FINANCIAL_FIELDS = {
     { field: 'min_cap_rate', label: 'Min Cap Rate (%)', placeholder: 'e.g. 6.5', step: '0.1' },
   ],
 };
+
+// Buyer-side Sale Type (multi-select) + Sale Conditions + business interest.
+function SaleTypeSection({ type, details, setDetail }) {
+  const options = type === 'land' ? SALE_TYPES_LAND : SALE_TYPES;
+  const chosenTypes = details.sale_type_pref || [];
+  const toggleType = (v) =>
+    setDetail('sale_type_pref', chosenTypes.includes(v) ? chosenTypes.filter(x => x !== v) : [...chosenTypes, v]);
+  const conditions = details.sale_conditions_pref || [];
+  const toggleCondition = (c) =>
+    setDetail('sale_conditions_pref', conditions.includes(c) ? conditions.filter(x => x !== c) : [...conditions, c]);
+
+  const chip = (on) => ({
+    padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
+    fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 500,
+    border: `1px solid ${on ? ACCENT : 'rgba(255,255,255,0.15)'}`,
+    background: on ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)',
+    color: on ? ACCENT : 'rgba(255,255,255,0.7)',
+  });
+
+  return (
+    <>
+      <SectionTitle>Sale Type</SectionTitle>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '-8px 0 10px' }}>
+        Which kinds of deals will your client consider? Select all that fit.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {options.map(o => (
+          <button key={o.value} type="button" onClick={() => toggleType(o.value)} style={chip(chosenTypes.includes(o.value))}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+
+      <SectionTitle>Sale Conditions</SectionTitle>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '-8px 0 10px' }}>
+        Any deal conditions your client needs — e.g. a 1031 buyer needs 1031-eligible property.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {SALE_CONDITIONS.map(c => (
+          <button key={c} type="button" onClick={() => toggleCondition(c)} style={chip(conditions.includes(c))}>
+            {c}
+          </button>
+        ))}
+      </div>
+
+      <SectionTitle>Business Purchase</SectionTitle>
+      <Field label="Open to buying a business with the real estate?">
+        <Toggle label="Client would consider a business-included sale"
+          value={!!details.business_purchase_ok}
+          onChange={v => setDetail('business_purchase_ok', v)} />
+      </Field>
+    </>
+  );
+}
 
 function InvestmentCriteria({ type, details, setDetail }) {
   const fields = REQ_FINANCIAL_FIELDS[type];
@@ -520,6 +592,8 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
       <p className="text-sm -mt-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
         Tell us what you need in a <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong>{isSale ? ' purchase' : ' space'}.
       </p>
+
+      {isSale && <SaleTypeSection type={type} details={details} setDetail={setDetail} />}
 
       {type === 'office'          && <OfficeRequirement        details={details} setDetail={setDetail} />}
       {type === 'medical_office'  && <MedicalOfficeRequirement details={details} setDetail={setDetail} />}

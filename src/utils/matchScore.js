@@ -158,6 +158,44 @@ function scoreAmenities(listingSet, requiredSet) {
 }
 
 // ── Property-type detail scoring ──────────────────────────────────────────────
+// ── Sale Type + Sale Conditions (commercial sale) ────────────────────────────
+// Sale Type separates investors from owner-users. The listing has one type; the
+// requirement has a set of acceptable types. A listing marked "Investment or
+// Owner User" satisfies either kind of buyer. Returns { rows, penalty } where
+// penalty (0..1) scales the final score down for a genuine type conflict.
+function scoreSaleTypeAndConditions(ld, rd) {
+  const rows = [];
+  let penalty = 1;
+
+  const listingType = ld.sale_type || '';
+  const wantedTypes = Array.isArray(rd.sale_type_pref) ? rd.sale_type_pref : [];
+
+  if (listingType && wantedTypes.length) {
+    // "investment_or_owner" on either side is a wildcard that satisfies both camps.
+    const flexible = listingType === 'investment_or_owner' || wantedTypes.includes('investment_or_owner');
+    const direct   = wantedTypes.includes(listingType);
+    const investorFamily = ['investment', 'investment_nnn', 'investment_or_owner'];
+    const bothInvestor = investorFamily.includes(listingType) && wantedTypes.some(t => investorFamily.includes(t));
+
+    const match = flexible || direct || bothInvestor;
+    rows.push({ category: 'Sale Type', score: match ? 100 : 0, weight: 6,
+      details: match ? 'Compatible' : 'Investor vs owner-user mismatch', icon: '🏷️' });
+    if (!match) penalty = 0.6; // strong signal, not a hard gate — still show it, ranked low
+  }
+
+  // Sale Conditions: how many of the buyer's required conditions the listing meets.
+  const listingConds = Array.isArray(ld.sale_conditions) ? ld.sale_conditions : [];
+  const wantedConds  = Array.isArray(rd.sale_conditions_pref) ? rd.sale_conditions_pref : [];
+  if (wantedConds.length) {
+    const met = wantedConds.filter(c => listingConds.includes(c));
+    const score = Math.round((met.length / wantedConds.length) * 100);
+    rows.push({ category: 'Sale Conditions', score, weight: 4,
+      details: `${met.length}/${wantedConds.length} conditions met`, icon: '📋' });
+  }
+
+  return { rows, penalty };
+}
+
 // ── Investment / sale financials (commercial) ────────────────────────────────
 // Scores the numbers an income-property buyer actually underwrites. Every row
 // only appears when BOTH sides supplied a value — a listing with a cap rate but
@@ -1693,6 +1731,21 @@ export function calculateMatchScore(listing, requirement) {
     }
   }
 
+  // ── Sale Type + Sale Conditions (commercial sale) ──────────────────────────
+  // Added to the breakdown so they flow through client-weight overrides and the
+  // final average like any other row. A genuine investor/owner-user conflict
+  // also scales the whole score down via saleTypePenalty.
+  let saleTypePenalty = 1;
+  {
+    const st = scoreSaleTypeAndConditions(ld, rd);
+    for (const row of st.rows) {
+      breakdown.push(row);
+      weightedSum += (row.score / 100) * row.weight;
+      totalWeight += row.weight;
+    }
+    saleTypePenalty = st.penalty;
+  }
+
   // ── Apply client weight overrides (if the agent set any) ───────────────────
   // Recompute the weighted sum from the breakdown, applying each item's client
   // importance override. This runs once, over the finished breakdown, so no
@@ -1738,7 +1791,7 @@ export function calculateMatchScore(listing, requirement) {
   // scaling weights up or down (via client overrides) never pushes the score
   // outside 0-100 — numerator and denominator move together.
   const finalScore = effTotalWeight > 0
-    ? Math.min(100, Math.max(0, Math.round((effWeightedSum / effTotalWeight) * 100)))
+    ? Math.min(100, Math.max(0, Math.round((effWeightedSum / effTotalWeight) * 100 * saleTypePenalty)))
     : 0;
 
   // Coverage = how many dimensions actually contributed to this score.

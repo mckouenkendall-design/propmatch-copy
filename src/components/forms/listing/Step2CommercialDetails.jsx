@@ -9,6 +9,34 @@ import FileUpload from '@/components/forms/shared/FileUpload';
 
 const ACCENT = '#00DBC5';
 
+// ── Phase 1: Sale Type, Sale Conditions, Business Value ──────────────────────
+// Sale Type separates investors from owner-users so they never cross-match.
+// Land gets only three options (no Investment NNN — LoopNet omits it for land).
+const SALE_TYPES = [
+  { value: 'investment',            label: 'Investment' },
+  { value: 'investment_nnn',        label: 'Investment NNN' },
+  { value: 'owner_user',            label: 'Owner User' },
+  { value: 'investment_or_owner',   label: 'Investment or Owner User' },
+];
+const SALE_TYPES_LAND = SALE_TYPES.filter(t => t.value !== 'investment_nnn');
+
+// Financials show for investment-flavored sale types; owner-occupancy fields
+// show for owner-user-flavored ones.
+const SALE_TYPE_SHOWS_FINANCIALS = ['investment', 'investment_nnn', 'investment_or_owner'];
+const SALE_TYPE_SHOWS_OWNER      = ['owner_user', 'investment_or_owner'];
+
+const SALE_CONDITIONS = [
+  '1031 Exchange', 'Build to Suit', 'Building in Shell Condition', 'Bulk/Portfolio Sale',
+  'Deferred Maintenance', 'Distress Sale', 'Ground Lease (Leased Fee)', 'Ground Lease (Leasehold)',
+  'High Vacancy Property', 'Lease Option', 'Redevelopment Project', 'REO Sale',
+  'Sale Leaseback', 'Short Sale',
+];
+
+const OCCUPANCY_TIMING = [
+  { value: 'available_on',     label: 'Available On (specific date)' },
+  { value: 'available_within', label: 'Available Within' },
+];
+
 // ── Shared helpers ────────────────────────────────────────────────────────────
 function Field({ label, children, hint }) {
   return (
@@ -192,6 +220,88 @@ const SALE_FINANCIAL_FIELDS = {
     { field: 'total_sf', label: 'Total SF', placeholder: 'e.g. 15000' },
   ],
 };
+
+// Sale Type + owner-occupancy fields + Sale Conditions + Business Value.
+// Rendered at the TOP of a commercial sale form (above the type-specific details)
+// because Sale Type governs what else is relevant.
+function SaleTypeSection({ type, details, setDetail }) {
+  const options = type === 'land' ? SALE_TYPES_LAND : SALE_TYPES;
+  const saleType = details.sale_type || '';
+  const conditions = details.sale_conditions || [];
+  const toggleCondition = (c) =>
+    setDetail('sale_conditions', conditions.includes(c) ? conditions.filter(x => x !== c) : [...conditions, c]);
+  const showOwner = SALE_TYPE_SHOWS_OWNER.includes(saleType);
+
+  const selCls = "w-full rounded-md px-3 py-2 text-sm focus:outline-none";
+  const selStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
+
+  return (
+    <>
+      <SectionTitle>Sale Type</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Sale Type" hint="How this deal is positioned. Keeps investors and owner-users from cross-matching.">
+          <select className={selCls} style={selStyle} value={saleType} onChange={e => setDetail('sale_type', e.target.value)}>
+            <option value="">Select…</option>
+            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </Field>
+      </div>
+
+      {showOwner && (
+        <div className="grid grid-cols-2 gap-4" style={{ marginTop: '4px' }}>
+          <Field label="Area Owner Can Occupy (SF)" hint="How much of the space an owner-user could use themselves.">
+            <Num field="area_owner_can_occupy" placeholder="e.g. 5000" details={details} setDetail={setDetail} />
+          </Field>
+          <Field label="Occupancy Timing">
+            <select className={selCls} style={selStyle} value={details.occupancy_type || ''} onChange={e => setDetail('occupancy_type', e.target.value)}>
+              <option value="">Select…</option>
+              {OCCUPANCY_TIMING.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Occupancy Date" hint="When the owner could take occupancy.">
+            <input type="date" className={selCls} style={selStyle} value={details.occupancy_date || ''} onChange={e => setDetail('occupancy_date', e.target.value)} />
+          </Field>
+        </div>
+      )}
+
+      <SectionTitle>Sale Conditions</SectionTitle>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '-8px 0 10px' }}>
+        Select any that apply. Buyers filtering for these (a 1031 buyer, a distress hunter) will match on them.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {SALE_CONDITIONS.map(c => {
+          const on = conditions.includes(c);
+          return (
+            <button key={c} type="button" onClick={() => toggleCondition(c)}
+              style={{
+                padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 500,
+                border: `1px solid ${on ? ACCENT : 'rgba(255,255,255,0.15)'}`,
+                background: on ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.04)',
+                color: on ? ACCENT : 'rgba(255,255,255,0.7)',
+              }}>
+              {c}
+            </button>
+          );
+        })}
+      </div>
+
+      <SectionTitle>Business Value</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Business Included in Sale?">
+          <Toggle label="A business is included with this real estate"
+            value={!!details.business_included}
+            onChange={v => setDetail('business_included', v)} />
+        </Field>
+        {details.business_included && (
+          <Field label="Business Value ($)" hint="Value of the business itself, separate from the real estate.">
+            <Num field="business_value" placeholder="e.g. 250000" details={details} setDetail={setDetail} />
+          </Field>
+        )}
+      </div>
+    </>
+  );
+}
 
 function InvestmentFinancials({ type, details, setDetail }) {
   const fields = SALE_FINANCIAL_FIELDS[type];
@@ -654,10 +764,14 @@ export default function ListStep2Commercial({ data, update, onNext }) {
   const setDetail = (key, val) => update({ property_details: { ...(dataRef.current.property_details || {}), [key]: val } });
   const type = data.property_type;
 
-  // Commercial sales show the normal detail form plus an Investment Financials
-  // block appended at the bottom. Land is investment-agnostic (no financials block).
+  // Commercial sales show a Sale Type section at the top, the normal detail
+  // form, and an Investment Financials block — but the financials now show
+  // based on the chosen Sale Type (investment-flavored), not merely on it being
+  // a sale. Land is investment-agnostic (no financials block).
   const isSale = data.transaction_type === 'sale';
-  const showFinancials = isSale && type !== 'land';
+  const saleType = details.sale_type || '';
+  const showFinancials = isSale && type !== 'land' &&
+    SALE_TYPE_SHOWS_FINANCIALS.includes(saleType);
   const onSavePhotos = (next) => update({ property_details: { ...(dataRef.current.property_details || {}), photo_urls: next, photo_url: next[0] || '' } });
 
   return (
@@ -665,6 +779,8 @@ export default function ListStep2Commercial({ data, update, onNext }) {
       <p className="text-sm -mt-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
         Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong> space.
       </p>
+
+      {isSale && <SaleTypeSection type={type} details={details} setDetail={setDetail} />}
 
       {type === 'office' && <OfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
       {type === 'medical_office' && <MedicalOfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
