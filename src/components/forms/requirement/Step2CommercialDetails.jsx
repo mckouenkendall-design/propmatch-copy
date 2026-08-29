@@ -211,39 +211,64 @@ function SaleTypeSection({ type, details, setDetail }) {
   const conditions = details.sale_conditions_pref || [];
   const toggleCondition = (c) =>
     setDetail('sale_conditions_pref', conditions.includes(c) ? conditions.filter(x => x !== c) : [...conditions, c]);
+  const [condOpen, setCondOpen] = React.useState(false);
 
-  const chip = (on) => ({
+  const chip = (on, accent) => ({
     padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
-    fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 500,
-    border: `1px solid ${on ? ACCENT : 'rgba(255,255,255,0.15)'}`,
+    fontFamily: "'Inter',sans-serif", fontSize: '12px', fontWeight: 500,
+    border: `1px solid ${on ? accent : 'rgba(255,255,255,0.15)'}`,
     background: on ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)',
-    color: on ? ACCENT : 'rgba(255,255,255,0.7)',
+    color: on ? accent : 'rgba(255,255,255,0.7)',
   });
 
   return (
     <>
       <SectionTitle>Sale Type</SectionTitle>
-      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '-8px 0 10px' }}>
+      <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '-8px 0 10px' }}>
         Which kinds of deals will your client consider? Select all that fit.
       </p>
       <div className="flex flex-wrap gap-2">
         {options.map(o => (
-          <button key={o.value} type="button" onClick={() => toggleType(o.value)} style={chip(chosenTypes.includes(o.value))}>
+          <button key={o.value} type="button" onClick={() => toggleType(o.value)} style={chip(chosenTypes.includes(o.value), ACCENT)}>
             {o.label}
           </button>
         ))}
       </div>
 
-      <SectionTitle>Sale Conditions</SectionTitle>
-      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '-8px 0 10px' }}>
-        Any deal conditions your client needs — e.g. a 1031 buyer needs 1031-eligible property.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {SALE_CONDITIONS.map(c => (
-          <button key={c} type="button" onClick={() => toggleCondition(c)} style={chip(conditions.includes(c))}>
-            {c}
-          </button>
-        ))}
+      <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', overflow: 'hidden', marginTop: '4px' }}>
+        <button type="button" onClick={() => setCondOpen(o => !o)}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: 'none', cursor: 'pointer' }}>
+          <div style={{ textAlign: 'left' }}>
+            <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Sale Conditions
+            </span>
+            {conditions.length > 0 && (
+              <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: ACCENT, marginLeft: '10px' }}>
+                {conditions.length} selected
+              </span>
+            )}
+            {conditions.length === 0 && (
+              <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginLeft: '10px' }}>
+                optional
+              </span>
+            )}
+          </div>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '16px', lineHeight: 1 }}>{condOpen ? '▲' : '▼'}</span>
+        </button>
+        {condOpen && (
+          <div style={{ padding: '10px 16px 16px' }}>
+            <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.45)', margin: '0 0 12px' }}>
+              Any deal conditions your client needs — e.g. a 1031 buyer needs 1031-eligible property.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {SALE_CONDITIONS.map(c => (
+                <button key={c} type="button" onClick={() => toggleCondition(c)} style={chip(conditions.includes(c), ACCENT)}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <SectionTitle>Business Purchase</SectionTitle>

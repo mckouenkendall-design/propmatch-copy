@@ -231,18 +231,22 @@ function SaleTypeSection({ type, details, setDetail }) {
   const toggleCondition = (c) =>
     setDetail('sale_conditions', conditions.includes(c) ? conditions.filter(x => x !== c) : [...conditions, c]);
   const showOwner = SALE_TYPE_SHOWS_OWNER.includes(saleType);
+  const [condOpen, setCondOpen] = React.useState(false);
 
-  const selCls = "w-full rounded-md px-3 py-2 text-sm focus:outline-none";
-  const selStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
+  const selStyle = {
+    width: '100%', borderRadius: '6px', padding: '8px 12px', fontSize: '14px',
+    outline: 'none', background: '#1a2133', border: '1px solid rgba(255,255,255,0.1)', color: 'white',
+  };
+  const optStyle = { background: '#1a2133', color: 'white' };
 
   return (
     <>
       <SectionTitle>Sale Type</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Sale Type" hint="How this deal is positioned. Keeps investors and owner-users from cross-matching.">
-          <select className={selCls} style={selStyle} value={saleType} onChange={e => setDetail('sale_type', e.target.value)}>
-            <option value="">Select…</option>
-            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <select style={selStyle} value={saleType} onChange={e => setDetail('sale_type', e.target.value)}>
+            <option value="" style={optStyle}>Select…</option>
+            {options.map(o => <option key={o.value} value={o.value} style={optStyle}>{o.label}</option>)}
           </select>
         </Field>
       </div>
@@ -253,37 +257,61 @@ function SaleTypeSection({ type, details, setDetail }) {
             <Num field="area_owner_can_occupy" placeholder="e.g. 5000" details={details} setDetail={setDetail} />
           </Field>
           <Field label="Occupancy Timing">
-            <select className={selCls} style={selStyle} value={details.occupancy_type || ''} onChange={e => setDetail('occupancy_type', e.target.value)}>
-              <option value="">Select…</option>
-              {OCCUPANCY_TIMING.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            <select style={selStyle} value={details.occupancy_type || ''} onChange={e => setDetail('occupancy_type', e.target.value)}>
+              <option value="" style={optStyle}>Select…</option>
+              {OCCUPANCY_TIMING.map(o => <option key={o.value} value={o.value} style={optStyle}>{o.label}</option>)}
             </select>
           </Field>
           <Field label="Occupancy Date" hint="When the owner could take occupancy.">
-            <input type="date" className={selCls} style={selStyle} value={details.occupancy_date || ''} onChange={e => setDetail('occupancy_date', e.target.value)} />
+            <input type="date" style={{ ...selStyle, colorScheme: 'dark' }} value={details.occupancy_date || ''} onChange={e => setDetail('occupancy_date', e.target.value)} />
           </Field>
         </div>
       )}
 
-      <SectionTitle>Sale Conditions</SectionTitle>
-      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '-8px 0 10px' }}>
-        Select any that apply. Buyers filtering for these (a 1031 buyer, a distress hunter) will match on them.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {SALE_CONDITIONS.map(c => {
-          const on = conditions.includes(c);
-          return (
-            <button key={c} type="button" onClick={() => toggleCondition(c)}
-              style={{
-                padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
-                fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 500,
-                border: `1px solid ${on ? ACCENT : 'rgba(255,255,255,0.15)'}`,
-                background: on ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.04)',
-                color: on ? ACCENT : 'rgba(255,255,255,0.7)',
-              }}>
-              {c}
-            </button>
-          );
-        })}
+      <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', overflow: 'hidden', marginTop: '4px' }}>
+        <button type="button" onClick={() => setCondOpen(o => !o)}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: 'none', cursor: 'pointer' }}>
+          <div style={{ textAlign: 'left' }}>
+            <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Sale Conditions
+            </span>
+            {conditions.length > 0 && (
+              <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: ACCENT, marginLeft: '10px' }}>
+                {conditions.length} selected
+              </span>
+            )}
+            {conditions.length === 0 && (
+              <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginLeft: '10px' }}>
+                optional
+              </span>
+            )}
+          </div>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '16px', lineHeight: 1 }}>{condOpen ? '▲' : '▼'}</span>
+        </button>
+        {condOpen && (
+          <div style={{ padding: '10px 16px 16px' }}>
+            <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.45)', margin: '0 0 12px' }}>
+              Select any that apply. Buyers filtering for these will match on them.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {SALE_CONDITIONS.map(c => {
+                const on = conditions.includes(c);
+                return (
+                  <button key={c} type="button" onClick={() => toggleCondition(c)}
+                    style={{
+                      padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
+                      fontFamily: "'Inter',sans-serif", fontSize: '12px', fontWeight: 500,
+                      border: `1px solid ${on ? ACCENT : 'rgba(255,255,255,0.15)'}`,
+                      background: on ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.04)',
+                      color: on ? ACCENT : 'rgba(255,255,255,0.7)',
+                    }}>
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <SectionTitle>Business Value</SectionTitle>
