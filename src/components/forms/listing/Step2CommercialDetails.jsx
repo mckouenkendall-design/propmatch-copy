@@ -498,11 +498,8 @@ function LandDetails({ details, setDetail, onSavePhotos }) {
   const optionStyle = { background: '#0E1318', color: 'rgba(255,255,255,0.85)' };
   return (
     <>
-      <SectionTitle>Lot Size</SectionTitle>
-      <Field label="Lot Size (acres)" hint="Land is matched on acreage. Required for this listing to match acreage-based requirements.">
-        <Num field="acres" placeholder="e.g. 3.5" step="0.01" details={details} setDetail={setDetail} />
-      </Field>
-
+      {/* Acreage is collected in Step 1 (shown as "Acreage" for land) and scored
+          by the shared Size comparison. Do not add it again here. */}
       <SectionTitle>Buildability</SectionTitle>
       <div className="rounded-xl px-4 py-2 space-y-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Buildable / Developable" value={!!details.buildable} onChange={v => setDetail('buildable', v)} />

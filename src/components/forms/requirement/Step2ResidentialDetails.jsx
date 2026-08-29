@@ -380,8 +380,8 @@ function ResidentialLandRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Size Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <MinField label="Acreage" field="min_acres" placeholder="e.g. 0.25" step="0.01" details={details} setDetail={setDetail} />
-        <Field label="Max Acreage"><Num field="max_acres" placeholder="e.g. 2.0" step="0.1" details={details} setDetail={setDetail} /></Field>
+        {/* Acreage range removed — Step 1 already collects it (shown as
+            "Acreage Range" for land) and the shared Size comparison scores it. */}
         <MinField label="Road Frontage (ft)" field="min_frontage" placeholder="e.g. 60" details={details} setDetail={setDetail} />
         <Field label="Max HOA ($/yr)" hint="Leave blank if no HOA required"><Num field="max_hoa_annual" placeholder="e.g. 500" details={details} setDetail={setDetail} /></Field>
       </div>

@@ -419,16 +419,8 @@ function LandRequirement({ details, setDetail }) {
   const toggleUtility = (key) => setDetail('utilities_req', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
   return (
     <>
-      <SectionTitle>Lot Size Needed</SectionTitle>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Min Acreage" hint="Leave blank for no minimum">
-          <Num field="min_acres" placeholder="e.g. 2" step="0.01" details={details} setDetail={setDetail} />
-        </Field>
-        <Field label="Max Acreage" hint="Leave blank for no maximum">
-          <Num field="max_acres" placeholder="e.g. 5" step="0.01" details={details} setDetail={setDetail} />
-        </Field>
-      </div>
-
+      {/* Acreage range is collected in Step 1 (shown as "Acreage Range" for land)
+          and scored by the shared Size comparison. Do not add it again here. */}
       <SectionTitle>Buildability & Access</SectionTitle>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Must Be Buildable / Developable" value={!!details.buildable_req} onChange={v => setDetail('buildable_req', v)} />
@@ -512,7 +504,12 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
   const details   = data.property_details || {};
   const setDetail = (key, val) => update({ property_details: { ...details, [key]: val } });
   const type      = data.property_type;
-  const isSale    = data.transaction_type === 'sale';
+  // The requirement Step 1 form stores the buy-side transaction as 'purchase'
+  // (the listing side stores 'sale'). This previously checked only for 'sale',
+  // so it was never true on a requirement — which meant the Investment Criteria
+  // block below never rendered and there was nowhere to enter a minimum cap
+  // rate, NOI, or occupancy. 'sale' is kept as a fallback for any legacy rows.
+  const isSale    = data.transaction_type === 'purchase' || data.transaction_type === 'sale';
 
   // Commercial sales show the normal requirement form plus an Investment Criteria
   // block appended at the bottom. Land is investment-agnostic (no criteria block).

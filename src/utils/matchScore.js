@@ -294,7 +294,10 @@ function scoreDetails(listing, requirement, ld, rd) {
 
   // ── LAND (Commercial) ────────────────────────────────────────────────────────
   if (type === 'land') {
-    add('Acreage', scoreRange(ld.acres, rd.min_acres, rd.max_acres), `${ld.acres ?? '—'} acres`, '🌿');
+    // Acreage is NOT scored here. Both wizards collect it in Step 1 as
+    // size_sqft / min_size_sqft / max_size_sqft, and the shared Size comparison
+    // further down already scores it. Adding it here counted the same thing
+    // twice and read `ld.acres`, which the commercial land form never wrote.
     // Requirement form writes `min_frontage`, not `min_road_frontage`.
     add('Road Frontage', scoreRange(ld.road_frontage, rd.min_frontage, null), `${ld.road_frontage ?? '—'}ft`, '🛣️');
     add('Traffic Count', scoreRange(ld.traffic_count, rd.min_traffic_count, null), `${(ld.traffic_count || 0).toLocaleString()}/day`, '🚗');
@@ -446,7 +449,8 @@ function scoreDetails(listing, requirement, ld, rd) {
 
   // ── LAND RESIDENTIAL ────────────────────────────────────────────────────────
   if (type === 'land_residential') {
-    add('Acreage', scoreRange(ld.acres, rd.min_acres, rd.max_acres), `${ld.acres ?? '—'} acres`, '🌿');
+    // Acreage is NOT scored here — see the note in the commercial land branch.
+    // Step 1 collects it and the shared Size comparison scores it.
     // Requirement form writes `min_frontage`, not `min_road_frontage`.
     add('Road Frontage', scoreRange(ld.road_frontage, rd.min_frontage, null), `${ld.road_frontage ?? '—'}ft`, '🛣️');
     // Requirement form writes `utilities_req`, not `utilities_required`.
@@ -643,6 +647,16 @@ export function calculateMatchScore(listing, requirement) {
     }
 
   // ── Size ──────────────────────────────────────────────────────────────────
+  // Land is entered and thought about in acres, but stored in SF like every
+  // other type. Score identically, label and display in the unit the agent used.
+  const isLandType  = listing.property_type === 'land' || listing.property_type === 'land_residential';
+  const ACRE_SF     = 43560;
+  const sizeLabel   = isLandType ? 'Acreage' : 'Size (SF)';
+  const sizeUnit    = isLandType ? 'acres' : 'SF';
+  const toDisplay   = (sf) => isLandType
+    ? Math.round((sf / ACRE_SF) * 100) / 100
+    : sf;
+
   const listingSize = parseFloat(listing.size_sqft) || 0;
   const reqMinSize  = parseFloat(requirement.min_size_sqft) || 0;
   const reqMaxSize  = parseFloat(requirement.max_size_sqft) || 0;
@@ -650,12 +664,15 @@ export function calculateMatchScore(listing, requirement) {
   if (listingSize > 0 && (reqMinSize > 0 || reqMaxSize > 0)) {
     const sizeScore = scoreRange(listingSize, reqMinSize || null, reqMaxSize || null);
     if (sizeScore !== null) {
-      breakdown.push({ category: 'Size (SF)', score: sizeScore, weight: W.size,
-        details: `${listingSize.toLocaleString()} SF`, icon: '📐' });
+      breakdown.push({ category: sizeLabel, score: sizeScore, weight: W.size,
+        details: `${toDisplay(listingSize).toLocaleString()} ${sizeUnit}`, icon: isLandType ? '🌿' : '📐' });
       weightedSum += (sizeScore / 100) * W.size;
       totalWeight += W.size;
-      rangeData.size = { value: listingSize, min: reqMinSize || null, max: reqMaxSize || null,
-        unit: 'SF', label: 'Size', score: sizeScore };
+      rangeData.size = {
+        value: toDisplay(listingSize),
+        min: reqMinSize ? toDisplay(reqMinSize) : null,
+        max: reqMaxSize ? toDisplay(reqMaxSize) : null,
+        unit: sizeUnit, label: sizeLabel, score: sizeScore };
     }
   }
 

@@ -427,7 +427,9 @@ function ManufacturedDetails({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Space Number / Lot Number" hint="If applicable"><Input value={details.space_number || ''} onChange={e => setDetail('space_number', e.target.value)} placeholder="e.g. Space 42" /></Field>
         <Field label="Year Built"><Num field="year_built" placeholder="e.g. 2005" details={details} setDetail={setDetail} /></Field>
-        <Field label="Size (sqft)"><Num field="size_sqft" placeholder="e.g. 1200" details={details} setDetail={setDetail} /></Field>
+        {/* Size removed — Step 1 already collects it as the listing's real
+            size_sqft column. This wrote a second copy into property_details
+            that nothing ever read. */}
       </div>
       <SectionTitle>Land & Lot</SectionTitle>
       <ToggleGroup label="Land Ownership" value={details.land_ownership || ''} onChange={v => setDetail('land_ownership', v)}
@@ -490,7 +492,8 @@ function ResidentialLandDetails({ details, setDetail }) {
       </CollapsiblePanel>
       <SectionTitle>Primary Land Dimensions</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Total Acreage"><Num field="acres" placeholder="e.g. 0.5" step="0.01" details={details} setDetail={setDetail} /></Field>
+        {/* Total Acreage removed — Step 1 already collects it (shown as
+            "Acreage" for land) and the shared Size comparison scores it. */}
         <Field label="Lot Dimensions (ft × ft)"><Input value={details.lot_dimensions || ''} onChange={e => setDetail('lot_dimensions', e.target.value)} placeholder="e.g. 80 x 120" /></Field>
         <Field label="Gross Square Feet"><Num field="gross_sqft" placeholder="e.g. 9600" details={details} setDetail={setDetail} /></Field>
         <Field label="Road Frontage (ft)"><Num field="road_frontage" placeholder="e.g. 80" details={details} setDetail={setDetail} /></Field>
