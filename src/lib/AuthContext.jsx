@@ -10,6 +10,9 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings] = useState({});
   const initialLoadDone = useRef(false);
+  // Tracks which email is currently fully loaded. Used to tell a genuine new
+  // sign-in apart from Supabase re-firing SIGNED_IN when a tab regains focus.
+  const loadedEmailRef = useRef(null);
 
   const fetchUserProfile = async (email) => {
     if (!email) return null;
@@ -124,6 +127,7 @@ export const AuthProvider = ({ children }) => {
       if (!isMounted) return;
       try {
         if (session?.user) {
+          loadedEmailRef.current = session.user.email;
           await loadUser(session.user);
         }
       } catch (e) {
@@ -146,14 +150,39 @@ export const AuthProvider = ({ children }) => {
       if (event === 'INITIAL_SESSION') return;
 
       if (event === 'SIGNED_OUT') {
+        loadedEmailRef.current = null;
         setUser(null);
         setIsAuthenticated(false);
       } else if (event === 'SIGNED_IN' && session?.user) {
-        try {
-          await loadUser(session.user);
-        } catch (e) {
-          console.warn('loadUser failed on SIGNED_IN:', e);
+        // Supabase re-fires SIGNED_IN when a tab regains focus and the session
+        // is re-validated. If this is the SAME user we already have loaded,
+        // running loadUser again would replace the user with a profile-less
+        // stub (_profileLoading: true, no _profileId). App.jsx watches those
+        // two fields and drops back into its full-screen loading gate, which
+        // unmounts the entire route tree — destroying any half-finished
+        // listing or requirement the agent was in the middle of.
+        //
+        // So for a re-validation we only refresh the auth fields in place and
+        // deliberately preserve the profile fields we already resolved.
+        const isSameUser = loadedEmailRef.current &&
+                           loadedEmailRef.current === session.user.email;
+
+        if (isSameUser) {
+          setUser(prev => prev ? {
+            ...prev,
+            ...session.user,
+            _profileId: prev._profileId,
+            _profileLoading: prev._profileLoading,
+          } : prev);
+        } else {
+          try {
+            loadedEmailRef.current = session.user.email;
+            await loadUser(session.user);
+          } catch (e) {
+            console.warn('loadUser failed on SIGNED_IN:', e);
+          }
         }
+
         if (isMounted && !initialLoadDone.current) {
           initialLoadDone.current = true;
           setIsLoadingAuth(false);

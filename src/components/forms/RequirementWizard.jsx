@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useFormDraft } from '@/hooks/useFormDraft';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
@@ -79,7 +80,9 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     };
   };
 
-  const [formData, setFormData] = useState(parseInitialData(initialData) || {
+  // Extracted so "Start over" on the restored-draft banner can reset the
+  // wizard to exactly the blank state it opens with.
+  const emptyRequirement = () => ({
     property_category: category,
     title: '',
     property_type: '',
@@ -107,6 +110,20 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     company_name: user?.brokerage_name || '',
     brokerage_id: user?.employing_broker_id || '',
   });
+
+  const [formData, setFormData] = useState(parseInitialData(initialData) || emptyRequirement());
+
+  // Survives tab switches, reloads, and accidental closes.
+  const draftKey = editMode && initialData?.id
+    ? `requirement:${initialData.id}`
+    : `requirement:new:${category}`;
+  const { restored, clearDraft, dismissRestored } = useFormDraft(draftKey, formData, setFormData);
+
+  const startOver = () => {
+    clearDraft();
+    setFormData(parseInitialData(initialData) || emptyRequirement());
+    setStep(1);
+  };
 
   const prepareSubmitData = (data) => {
     // Explicit allow-list of REAL requirements table columns. Spreading ...data
@@ -212,6 +229,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
       return requirement;
     },
     onSuccess: (...args) => {
+      clearDraft();
       queryClient.invalidateQueries({ queryKey: ['my-requirements'] });
       onSuccess?.(...args);
     },
@@ -223,6 +241,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   const deleteMutation = useMutation({
     mutationFn: () => supabase.from('requirements').delete().eq('id', formData.id),
     onSuccess: () => {
+      clearDraft();
       queryClient.invalidateQueries({ queryKey: ['my-requirements'] });
       onSuccess?.();
     },
@@ -383,6 +402,26 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
             )}
 
             {/* Normal wizard steps (hidden while a priority view is active) */}
+            {!priorityView && restored && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+                marginBottom: '18px', padding: '10px 14px', borderRadius: '10px',
+                background: 'rgba(0,219,197,0.08)', border: '1px solid rgba(0,219,197,0.3)',
+              }}>
+                <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.8)', flex: 1, minWidth: '200px' }}>
+                  Picked up where you left off — your unsaved work was restored.
+                </span>
+                <button type="button" onClick={startOver}
+                  style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '7px', padding: '5px 12px', cursor: 'pointer', fontFamily: "'Inter',sans-serif", fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>
+                  Start over
+                </button>
+                <button type="button" onClick={dismissRestored}
+                  style={{ background: 'rgba(0,219,197,0.15)', border: 'none', borderRadius: '7px', padding: '5px 12px', cursor: 'pointer', fontFamily: "'Inter',sans-serif", fontSize: '12px', fontWeight: 600, color: '#00DBC5' }}>
+                  Got it
+                </button>
+              </div>
+            )}
+
             {!priorityView && step === 1 && (
               <>
                 <ReqStep1 data={formData} update={update} onNext={next} />

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useFormDraft } from '@/hooks/useFormDraft';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
@@ -43,7 +44,9 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
     };
   };
 
-  const [formData, setFormData] = useState(parseInitialData(initialData) || {
+  // Extracted so the "Start over" action on the restored-draft banner can
+  // reset the wizard to exactly the same blank state it opens with.
+  const emptyListing = () => ({
     property_category: category,
     title: '',
     property_type: '',
@@ -71,6 +74,22 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
     allow_direct_contact: true,
     status: 'active',
   });
+
+  const [formData, setFormData] = useState(parseInitialData(initialData) || emptyListing());
+
+  // Keep the agent's work alive across tab switches, reloads, and accidental
+  // closes. Edit sessions are keyed by post id so they never collide with a
+  // new-listing draft.
+  const draftKey = editMode && initialData?.id
+    ? `listing:${initialData.id}`
+    : `listing:new:${category}`;
+  const { restored, clearDraft, dismissRestored } = useFormDraft(draftKey, formData, setFormData);
+
+  const startOver = () => {
+    clearDraft();
+    setFormData(parseInitialData(initialData) || emptyListing());
+    setStep(1);
+  };
 
   const prepareSubmitData = (data) => {
     // Build the payload from an explicit allow-list of REAL listings table columns.
@@ -197,6 +216,7 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
       return listing;
     },
     onSuccess: (...args) => {
+      clearDraft();
       queryClient.invalidateQueries({ queryKey: ['my-listings'] });
       onSuccess?.(...args);
     },
@@ -209,6 +229,7 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
   const deleteMutation = useMutation({
     mutationFn: () => supabase.from('listings').delete().eq('id', formData.id),
     onSuccess: () => {
+      clearDraft();
       queryClient.invalidateQueries({ queryKey: ['my-listings'] });
       onSuccess?.();
     },
@@ -268,6 +289,25 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
           </div>
 
           <div className="px-6 py-6">
+            {restored && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+                marginBottom: '18px', padding: '10px 14px', borderRadius: '10px',
+                background: 'rgba(0,219,197,0.08)', border: '1px solid rgba(0,219,197,0.3)',
+              }}>
+                <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.8)', flex: 1, minWidth: '200px' }}>
+                  Picked up where you left off — your unsaved work was restored.
+                </span>
+                <button type="button" onClick={startOver}
+                  style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '7px', padding: '5px 12px', cursor: 'pointer', fontFamily: "'Inter',sans-serif", fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>
+                  Start over
+                </button>
+                <button type="button" onClick={dismissRestored}
+                  style={{ background: 'rgba(0,219,197,0.15)', border: 'none', borderRadius: '7px', padding: '5px 12px', cursor: 'pointer', fontFamily: "'Inter',sans-serif", fontSize: '12px', fontWeight: 600, color: '#00DBC5' }}>
+                  Got it
+                </button>
+              </div>
+            )}
             {step === 1 && (
               <ListStep1 data={formData} update={update} onNext={next} />
             )}

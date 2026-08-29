@@ -46,18 +46,34 @@ const AuthenticatedApp = () => {
   // profile fetch returns null for any transient reason.
   const [fallbackHasProfile, setFallbackHasProfile] = React.useState(null);
   const [fallbackChecked, setFallbackChecked] = React.useState(false);
+  // Once we've confirmed a profile for an email, remember it. Re-entering the
+  // full-screen loading gate after that point unmounts the entire route tree
+  // and destroys any in-progress form, so we refuse to go back.
+  const confirmedEmailRef = React.useRef(null);
 
   React.useEffect(() => {
     let cancelled = false;
+
+    // Already confirmed this exact user? Stay mounted. This is what keeps a
+    // half-finished listing alive when the agent switches browser tabs and
+    // Supabase re-validates the session behind the scenes.
+    if (user?.email && confirmedEmailRef.current === user.email) {
+      setFallbackHasProfile(true);
+      setFallbackChecked(true);
+      return;
+    }
+
     setFallbackChecked(false);
     setFallbackHasProfile(null);
 
     if (!user?.email) {
+      confirmedEmailRef.current = null;
       setFallbackChecked(true);
       return;
     }
     // If AuthContext already has _profileId, profile is confirmed to exist.
     if (user._profileId) {
+      confirmedEmailRef.current = user.email;
       setFallbackHasProfile(true);
       setFallbackChecked(true);
       return;
@@ -81,7 +97,9 @@ const AuthenticatedApp = () => {
           // Onboarding rather than dropped into the app with no profile.
           setFallbackHasProfile(false);
         } else {
-          setFallbackHasProfile(Array.isArray(rows) && rows.length > 0);
+          const found = Array.isArray(rows) && rows.length > 0;
+          if (found) confirmedEmailRef.current = user.email;
+          setFallbackHasProfile(found);
         }
       } catch (e) {
         if (cancelled) return;
