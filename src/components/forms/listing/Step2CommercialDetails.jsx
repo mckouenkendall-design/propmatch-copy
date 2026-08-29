@@ -152,47 +152,44 @@ function BuildingAmenitiesSection({ details, setDetail }) {
 // Core financial fields per property type. Each entry: { field, label, placeholder, hint?, step? }
 const SALE_FINANCIAL_FIELDS = {
   office: [
-    { field: 'sale_noi', label: 'NOI / Year ($)', placeholder: 'e.g. 180000', hint: 'Net Operating Income — gross income minus operating expenses' },
-    { field: 'sale_cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.5', step: '0.1', hint: 'Class A: 4–6% · Class B: 6–8% · Class C: 8–10%' },
-    { field: 'sale_occupancy', label: 'Occupancy (%)', placeholder: 'e.g. 92' },
-    { field: 'sale_nra', label: 'Net Rentable Area (SF)', placeholder: 'e.g. 25000' },
-    { field: 'sale_num_tenants', label: 'Number of Tenants', placeholder: 'e.g. 6' },
-    { field: 'sale_walt', label: 'WALT (years)', placeholder: 'e.g. 3.5', step: '0.1', hint: 'Weighted Avg Lease Term' },
-    { field: 'sale_recent_capex', label: 'Recent CapEx ($)', placeholder: 'e.g. 200000', hint: 'Major improvements in last 3 years' },
+    { field: 'noi', label: 'NOI / Year ($)', placeholder: 'e.g. 180000', hint: 'Net Operating Income — gross income minus operating expenses' },
+    { field: 'cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.5', step: '0.1', hint: 'Class A: 4–6% · Class B: 6–8% · Class C: 8–10%' },
+    { field: 'occupancy_pct', label: 'Occupancy (%)', placeholder: 'e.g. 92' },
+    { field: 'nra_sf', label: 'Net Rentable Area (SF)', placeholder: 'e.g. 25000' },
+    { field: 'num_tenants', label: 'Number of Tenants', placeholder: 'e.g. 6' },
+    { field: 'walt', label: 'WALT (years)', placeholder: 'e.g. 3.5', step: '0.1', hint: 'Weighted Avg Lease Term' },
+    { field: 'recent_capex', label: 'Recent CapEx ($)', placeholder: 'e.g. 200000', hint: 'Major improvements in last 3 years' },
   ],
   medical_office: [
-    { field: 'sale_noi', label: 'NOI / Year ($)', placeholder: 'e.g. 220000' },
-    { field: 'sale_cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.5', step: '0.1', hint: 'National avg institutional quality: ~6.3%' },
-    { field: 'sale_occupancy', label: 'Occupancy (%)', placeholder: 'e.g. 95' },
-    { field: 'sale_walt', label: 'WALT (years)', placeholder: 'e.g. 7.5', step: '0.1', hint: 'Medical tenants avg 7–10 yr leases' },
-    { field: 'sale_num_tenants', label: 'Number of Tenants', placeholder: 'e.g. 4' },
-    { field: 'sale_rent_escalation', label: 'Annual Rent Escalations (%)', placeholder: 'e.g. 2.5', step: '0.1', hint: '2–3% is standard for MOBs' },
-    { field: 'sale_total_sf', label: 'Total SF', placeholder: 'e.g. 18000' },
+    { field: 'noi', label: 'NOI / Year ($)', placeholder: 'e.g. 220000' },
+    { field: 'cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.5', step: '0.1', hint: 'National avg institutional quality: ~6.3%' },
+    { field: 'occupancy_pct', label: 'Occupancy (%)', placeholder: 'e.g. 95' },
+    { field: 'walt', label: 'WALT (years)', placeholder: 'e.g. 7.5', step: '0.1', hint: 'Medical tenants avg 7–10 yr leases' },
+    { field: 'num_tenants', label: 'Number of Tenants', placeholder: 'e.g. 4' },
+    { field: 'rent_escalation', label: 'Annual Rent Escalations (%)', placeholder: 'e.g. 2.5', step: '0.1', hint: '2–3% is standard for MOBs' },
+    { field: 'total_sf', label: 'Total SF', placeholder: 'e.g. 18000' },
   ],
   retail: [
-    { field: 'sale_noi', label: 'NOI / Year ($)', placeholder: 'e.g. 150000' },
-    { field: 'sale_cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.0', step: '0.1', hint: 'Based on actual in-place income' },
-    { field: 'sale_occupancy', label: 'Occupancy (%)', placeholder: 'e.g. 94' },
-    { field: 'sale_gla', label: 'Gross Leasable Area — GLA (SF)', placeholder: 'e.g. 12000' },
-    { field: 'sale_num_tenants', label: 'Number of Tenants', placeholder: 'e.g. 8' },
-    { field: 'sale_avg_lease_term', label: 'Avg Remaining Lease Term (yrs)', placeholder: 'e.g. 4.5', step: '0.1' },
-    { field: 'sale_traffic_count', label: 'Traffic Count (vehicles/day)', placeholder: 'e.g. 28000' },
+    { field: 'noi', label: 'NOI / Year ($)', placeholder: 'e.g. 150000' },
+    { field: 'cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.0', step: '0.1', hint: 'Based on actual in-place income' },
+    { field: 'occupancy_pct', label: 'Occupancy (%)', placeholder: 'e.g. 94' },
+    { field: 'gla_sf', label: 'Gross Leasable Area — GLA (SF)', placeholder: 'e.g. 12000' },
+    { field: 'num_tenants', label: 'Number of Tenants', placeholder: 'e.g. 8' },
+    { field: 'avg_lease_term', label: 'Avg Remaining Lease Term (yrs)', placeholder: 'e.g. 4.5', step: '0.1' },
   ],
   industrial_flex: [
-    { field: 'sale_noi', label: 'NOI / Year ($)', placeholder: 'e.g. 120000', hint: 'Leave blank if vacant / owner-occupied' },
-    { field: 'sale_cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.5', step: '0.1' },
-    { field: 'sale_occupancy', label: 'Occupancy (%)', placeholder: 'e.g. 100' },
-    { field: 'sale_walt', label: 'WALT (years)', placeholder: 'e.g. 4.0', step: '0.1' },
-    { field: 'sale_price_per_sf', label: 'Asking Price / SF ($)', placeholder: 'e.g. 95', hint: 'Used when vacant or owner-occupied' },
-    { field: 'sale_total_sf', label: 'Total SF', placeholder: 'e.g. 40000' },
-    { field: 'sale_office_pct', label: 'Office % of Total SF', placeholder: 'e.g. 20', hint: 'Flex: ~25–30% · Pure warehouse: 5–10%' },
-    { field: 'sale_land_acres', label: 'Total Land / Lot (acres)', placeholder: 'e.g. 3.5', step: '0.1' },
+    { field: 'noi', label: 'NOI / Year ($)', placeholder: 'e.g. 120000', hint: 'Leave blank if vacant / owner-occupied' },
+    { field: 'cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 6.5', step: '0.1' },
+    { field: 'occupancy_pct', label: 'Occupancy (%)', placeholder: 'e.g. 100' },
+    { field: 'walt', label: 'WALT (years)', placeholder: 'e.g. 4.0', step: '0.1' },
+    { field: 'price_per_sf', label: 'Asking Price / SF ($)', placeholder: 'e.g. 95', hint: 'Used when vacant or owner-occupied' },
+    { field: 'total_sf', label: 'Total SF', placeholder: 'e.g. 40000' },
   ],
   special_use: [
-    { field: 'sale_noi', label: 'NOI / Year ($)', placeholder: 'e.g. 180000' },
-    { field: 'sale_cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 7.0', step: '0.1', hint: 'Self-storage: 5–10% · Hotels vary widely' },
-    { field: 'sale_occupancy', label: 'Occupancy (%)', placeholder: 'e.g. 90' },
-    { field: 'sale_total_sf', label: 'Total SF', placeholder: 'e.g. 15000' },
+    { field: 'noi', label: 'NOI / Year ($)', placeholder: 'e.g. 180000' },
+    { field: 'cap_rate', label: 'Cap Rate (%)', placeholder: 'e.g. 7.0', step: '0.1', hint: 'Self-storage: 5–10% · Hotels vary widely' },
+    { field: 'occupancy_pct', label: 'Occupancy (%)', placeholder: 'e.g. 90' },
+    { field: 'total_sf', label: 'Total SF', placeholder: 'e.g. 15000' },
   ],
 };
 
@@ -253,7 +250,7 @@ function OfficeDetails({ details, setDetail, onSavePhotos }) {
         <Field label="Tags" hint="Keywords like 'renovated', 'corner location'"><Input value={details.tags || ''} onChange={e => setDetail('tags', e.target.value)} placeholder="e.g. renovated, corner location" /></Field>
         <Field label="Parking Ratio" hint="Spaces per 1,000 SF"><Input value={details.parking_ratio || ''} onChange={e => setDetail('parking_ratio', e.target.value)} placeholder="e.g. 4/1,000 SF" /></Field>
         <Field label="Total Parking Spaces"><Num field="total_parking_spaces" placeholder="e.g. 80" details={details} setDetail={setDetail} /></Field>
-        <Field label="Ceiling Height"><Input value={details.ceiling_height || ''} onChange={e => setDetail('ceiling_height', e.target.value)} placeholder="e.g. 9 ft" /></Field>
+        <Field label="Ceiling Height (ft)"><Num field="ceiling_height" placeholder="e.g. 9" step="0.5" details={details} setDetail={setDetail} /></Field>
         <Field label="Zoning"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. B-2" /></Field>
       </div>
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
@@ -296,7 +293,7 @@ function MedicalOfficeDetails({ details, setDetail, onSavePhotos }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Parking Ratio" hint="Spaces per 1,000 SF"><Input value={details.parking_ratio || ''} onChange={e => setDetail('parking_ratio', e.target.value)} placeholder="e.g. 5/1,000 SF" /></Field>
         <Field label="Total Parking Spaces"><Num field="total_parking_spaces" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
-        <Field label="Ceiling Height"><Input value={details.ceiling_height || ''} onChange={e => setDetail('ceiling_height', e.target.value)} placeholder="e.g. 9 ft" /></Field>
+        <Field label="Ceiling Height (ft)"><Num field="ceiling_height" placeholder="e.g. 9" step="0.5" details={details} setDetail={setDetail} /></Field>
         <Field label="Zoning"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. O-1 Medical" /></Field>
       </div>
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
@@ -501,6 +498,11 @@ function LandDetails({ details, setDetail, onSavePhotos }) {
   const optionStyle = { background: '#0E1318', color: 'rgba(255,255,255,0.85)' };
   return (
     <>
+      <SectionTitle>Lot Size</SectionTitle>
+      <Field label="Lot Size (acres)" hint="Land is matched on acreage. Required for this listing to match acreage-based requirements.">
+        <Num field="acres" placeholder="e.g. 3.5" step="0.01" details={details} setDetail={setDetail} />
+      </Field>
+
       <SectionTitle>Buildability</SectionTitle>
       <div className="rounded-xl px-4 py-2 space-y-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Buildable / Developable" value={!!details.buildable} onChange={v => setDetail('buildable', v)} />

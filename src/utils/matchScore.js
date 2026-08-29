@@ -158,6 +158,39 @@ function scoreAmenities(listingSet, requiredSet) {
 }
 
 // ── Property-type detail scoring ──────────────────────────────────────────────
+// ── Investment / sale financials (commercial) ────────────────────────────────
+// Scores the numbers an income-property buyer actually underwrites. Every row
+// only appears when BOTH sides supplied a value — a listing with a cap rate but
+// a requirement with no cap-rate minimum produces no row, by design.
+//
+// Listing keys here are deliberately un-prefixed (cap_rate, noi, occupancy_pct)
+// so they match the names residential multi-family already uses and the scorer
+// already understands. The commercial listing form was previously writing these
+// as sale_cap_rate / sale_noi / sale_occupancy, which nothing ever read.
+function addInvestmentScores(add, ld, rd) {
+  // "At least" target: a higher listing value is better for the buyer.
+  const atLeast = (value, min) => {
+    const v = parseFloat(value), lo = parseFloat(min);
+    if (isNaN(v) || isNaN(lo) || lo <= 0) return null;
+    return v >= lo ? 100 : Math.max(0, Math.round(100 - ((lo - v) / lo) * 100));
+  };
+  const money = (n) => `$${(parseFloat(n) || 0).toLocaleString()}`;
+  const sf    = (n) => `${(parseFloat(n) || 0).toLocaleString()} SF`;
+
+  add('Cap Rate',            atLeast(ld.cap_rate,        rd.min_cap_rate),            `${ld.cap_rate ?? '—'}%`,          '📈');
+  add('NOI',                 atLeast(ld.noi,             rd.min_noi),                 money(ld.noi),                     '💰');
+  add('Occupancy',           atLeast(ld.occupancy_pct,   rd.min_occupancy),           `${ld.occupancy_pct ?? '—'}%`,     '👥');
+  add('WALT',                atLeast(ld.walt,            rd.min_walt),                `${ld.walt ?? '—'} yrs`,           '📄');
+  add('Net Rentable Area',   atLeast(ld.nra_sf,          rd.min_nra_sf),              sf(ld.nra_sf),                     '📐');
+  add('Gross Leasable Area', atLeast(ld.gla_sf,          rd.min_gla_sf),              sf(ld.gla_sf),                     '📐');
+  add('Avg Lease Remaining', atLeast(ld.avg_lease_term,  rd.min_avg_lease_remaining), `${ld.avg_lease_term ?? '—'} yrs`, '📄');
+  add('Rent Escalations',    atLeast(ld.rent_escalation, rd.min_rent_escalations),    `${ld.rent_escalation ?? '—'}%`,   '📈');
+
+  // Price per SF is a ceiling, not a floor — lower is better for the buyer.
+  add('Price / SF', scoreRange(ld.price_per_sf, null, rd.max_price_per_sf),
+    ld.price_per_sf != null ? `$${ld.price_per_sf}/SF` : '—', '💵');
+}
+
 function scoreDetails(listing, requirement, ld, rd) {
   const type   = listing.property_type;
   const scores = [];
@@ -190,6 +223,7 @@ function scoreDetails(listing, requirement, ld, rd) {
     add('Parking Spaces',
       scoreRange(ld.total_parking_spaces, rd.min_total_parking_spaces, rd.max_parking),
       `${ld.total_parking_spaces ?? '—'} spaces`, '🚗');
+    addInvestmentScores(add, ld, rd);
   }
 
   // ── MEDICAL OFFICE ───────────────────────────────────────────────────────────
@@ -207,6 +241,7 @@ function scoreDetails(listing, requirement, ld, rd) {
       add('Medical Features', Math.round((matched.length / reqMedFeats.length) * 100),
         `${matched.length}/${reqMedFeats.length} required`, '⚕️');
     }
+    addInvestmentScores(add, ld, rd);
   }
 
   // ── RETAIL ───────────────────────────────────────────────────────────────────
@@ -214,7 +249,9 @@ function scoreDetails(listing, requirement, ld, rd) {
     add('Traffic Count', scoreRange(ld.traffic_count, rd.min_traffic_count, null),
       `${(ld.traffic_count || 0).toLocaleString()}/day`, '🚗');
     add('Street Frontage', scoreRange(ld.frontage, rd.min_frontage, null), `${ld.frontage ?? '—'}ft`, '📏');
-    add('Ceiling Height', scoreRange(ld.ceiling_height, rd.min_ceiling_height, null), `${ld.ceiling_height ?? '—'}ft`, '📐');
+    // Ceiling height is scored in the weighted retail block below, which reads
+    // `pref_ceiling_height` — the field the requirement form actually writes.
+    // The line that used to sit here read `min_ceiling_height` and never fired.
     if (rd.location_type && ld.location_type)
       add('Location Type', ld.location_type === rd.location_type ? 100 : 40, ld.location_type, '📍');
     if (rd.foot_traffic_pref && ld.foot_traffic)
@@ -227,6 +264,7 @@ function scoreDetails(listing, requirement, ld, rd) {
     }
     add('Parking', scoreRange(ld.total_parking_spaces, rd.min_total_parking_spaces, null),
       `${ld.total_parking_spaces ?? '—'} spaces`, '🅿️');
+    addInvestmentScores(add, ld, rd);
   }
 
   // ── INDUSTRIAL / FLEX ────────────────────────────────────────────────────────
@@ -251,22 +289,25 @@ function scoreDetails(listing, requirement, ld, rd) {
       const hit = (ld.systems || []).filter(s => rd.required_systems.includes(s));
       add('Required Systems', sysScore, `${hit.length}/${rd.required_systems.length} systems`, '⚙️');
     }
+    addInvestmentScores(add, ld, rd);
   }
 
   // ── LAND (Commercial) ────────────────────────────────────────────────────────
   if (type === 'land') {
     add('Acreage', scoreRange(ld.acres, rd.min_acres, rd.max_acres), `${ld.acres ?? '—'} acres`, '🌿');
-    add('Road Frontage', scoreRange(ld.road_frontage, rd.min_road_frontage, rd.max_road_frontage), `${ld.road_frontage ?? '—'}ft`, '🛣️');
+    // Requirement form writes `min_frontage`, not `min_road_frontage`.
+    add('Road Frontage', scoreRange(ld.road_frontage, rd.min_frontage, null), `${ld.road_frontage ?? '—'}ft`, '🛣️');
     add('Traffic Count', scoreRange(ld.traffic_count, rd.min_traffic_count, null), `${(ld.traffic_count || 0).toLocaleString()}/day`, '🚗');
-    add('Max Build SF', scoreRange(ld.max_build_sf, rd.min_build_sf, null), `${(ld.max_build_sf || 0).toLocaleString()} SF`, '📐');
-    const utilScore = scoreAmenities(ld.utilities_to_site, rd.utilities_required);
+    // Requirement form writes `utilities_req`, not `utilities_required`.
+    const utilScore = scoreAmenities(ld.utilities_to_site, rd.utilities_req);
     if (utilScore !== null) {
-      const hit = (ld.utilities_to_site || []).filter(u => rd.utilities_required.includes(u));
-      add('Utilities at Site', utilScore, `${hit.length}/${rd.utilities_required.length} required`, '🔌');
+      const hit = (ld.utilities_to_site || []).filter(u => (rd.utilities_req || []).includes(u));
+      add('Utilities at Site', utilScore, `${hit.length}/${(rd.utilities_req || []).length} required`, '🔌');
     }
-    if (rd.entitlements_preferred?.length && ld.entitlements)
-      add('Entitlements', rd.entitlements_preferred.some(e => ld.entitlements?.toLowerCase().includes(e.toLowerCase())) ? 100 : 40,
-        ld.entitlements, '📋');
+    // Removed: Max Build SF and Entitlements. Neither the listing nor the
+    // requirement form ever wrote max_build_sf / min_build_sf / entitlements /
+    // entitlements_preferred, so both rows were permanently dead. Permitting &
+    // Approvals (the real version of entitlements) arrives in Phase 3.
   }
 
   // ── SPECIAL USE ──────────────────────────────────────────────────────────────
@@ -280,6 +321,7 @@ function scoreDetails(listing, requirement, ld, rd) {
       const matched = reqInfra.filter(k => ld[k]);
       add('Specialty Features', Math.round((matched.length / reqInfra.length) * 100), `${matched.length}/${reqInfra.length}`, '⭐');
     }
+    addInvestmentScores(add, ld, rd);
   }
 
   // ── SINGLE FAMILY ────────────────────────────────────────────────────────────
@@ -405,19 +447,23 @@ function scoreDetails(listing, requirement, ld, rd) {
   // ── LAND RESIDENTIAL ────────────────────────────────────────────────────────
   if (type === 'land_residential') {
     add('Acreage', scoreRange(ld.acres, rd.min_acres, rd.max_acres), `${ld.acres ?? '—'} acres`, '🌿');
-    add('Road Frontage', scoreRange(ld.road_frontage, rd.min_road_frontage, null), `${ld.road_frontage ?? '—'}ft`, '🛣️');
-    add('Buildable Area', scoreRange(ld.buildable_area || ld.gross_sqft, rd.min_buildable_area, null),
-      `${((ld.buildable_area || ld.gross_sqft) || 0).toLocaleString()} SF`, '🏗️');
-    const utilScore = scoreAmenities(ld.utilities_at_site, rd.utilities_required);
+    // Requirement form writes `min_frontage`, not `min_road_frontage`.
+    add('Road Frontage', scoreRange(ld.road_frontage, rd.min_frontage, null), `${ld.road_frontage ?? '—'}ft`, '🛣️');
+    // Requirement form writes `utilities_req`, not `utilities_required`.
+    const utilScore = scoreAmenities(ld.utilities_at_site, rd.utilities_req);
     if (utilScore !== null) {
-      const hit = (ld.utilities_at_site || []).filter(u => rd.utilities_required.includes(u));
-      add('Utilities at Site', utilScore, `${hit.length}/${rd.utilities_required.length}`, '🔌');
+      const hit = (ld.utilities_at_site || []).filter(u => (rd.utilities_req || []).includes(u));
+      add('Utilities at Site', utilScore, `${hit.length}/${(rd.utilities_req || []).length}`, '🔌');
     }
-    if (rd.no_wetlands_required)
+    // Requirement form writes `no_wetlands_req`, not `no_wetlands_required`.
+    if (rd.no_wetlands_req)
       add('No Wetlands', !(ld.topography_tags || []).includes('wetlands') ? 100 : 0,
         'Wetland status', '🌊');
     if (rd.survey_required)
       add('Survey Available', ld.survey_available ? 100 : 0, ld.survey_available ? 'Available' : 'Not available', '📋');
+    // Removed: Buildable Area. The residential land requirement form has no
+    // min_buildable_area field, so the row could never score. The listing side
+    // (buildable_area / gross_sqft) is retained and still displays.
   }
 
   return scores;

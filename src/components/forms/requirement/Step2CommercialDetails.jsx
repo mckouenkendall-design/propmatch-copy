@@ -419,6 +419,16 @@ function LandRequirement({ details, setDetail }) {
   const toggleUtility = (key) => setDetail('utilities_req', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
   return (
     <>
+      <SectionTitle>Lot Size Needed</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min Acreage" hint="Leave blank for no minimum">
+          <Num field="min_acres" placeholder="e.g. 2" step="0.01" details={details} setDetail={setDetail} />
+        </Field>
+        <Field label="Max Acreage" hint="Leave blank for no maximum">
+          <Num field="max_acres" placeholder="e.g. 5" step="0.01" details={details} setDetail={setDetail} />
+        </Field>
+      </div>
+
       <SectionTitle>Buildability & Access</SectionTitle>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Must Be Buildable / Developable" value={!!details.buildable_req} onChange={v => setDetail('buildable_req', v)} />
