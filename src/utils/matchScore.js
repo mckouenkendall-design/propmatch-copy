@@ -212,37 +212,40 @@ function scoreSaleTypeAndConditions(ld, rd) {
 // ── Universal commercial LEASE terms scoring ─────────────────────────────────
 // Every row only appears when the requirement side expressed a preference.
 // Returns rows to push into the breakdown; no hard gates here.
-function addLeaseTerms(add, ld, rd, listing) {
+function addLeaseTerms(add, ld, rd, listing, requirement) {
   const tx = listing?.transaction_type;
   if (tx !== 'lease' && tx !== 'sublease') return;
-  // CAM ceiling — listing CAM should be at or under the tenant's max.
-  if (rd.max_cam != null && rd.max_cam !== '' && ld.cam_amount != null && ld.cam_amount !== '') {
-    add('CAM / Add-on Rent', scoreRange(ld.cam_amount, null, rd.max_cam),
-      `$${ld.cam_amount}${ld.cam_unit === 'yr' ? '/yr' : '/SF/yr'}`, '💵');
-  }
 
-  // Service type — tenant lists acceptable structures; match if the listing's is in the set.
-  const okServices = Array.isArray(rd.service_type_pref) ? rd.service_type_pref : [];
-  if (okServices.length && ld.service_type) {
-    const ok = okServices.includes(ld.service_type);
-    add('Service Type', ok ? 100 : 0, ld.service_type, '📋');
-  }
-
-  // Timeline — space must be available by the time the tenant needs it.
-  if (rd.needed_by_date && ld.available_date) {
-    const need = new Date(rd.needed_by_date).getTime();
-    const avail = new Date(ld.available_date).getTime();
-    if (!isNaN(need) && !isNaN(avail)) {
-      // Available on/before the need date = perfect. Each month late costs points.
-      const monthsLate = (avail - need) / (1000 * 60 * 60 * 24 * 30);
-      const score = monthsLate <= 0 ? 100 : Math.max(0, Math.round(100 - monthsLate * 20));
-      add('Availability', score, `Ready ${ld.available_date}`, '📅');
+  // Availability — listing step 1 stores availability (immediately/date/tbd) and
+  // an optional available_date. Requirement step 1 stores a timeline bucket.
+  // Convert both to "months until available" and compare.
+  const timelineMonths = { asap: 0, flexible: 6, '1_3_months': 3, '3_6_months': 6, '6_9_months': 9, '9_plus_months': 12 };
+  const listingMonthsOut = (() => {
+    if (listing.availability === 'immediately') return 0;
+    if (listing.availability === 'date' && listing.available_date) {
+      const days = (new Date(listing.available_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+      return Math.max(0, days / 30);
     }
+    return null; // tbd or unset — can't score
+  })();
+  const needMonths = requirement?.timeline != null ? timelineMonths[requirement.timeline] : null;
+  if (listingMonthsOut !== null && needMonths != null) {
+    // Ready by the time they need it = perfect; each month late costs points.
+    const late = listingMonthsOut - needMonths;
+    const score = late <= 0 ? 100 : Math.max(0, Math.round(100 - late * 20));
+    const label = listing.availability === 'immediately' ? 'Available now' : `Ready ${listing.available_date}`;
+    add('Availability', score, label, '📅');
   }
 
-  // Build-out preference.
-  if (rd.build_out_pref && ld.build_out_type) {
-    add('Build-Out', ld.build_out_type === rd.build_out_pref ? 100 : 50, ld.build_out_type, '🔨');
+  // Divisible / size range — if the listing can be divided into a range, does the
+  // tenant's needed size fall within it? Size itself is scored elsewhere; this
+  // rewards a divisible listing that can flex to the tenant's requirement.
+  const needSize = parseFloat(requirement?.min_size_sqft) || parseFloat(requirement?.max_size_sqft) || 0;
+  if (ld.divisible && needSize > 0) {
+    const lo = parseFloat(ld.space_min_sf) || 0;
+    const hi = parseFloat(ld.space_max_sf) || Infinity;
+    const fits = needSize >= lo && needSize <= hi;
+    add('Divisible Fit', fits ? 100 : 60, fits ? 'Can divide to fit' : 'Divisible', '✂️');
   }
 
   // Space condition — ranked; listing at or above the tenant's minimum scores full.
@@ -258,14 +261,14 @@ function addLeaseTerms(add, ld, rd, listing) {
     add('Sprinklers', ld.sprinkler_type === rd.sprinkler_type_req ? 100 : 0, ld.sprinkler_type, '💧');
   }
 
-  // Lease term overlap — do the offered and desired year ranges intersect?
+  // Lease term overlap — highly negotiable, so a miss is softly penalized, not zeroed.
   const lMin = parseFloat(ld.lease_term_min), lMax = parseFloat(ld.lease_term_max);
   const rMin = parseFloat(rd.lease_term_min), rMax = parseFloat(rd.lease_term_max);
   if ((!isNaN(lMin) || !isNaN(lMax)) && (!isNaN(rMin) || !isNaN(rMax))) {
     const loL = isNaN(lMin) ? 0 : lMin, hiL = isNaN(lMax) ? 99 : lMax;
     const loR = isNaN(rMin) ? 0 : rMin, hiR = isNaN(rMax) ? 99 : rMax;
     const overlaps = loL <= hiR && loR <= hiL;
-    add('Lease Term', overlaps ? 100 : 40,
+    add('Lease Term', overlaps ? 100 : 65,
       `${isNaN(lMin) ? '?' : lMin}–${isNaN(lMax) ? '?' : lMax} yrs`, '📆');
   }
 }
@@ -327,7 +330,7 @@ function scoreDetails(listing, requirement, ld, rd) {
       scoreRange(ld.total_parking_spaces, rd.min_total_parking_spaces, rd.max_parking),
       `${ld.total_parking_spaces ?? '—'} spaces`, '🚗');
     addInvestmentScores(add, ld, rd);
-    addLeaseTerms(add, ld, rd, listing);
+    addLeaseTerms(add, ld, rd, listing, requirement);
   }
 
   // ── MEDICAL OFFICE ───────────────────────────────────────────────────────────
@@ -346,7 +349,7 @@ function scoreDetails(listing, requirement, ld, rd) {
         `${matched.length}/${reqMedFeats.length} required`, '⚕️');
     }
     addInvestmentScores(add, ld, rd);
-    addLeaseTerms(add, ld, rd, listing);
+    addLeaseTerms(add, ld, rd, listing, requirement);
   }
 
   // ── RETAIL ───────────────────────────────────────────────────────────────────
@@ -370,7 +373,7 @@ function scoreDetails(listing, requirement, ld, rd) {
     add('Parking', scoreRange(ld.total_parking_spaces, rd.min_total_parking_spaces, null),
       `${ld.total_parking_spaces ?? '—'} spaces`, '🅿️');
     addInvestmentScores(add, ld, rd);
-    addLeaseTerms(add, ld, rd, listing);
+    addLeaseTerms(add, ld, rd, listing, requirement);
   }
 
   // ── INDUSTRIAL / FLEX ────────────────────────────────────────────────────────
@@ -396,7 +399,7 @@ function scoreDetails(listing, requirement, ld, rd) {
       add('Required Systems', sysScore, `${hit.length}/${rd.required_systems.length} systems`, '⚙️');
     }
     addInvestmentScores(add, ld, rd);
-    addLeaseTerms(add, ld, rd, listing);
+    addLeaseTerms(add, ld, rd, listing, requirement);
   }
 
   // ── LAND (Commercial) ────────────────────────────────────────────────────────
@@ -432,7 +435,7 @@ function scoreDetails(listing, requirement, ld, rd) {
       add('Specialty Features', Math.round((matched.length / reqInfra.length) * 100), `${matched.length}/${reqInfra.length}`, '⭐');
     }
     addInvestmentScores(add, ld, rd);
-    addLeaseTerms(add, ld, rd, listing);
+    addLeaseTerms(add, ld, rd, listing, requirement);
   }
 
   // ── SINGLE FAMILY ────────────────────────────────────────────────────────────

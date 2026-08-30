@@ -46,8 +46,10 @@ const LEASE_TYPES = [
     subOptions: [
       { value: 'electricity', label: 'Electricity' },
       { value: 'water',       label: 'Water' },
+      { value: 'heat',        label: 'Heat' },
       { value: 'janitorial',  label: 'Janitorial' },
       { value: 'trash',       label: 'Trash' },
+      { value: 'internet',    label: 'Internet' },
     ],
   },
   {
@@ -294,6 +296,32 @@ export default function ListStep1({ data, update, onNext }) {
                 </div>
               </div>
             )}
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label style={{ color: 'rgba(255,255,255,0.9)' }}>CAM ($/SF/Year)</Label>
+                <NumericInput value={data.cam_amount || ''} onChange={v => update({ cam_amount: v })}
+                  placeholder="e.g. 8.50"
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+              </div>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Availability</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Chip label="Immediately" selected={data.availability === 'immediately'}
+                  onClick={() => update({ availability: 'immediately', available_date: undefined })} />
+                <Chip label="Specific Date" selected={data.availability === 'date'}
+                  onClick={() => update({ availability: 'date' })} />
+                <Chip label="TBD" selected={data.availability === 'tbd'}
+                  onClick={() => update({ availability: 'tbd', available_date: undefined })} />
+              </div>
+              {data.availability === 'date' && (
+                <input type="date" value={data.available_date || ''} onChange={e => update({ available_date: e.target.value })}
+                  className="w-full rounded-md px-3 py-2 text-sm focus:outline-none mt-2"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+              )}
+            </div>
           </div>
         </>
       )}
