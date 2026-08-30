@@ -215,6 +215,14 @@ function SaleTypeSection({ type, details, setDetail }) {
   const selCls = "w-full rounded-md px-3 py-2 text-sm focus:outline-none";
   const selStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
 
+  const chip = (on, accent) => ({
+    padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
+    fontFamily: "'Inter',sans-serif", fontSize: '12px', fontWeight: 500,
+    border: `1px solid ${on ? accent : 'rgba(255,255,255,0.15)'}`,
+    background: on ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)',
+    color: on ? accent : 'rgba(255,255,255,0.7)',
+  });
+
   return (
     <>
       <SectionTitle>Sale Type</SectionTitle>
