@@ -168,7 +168,11 @@ function scoreSaleTypeAndConditions(ld, rd) {
   let penalty = 1;
 
   const listingType = ld.sale_type || '';
-  const wantedTypes = Array.isArray(rd.sale_type_pref) ? rd.sale_type_pref : [];
+  // Requirement now stores a single Sale Type in sale_type_pref_single.
+  // Fall back to the legacy sale_type_pref array for any older requirements.
+  const wantedTypes = rd.sale_type_pref_single
+    ? [rd.sale_type_pref_single]
+    : (Array.isArray(rd.sale_type_pref) ? rd.sale_type_pref : []);
 
   if (listingType && wantedTypes.length) {
     // "investment_or_owner" on either side is a wildcard that satisfies both camps.

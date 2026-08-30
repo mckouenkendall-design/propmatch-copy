@@ -205,34 +205,26 @@ const REQ_FINANCIAL_FIELDS = {
 // Buyer-side Sale Type (multi-select) + Sale Conditions + business interest.
 function SaleTypeSection({ type, details, setDetail }) {
   const options = type === 'land' ? SALE_TYPES_LAND : SALE_TYPES;
-  const chosenTypes = details.sale_type_pref || [];
-  const toggleType = (v) =>
-    setDetail('sale_type_pref', chosenTypes.includes(v) ? chosenTypes.filter(x => x !== v) : [...chosenTypes, v]);
+  const saleType = details.sale_type_pref_single || '';
+  const setSaleType = (v) => setDetail('sale_type_pref_single', v);
   const conditions = details.sale_conditions_pref || [];
   const toggleCondition = (c) =>
     setDetail('sale_conditions_pref', conditions.includes(c) ? conditions.filter(x => x !== c) : [...conditions, c]);
   const [condOpen, setCondOpen] = React.useState(false);
 
-  const chip = (on, accent) => ({
-    padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
-    fontFamily: "'Inter',sans-serif", fontSize: '12px', fontWeight: 500,
-    border: `1px solid ${on ? accent : 'rgba(255,255,255,0.15)'}`,
-    background: on ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)',
-    color: on ? accent : 'rgba(255,255,255,0.7)',
-  });
+  const selCls = "w-full rounded-md px-3 py-2 text-sm focus:outline-none";
+  const selStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
 
   return (
     <>
       <SectionTitle>Sale Type</SectionTitle>
-      <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '-8px 0 10px' }}>
-        Which kinds of deals will your client consider? Select all that fit.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {options.map(o => (
-          <button key={o.value} type="button" onClick={() => toggleType(o.value)} style={chip(chosenTypes.includes(o.value), ACCENT)}>
-            {o.label}
-          </button>
-        ))}
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Sale Type" hint="Which kind of deal your client is looking for.">
+          <select className={selCls} style={selStyle} value={saleType} onChange={e => setSaleType(e.target.value)}>
+            <option value="" style={{ background: '#0E1318' }}>Any / No preference</option>
+            {options.map(o => <option key={o.value} value={o.value} style={{ background: '#0E1318' }}>{o.label}</option>)}
+          </select>
+        </Field>
       </div>
 
       <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', overflow: 'hidden', marginTop: '4px' }}>
