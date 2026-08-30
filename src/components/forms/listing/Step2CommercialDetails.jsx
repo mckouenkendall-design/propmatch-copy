@@ -37,6 +37,20 @@ const OCCUPANCY_TIMING = [
   { value: 'available_within', label: 'Available Within' },
 ];
 
+// ── Phase 2: universal commercial LEASE fields ───────────────────────────────
+const SERVICE_TYPES = [
+  'Triple Net (NNN)', 'Full Service', 'Modified Gross', 'Industrial Gross',
+  'Single Net', 'Double Net', 'Plus Utilities', 'Plus Electric',
+  'Plus Cleaning', 'Gross', 'Negotiable', 'TBD',
+];
+const CAM_UNITS = [
+  { value: 'sf_yr', label: '$/SF/Year' },
+  { value: 'yr',    label: '$/Year' },
+];
+const BUILD_OUT_TYPES = ['Shell Space', 'Partial Build-Out', 'Full Build-Out', 'Spec Suite'];
+const SPACE_CONDITIONS = ['Average', 'Excellent', 'Needs Renovation', 'Partially Demolished', 'Renovated', 'Trophy'];
+const SPRINKLER_TYPES = ['None', 'Wet', 'Dry', 'ESFR'];
+
 // ── Shared helpers ────────────────────────────────────────────────────────────
 function Field({ label, children, hint }) {
   return (
@@ -314,6 +328,93 @@ function SaleTypeSection({ type, details, setDetail }) {
             <Num field="business_value" placeholder="e.g. 250000" details={details} setDetail={setDetail} />
           </Field>
         )}
+      </div>
+    </>
+  );
+}
+
+// Universal lease terms — shown at the top of any commercial LEASE listing,
+// above the type-specific detail form. These apply to office, retail,
+// industrial, and special use alike.
+function LeaseTermsSection({ details, setDetail }) {
+  const [condOpen, setCondOpen] = React.useState(false);
+  const selCls = "w-full rounded-md px-3 py-2 text-sm focus:outline-none";
+  const selStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
+  const opt = { background: '#0E1318' };
+
+  return (
+    <>
+      <SectionTitle>Lease Terms</SectionTitle>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Service Type" hint="What the tenant pays on top of base rent. NNN and Full Service are very different total costs.">
+          <select className={selCls} style={selStyle} value={details.service_type || ''} onChange={e => setDetail('service_type', e.target.value)}>
+            <option value="" style={opt}>Select…</option>
+            {SERVICE_TYPES.map(s => <option key={s} value={s} style={opt}>{s}</option>)}
+          </select>
+        </Field>
+        <Field label="CAM / Additional Rent" hint="Common area maintenance and other pass-throughs.">
+          <div className="flex gap-2">
+            <div style={{ flex: 1 }}>
+              <Num field="cam_amount" placeholder="e.g. 8.50" step="0.01" details={details} setDetail={setDetail} />
+            </div>
+            <select className={selCls} style={{ ...selStyle, width: 'auto' }} value={details.cam_unit || 'sf_yr'} onChange={e => setDetail('cam_unit', e.target.value)}>
+              {CAM_UNITS.map(u => <option key={u.value} value={u.value} style={opt}>{u.label}</option>)}
+            </select>
+          </div>
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Available Date" hint="When the space can be occupied.">
+          <input type="date" className={selCls} style={selStyle} value={details.available_date || ''} onChange={e => setDetail('available_date', e.target.value)} />
+        </Field>
+        <Field label="Divisible?" hint="Can the space be split into smaller units?">
+          <Toggle label="Space can be divided" value={!!details.divisible} onChange={v => setDetail('divisible', v)} />
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Min Available (SF)" hint="Smallest contiguous space. Leave blank if not divisible.">
+          <Num field="space_min_sf" placeholder="e.g. 2000" details={details} setDetail={setDetail} />
+        </Field>
+        <Field label="Max Available (SF)" hint="Largest contiguous space available.">
+          <Num field="space_max_sf" placeholder="e.g. 8000" details={details} setDetail={setDetail} />
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Existing Build-Out">
+          <select className={selCls} style={selStyle} value={details.build_out_type || ''} onChange={e => setDetail('build_out_type', e.target.value)}>
+            <option value="" style={opt}>Select…</option>
+            {BUILD_OUT_TYPES.map(b => <option key={b} value={b} style={opt}>{b}</option>)}
+          </select>
+        </Field>
+        <Field label="Space Condition">
+          <select className={selCls} style={selStyle} value={details.space_condition || ''} onChange={e => setDetail('space_condition', e.target.value)}>
+            <option value="" style={opt}>Select…</option>
+            {SPACE_CONDITIONS.map(c => <option key={c} value={c} style={opt}>{c}</option>)}
+          </select>
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Sprinklers">
+          <select className={selCls} style={selStyle} value={details.sprinkler_type || ''} onChange={e => setDetail('sprinkler_type', e.target.value)}>
+            <option value="" style={opt}>Select…</option>
+            {SPRINKLER_TYPES.map(s => <option key={s} value={s} style={opt}>{s}</option>)}
+          </select>
+        </Field>
+        <Field label="Lease Term (years)" hint="Typical or offered lease length.">
+          <div className="flex gap-2">
+            <div style={{ flex: 1 }}>
+              <Num field="lease_term_min" placeholder="Min" step="0.5" details={details} setDetail={setDetail} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <Num field="lease_term_max" placeholder="Max" step="0.5" details={details} setDetail={setDetail} />
+            </div>
+          </div>
+        </Field>
       </div>
     </>
   );
@@ -785,6 +886,7 @@ export default function ListStep2Commercial({ data, update, onNext }) {
   // based on the chosen Sale Type (investment-flavored), not merely on it being
   // a sale. Land is investment-agnostic (no financials block).
   const isSale = data.transaction_type === 'sale';
+  const isLease = data.transaction_type === 'lease' || data.transaction_type === 'sublease';
   const saleType = details.sale_type || '';
   const showFinancials = isSale && type !== 'land' &&
     SALE_TYPE_SHOWS_FINANCIALS.includes(saleType);
@@ -797,6 +899,7 @@ export default function ListStep2Commercial({ data, update, onNext }) {
       </p>
 
       {isSale && <SaleTypeSection type={type} details={details} setDetail={setDetail} />}
+      {isLease && type !== 'land' && <LeaseTermsSection details={details} setDetail={setDetail} />}
 
       {type === 'office' && <OfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
       {type === 'medical_office' && <MedicalOfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}

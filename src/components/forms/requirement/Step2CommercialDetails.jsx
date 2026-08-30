@@ -26,6 +26,16 @@ const SALE_CONDITIONS = [
   'Sale Leaseback', 'Short Sale',
 ];
 
+// ── Phase 2: universal commercial LEASE needs (buyer/tenant side) ─────────────
+const SERVICE_TYPES = [
+  'Triple Net (NNN)', 'Full Service', 'Modified Gross', 'Industrial Gross',
+  'Single Net', 'Double Net', 'Plus Utilities', 'Plus Electric',
+  'Plus Cleaning', 'Gross', 'Negotiable', 'TBD',
+];
+const BUILD_OUT_TYPES = ['Shell Space', 'Partial Build-Out', 'Full Build-Out', 'Spec Suite'];
+const SPACE_CONDITIONS = ['Average', 'Excellent', 'Needs Renovation', 'Partially Demolished', 'Renovated', 'Trophy'];
+const SPRINKLER_TYPES = ['None', 'Wet', 'Dry', 'ESFR'];
+
 function CollapsiblePanel({ title, summary, children, defaultOpen }) {
   const [open, setOpen] = React.useState(defaultOpen || false);
   return (
@@ -203,6 +213,80 @@ const REQ_FINANCIAL_FIELDS = {
 };
 
 // Buyer-side Sale Type (multi-select) + Sale Conditions + business interest.
+// Universal lease needs — tenant/buyer side. Shown at the top of any commercial
+// lease requirement (office, retail, industrial, special use).
+function LeaseNeedsSection({ details, setDetail }) {
+  const selCls = "w-full rounded-md px-3 py-2 text-sm focus:outline-none";
+  const selStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
+  const opt = { background: '#0E1318' };
+  const conditions = details.service_type_pref || [];
+  const toggleService = (s) =>
+    setDetail('service_type_pref', conditions.includes(s) ? conditions.filter(x => x !== s) : [...conditions, s]);
+  const chip = (on) => ({
+    padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
+    fontFamily: "'Inter',sans-serif", fontSize: '12px', fontWeight: 500,
+    border: `1px solid ${on ? ACCENT : 'rgba(255,255,255,0.15)'}`,
+    background: on ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)',
+    color: on ? ACCENT : 'rgba(255,255,255,0.7)',
+  });
+
+  return (
+    <>
+      <SectionTitle>Lease Needs</SectionTitle>
+
+      <Field label="Acceptable Service Types" hint="Which lease structures your client will accept. Leave all unselected for no preference.">
+        <div className="flex flex-wrap gap-2">
+          {SERVICE_TYPES.map(s => (
+            <button key={s} type="button" onClick={() => toggleService(s)} style={chip(conditions.includes(s))}>{s}</button>
+          ))}
+        </div>
+      </Field>
+
+      <div className="grid grid-cols-2 gap-4">
+        <MinField label="Max CAM ($/SF/Year)" field="max_cam" placeholder="e.g. 10"
+          hint="Highest additional rent the client will accept." details={details} setDetail={setDetail} step="0.01" />
+        <Field label="Needed By" hint="When the client needs to be in the space.">
+          <input type="date" className={selCls} style={selStyle} value={details.needed_by_date || ''} onChange={e => setDetail('needed_by_date', e.target.value)} />
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Preferred Build-Out">
+          <select className={selCls} style={selStyle} value={details.build_out_pref || ''} onChange={e => setDetail('build_out_pref', e.target.value)}>
+            <option value="" style={opt}>No preference</option>
+            {BUILD_OUT_TYPES.map(b => <option key={b} value={b} style={opt}>{b}</option>)}
+          </select>
+        </Field>
+        <Field label="Minimum Condition">
+          <select className={selCls} style={selStyle} value={details.space_condition_pref || ''} onChange={e => setDetail('space_condition_pref', e.target.value)}>
+            <option value="" style={opt}>No preference</option>
+            {SPACE_CONDITIONS.map(c => <option key={c} value={c} style={opt}>{c}</option>)}
+          </select>
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Required Sprinklers">
+          <select className={selCls} style={selStyle} value={details.sprinkler_type_req || ''} onChange={e => setDetail('sprinkler_type_req', e.target.value)}>
+            <option value="" style={opt}>No preference</option>
+            {SPRINKLER_TYPES.filter(s => s !== 'None').map(s => <option key={s} value={s} style={opt}>{s}</option>)}
+          </select>
+        </Field>
+        <Field label="Lease Term Wanted (years)" hint="Desired lease length range.">
+          <div className="flex gap-2">
+            <div style={{ flex: 1 }}>
+              <Num field="lease_term_min" placeholder="Min" step="0.5" details={details} setDetail={setDetail} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <Num field="lease_term_max" placeholder="Max" step="0.5" details={details} setDetail={setDetail} />
+            </div>
+          </div>
+        </Field>
+      </div>
+    </>
+  );
+}
+
 function SaleTypeSection({ type, details, setDetail }) {
   const options = type === 'land' ? SALE_TYPES_LAND : SALE_TYPES;
   const saleType = details.sale_type_pref_single || '';
@@ -607,6 +691,7 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
   // block below never rendered and there was nowhere to enter a minimum cap
   // rate, NOI, or occupancy. 'sale' is kept as a fallback for any legacy rows.
   const isSale    = data.transaction_type === 'purchase' || data.transaction_type === 'sale';
+  const isLease   = data.transaction_type === 'lease' || data.transaction_type === 'rent';
 
   // Commercial sales show the normal requirement form plus an Investment Criteria
   // block appended at the bottom. Land is investment-agnostic (no criteria block).
@@ -619,6 +704,7 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
       </p>
 
       {isSale && <SaleTypeSection type={type} details={details} setDetail={setDetail} />}
+      {isLease && type !== 'land' && <LeaseNeedsSection details={details} setDetail={setDetail} />}
 
       {type === 'office'          && <OfficeRequirement        details={details} setDetail={setDetail} />}
       {type === 'medical_office'  && <MedicalOfficeRequirement details={details} setDetail={setDetail} />}
