@@ -331,8 +331,6 @@ function LeaseTermsSection({ details, setDetail }) {
 
   return (
     <>
-      <SectionTitle>Lease Details</SectionTitle>
-
       <div className="grid grid-cols-2 gap-4">
         <Field label="Divisible?">
           <Toggle label="Space can be divided" value={!!details.divisible} onChange={v => setDetail('divisible', v)} />
