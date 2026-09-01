@@ -297,14 +297,16 @@ export default function ListStep1({ data, update, onNext }) {
               </div>
             )}
 
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label style={{ color: 'rgba(255,255,255,0.9)' }}>CAM ($/SF/Year)</Label>
-                <NumericInput value={data.cam_amount || ''} onChange={v => update({ cam_amount: v })}
-                  placeholder="e.g. 8.50"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+            {data.lease_type === 'net_lease' && (
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label style={{ color: 'rgba(255,255,255,0.9)' }}>CAM ($/SF/Year)</Label>
+                  <NumericInput value={data.cam_amount || ''} onChange={v => update({ cam_amount: v })}
+                    placeholder="e.g. 8.50"
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="mt-3 space-y-2">
               <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Availability</Label>

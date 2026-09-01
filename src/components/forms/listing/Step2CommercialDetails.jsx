@@ -415,7 +415,7 @@ const LAYOUT_OPTIONS = [
   { value: 'executive_suite', label: 'Executive Suite' }, { value: 'mixed', label: 'Mixed' }, { value: 'other', label: 'Other' },
 ];
 
-function OfficeDetails({ details, setDetail, onSavePhotos }) {
+function OfficeDetails({ details, setDetail, onSavePhotos, leaseSlot }) {
   const amenities = details.amenities || [];
   const toggleAmenity = (val) => setDetail('amenities', amenities.includes(val) ? amenities.filter(a => a !== val) : [...amenities, val]);
   return (
@@ -427,11 +427,16 @@ function OfficeDetails({ details, setDetail, onSavePhotos }) {
         <Field label="Conference Rooms"><Num field="conf_rooms" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
       </div>
       <Field label="Layout Type"><div className="flex flex-wrap gap-2">{LAYOUT_OPTIONS.map(opt => <Chip key={opt.value} label={opt.label} selected={details.layout === opt.value} onClick={() => setDetail('layout', opt.value)} />)}</div></Field>
+
       <SectionTitle>In-Suite / Space Features</SectionTitle>
       <Field label="Select all that apply"><div className="flex flex-wrap gap-2">{SPACE_AMENITIES.map(a => <Chip key={a.value} label={a.label} selected={amenities.includes(a.value)} onClick={() => toggleAmenity(a.value)} />)}</div></Field>
       <Field label="In-Suite IT Infrastructure"><Input value={details.it_infrastructure || ''} onChange={e => setDetail('it_infrastructure', e.target.value)} placeholder="e.g., Cat6 wiring, dedicated fiber drop" /></Field>
+
+      {leaseSlot && <><SectionTitle>Lease Details</SectionTitle>{leaseSlot}</>}
+
       <SectionTitle>Building Amenities</SectionTitle>
       <BuildingAmenitiesSection details={details} setDetail={setDetail} />
+
       <SectionTitle>Property Specs & Documentation</SectionTitle>
       <Field label="Description"><Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the space, its highlights, and what makes it ideal for tenants…" rows={4} /></Field>
       <div className="grid grid-cols-2 gap-4">
@@ -443,6 +448,8 @@ function OfficeDetails({ details, setDetail, onSavePhotos }) {
       </div>
       <ToggleGroup label="Building Class" value={details.building_class || ''} onChange={v => setDetail('building_class', v)}
         options={[{ value: 'A', label: 'Class A' }, { value: 'B', label: 'Class B' }, { value: 'C', label: 'Class C' }]} />
+
+      <SectionTitle>Photos & Brochure</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <FileUpload label="Photos" accept="image/*" field="photo_url" details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} hint="Upload a primary photo" />
         <FileUpload label="Brochure (PDF)" accept=".pdf" field="brochure_url" details={details} setDetail={setDetail} hint="Upload a PDF brochure" />
@@ -458,11 +465,12 @@ const MEDICAL_FEATURES = [
   { value: 'lab_space', label: 'Lab Space' }, { value: 'in_suite_restrooms', label: 'In-Suite Restrooms' },
 ];
 
-function MedicalOfficeDetails({ details, setDetail, onSavePhotos }) {
+function MedicalOfficeDetails({ details, setDetail, onSavePhotos, leaseSlot }) {
   const features = details.medical_features || [];
   const toggleFeature = (val) => setDetail('medical_features', features.includes(val) ? features.filter(f => f !== val) : [...features, val]);
   return (
     <>
+      {leaseSlot && <><SectionTitle>Lease Details</SectionTitle>{leaseSlot}</>}
       <SectionTitle>Exam & Procedure Capacity</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Suite Number" hint="Optional"><Input value={details.suite_number || ''} onChange={e => setDetail('suite_number', e.target.value)} placeholder="e.g. Suite 300" /></Field>
@@ -503,13 +511,14 @@ const RETAIL_SPECIAL_FEATURES = [
   { key: 'vault', label: 'Secure Vault / Safe Room' }, { key: 'medical_flooring', label: 'Medical Grade Flooring' }, { key: 'auto_bay', label: 'Auto Bay / Garage Doors' },
 ];
 
-function RetailDetails({ details, setDetail, onSavePhotos }) {
+function RetailDetails({ details, setDetail, onSavePhotos, leaseSlot }) {
   const [featuresOpen, setFeaturesOpen] = React.useState(false);
   const features = details.retail_features || [];
   const toggleFeature = (key) => setDetail('retail_features', features.includes(key) ? features.filter(k => k !== key) : [...features, key]);
   const hasRestrooms = !!details.in_suite_restrooms;
   return (
     <>
+      {leaseSlot && <><SectionTitle>Lease Details</SectionTitle>{leaseSlot}</>}
       <SectionTitle>Primary Retail Specs</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Suite Number" hint="Optional"><Input value={details.suite_number || ''} onChange={e => setDetail('suite_number', e.target.value)} placeholder="e.g. Suite 150" /></Field>
@@ -587,7 +596,7 @@ const SYSTEMS_CHECKLIST = [
 ];
 const DOCK_EQUIPMENT = [{ key: 'dock_levelers', label: 'Levelers' }, { key: 'dock_seals', label: 'Seals' }, { key: 'dock_restraints', label: 'Restraints' }];
 
-function IndustrialFlexDetails({ details, setDetail, onSavePhotos }) {
+function IndustrialFlexDetails({ details, setDetail, onSavePhotos, leaseSlot }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   const systems = details.systems || [];
   const toggleSystem = (key) => setDetail('systems', systems.includes(key) ? systems.filter(s => s !== key) : [...systems, key]);
@@ -595,6 +604,7 @@ function IndustrialFlexDetails({ details, setDetail, onSavePhotos }) {
   const toggleDockEq = (key) => setDetail('dock_equipment', dockEq.includes(key) ? dockEq.filter(d => d !== key) : [...dockEq, key]);
   return (
     <>
+      {leaseSlot && <><SectionTitle>Lease Details</SectionTitle>{leaseSlot}</>}
       <SectionTitle>Primary Loading & Access</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Loading Docks / Dock-Height Doors"><Num field="dock_doors" placeholder="e.g. 4" details={details} setDetail={setDetail} /></Field>
@@ -772,12 +782,13 @@ const SPECIAL_USE_BUILDING_AMENITIES = [
   { value: 'energy_efficient', label: 'Energy Efficient Building' }, { value: 'leed_certified', label: 'LEED Certified / Green Building' },
 ];
 
-function SpecialUseDetails({ details, setDetail, onSavePhotos }) {
+function SpecialUseDetails({ details, setDetail, onSavePhotos, leaseSlot }) {
   const toggleBool = (key) => setDetail(key, !details[key]);
   const buildingAmenities = details.building_amenities || [];
   const toggleBuildingAmenity = (val) => setDetail('building_amenities', buildingAmenities.includes(val) ? buildingAmenities.filter(a => a !== val) : [...buildingAmenities, val]);
   return (
     <>
+      {leaseSlot && <><SectionTitle>Lease Details</SectionTitle>{leaseSlot}</>}
       <SectionTitle>Current Use & Classification</SectionTitle>
       <Field label="Current Specific Use">
         <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
@@ -852,22 +863,25 @@ export default function ListStep2Commercial({ data, update, onNext }) {
   const showFinancials = isSale && type !== 'land' &&
     SALE_TYPE_SHOWS_FINANCIALS.includes(saleType);
   const onSavePhotos = (next) => update({ property_details: { ...(dataRef.current.property_details || {}), photo_urls: next, photo_url: next[0] || '' } });
+  // Lease Details section, injected into each type component at the right spot in
+  // its section order. Null for sales and land (land has no lease details block).
+  const leaseSlot = (isLease && type !== 'land')
+    ? <LeaseTermsSection details={details} setDetail={setDetail} />
+    : null;
 
   return (
     <div className="space-y-6">
       <p className="text-sm -mt-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
         Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong> space.
       </p>
-
       {isSale && <SaleTypeSection type={type} details={details} setDetail={setDetail} />}
-      {isLease && type !== 'land' && <LeaseTermsSection details={details} setDetail={setDetail} />}
 
-      {type === 'office' && <OfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
-      {type === 'medical_office' && <MedicalOfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
-      {type === 'retail' && <RetailDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
-      {type === 'industrial_flex' && <IndustrialFlexDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
+      {type === 'office' && <OfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} leaseSlot={leaseSlot} />}
+      {type === 'medical_office' && <MedicalOfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} leaseSlot={leaseSlot} />}
+      {type === 'retail' && <RetailDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} leaseSlot={leaseSlot} />}
+      {type === 'industrial_flex' && <IndustrialFlexDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} leaseSlot={leaseSlot} />}
       {type === 'land' && <LandDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
-      {type === 'special_use' && <SpecialUseDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
+      {type === 'special_use' && <SpecialUseDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} leaseSlot={leaseSlot} />}
 
       {showFinancials && <InvestmentFinancials type={type} details={details} setDetail={setDetail} />}
 
