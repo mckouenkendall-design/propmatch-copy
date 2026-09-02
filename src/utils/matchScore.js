@@ -48,11 +48,26 @@ export function weightKey(label) {
     .replace(/^_+|_+$/g, '');
 }
 
+// The scorer emits price/size rows under context-specific labels (Purchase
+// Price, Monthly Rent, Monthly Total, Acreage, Size (SF), etc.), but the client
+// priority ranker stores those two universal items under the canonical keys
+// 'price' and 'size'. Map every price-flavored and size-flavored label back to
+// its canonical key so a client's Price/Size weighting (including a dealbreaker)
+// actually connects to the row that carries it.
+function canonicalWeightKey(label) {
+  const k = weightKey(label);
+  // Main price row appears under these context labels.
+  if (k === 'purchase_price' || k === 'monthly_rent' || k === 'monthly_total' || k === 'price') return 'price';
+  // Main size row appears as Size (SF) or Acreage.
+  if (k === 'size_sf' || k === 'acreage' || k === 'size') return 'size';
+  return k;
+}
+
 // Read the client's override for a given item label. Returns one of the
 // importance level strings, or null if the client didn't override this item.
 export function clientOverrideFor(label, clientWeights) {
   if (!clientWeights || typeof clientWeights !== 'object') return null;
-  const key = weightKey(label);
+  const key = canonicalWeightKey(label);
   const val = clientWeights[key];
   if (val && IMPORTANCE_MULTIPLIERS[val] !== undefined) return val;
   return null;
@@ -1892,7 +1907,16 @@ export function calculateMatchScore(listing, requirement) {
       // 0 (doesn't). Graduated items (bedrooms, clear height, etc.) must be at
       // or very near what's needed — we require >= 85 (the "Strong" bar). A place
       // with 3 bedrooms when the client's dealbreaker is 5 scores 60 → fails.
-      if (override === 'dealbreaker' && item.score < 85) {
+      //
+      // Price and size are stricter: a dealbreaker there means "must be within
+      // the stated range." The price falloff is gentle (a listing a little over
+      // budget still scores in the 80s), which is right for weighting but wrong
+      // for a dealbreaker — over budget is over budget. So for those two we
+      // require a full 100 (in range) to pass.
+      const canonKey = canonicalWeightKey(label);
+      const isRangeItem = canonKey === 'price' || canonKey === 'size';
+      const passThreshold = isRangeItem ? 100 : 85;
+      if (override === 'dealbreaker' && item.score < passThreshold) {
         return { totalScore: 0, breakdown: [], rangeData: {}, isMatch: false,
           matchLabel: null, coverage: 0 };
       }
