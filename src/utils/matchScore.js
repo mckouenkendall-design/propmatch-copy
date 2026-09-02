@@ -924,6 +924,31 @@ export function calculateMatchScore(listing, requirement) {
         details: `${ld.conf_rooms ?? '—'} rooms vs ${want} requested`, icon: '📋' });
     }
 
+    // Workstations (graduated — listing should meet or exceed requested count)
+    if (rd.workstations_needed && parseFloat(rd.workstations_needed) > 0) {
+      const want = parseFloat(rd.workstations_needed);
+      const have = parseFloat(ld.workstations) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      officeItems.push({ label: 'Workstations', score, weight: 7,
+        details: `${ld.workstations ?? '—'} vs ${want} requested`, icon: '💺' });
+    }
+
+    // Headcount / Fits People (graduated — space must seat at least the team size)
+    if (rd.headcount && parseFloat(rd.headcount) > 0) {
+      const want = parseFloat(rd.headcount);
+      const have = parseFloat(ld.fits_people) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      officeItems.push({ label: 'Fits People', score, weight: 8,
+        details: `fits ${ld.fits_people ?? '—'} vs ${want} needed`, icon: '👥' });
+    }
+
+    // Built Out As (exact match if the tenant expressed a preference)
+    if (rd.built_out_as_pref && ld.built_out_as) {
+      const match = rd.built_out_as_pref === ld.built_out_as;
+      officeItems.push({ label: 'Built Out As', score: match ? 100 : 40, weight: 5,
+        details: ld.built_out_as, icon: '🏗️' });
+    }
+
     // ADA Compliant (binary, lives in amenity arrays)
     if (reqAmen.includes('ada_building')) {
       const score = hasL('ada_building') ? 100 : 0;

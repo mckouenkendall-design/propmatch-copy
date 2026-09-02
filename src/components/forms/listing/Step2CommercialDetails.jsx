@@ -413,6 +413,10 @@ const LAYOUT_OPTIONS = [
   { value: 'open_plan', label: 'Open Plan' }, { value: 'partitioned', label: 'Partitioned' },
   { value: 'executive_suite', label: 'Executive Suite' }, { value: 'mixed', label: 'Mixed' }, { value: 'other', label: 'Other' },
 ];
+const OFFICE_BUILT_OUT_AS = [
+  'Standard Office', 'Call Center', 'Financial Services', 'Government', 'Law Firm',
+  'Professional Services', 'Medical', 'R&D / Lab', 'Creative / Loft',
+];
 
 function OfficeDetails({ details, setDetail, onSavePhotos, leaseSlot }) {
   const amenities = details.amenities || [];
@@ -424,8 +428,16 @@ function OfficeDetails({ details, setDetail, onSavePhotos, leaseSlot }) {
         <Field label="Suite Number" hint="Optional"><Input value={details.suite_number || ''} onChange={e => setDetail('suite_number', e.target.value)} placeholder="e.g. Suite 200" /></Field>
         <Field label="Number of Offices"><Num field="offices" placeholder="e.g. 10" details={details} setDetail={setDetail} /></Field>
         <Field label="Conference Rooms"><Num field="conf_rooms" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
+        <Field label="Workstations"><Num field="workstations" placeholder="e.g. 40" details={details} setDetail={setDetail} /></Field>
+        <Field label="Fits (people)"><Num field="fits_people" placeholder="e.g. 50" details={details} setDetail={setDetail} /></Field>
       </div>
       <Field label="Layout Type"><div className="flex flex-wrap gap-2">{LAYOUT_OPTIONS.map(opt => <Chip key={opt.value} label={opt.label} selected={details.layout === opt.value} onClick={() => setDetail('layout', opt.value)} />)}</div></Field>
+      <Field label="Built Out As" hint="What the space is currently configured for">
+        <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={details.built_out_as || ''} onChange={e => setDetail('built_out_as', e.target.value)}>
+          <option value="" style={{ background: '#0E1318' }}>Select…</option>
+          {OFFICE_BUILT_OUT_AS.map(o => <option key={o} value={o} style={{ background: '#0E1318' }}>{o}</option>)}
+        </select>
+      </Field>
 
       <SectionTitle>In-Suite / Space Features</SectionTitle>
       <Field label="Select all that apply"><div className="flex flex-wrap gap-2">{SPACE_AMENITIES.map(a => <Chip key={a.value} label={a.label} selected={amenities.includes(a.value)} onClick={() => toggleAmenity(a.value)} />)}</div></Field>

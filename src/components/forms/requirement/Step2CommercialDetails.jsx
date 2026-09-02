@@ -20,6 +20,10 @@ const SALE_TYPES = [
 ];
 const SALE_TYPES_LAND = SALE_TYPES.filter(t => t.value !== 'investment_nnn');
 
+const OFFICE_BUILT_OUT_AS = [
+  'Standard Office', 'Call Center', 'Financial Services', 'Government', 'Law Firm',
+  'Professional Services', 'Medical', 'R&D / Lab', 'Creative / Loft',
+];
 const SALE_CONDITIONS = [
   '1031 Exchange', 'Build to Suit', 'Building in Shell Condition', 'Bulk/Portfolio Sale',
   'Deferred Maintenance', 'Distress Sale', 'Ground Lease (Leased Fee)', 'Ground Lease (Leasehold)',
@@ -330,8 +334,16 @@ function OfficeRequirement({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Offices Needed"><Num field="offices_needed" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
         <Field label="Conference Rooms Needed"><Num field="conf_rooms_needed" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Workstations Needed"><Num field="workstations_needed" placeholder="e.g. 30" details={details} setDetail={setDetail} /></Field>
+        <Field label="Headcount (people to seat)"><Num field="headcount" placeholder="e.g. 45" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Parking Spaces Needed"><Num field="min_parking_spaces" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
       </div>
+      <Field label="Preferred Build-Out" hint="What the space should be configured for">
+        <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={details.built_out_as_pref || ''} onChange={e => setDetail('built_out_as_pref', e.target.value)}>
+          <option value="" style={{ background: '#0E1318' }}>No preference</option>
+          {OFFICE_BUILT_OUT_AS.map(o => <option key={o} value={o} style={{ background: '#0E1318' }}>{o}</option>)}
+        </select>
+      </Field>
       <ToggleGroup label="Layout Preference" value={details.layout_pref || ''} onChange={v => setDetail('layout_pref', v)}
         options={[{ value: 'open_plan', label: 'Open Plan' }, { value: 'partitioned', label: 'Partitioned' }, { value: 'mixed', label: 'Mixed' }, { value: 'flexible', label: 'Flexible' }]} />
       <SectionTitle>Building & Lease Preferences</SectionTitle>
