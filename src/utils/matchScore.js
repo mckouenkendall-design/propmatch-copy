@@ -1228,7 +1228,7 @@ export function calculateMatchScore(listing, requirement) {
     // Special Features — each requested feature scored individually, all weight 2.
     const featureMap = [
       { reqKey: 'drive_thru_req',      listKey: 'drive_thru',      label: 'Drive-Thru' },
-      { reqKey: 'hood_req',            listKey: 'venting_hood',    label: 'Hood / Venting' },
+      { reqKey: 'hood_req',            listKey: 'venting_hood',    label: 'Venting / Hood' },
       { reqKey: 'grease_trap_req',     listKey: 'grease_trap',     label: 'Grease Trap' },
       { reqKey: 'cold_storage_req',    listKey: 'cold_storage',    label: 'Cold Storage' },
       { reqKey: 'rear_loading_req',    listKey: 'rear_loading',    label: 'Rear Loading' },
