@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
 import { ArrowRight, X } from 'lucide-react';
+import { PROPOSED_USES, GRADING_OPTIONS, PERMITTING_OPTIONS, LAND_UTILITIES, LAND_SECONDARY_TYPES, TOPOGRAPHY_OPTIONS } from '@/utils/landConstants';
 
 const ACCENT = '#818cf8'; // lavender — requirement color
 
@@ -529,44 +530,124 @@ function IndustrialFlexRequirement({ details, setDetail }) {
   );
 }
 
+// Searchable multi-select for long option lists (mirrors the listing side).
+function SearchMultiSelect({ options, value, onChange, placeholder, accent = '#818cf8' }) {
+  const [query, setQuery] = React.useState('');
+  const [open, setOpen] = React.useState(false);
+  const selected = value || [];
+  const toggle = (o) => onChange(selected.includes(o) ? selected.filter(x => x !== o) : [...selected, o]);
+  const filtered = query
+    ? options.filter(o => o.toLowerCase().includes(query.toLowerCase()) && !selected.includes(o)).slice(0, 30)
+    : [];
+  return (
+    <div>
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {selected.map(o => (
+            <span key={o} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 10px', borderRadius: '8px', fontSize: '12px', fontFamily: "'Inter',sans-serif", background: 'rgba(129,140,248,0.15)', color: accent, border: `1px solid ${accent}` }}>
+              {o}
+              <button type="button" onClick={() => toggle(o)} style={{ background: 'none', border: 'none', color: accent, cursor: 'pointer', fontSize: '14px', lineHeight: 1, padding: 0 }}>×</button>
+            </span>
+          ))}
+        </div>
+      )}
+      <input value={query} onChange={e => { setQuery(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)}
+        placeholder={placeholder || 'Search…'} className="w-full rounded-md px-3 py-2 text-sm focus:outline-none"
+        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+      {open && filtered.length > 0 && (
+        <div style={{ marginTop: '4px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', background: '#0E1318', maxHeight: '220px', overflowY: 'auto' }}>
+          {filtered.map(o => (
+            <button key={o} type="button" onClick={() => { toggle(o); setQuery(''); }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontFamily: "'Inter',sans-serif", cursor: 'pointer' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+              {o}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LandRequirement({ details, setDetail }) {
   const utilities = details.utilities_req || [];
   const toggleUtility = (key) => setDetail('utilities_req', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
+  const topoPref = details.topography_pref || [];
+  const toggleTopo = (key) => setDetail('topography_pref', topoPref.includes(key) ? topoPref.filter(t => t !== key) : [...topoPref, key]);
+  const permits = details.permitting_req || [];
+  const togglePermit = (key) => setDetail('permitting_req', permits.includes(key) ? permits.filter(p => p !== key) : [...permits, key]);
+  const selectCls = "w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2";
+  const selectStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
+  const optionStyle = { background: '#0E1318', color: 'rgba(255,255,255,0.85)' };
+
   return (
     <>
       {/* Acreage range is collected in Step 1 (shown as "Acreage Range" for land)
           and scored by the shared Size comparison. Do not add it again here. */}
-      <SectionTitle>Buildability & Access</SectionTitle>
+      <SectionTitle>Classification & Use</SectionTitle>
+      <Field label="Land Type Wanted">
+        <select className={selectCls} style={selectStyle} value={details.land_secondary_type_pref || ''} onChange={e => setDetail('land_secondary_type_pref', e.target.value)}>
+          <option value="" style={optionStyle}>Any</option>
+          {LAND_SECONDARY_TYPES.map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
+        </select>
+      </Field>
+      <Field label="Intended Use" hint="What the client wants to build. Search and add all that apply.">
+        <SearchMultiSelect options={PROPOSED_USES} value={details.proposed_use_pref} onChange={v => setDetail('proposed_use_pref', v)} placeholder="Search uses… e.g. Restaurant, Self-Storage" />
+      </Field>
+      <div className="rounded-xl px-4 py-1 mt-2" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toggle label="Only outparcels" value={!!details.outparcel_pref} onChange={v => setDetail('outparcel_pref', v)} />
+      </div>
+
+      <SectionTitle>Buildability & Readiness</SectionTitle>
       <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Must Be Buildable / Developable" value={!!details.buildable_req} onChange={v => setDetail('buildable_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
         <Toggle label="Must Have Direct Site Access (no landlocked parcels)" value={!!details.site_access_req} onChange={v => setDetail('site_access_req', v)} />
-      </div>
-      <SectionTitle>Site Characteristics</SectionTitle>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="No Wetlands / No Flood Zone" value={!!details.no_wetlands_req} onChange={v => setDetail('no_wetlands_req', v)} />
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />
-        <Toggle label="Prefer Flat / Level Land" value={!!details.flat_req} onChange={v => setDetail('flat_req', v)} />
+        <Toggle label="No Wetlands / No Flood Zone" value={!!details.no_wetlands_req} onChange={v => setDetail('no_wetlands_req', v)} />
       </div>
+      <Field label="Minimum Grading" hint="How build-ready the land must be">
+        <select className={selectCls} style={selectStyle} value={details.grading_pref || ''} onChange={e => setDetail('grading_pref', e.target.value)}>
+          <option value="" style={optionStyle}>No minimum</option>
+          {GRADING_OPTIONS.map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
+        </select>
+      </Field>
+      <Field label="Permitting & Approvals Needed">
+        <div className="flex flex-wrap gap-2">
+          {PERMITTING_OPTIONS.map(p => (
+            <Chip key={p.key} label={p.label} selected={permits.includes(p.key)} onClick={() => togglePermit(p.key)} />
+          ))}
+        </div>
+      </Field>
+
+      <SectionTitle>Site Characteristics</SectionTitle>
+      <Field label="Topography Preferred">
+        <div className="flex flex-wrap gap-2">
+          {TOPOGRAPHY_OPTIONS.map(t => (
+            <Chip key={t.key} label={t.label} selected={topoPref.includes(t.key)} onClick={() => toggleTopo(t.key)} />
+          ))}
+        </div>
+      </Field>
       <ToggleGroup label="Road Surface Preference" value={details.road_surface_pref || ''} onChange={v => setDetail('road_surface_pref', v)}
         options={[{ value: 'paved', label: 'Paved' }, { value: 'gravel', label: 'Gravel OK' }, { value: 'any', label: 'Any' }]} />
+
       <SectionTitle>Utilities Needed at Site</SectionTitle>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        {[{ key: 'municipal_water', label: 'Municipal Water' }, { key: 'sanitary_sewer', label: 'Sanitary Sewer' }, { key: 'electric', label: 'Electric' }, { key: 'natural_gas', label: 'Natural Gas' }, { key: 'fiber_internet', label: 'Fiber / Internet' }].map((u, idx) => (
-          <React.Fragment key={u.key}><Toggle label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />{idx < 4 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}</React.Fragment>
-        ))}
-      </div>
+      <Field label="">
+        <div className="flex flex-wrap gap-2">
+          {LAND_UTILITIES.map(u => (
+            <Chip key={u.key} label={u.label} selected={utilities.includes(u.key)} onClick={() => toggleUtility(u.key)} />
+          ))}
+        </div>
+      </Field>
+
       <SectionTitle>Informational Preferences</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Min Road Frontage (ft)" hint="Informational"><Num field="min_frontage" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
-        <Field label="Min Traffic Count (vehicles/day)" hint="Informational"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Road Frontage (ft)"><Num field="min_frontage" placeholder="e.g. 200" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Traffic Count (vehicles/day)"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>
       </div>
-      <Field label="Acceptable Zoning" hint="Informational — tag each acceptable zone type">
+      <Field label="Acceptable Zoning" hint="Tag each acceptable zone type">
         <TagsInput value={details.zoning_acceptable || []} onChange={v => setDetail('zoning_acceptable', v)} placeholder="e.g. B-2, M-1, any commercial (press Enter)" />
-      </Field>
-      <Field label="Intended Use / Development Plan">
-        <Textarea value={details.notes || ''} onChange={e => setDetail('notes', e.target.value)}
-          placeholder="e.g. Strip mall, industrial park, self-storage facility…" rows={2} />
       </Field>
     </>
   );

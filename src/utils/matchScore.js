@@ -4,6 +4,8 @@
 // with a full breakdown by category.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { GRADING_RANK } from '@/utils/landConstants';
+
 export function parseDetails(post) {
   if (!post?.property_details) return {};
   if (typeof post.property_details === 'string') {
@@ -404,23 +406,71 @@ function scoreDetails(listing, requirement, ld, rd) {
 
   // ── LAND (Commercial) ────────────────────────────────────────────────────────
   if (type === 'land') {
-    // Acreage is NOT scored here. Both wizards collect it in Step 1 as
-    // size_sqft / min_size_sqft / max_size_sqft, and the shared Size comparison
-    // further down already scores it. Adding it here counted the same thing
-    // twice and read `ld.acres`, which the commercial land form never wrote.
-    // Requirement form writes `min_frontage`, not `min_road_frontage`.
+    // Proposed Use — THE land signal. Overlap between what can be built here and
+    // what the buyer wants to build.
+    const listingUses = Array.isArray(ld.proposed_use) ? ld.proposed_use : [];
+    const wantedUses  = Array.isArray(rd.proposed_use_pref) ? rd.proposed_use_pref : [];
+    if (wantedUses.length) {
+      const hit = wantedUses.filter(u => listingUses.includes(u));
+      add('Proposed Use', Math.round((hit.length / wantedUses.length) * 100),
+        `${hit.length}/${wantedUses.length} uses`, '🏗️');
+    }
+
+    // Land Type (secondary classification).
+    if (rd.land_secondary_type_pref && ld.land_secondary_type) {
+      add('Land Type', ld.land_secondary_type === rd.land_secondary_type_pref ? 100 : 0,
+        ld.land_secondary_type, '🗺️');
+    }
+
+    // Grading — listing at or above the buyer's minimum readiness scores full.
+    if (rd.grading_pref && ld.grading) {
+      const want = GRADING_RANK[rd.grading_pref] || 0;
+      const have = GRADING_RANK[ld.grading] || 0;
+      add('Grading', have >= want ? 100 : Math.max(0, 100 - (want - have) * 30), ld.grading, '🚜');
+    }
+
+    // Permitting & Approvals — how many required approvals the parcel already has.
+    const wantPermits = Array.isArray(rd.permitting_req) ? rd.permitting_req : [];
+    if (wantPermits.length) {
+      const havePermits = Array.isArray(ld.permitting) ? ld.permitting : [];
+      const hit = wantPermits.filter(p => havePermits.includes(p));
+      add('Permitting', Math.round((hit.length / wantPermits.length) * 100),
+        `${hit.length}/${wantPermits.length} approvals`, '📋');
+    }
+
+    // Buildable / site access hard-ish preferences (soft-scored, not gated).
+    if (rd.buildable_req) add('Buildable', ld.buildable ? 100 : 0, ld.buildable ? 'Buildable' : 'Not confirmed', '✅');
+    if (rd.site_access_req) {
+      const landlocked = ld.access_type === 'No Direct Access';
+      add('Site Access', landlocked ? 0 : 100, ld.access_type || '—', '🚪');
+    }
+    if (rd.no_wetlands_req) {
+      const hasWetlands = Array.isArray(ld.topography) && ld.topography.includes('wetlands');
+      add('No Wetlands', hasWetlands ? 0 : 100, hasWetlands ? 'Has wetlands' : 'Clear', '🌊');
+    }
+
+    // Outparcel.
+    if (rd.outparcel_pref) add('Outparcel', ld.outparcel ? 100 : 0, ld.outparcel ? 'Outparcel' : 'Not an outparcel', '📍');
+
+    // Topography preference overlap.
+    const wantTopo = Array.isArray(rd.topography_pref) ? rd.topography_pref : [];
+    if (wantTopo.length) {
+      const haveTopo = Array.isArray(ld.topography) ? ld.topography : [];
+      const hit = wantTopo.filter(t => haveTopo.includes(t));
+      add('Topography', hit.length > 0 ? Math.round((hit.length / wantTopo.length) * 100) : 0,
+        `${hit.length}/${wantTopo.length}`, '⛰️');
+    }
+
+    // Road frontage / traffic (kept from before).
     add('Road Frontage', scoreRange(ld.road_frontage, rd.min_frontage, null), `${ld.road_frontage ?? '—'}ft`, '🛣️');
     add('Traffic Count', scoreRange(ld.traffic_count, rd.min_traffic_count, null), `${(ld.traffic_count || 0).toLocaleString()}/day`, '🚗');
-    // Requirement form writes `utilities_req`, not `utilities_required`.
+
+    // Utilities — expanded 9-option set, requirement writes utilities_req.
     const utilScore = scoreAmenities(ld.utilities_to_site, rd.utilities_req);
     if (utilScore !== null) {
       const hit = (ld.utilities_to_site || []).filter(u => (rd.utilities_req || []).includes(u));
       add('Utilities at Site', utilScore, `${hit.length}/${(rd.utilities_req || []).length} required`, '🔌');
     }
-    // Removed: Max Build SF and Entitlements. Neither the listing nor the
-    // requirement form ever wrote max_build_sf / min_build_sf / entitlements /
-    // entitlements_preferred, so both rows were permanently dead. Permitting &
-    // Approvals (the real version of entitlements) arrives in Phase 3.
   }
 
   // ── SPECIAL USE ──────────────────────────────────────────────────────────────

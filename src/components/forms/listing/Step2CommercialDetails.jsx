@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import ToggleGroup from '../wizard/ToggleGroup';
 import { ArrowRight, X } from 'lucide-react';
 import FileUpload from '@/components/forms/shared/FileUpload';
+import { PROPOSED_USES, GRADING_OPTIONS, PERMITTING_OPTIONS, LAND_UTILITIES, LAND_SECONDARY_TYPES, TOPOGRAPHY_OPTIONS } from '@/utils/landConstants';
 
 const ACCENT = '#00DBC5';
 
@@ -683,38 +684,165 @@ function IndustrialFlexDetails({ details, setDetail, onSavePhotos, leaseSlot }) 
   );
 }
 
+// Searchable multi-select for long option lists (e.g. 115 Proposed Uses).
+// Selected items show as removable chips; a search box filters the dropdown.
+function SearchMultiSelect({ options, value, onChange, placeholder, accent = '#00DBC5' }) {
+  const [query, setQuery] = React.useState('');
+  const [open, setOpen] = React.useState(false);
+  const selected = value || [];
+  const toggle = (o) => onChange(selected.includes(o) ? selected.filter(x => x !== o) : [...selected, o]);
+  const filtered = query
+    ? options.filter(o => o.toLowerCase().includes(query.toLowerCase()) && !selected.includes(o)).slice(0, 30)
+    : [];
+
+  return (
+    <div>
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {selected.map(o => (
+            <span key={o} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 10px', borderRadius: '8px', fontSize: '12px', fontFamily: "'Inter',sans-serif", background: 'rgba(0,219,197,0.15)', color: accent, border: `1px solid ${accent}` }}>
+              {o}
+              <button type="button" onClick={() => toggle(o)} style={{ background: 'none', border: 'none', color: accent, cursor: 'pointer', fontSize: '14px', lineHeight: 1, padding: 0 }}>×</button>
+            </span>
+          ))}
+        </div>
+      )}
+      <input
+        value={query}
+        onChange={e => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder || 'Search…'}
+        className="w-full rounded-md px-3 py-2 text-sm focus:outline-none"
+        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+      />
+      {open && filtered.length > 0 && (
+        <div style={{ marginTop: '4px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', background: '#0E1318', maxHeight: '220px', overflowY: 'auto' }}>
+          {filtered.map(o => (
+            <button key={o} type="button" onClick={() => { toggle(o); setQuery(''); }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontFamily: "'Inter',sans-serif", cursor: 'pointer' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+              {o}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Repeatable street frontage rows — a corner parcel fronts several streets.
+// Shared with retail (Phase 4). Stored as an array of { street, frontage, curb_cuts, type }.
+function FrontageRows({ value, onChange }) {
+  const rows = value || [];
+  const update = (i, patch) => onChange(rows.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+  const add = () => onChange([...rows, { street: '', frontage: '', curb_cuts: '', type: 'Primary' }]);
+  const remove = (i) => onChange(rows.filter((_, idx) => idx !== i));
+  const inp = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
+  const opt = { background: '#0E1318' };
+
+  return (
+    <div className="space-y-2">
+      {rows.map((r, i) => (
+        <div key={i} className="grid gap-2" style={{ gridTemplateColumns: '2fr 1fr 1fr 1.2fr auto', alignItems: 'center' }}>
+          <input value={r.street} onChange={e => update(i, { street: e.target.value })} placeholder="Street name" className="rounded-md px-2 py-1.5 text-sm focus:outline-none" style={inp} />
+          <input value={r.frontage} onChange={e => update(i, { frontage: e.target.value })} placeholder="Ft" className="rounded-md px-2 py-1.5 text-sm focus:outline-none" style={inp} />
+          <input value={r.curb_cuts} onChange={e => update(i, { curb_cuts: e.target.value })} placeholder="Curb cuts" className="rounded-md px-2 py-1.5 text-sm focus:outline-none" style={inp} />
+          <select value={r.type} onChange={e => update(i, { type: e.target.value })} className="rounded-md px-2 py-1.5 text-sm focus:outline-none" style={inp}>
+            <option value="Primary" style={opt}>Primary</option>
+            <option value="Secondary" style={opt}>Secondary</option>
+          </select>
+          <button type="button" onClick={() => remove(i)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>×</button>
+        </div>
+      ))}
+      <button type="button" onClick={add} style={{ fontFamily: "'Inter',sans-serif", fontSize: '12px', fontWeight: 600, color: '#00DBC5', background: 'none', border: '1px dashed rgba(0,219,197,0.4)', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer' }}>
+        + Add Street
+      </button>
+    </div>
+  );
+}
+
 function LandDetails({ details, setDetail, onSavePhotos }) {
-  const toggleBool = (key) => setDetail(key, !details[key]);
   const utilities = details.utilities_to_site || [];
   const toggleUtility = (key) => setDetail('utilities_to_site', utilities.includes(key) ? utilities.filter(u => u !== key) : [...utilities, key]);
   const topography = details.topography || [];
   const toggleTopo = (key) => setDetail('topography', topography.includes(key) ? topography.filter(t => t !== key) : [...topography, key]);
+  const permits = details.permitting || [];
+  const togglePermit = (key) => setDetail('permitting', permits.includes(key) ? permits.filter(p => p !== key) : [...permits, key]);
   const selectCls = "w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2";
   const selectStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
   const optionStyle = { background: '#0E1318', color: 'rgba(255,255,255,0.85)' };
+  const setAllUtilities = () => setDetail('utilities_to_site', LAND_UTILITIES.map(u => u.key));
+  const clearAllUtilities = () => setDetail('utilities_to_site', []);
+
   return (
     <>
       {/* Acreage is collected in Step 1 (shown as "Acreage" for land) and scored
           by the shared Size comparison. Do not add it again here. */}
-      <SectionTitle>Buildability</SectionTitle>
+      <SectionTitle>Classification & Use</SectionTitle>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Land Type">
+          <select className={selectCls} style={selectStyle} value={details.land_secondary_type || ''} onChange={e => setDetail('land_secondary_type', e.target.value)}>
+            <option value="" style={optionStyle}>Select…</option>
+            {LAND_SECONDARY_TYPES.map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
+          </select>
+        </Field>
+        <Field label="Outparcel?">
+          <Toggle label="This is an outparcel" value={!!details.outparcel} onChange={v => setDetail('outparcel', v)} />
+        </Field>
+      </div>
+      <Field label="Proposed Use" hint="What can be built here. Search and add all that apply.">
+        <SearchMultiSelect options={PROPOSED_USES} value={details.proposed_use} onChange={v => setDetail('proposed_use', v)} placeholder="Search uses… e.g. Restaurant, Self-Storage" />
+      </Field>
+
+      <SectionTitle>Buildability & Readiness</SectionTitle>
       <div className="rounded-xl px-4 py-2 space-y-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <Toggle label="Buildable / Developable" value={!!details.buildable} onChange={v => setDetail('buildable', v)} />
       </div>
-      <SectionTitle>Physical Site Characteristics</SectionTitle>
-      <Field label="Topography (select all that apply)">
-        <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-          {[{ key: 'level', label: 'Level / Flat' }, { key: 'sloped', label: 'Sloped' }, { key: 'wooded', label: 'Wooded' }, { key: 'cleared', label: 'Cleared' }, { key: 'wetlands', label: 'Wetlands / Marsh' }].map((t, idx) => (
-            <React.Fragment key={t.key}><Toggle label={t.label} value={topography.includes(t.key)} onChange={() => toggleTopo(t.key)} />{idx < 4 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}</React.Fragment>
+      <div className="grid grid-cols-2 gap-4 mt-3">
+        <Field label="Grading">
+          <select className={selectCls} style={selectStyle} value={details.grading || ''} onChange={e => setDetail('grading', e.target.value)}>
+            <option value="" style={optionStyle}>Select…</option>
+            {GRADING_OPTIONS.map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
+          </select>
+        </Field>
+        <Field label="Divisible">
+          <Toggle label="Can be subdivided" value={!!details.divisible} onChange={v => setDetail('divisible', v)} />
+        </Field>
+      </div>
+      <Field label="Permitting & Approvals" hint="What's already in hand">
+        <div className="flex flex-wrap gap-2">
+          {PERMITTING_OPTIONS.map(p => (
+            <Chip key={p.key} label={p.label} selected={permits.includes(p.key)} onClick={() => togglePermit(p.key)} />
           ))}
         </div>
       </Field>
-      <SectionTitle>Utilities to Site</SectionTitle>
-      <div className="rounded-xl px-4 py-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        {[{ key: 'municipal_water', label: 'Municipal Water' }, { key: 'sanitary_sewer', label: 'Sanitary Sewer' }, { key: 'electric', label: 'Electric' }, { key: 'natural_gas', label: 'Natural Gas' }, { key: 'fiber_internet', label: 'Fiber / Internet' }].map((u, idx) => (
-          <React.Fragment key={u.key}><Toggle label={u.label} value={utilities.includes(u.key)} onChange={() => toggleUtility(u.key)} />{idx < 4 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }} />}</React.Fragment>
-        ))}
+
+      <SectionTitle>Physical Site Characteristics</SectionTitle>
+      <Field label="Topography (select all that apply)">
+        <div className="flex flex-wrap gap-2">
+          {TOPOGRAPHY_OPTIONS.map(t => (
+            <Chip key={t.key} label={t.label} selected={topography.includes(t.key)} onClick={() => toggleTopo(t.key)} />
+          ))}
+        </div>
+      </Field>
+
+      <div className="flex items-center justify-between mt-4 mb-1">
+        <SectionTitle>Utilities to Site</SectionTitle>
+        <div className="flex gap-2" style={{ marginBottom: '0.5rem' }}>
+          <button type="button" onClick={setAllUtilities} style={{ fontSize: '11px', color: '#00DBC5', background: 'none', border: '1px solid rgba(0,219,197,0.4)', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer' }}>All to Site</button>
+          <button type="button" onClick={clearAllUtilities} style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', background: 'none', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer' }}>None</button>
+        </div>
       </div>
-      <SectionTitle>Access & Road Quality</SectionTitle>
+      <Field label="">
+        <div className="flex flex-wrap gap-2">
+          {LAND_UTILITIES.map(u => (
+            <Chip key={u.key} label={u.label} selected={utilities.includes(u.key)} onClick={() => toggleUtility(u.key)} />
+          ))}
+        </div>
+      </Field>
+
+      <SectionTitle>Access & Frontage</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Road Surface">
           <select className={selectCls} style={selectStyle} value={details.road_surface || ''} onChange={e => setDetail('road_surface', e.target.value)}>
@@ -729,32 +857,35 @@ function LandDetails({ details, setDetail, onSavePhotos }) {
           </select>
         </Field>
       </div>
-      <SectionTitle>Informational Details</SectionTitle>
+      <Field label="Street Frontage" hint="Add each street the parcel fronts">
+        <FrontageRows value={details.frontage_rows} onChange={v => setDetail('frontage_rows', v)} />
+      </Field>
+
+      <SectionTitle>Location & Informational</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
+        <Field label="Traffic Count (vehicles/day)"><Num field="traffic_count" placeholder="e.g. 25000" details={details} setDetail={setDetail} /></Field>
         <Field label="Lot Dimensions (ft × ft)"><Input value={details.lot_dimensions || ''} onChange={e => setDetail('lot_dimensions', e.target.value)} placeholder="e.g. 300 x 725" /></Field>
-        <Field label="Road Frontage (ft)" hint="Informational"><Num field="road_frontage" placeholder="e.g. 300" details={details} setDetail={setDetail} /></Field>
-        <Field label="Traffic Count (vehicles/day)" hint="Informational"><Num field="traffic_count" placeholder="e.g. 25000" details={details} setDetail={setDetail} /></Field>
-        <Field label="Current Zoning" hint="Informational"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. B-2, M-1" /></Field>
-        <Field label="Parcel Number" hint="Informational"><Input value={details.parcel_number || ''} onChange={e => setDetail('parcel_number', e.target.value)} placeholder="e.g. 12-34-567-890" /></Field>
-        <Field label="Annual Property Tax ($)" hint="Informational"><Num field="annual_tax" placeholder="e.g. 8500" details={details} setDetail={setDetail} /></Field>
+        <Field label="Current Zoning"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. B-2, M-1" /></Field>
+        <Field label="Zoning Description" hint="What the zoning allows"><Input value={details.zoning_description || ''} onChange={e => setDetail('zoning_description', e.target.value)} placeholder="e.g. General commercial, retail permitted" /></Field>
+        <Field label="Parcel Number"><Input value={details.parcel_number || ''} onChange={e => setDetail('parcel_number', e.target.value)} placeholder="e.g. 12-34-567-890" /></Field>
+        <Field label="Annual Property Tax ($)"><Num field="annual_tax" placeholder="e.g. 8500" details={details} setDetail={setDetail} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-4 mt-3">
-        <Field label="Location Setting" hint="Informational">
+        <Field label="Location Setting">
           <select className={selectCls} style={selectStyle} value={details.location_setting || ''} onChange={e => setDetail('location_setting', e.target.value)}>
             <option value="" style={optionStyle}>Select setting</option>
             {['Highway Frontage', 'Main Road', 'Industrial Park', 'Suburban/Residential', 'Rural/Country'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
           </select>
         </Field>
-        <Field label="Visibility" hint="Informational">
+        <Field label="Visibility">
           <select className={selectCls} style={selectStyle} value={details.visibility || ''} onChange={e => setDetail('visibility', e.target.value)}>
             <option value="" style={optionStyle}>Select visibility</option>
             {['High Visibility', 'Average', 'Hidden/Private'].map(o => <option key={o} value={o} style={optionStyle}>{o}</option>)}
           </select>
         </Field>
       </div>
-      <div className="rounded-xl px-4 py-1 mt-3" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Toggle label="Divisible" value={!!details.divisible} onChange={v => setDetail('divisible', v)} />
-      </div>
+      <Field label="Current Improvements" hint="Anything already on the land"><Input value={details.current_improvements || ''} onChange={e => setDetail('current_improvements', e.target.value)} placeholder="e.g. old foundation, well, utilities stubbed" /></Field>
+
       <SectionTitle>Property Details & Media</SectionTitle>
       <Field label="Description"><Textarea value={details.description || ''} onChange={e => setDetail('description', e.target.value)} placeholder="Describe the site, its highlights, and development potential…" rows={4} /></Field>
       <Field label="Tags" hint="Press Enter to add each tag"><TagsInput value={details.tags || []} onChange={v => setDetail('tags', v)} /></Field>
