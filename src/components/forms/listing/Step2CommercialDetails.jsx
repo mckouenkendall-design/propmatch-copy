@@ -340,10 +340,10 @@ function LeaseTermsSection({ details, setDetail }) {
 
       {details.divisible && (
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Min Contiguous (SF)">
+          <Field label="Minimum Divisible (SF)" hint="Smallest area you'll wall off for one tenant">
             <Num field="space_min_sf" placeholder="e.g. 2000" details={details} setDetail={setDetail} />
           </Field>
-          <Field label="Max Contiguous (SF)">
+          <Field label="Maximum Contiguous (SF)" hint="Largest single block available now">
             <Num field="space_max_sf" placeholder="e.g. 8000" details={details} setDetail={setDetail} />
           </Field>
         </div>
