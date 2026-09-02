@@ -534,6 +534,14 @@ function IndustrialFlexRequirement({ details, setDetail }) {
 function SearchMultiSelect({ options, value, onChange, placeholder, accent = '#818cf8' }) {
   const [query, setQuery] = React.useState('');
   const [open, setOpen] = React.useState(false);
+  const boxRef = React.useRef(null);
+  // Close the dropdown when clicking anywhere outside this control.
+  React.useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [open]);
   const selected = value || [];
   const toggle = (o) => onChange(selected.includes(o) ? selected.filter(x => x !== o) : [...selected, o]);
   // On focus with no query, show the full alphabetical list (minus already-picked).
@@ -543,7 +551,7 @@ function SearchMultiSelect({ options, value, onChange, placeholder, accent = '#8
     ? available.filter(o => o.toLowerCase().includes(query.toLowerCase()))
     : available).slice(0, 200);
   return (
-    <div>
+    <div ref={boxRef}>
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">
           {selected.map(o => (
