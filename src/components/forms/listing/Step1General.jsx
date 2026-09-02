@@ -170,7 +170,11 @@ export default function ListStep1({ data, update, onNext }) {
     update({ utilities_included: cur.includes(val) ? cur.filter(x => x !== val) : [...cur, val] });
   };
 
-  // Required: property_type, size_sqft, transaction_type, city, state, zip_code
+  // Required: property_type, size_sqft, transaction_type, city, state, zip_code.
+  // Land is special: a parcel may not have a street address yet, so either an
+  // address OR a parcel number satisfies the location requirement for land.
+  const isLandType = data.property_type === 'land' || data.property_type === 'land_residential';
+  const landLocationOk = !isLandType || !!(data.address || data.parcel_number);
   const canNext = !!(
     data.property_type &&
     data.size_sqft &&
@@ -178,7 +182,8 @@ export default function ListStep1({ data, update, onNext }) {
     (data.price || data.price_is_tbd) &&
     data.city &&
     data.state &&
-    data.zip_code
+    data.zip_code &&
+    landLocationOk
   );
 
 
@@ -409,9 +414,19 @@ export default function ListStep1({ data, update, onNext }) {
       {/* Address */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5 col-span-2">
-          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Address</Label>
+          <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Address{isLand ? '' : ''}</Label>
           <AddressAutocomplete value={data.address || ''} onChange={(patch) => update(patch)} placeholder="123 Main Street" />
         </div>
+        {isLand && (
+          <div className="space-y-1.5 col-span-2">
+            <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Parcel Number</Label>
+            <Input value={data.parcel_number || ''} onChange={e => update({ parcel_number: e.target.value })} placeholder="e.g. 12-34-567-890"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0' }}>
+              For land, an address or a parcel number is enough to continue.
+            </p>
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label style={{ color: 'rgba(255,255,255,0.9)' }}>City<Req /></Label>
           <Input value={data.city || ''} onChange={e => update({ city: e.target.value })} placeholder="Ferndale"

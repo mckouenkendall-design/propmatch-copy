@@ -536,9 +536,12 @@ function SearchMultiSelect({ options, value, onChange, placeholder, accent = '#8
   const [open, setOpen] = React.useState(false);
   const selected = value || [];
   const toggle = (o) => onChange(selected.includes(o) ? selected.filter(x => x !== o) : [...selected, o]);
-  const filtered = query
-    ? options.filter(o => o.toLowerCase().includes(query.toLowerCase()) && !selected.includes(o)).slice(0, 30)
-    : [];
+  // On focus with no query, show the full alphabetical list (minus already-picked).
+  // Typing filters it. Cap the rendered list so the dropdown stays performant.
+  const available = options.filter(o => !selected.includes(o)).slice().sort((a, b) => a.localeCompare(b));
+  const filtered = (query
+    ? available.filter(o => o.toLowerCase().includes(query.toLowerCase()))
+    : available).slice(0, 200);
   return (
     <div>
       {selected.length > 0 && (

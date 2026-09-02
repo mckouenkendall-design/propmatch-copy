@@ -691,9 +691,12 @@ function SearchMultiSelect({ options, value, onChange, placeholder, accent = '#0
   const [open, setOpen] = React.useState(false);
   const selected = value || [];
   const toggle = (o) => onChange(selected.includes(o) ? selected.filter(x => x !== o) : [...selected, o]);
-  const filtered = query
-    ? options.filter(o => o.toLowerCase().includes(query.toLowerCase()) && !selected.includes(o)).slice(0, 30)
-    : [];
+  // On focus with no query, show the full alphabetical list (minus already-picked).
+  // Typing filters it. Cap the rendered list so the dropdown stays performant.
+  const available = options.filter(o => !selected.includes(o)).slice().sort((a, b) => a.localeCompare(b));
+  const filtered = (query
+    ? available.filter(o => o.toLowerCase().includes(query.toLowerCase()))
+    : available).slice(0, 200);
 
   return (
     <div>
@@ -867,7 +870,6 @@ function LandDetails({ details, setDetail, onSavePhotos }) {
         <Field label="Lot Dimensions (ft × ft)"><Input value={details.lot_dimensions || ''} onChange={e => setDetail('lot_dimensions', e.target.value)} placeholder="e.g. 300 x 725" /></Field>
         <Field label="Current Zoning"><Input value={details.zoning || ''} onChange={e => setDetail('zoning', e.target.value)} placeholder="e.g. B-2, M-1" /></Field>
         <Field label="Zoning Description" hint="What the zoning allows"><Input value={details.zoning_description || ''} onChange={e => setDetail('zoning_description', e.target.value)} placeholder="e.g. General commercial, retail permitted" /></Field>
-        <Field label="Parcel Number"><Input value={details.parcel_number || ''} onChange={e => setDetail('parcel_number', e.target.value)} placeholder="e.g. 12-34-567-890" /></Field>
         <Field label="Annual Property Tax ($)"><Num field="annual_tax" placeholder="e.g. 8500" details={details} setDetail={setDetail} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-4 mt-3">
