@@ -615,12 +615,35 @@ function scoreDetails(listing, requirement, ld, rd) {
   if (type === 'manufactured') {
     add('Bedrooms', scoreRange(ld.bedrooms, rd.min_bedrooms, rd.max_bedrooms), `${ld.bedrooms ?? '—'} beds`, '🛏️');
     add('Bathrooms', scoreRange(ld.bathrooms, rd.min_bathrooms, rd.max_bathrooms), `${ld.bathrooms ?? '—'} baths`, '🚿');
-    if (rd.land_ownership && rd.land_ownership !== 'either' && ld.land_ownership)
-      add('Land Ownership', ld.land_ownership === rd.land_ownership ? 100 : 30, ld.land_ownership, '🏠');
+    add('Year Built', scoreRange(ld.year_built, rd.min_year_built, null), `${ld.year_built ?? '—'}`, '📅');
+
+    // Land Ownership — requirement writes land_ownership_req (owned/leased/any).
+    if (rd.land_ownership_req && rd.land_ownership_req !== 'any' && ld.land_ownership)
+      add('Land Ownership', ld.land_ownership === rd.land_ownership_req ? 100 : 30, ld.land_ownership, '🏠');
+
+    // Lot Rent ceiling — only relevant when the lot is leased.
     if (rd.max_lot_rent && ld.lot_rent)
       add('Lot Rent', scoreRange(ld.lot_rent, 0, rd.max_lot_rent), `$${ld.lot_rent}/mo`, '💰');
-    if (rd.ac_required) add('Central A/C', ld.ac ? 100 : 0, ld.ac ? 'Has A/C' : 'No A/C', '❄️');
-    if (rd.hud_required) add('HUD Tag', ld.hud_tag ? 100 : 0, ld.hud_tag ? 'Present' : 'Not present', '📄');
+
+    // Age restriction — requirement writes age_restriction_pref (55_plus/all_ages/any).
+    if (rd.age_restriction_pref && rd.age_restriction_pref !== 'any' && ld.age_restriction)
+      add('Age Restriction', ld.age_restriction === rd.age_restriction_pref ? 100 : 40, ld.age_restriction === '55_plus' ? '55+' : 'All ages', '🧓');
+
+    // Utilities setup — requirement writes utilities_setup_pref (municipal/well_septic/any).
+    // A municipal preference is satisfied by a municipal or mixed listing.
+    if (rd.utilities_setup_pref && rd.utilities_setup_pref !== 'any' && ld.utilities_setup) {
+      const ok = ld.utilities_setup === rd.utilities_setup_pref ||
+        (rd.utilities_setup_pref === 'municipal' && ld.utilities_setup === 'mixed');
+      add('Utilities Setup', ok ? 100 : 50, ld.utilities_setup, '🔌');
+    }
+
+    // Boolean requirements — requirement writes *_req, listing stores the boolean.
+    if (rd.ac_req) add('Central A/C', ld.ac ? 100 : 0, ld.ac ? 'Has A/C' : 'No A/C', '❄️');
+    if (rd.hud_tag_req) add('HUD Tag', ld.hud_tag ? 100 : 0, ld.hud_tag ? 'Present' : 'Not present', '📄');
+    if (rd.permanent_foundation_req)
+      add('Permanent Foundation', ld.foundation === 'permanent' ? 100 : 0, ld.foundation || 'Not specified', '🧱');
+    if (rd.carport_req) add('Carport / Garage', ld.carport ? 100 : 0, ld.carport ? 'Yes' : 'No', '🚗');
+    if (rd.porch_req) add('Covered Porch / Deck', ld.porch ? 100 : 0, ld.porch ? 'Yes' : 'No', '🏡');
   }
 
   // ── LAND RESIDENTIAL ────────────────────────────────────────────────────────
