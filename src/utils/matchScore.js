@@ -743,6 +743,7 @@ export function calculateMatchScore(listing, requirement) {
   // the breakdown is informational only.
   const txKind = listing.transaction_type;
   const isOfficeLease = (listing.property_type === 'office') && (txKind === 'lease' || txKind === 'sublease');
+  const isOffice = (listing.property_type === 'office');
   const isMedicalOfficeLease = (listing.property_type === 'medical_office') && (txKind === 'lease' || txKind === 'sublease');
   const isRetailLease = (listing.property_type === 'retail') && (txKind === 'lease' || txKind === 'sublease');
   const isIndustrialLease = (listing.property_type === 'industrial_flex') && (txKind === 'lease' || txKind === 'sublease');
@@ -759,6 +760,11 @@ export function calculateMatchScore(listing, requirement) {
   let W;
   if (isOfficeLease || isMedicalOfficeLease) {
     W = { price: 21, size: 23, location: 0, details: 0 };
+  } else if (isOffice) {
+    // Office SALE — same detail-driven shape as office lease. Details are rolled
+    // in per-item below (each office item carries its own weight), so the top
+    // level just balances price and size against those details.
+    W = { price: 22, size: 22, location: 0, details: 0 };
   } else if (isRetailLease) {
     W = { price: 19, size: 20, location: 0, details: 0 };
   } else if (isIndustrialLease) {
@@ -891,8 +897,8 @@ export function calculateMatchScore(listing, requirement) {
   }
 
   // ── Property-type details ─────────────────────────────────────────────────
-  if (isOfficeLease) {
-    // Office Lease: each detail item has its own weight from the tuned per-type table.
+  if (isOffice) {
+    // Office (lease OR sale): each detail item has its own weight from the tuned per-type table.
     // Empty requirement fields skip entirely (weight not added to totalWeight),
     // which renormalizes the score to whatever was actually asked for.
     // Missing on listing when requirement asks = 0 score on that line (Option A).
@@ -1039,6 +1045,19 @@ export function calculateMatchScore(listing, requirement) {
     }
 
     // Roll all office items into the main weightedSum.
+    // Office SALE also gets investment financials (cap rate, NOI, occupancy,
+    // etc.), which leases don't have. addInvestmentScores expects an add()-style
+    // callback, so we give it one that pushes into officeItems with a modest
+    // weight per line.
+    if (txKind === 'sale') {
+      const addInv = (label, score, details = '', icon = '') => {
+        if (score !== null && score !== undefined) {
+          officeItems.push({ label, score: Math.round(Math.max(0, Math.min(100, score))), weight: 5, details, icon });
+        }
+      };
+      addInvestmentScores(addInv, ld, rd);
+    }
+
     officeItems.forEach(item => {
       breakdown.push({ category: item.label, score: item.score, weight: item.weight,
         details: item.details, icon: item.icon });
