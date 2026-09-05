@@ -24,6 +24,11 @@ const OFFICE_BUILT_OUT_AS = [
   'Standard Office', 'Call Center', 'Financial Services', 'Government', 'Law Firm',
   'Professional Services', 'Medical', 'R&D / Lab', 'Creative / Loft',
 ];
+const RETAIL_BUILT_OUT_AS = [
+  'Standard Retail', 'Restaurant / Cafe', 'Quick Service / Fast Food', 'Bar / Nightclub',
+  'Bank / Financial', 'Salon / Spa', 'Medical / Dental', 'Fitness / Studio',
+  'Grocery / Market', 'Auto / Service', 'Showroom', 'Vanilla Shell',
+];
 const SALE_CONDITIONS = [
   '1031 Exchange', 'Build to Suit', 'Building in Shell Condition', 'Bulk/Portfolio Sale',
   'Deferred Maintenance', 'Distress Sale', 'Ground Lease (Leased Fee)', 'Ground Lease (Leasehold)',
@@ -433,8 +438,14 @@ function RetailRequirement({ details, setDetail }) {
       <ToggleGroup label="Traffic Count" value={details.traffic_tier_pref || ''} onChange={v => setDetail('traffic_tier_pref', v)}
         options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }, { value: 'any', label: 'Any' }]} />
       {details.traffic_tier_pref && details.traffic_tier_pref !== 'any' && <Field label="Min Traffic Count (vehicles/day)" hint="Optional — informational only"><Num field="min_traffic_count" placeholder="e.g. 15000" details={details} setDetail={setDetail} /></Field>}
-      <ToggleGroup label="Location Type" value={details.location_type_pref || ''} onChange={v => setDetail('location_type_pref', v)}
-        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'mixed_use', label: 'Within Mixed-Use Building' }, { value: 'any', label: 'Any' }]} />
+      <ToggleGroup label="Space Position" value={details.location_type_pref || ''} onChange={v => setDetail('location_type_pref', v)}
+        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'In-Line' }, { value: 'end_cap', label: 'End Cap' }, { value: 'corner', label: 'Corner' }, { value: 'outparcel', label: 'Outparcel / Pad' }, { value: 'food_court', label: 'Food Court' }, { value: 'mixed_use', label: 'Within Mixed-Use Building' }, { value: 'any', label: 'Any' }]} />
+      <Field label="Preferred Build-Out" hint="What the space should be configured for">
+        <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={details.built_out_as_pref || ''} onChange={e => setDetail('built_out_as_pref', e.target.value)}>
+          <option value="" style={{ background: '#0E1318' }}>No preference</option>
+          {RETAIL_BUILT_OUT_AS.map(o => <option key={o} value={o} style={{ background: '#0E1318' }}>{o}</option>)}
+        </select>
+      </Field>
       <ToggleGroup label="Foot Traffic" value={details.foot_traffic_pref || ''} onChange={v => setDetail('foot_traffic_pref', v)}
         options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium+' }, { value: 'any', label: 'Any' }]} />
       <div className="rounded-xl px-4 py-2 space-y-1" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>

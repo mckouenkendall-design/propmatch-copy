@@ -417,6 +417,11 @@ const OFFICE_BUILT_OUT_AS = [
   'Standard Office', 'Call Center', 'Financial Services', 'Government', 'Law Firm',
   'Professional Services', 'Medical', 'R&D / Lab', 'Creative / Loft',
 ];
+const RETAIL_BUILT_OUT_AS = [
+  'Standard Retail', 'Restaurant / Cafe', 'Quick Service / Fast Food', 'Bar / Nightclub',
+  'Bank / Financial', 'Salon / Spa', 'Medical / Dental', 'Fitness / Studio',
+  'Grocery / Market', 'Auto / Service', 'Showroom', 'Vanilla Shell',
+];
 
 function OfficeDetails({ details, setDetail, onSavePhotos, leaseSlot }) {
   const amenities = details.amenities || [];
@@ -553,8 +558,14 @@ function RetailDetails({ details, setDetail, onSavePhotos, leaseSlot }) {
       <ToggleGroup label="Traffic Count" value={details.traffic_tier || ''} onChange={v => setDetail('traffic_tier', v)}
         options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }]} />
       {details.traffic_tier && <Field label="Traffic Count (vehicles/day)" hint="Optional — informational only"><Num field="traffic_count" placeholder="e.g. 25000" details={details} setDetail={setDetail} /></Field>}
-      <ToggleGroup label="Location Type" value={details.location_type || ''} onChange={v => setDetail('location_type', v)}
-        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'Inline' }, { value: 'corner', label: 'Corner' }, { value: 'mixed_use', label: 'Within Mixed-Use Building' }]} />
+      <ToggleGroup label="Space Position" value={details.location_type || ''} onChange={v => setDetail('location_type', v)}
+        options={[{ value: 'strip_mall', label: 'Strip Mall' }, { value: 'standalone', label: 'Standalone' }, { value: 'inline', label: 'In-Line' }, { value: 'end_cap', label: 'End Cap' }, { value: 'corner', label: 'Corner' }, { value: 'outparcel', label: 'Outparcel / Pad' }, { value: 'food_court', label: 'Food Court' }, { value: 'mixed_use', label: 'Within Mixed-Use Building' }]} />
+      <Field label="Built Out As" hint="What the space is currently configured for">
+        <select className="w-full rounded-md px-3 py-2 text-sm focus:outline-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={details.built_out_as || ''} onChange={e => setDetail('built_out_as', e.target.value)}>
+          <option value="" style={{ background: '#0E1318' }}>Select…</option>
+          {RETAIL_BUILT_OUT_AS.map(o => <option key={o} value={o} style={{ background: '#0E1318' }}>{o}</option>)}
+        </select>
+      </Field>
       <ToggleGroup label="Foot Traffic" value={details.foot_traffic || ''} onChange={v => setDetail('foot_traffic', v)}
         options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }]} />
       <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>

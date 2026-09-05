@@ -746,6 +746,7 @@ export function calculateMatchScore(listing, requirement) {
   const isOffice = (listing.property_type === 'office');
   const isMedicalOfficeLease = (listing.property_type === 'medical_office') && (txKind === 'lease' || txKind === 'sublease');
   const isRetailLease = (listing.property_type === 'retail') && (txKind === 'lease' || txKind === 'sublease');
+  const isRetail = (listing.property_type === 'retail');
   const isIndustrialLease = (listing.property_type === 'industrial_flex') && (txKind === 'lease' || txKind === 'sublease');
   const isLandCommercial = (listing.property_type === 'land');
   const isSingleFamily = (listing.property_type === 'single_family');
@@ -767,6 +768,9 @@ export function calculateMatchScore(listing, requirement) {
     W = { price: 22, size: 22, location: 0, details: 0 };
   } else if (isRetailLease) {
     W = { price: 19, size: 20, location: 0, details: 0 };
+  } else if (isRetail) {
+    // Retail SALE — same detail-driven shape as retail lease.
+    W = { price: 21, size: 21, location: 0, details: 0 };
   } else if (isIndustrialLease) {
     W = { price: 18, size: 23, location: 0, details: 0 };
   } else if (isLandCommercial || isResidentialLand) {
@@ -1198,9 +1202,9 @@ export function calculateMatchScore(listing, requirement) {
       weightedSum += (item.score / 100) * item.weight;
       totalWeight += item.weight;
     });
-  } else if (isRetailLease) {
-    // Retail Lease: per-type weighted scoring.
-    // Heavy emphasis on capacity, ADA, location characteristics (traffic + foot traffic + location type).
+  } else if (isRetail) {
+    // Retail (lease OR sale): per-type weighted scoring.
+    // Heavy emphasis on capacity, ADA, location characteristics (traffic + foot traffic + space position).
     // Special features (drive-thru, hood, grease trap, auto bay, etc.) treated as regular weighted
     // binary items, NOT hard gates — broker can still see partial matches.
 
@@ -1254,7 +1258,7 @@ export function calculateMatchScore(listing, requirement) {
     // Location Type Match (exact-tier match; "any" passes)
     if (rd.location_type_pref && rd.location_type_pref !== 'any' && ld.location_type) {
       const score = (rd.location_type_pref === ld.location_type) ? 100 : 0;
-      retailItems.push({ label: 'Location Type', score, weight: 5,
+      retailItems.push({ label: 'Space Position', score, weight: 5,
         details: `Listing: ${ld.location_type} | Requested: ${rd.location_type_pref}`, icon: '🏪' });
     }
 
@@ -1338,6 +1342,24 @@ export function calculateMatchScore(listing, requirement) {
     }
 
     // Roll all retail items into the main weightedSum.
+    // Built Out As (exact match if the tenant expressed a preference)
+    if (rd.built_out_as_pref && ld.built_out_as) {
+      const match = rd.built_out_as_pref === ld.built_out_as;
+      retailItems.push({ label: 'Built Out As', score: match ? 100 : 40, weight: 6,
+        details: ld.built_out_as, icon: '🏗️' });
+    }
+
+    // Retail SALE also gets investment financials (cap rate, NOI, etc.), which
+    // leases don't have.
+    if (txKind === 'sale') {
+      const addInv = (label, score, details = '', icon = '') => {
+        if (score !== null && score !== undefined) {
+          retailItems.push({ label, score: Math.round(Math.max(0, Math.min(100, score))), weight: 5, details, icon });
+        }
+      };
+      addInvestmentScores(addInv, ld, rd);
+    }
+
     retailItems.forEach(item => {
       breakdown.push({ category: item.label, score: item.score, weight: item.weight,
         details: item.details, icon: item.icon });
