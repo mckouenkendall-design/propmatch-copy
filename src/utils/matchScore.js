@@ -748,6 +748,7 @@ export function calculateMatchScore(listing, requirement) {
   const isRetailLease = (listing.property_type === 'retail') && (txKind === 'lease' || txKind === 'sublease');
   const isRetail = (listing.property_type === 'retail');
   const isIndustrialLease = (listing.property_type === 'industrial_flex') && (txKind === 'lease' || txKind === 'sublease');
+  const isIndustrial = (listing.property_type === 'industrial_flex');
   const isLandCommercial = (listing.property_type === 'land');
   const isSingleFamily = (listing.property_type === 'single_family');
   const isCondo = (listing.property_type === 'condo');
@@ -773,6 +774,9 @@ export function calculateMatchScore(listing, requirement) {
     W = { price: 21, size: 21, location: 0, details: 0 };
   } else if (isIndustrialLease) {
     W = { price: 18, size: 23, location: 0, details: 0 };
+  } else if (isIndustrial) {
+    // Industrial SALE — same detail-driven shape as industrial lease.
+    W = { price: 20, size: 24, location: 0, details: 0 };
   } else if (isLandCommercial || isResidentialLand) {
     W = { price: 22, size: 25, location: 0, details: 0 };
   } else if (isSingleFamily || isCondo || isApartment || isTownhouse || isManufactured) {
@@ -1366,8 +1370,8 @@ export function calculateMatchScore(listing, requirement) {
       weightedSum += (item.score / 100) * item.weight;
       totalWeight += item.weight;
     });
-  } else if (isIndustrialLease) {
-    // Industrial / Flex Lease: per-type weighted scoring.
+  } else if (isIndustrial) {
+    // Industrial / Flex (lease OR sale): per-type weighted scoring.
     // Two ADDITIONAL hard gates beyond the standard three (type/transaction/location):
     //   - Rail Access Required: not retrofittable, deal-killer if requirement asks and listing doesn't have
     //   - Crane System Required: heavy infrastructure, similarly not retrofittable
@@ -1549,6 +1553,44 @@ export function calculateMatchScore(listing, requirement) {
       const has = listSystems.includes('led_lighting');
       indItems.push({ label: 'LED Lighting', score: has ? 100 : 0, weight: 0.5,
         details: has ? 'Yes' : 'Not specified on listing', icon: '💡' });
+    }
+
+    // Truck Wells (graduated, standard) — weight 5
+    if (rd.min_truck_wells && parseFloat(rd.min_truck_wells) > 0) {
+      const want = parseFloat(rd.min_truck_wells);
+      const have = parseFloat(ld.truck_wells) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      indItems.push({ label: 'Truck Wells', score, weight: 5,
+        details: `${ld.truck_wells ?? '—'} vs ${want} needed`, icon: '🚛' });
+    }
+
+    // Dock Levelers (graduated, standard) — weight 5
+    if (rd.min_levelers && parseFloat(rd.min_levelers) > 0) {
+      const want = parseFloat(rd.min_levelers);
+      const have = parseFloat(ld.leveler_count) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      indItems.push({ label: 'Dock Levelers', score, weight: 5,
+        details: `${ld.leveler_count ?? '—'} vs ${want} needed`, icon: '🔧' });
+    }
+
+    // Floor Thickness (graduated, heavy — can't change without major work) — weight 6
+    if (rd.min_floor_thickness && parseFloat(rd.min_floor_thickness) > 0) {
+      const want = parseFloat(rd.min_floor_thickness);
+      const have = parseFloat(ld.floor_thickness) || 0;
+      const ratio = have / want;
+      const score = have >= want ? 100 : Math.max(0, Math.round(ratio * ratio * 100));
+      indItems.push({ label: 'Floor Thickness', score, weight: 6,
+        details: `${ld.floor_thickness ?? '—'} in vs ${want} in needed`, icon: '🧱' });
+    }
+
+    // Industrial SALE also gets investment financials (cap rate, NOI, etc.).
+    if (txKind === 'sale') {
+      const addInv = (label, score, details = '', icon = '') => {
+        if (score !== null && score !== undefined) {
+          indItems.push({ label, score: Math.round(Math.max(0, Math.min(100, score))), weight: 5, details, icon });
+        }
+      };
+      addInvestmentScores(addInv, ld, rd);
     }
 
     // Roll all industrial items into the main weightedSum.

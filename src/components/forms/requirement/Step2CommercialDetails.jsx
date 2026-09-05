@@ -496,6 +496,9 @@ function IndustrialFlexRequirement({ details, setDetail }) {
         <Field label="Min Dock-High Doors"><Num field="min_dock_doors" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Drive-In Doors"><Num field="min_drive_in_doors" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Truck Court Depth (ft)"><Num field="min_truck_court" placeholder="e.g. 100" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Truck Wells"><Num field="min_truck_wells" placeholder="e.g. 4" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Dock Levelers"><Num field="min_levelers" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
+        <Field label="Min Floor Thickness (in)"><Num field="min_floor_thickness" placeholder="e.g. 6" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Floor Load (lbs/sqft)"><Num field="min_floor_load" placeholder="e.g. 250" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Land / Lot (acres)"><Num field="min_acres" placeholder="e.g. 1.0" step="0.1" details={details} setDetail={setDetail} /></Field>
       </div>
