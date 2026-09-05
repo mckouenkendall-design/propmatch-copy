@@ -225,7 +225,7 @@ const SALE_FINANCIAL_FIELDS = {
 // Sale Type + owner-occupancy fields + Sale Conditions + Business Value.
 // Rendered at the TOP of a commercial sale form (above the type-specific details)
 // because Sale Type governs what else is relevant.
-function SaleTypeSection({ type, details, setDetail }) {
+function SaleTypeSection({ type, details, setDetail, financialsSlot }) {
   const options = type === 'land' ? SALE_TYPES_LAND : SALE_TYPES;
   const saleType = details.sale_type || '';
   const conditions = details.sale_conditions || [];
@@ -302,6 +302,8 @@ function SaleTypeSection({ type, details, setDetail }) {
           </div>
         )}
       </div>
+
+      {financialsSlot}
 
       <SectionTitle>Business Value</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
@@ -386,9 +388,6 @@ function InvestmentFinancials({ type, details, setDetail }) {
   return (
     <>
       <SectionTitle>Investment Financials</SectionTitle>
-      <div style={{ background: 'rgba(0,219,197,0.06)', border: `1px solid ${ACCENT}25`, borderRadius: '10px', padding: '12px 14px', marginBottom: '12px' }}>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: ACCENT, margin: 0 }}>⚡ Optional — fill in if this is an income/investment sale. Use trailing 12-month <strong>actual</strong> income, not pro forma. Buyers will verify.</p>
-      </div>
       <div className="grid grid-cols-2 gap-4">
         {fields.map(f => (
           <Field key={f.field} label={f.label} hint={f.hint}>
@@ -1025,6 +1024,11 @@ export default function ListStep2Commercial({ data, update, onNext }) {
   const showFinancials = isSale && type !== 'land' &&
     SALE_TYPE_SHOWS_FINANCIALS.includes(saleType);
   const onSavePhotos = (next) => update({ property_details: { ...(dataRef.current.property_details || {}), photo_urls: next, photo_url: next[0] || '' } });
+  // Investment Financials now render INSIDE the Sale Type section (between Sale
+  // Conditions and Business Value), not at the bottom of the form.
+  const financialsSlot = showFinancials
+    ? <InvestmentFinancials type={type} details={details} setDetail={setDetail} />
+    : null;
   // Lease Details section, injected into each type component at the right spot in
   // its section order. Null for sales and land (land has no lease details block).
   const leaseSlot = (isLease && type !== 'land')
@@ -1036,7 +1040,7 @@ export default function ListStep2Commercial({ data, update, onNext }) {
       <p className="text-sm -mt-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
         Details about your <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong> space.
       </p>
-      {isSale && <SaleTypeSection type={type} details={details} setDetail={setDetail} />}
+      {isSale && <SaleTypeSection type={type} details={details} setDetail={setDetail} financialsSlot={financialsSlot} />}
 
       {type === 'office' && <OfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} leaseSlot={leaseSlot} />}
       {type === 'medical_office' && <MedicalOfficeDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} leaseSlot={leaseSlot} />}
@@ -1044,8 +1048,6 @@ export default function ListStep2Commercial({ data, update, onNext }) {
       {type === 'industrial_flex' && <IndustrialFlexDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} leaseSlot={leaseSlot} />}
       {type === 'land' && <LandDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} />}
       {type === 'special_use' && <SpecialUseDetails details={details} setDetail={setDetail} onSavePhotos={onSavePhotos} leaseSlot={leaseSlot} />}
-
-      {showFinancials && <InvestmentFinancials type={type} details={details} setDetail={setDetail} />}
 
       <div className="flex justify-end pt-2">
         <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: ACCENT }}>
