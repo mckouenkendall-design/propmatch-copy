@@ -745,6 +745,7 @@ export function calculateMatchScore(listing, requirement) {
   const isOfficeLease = (listing.property_type === 'office') && (txKind === 'lease' || txKind === 'sublease');
   const isOffice = (listing.property_type === 'office');
   const isMedicalOfficeLease = (listing.property_type === 'medical_office') && (txKind === 'lease' || txKind === 'sublease');
+  const isMedicalOffice = (listing.property_type === 'medical_office');
   const isRetailLease = (listing.property_type === 'retail') && (txKind === 'lease' || txKind === 'sublease');
   const isRetail = (listing.property_type === 'retail');
   const isIndustrialLease = (listing.property_type === 'industrial_flex') && (txKind === 'lease' || txKind === 'sublease');
@@ -766,6 +767,9 @@ export function calculateMatchScore(listing, requirement) {
     // Office SALE — same detail-driven shape as office lease. Details are rolled
     // in per-item below (each office item carries its own weight), so the top
     // level just balances price and size against those details.
+    W = { price: 22, size: 22, location: 0, details: 0 };
+  } else if (isMedicalOffice) {
+    // Medical Office SALE — same detail-driven shape as medical office lease.
     W = { price: 22, size: 22, location: 0, details: 0 };
   } else if (isRetailLease) {
     W = { price: 19, size: 20, location: 0, details: 0 };
@@ -1072,8 +1076,8 @@ export function calculateMatchScore(listing, requirement) {
       weightedSum += (item.score / 100) * item.weight;
       totalWeight += item.weight;
     });
-  } else if (isMedicalOfficeLease) {
-    // Medical Office Lease: per-type weighted scoring.
+  } else if (isMedicalOffice) {
+    // Medical Office (lease OR sale): per-type weighted scoring.
     // Tuned for medical: ADA + HIPAA are top-priority binary; clinical capacity
     // (exam/procedure/lab/waiting/restrooms) ties at 5 each; specialty in-suite
     // infrastructure (xray, gas, sterilization) at 3 each; building amenities
@@ -1197,6 +1201,16 @@ export function calculateMatchScore(listing, requirement) {
       else poolScore = 15;
       medItems.push({ label: 'Other Amenities', score: poolScore, weight: 2,
         details: `${matched} / ${poolReqAmen.length} matched`, icon: '✨' });
+    }
+
+    // Medical Office SALE also gets investment financials (cap rate, NOI, etc.).
+    if (txKind === 'sale') {
+      const addInv = (label, score, details = '', icon = '') => {
+        if (score !== null && score !== undefined) {
+          medItems.push({ label, score: Math.round(Math.max(0, Math.min(100, score))), weight: 5, details, icon });
+        }
+      };
+      addInvestmentScores(addInv, ld, rd);
     }
 
     // Roll all medical items into the main weightedSum.
