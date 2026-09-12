@@ -1726,6 +1726,15 @@ export function calculateMatchScore(listing, requirement) {
         details: `${ld.bedrooms ?? '—'} vs ${want} requested`, icon: '🛏️' });
     }
 
+    // Finished Sq Ft (graduated, heavy — the top interior-size signal after bedrooms)
+    if (rd.min_finished_sqft && parseFloat(rd.min_finished_sqft) > 0) {
+      const want = parseFloat(rd.min_finished_sqft);
+      const have = parseFloat(ld.finished_sqft) || 0;
+      const score = have >= want ? 100 : Math.max(0, Math.round((have / want) * 100));
+      sfItems.push({ label: 'Finished Sq Ft', score, weight: 15,
+        details: `${ld.finished_sqft ? Number(ld.finished_sqft).toLocaleString() : '—'} sf vs ${Number(want).toLocaleString()} requested`, icon: '📐' });
+    }
+
     // Bathrooms (graduated)
     if (rd.min_bathrooms && parseFloat(rd.min_bathrooms) > 0) {
       const want = parseFloat(rd.min_bathrooms);

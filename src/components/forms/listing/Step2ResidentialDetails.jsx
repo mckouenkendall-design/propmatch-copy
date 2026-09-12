@@ -31,6 +31,39 @@ function SectionTitle({ children }) {
     </div>
   );
 }
+// Multi-select chip group for "select all that apply" Zillow sections.
+// Stores an array of selected string labels under `field`.
+function CheckGroup({ label, options, field, details, setDetail }) {
+  const sel = Array.isArray(details[field]) ? details[field] : [];
+  const toggle = (opt) => setDetail(field, sel.includes(opt) ? sel.filter(x => x !== opt) : [...sel, opt]);
+  return (
+    <Field label={label}>
+      <div className="flex flex-wrap gap-2">
+        {options.map(opt => (
+          <button key={opt} type="button" onClick={() => toggle(opt)}
+            className="px-3 py-1.5 rounded-lg border-2 text-xs font-medium transition-all"
+            style={{ borderColor: sel.includes(opt) ? ACCENT : 'rgba(255,255,255,0.2)', backgroundColor: sel.includes(opt) ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)', color: sel.includes(opt) ? ACCENT : 'rgba(255,255,255,0.7)' }}>{opt}</button>
+        ))}
+      </div>
+    </Field>
+  );
+}
+
+// Single-select chip group for "select one" Zillow radio sections.
+function RadioChips({ label, options, field, details, setDetail }) {
+  return (
+    <Field label={label}>
+      <div className="flex flex-wrap gap-2">
+        {options.map(opt => (
+          <button key={opt} type="button" onClick={() => setDetail(field, details[field] === opt ? '' : opt)}
+            className="px-3 py-1.5 rounded-lg border-2 text-xs font-medium transition-all"
+            style={{ borderColor: details[field] === opt ? ACCENT : 'rgba(255,255,255,0.2)', backgroundColor: details[field] === opt ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)', color: details[field] === opt ? ACCENT : 'rgba(255,255,255,0.7)' }}>{opt}</button>
+        ))}
+      </div>
+    </Field>
+  );
+}
+
 function CollapsiblePanel({ title, summary, children }) {
   const [open, setOpen] = useState(false);
   return (
@@ -99,8 +132,26 @@ const SF_FEATURES = [
   { key: 'mudroom', label: 'Mudroom' }, { key: 'bonus_room', label: 'Bonus Room / Loft' }, { key: 'home_office', label: 'Dedicated Home Office' },
 ];
 
+// ---- Full Zillow/MLS field vocabulary (display-first; a subset is scored) ----
+// These mirror the Zillow FSBO form so PropMatch can hold and display everything
+// an MLS/IDX feed would deliver. Scored subsets are wired in the scorer; the
+// rest are captured and shown on the listing + match card only.
+const APPLIANCE_OPTS = ['Dishwasher','Range/Oven','Dryer','Refrigerator','Freezer','Trash Compactor','Garbage Disposal','Washer','Microwave'];
+const FLOOR_COVERING_OPTS = ['Carpet','Slate','Concrete','Softwood','Hardwood','Tile','Laminate','Linoleum/Vinyl','Other'];
+const ROOM_OPTS = ['Breakfast Nook','Office','Dining Room','Pantry','Family Room','Recreation Room','Laundry Room','Workshop','Library','Solarium/Atrium','Master Bath','Sun Room','Mud Room','Walk-In Closet'];
+const INDOOR_FEATURE_OPTS = ['Attic','Mother-in-Law Apartment','Cable Ready','Security System','Ceiling Fans','Skylights','Double Pane/Storm Windows','Vaulted Ceiling','Fireplace','Wet Bar','Intercom System','Wired','Jetted Tub'];
+const COOLING_TYPE_OPTS = ['Central','Solar','Evaporative','Wall','Geothermal','Refrigeration','Other','None'];
+const HEATING_TYPE_OPTS = ['Baseboard','Radiant','Forced Air','Stove','Geothermal','Wall','Heat Pump','Other'];
+const HEATING_FUEL_OPTS = ['Coal','Solar','Electric','Wood/Pellet','Gas','Oil','Propane/Butane','Other','None'];
+const BUILDING_AMENITY_OPTS = ['Assisted Living Community','Gated Entry','Basketball Court','Near Transportation','Controlled Access','Over 55+ Active Community','Disabled Access','Sports Court','Doorman','Storage','Elevator','Tennis Court','Fitness Center'];
+const EXTERIOR_OPTS = ['Brick','Stucco','Cement/Concrete','Vinyl','Composition','Wood','Metal','Wood Products','Shingle','Stone','Other'];
+const OUTDOOR_AMENITY_OPTS = ['Balcony/Patio','Lawn','Barbecue Area','Pond','Deck','Pool','Dock','Porch','Fenced Yard','RV Parking','Garden','Sauna','Greenhouse','Sprinkler System','Hot Tub/Spa','Waterfront'];
+const PARKING_OPTS = ['Carport','Off-Street','Garage - Attached','On-Street','Garage - Detached','None'];
+const ROOF_OPTS = ['Asphalt','Shake/Shingle','Built-Up','Slate','Composition','Tile','Metal','Other'];
+const VIEW_OPTS = ['City','Territorial','Mountain','Water','Park','None'];
+const ARCH_STYLE_FULL = ['Bungalow','Modern','Cape Cod','Queen Anne/Victorian','Colonial','Ranch/Rambler','Contemporary','Santa Fe/Pueblo Style','Craftsman','Spanish','French','Split-Level','Georgian','Tudor','Loft','Other'];
+
 function SingleFamilyDetails({ details, setDetail }) {
-  const toggleBool = (key) => setDetail(key, !details[key]);
   const features = details.features || [];
   const toggleFeature = (key) => setDetail('features', features.includes(key) ? features.filter(k => k !== key) : [...features, key]);
   const [featuresOpen, setFeaturesOpen] = useState(false);
@@ -109,34 +160,22 @@ function SingleFamilyDetails({ details, setDetail }) {
       <SectionTitle>Basic Specs</SectionTitle>
       <BedsAndBaths details={details} setDetail={setDetail} />
       <div className="grid grid-cols-2 gap-4">
+        <Field label="Half Baths" hint="Powder rooms (no shower/tub)"><Num field="half_baths" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
+        <Field label="Finished Sq Ft" hint="Interior living area"><Num field="finished_sqft" placeholder="e.g. 2200" details={details} setDetail={setDetail} /></Field>
         <Field label="Year Built" hint="Informational"><Num field="year_built" placeholder="e.g. 2005" details={details} setDetail={setDetail} /></Field>
         <Field label="Lot Size (sqft)" hint={details.lot_sqft ? `≈ ${(parseFloat(details.lot_sqft) / 43560).toFixed(2)} acres` : undefined}><Num field="lot_sqft" placeholder="e.g. 7500" details={details} setDetail={setDetail} /></Field>
         <Field label="Garage Spaces"><Num field="garage" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
         <Field label="HOA ($/mo)" hint="Leave blank if no HOA"><Num field="hoa" placeholder="e.g. 150" details={details} setDetail={setDetail} /></Field>
       </div>
+
       <SectionTitle>Style & Layout</SectionTitle>
       <ToggleGroup label="Stories" value={details.stories || ''} onChange={v => setDetail('stories', v)}
         options={[{ value: 'one', label: '1 Story' }, { value: 'two', label: '2 Story' }, { value: 'split', label: 'Split Level' }, { value: 'three_plus', label: '3+' }]} />
       <ToggleGroup label="Basement" value={details.basement || ''} onChange={v => setDetail('basement', v)}
         options={[{ value: 'finished', label: 'Finished' }, { value: 'unfinished', label: 'Unfinished' }, { value: 'walkout', label: 'Walk-Out' }, { value: 'none', label: 'None' }]} />
-      <Field label="Architectural Style" hint="Informational">
-        <div className="flex flex-wrap gap-2">
-          {ARCH_STYLES.map(s => (
-            <button key={s} type="button" onClick={() => setDetail('arch_style', s)}
-              className="px-3 py-1.5 rounded-lg border-2 text-xs font-medium transition-all"
-              style={{ borderColor: details.arch_style === s ? ACCENT : 'rgba(255,255,255,0.2)', backgroundColor: details.arch_style === s ? 'rgba(0,219,197,0.15)' : 'rgba(255,255,255,0.05)', color: details.arch_style === s ? ACCENT : 'rgba(255,255,255,0.7)' }}>{s}</button>
-          ))}
-        </div>
-      </Field>
-      <SectionTitle>Systems</SectionTitle>
-      <p className="text-xs -mt-2 mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Informational — easy to change, not weighted in match scoring</p>
-      <ToggleGroup label="Heating" value={details.heating || ''} onChange={v => setDetail('heating', v)}
-        options={[{ value: 'forced_air', label: 'Forced Air' }, { value: 'radiant', label: 'Radiant' }, { value: 'heat_pump', label: 'Heat Pump' }, { value: 'baseboard', label: 'Baseboard' }]} />
-      <ToggleGroup label="Cooling" value={details.cooling || ''} onChange={v => setDetail('cooling', v)}
-        options={[{ value: 'central', label: 'Central A/C' }, { value: 'mini_split', label: 'Mini-Split' }, { value: 'window', label: 'Window Units' }, { value: 'none', label: 'None' }]} />
-      <ToggleGroup label="Flooring" value={details.flooring || ''} onChange={v => setDetail('flooring', v)}
-        options={[{ value: 'hardwood', label: 'Hardwood' }, { value: 'carpet', label: 'Carpet' }, { value: 'tile', label: 'Tile' }, { value: 'mixed', label: 'Mixed' }]} />
-      <SectionTitle>Features & Amenities</SectionTitle>
+
+      <SectionTitle>Key Features & Amenities</SectionTitle>
+      <p className="text-xs -mt-2 mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>These are weighted in match scoring.</p>
       <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         <button type="button" onClick={() => setFeaturesOpen(o => !o)}
           className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors"
@@ -157,13 +196,62 @@ function SingleFamilyDetails({ details, setDetail }) {
           </div>
         )}
       </div>
-      <SectionTitle>Additional Info</SectionTitle>
-      <Field label="Appliances Included">
-        <TagsInput value={details.appliances || []} onChange={v => setDetail('appliances', v)} placeholder="e.g. Refrigerator, Washer/Dryer (press Enter)" />
-      </Field>
+
+      <SectionTitle>School District</SectionTitle>
       <Field label="School District">
         <Input value={details.school_district || ''} onChange={e => setDetail('school_district', e.target.value)} placeholder="e.g. Royal Oak School District" />
       </Field>
+
+      <SectionTitle>Full Property Details</SectionTitle>
+      <p className="text-xs -mt-2 mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Everything an MLS listing shows. Displayed on your listing and the match card. Not all of it is weighted in scoring.</p>
+
+      <CollapsiblePanel title="Room Details" summary={[(details.appliances_list||[]).length && `${details.appliances_list.length} appliances`, (details.rooms_list||[]).length && `${details.rooms_list.length} rooms`, (details.indoor_features||[]).length && `${details.indoor_features.length} features`].filter(Boolean).join(' · ') || 'Appliances, floors, rooms, indoor features'}>
+        <div className="space-y-3">
+          <CheckGroup label="Appliances" options={APPLIANCE_OPTS} field="appliances_list" details={details} setDetail={setDetail} />
+          <CheckGroup label="Floor Covering" options={FLOOR_COVERING_OPTS} field="floor_covering" details={details} setDetail={setDetail} />
+          <CheckGroup label="Rooms" options={ROOM_OPTS} field="rooms_list" details={details} setDetail={setDetail} />
+          <Field label="Total Rooms"><Num field="total_rooms" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
+          <CheckGroup label="Indoor Features" options={INDOOR_FEATURE_OPTS} field="indoor_features" details={details} setDetail={setDetail} />
+        </div>
+      </CollapsiblePanel>
+
+      <CollapsiblePanel title="Utility Details" summary={[details.cooling_type && `Cooling: ${details.cooling_type}`, details.heating_type && `Heating: ${details.heating_type}`].filter(Boolean).join(' · ') || 'Cooling, heating, fuel'}>
+        <div className="space-y-3">
+          <RadioChips label="Cooling Type" options={COOLING_TYPE_OPTS} field="cooling_type" details={details} setDetail={setDetail} />
+          <RadioChips label="Heating Type" options={HEATING_TYPE_OPTS} field="heating_type" details={details} setDetail={setDetail} />
+          <RadioChips label="Heating Fuel" options={HEATING_FUEL_OPTS} field="heating_fuel" details={details} setDetail={setDetail} />
+        </div>
+      </CollapsiblePanel>
+
+      <CollapsiblePanel title="Building Details" summary={[details.arch_style, details.roof && `${details.roof} roof`, (details.view_list||[]).length && 'view'].filter(Boolean).join(' · ') || 'Style, exterior, roof, parking, view'}>
+        <div className="space-y-3">
+          <RadioChips label="Architectural Style" options={ARCH_STYLE_FULL} field="arch_style" details={details} setDetail={setDetail} />
+          <CheckGroup label="Exterior Material" options={EXTERIOR_OPTS} field="exterior" details={details} setDetail={setDetail} />
+          <CheckGroup label="Outdoor Amenities" options={OUTDOOR_AMENITY_OPTS} field="outdoor_amenities" details={details} setDetail={setDetail} />
+          <CheckGroup label="Building Amenities" options={BUILDING_AMENITY_OPTS} field="building_amenities_list" details={details} setDetail={setDetail} />
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="# of Stories"><Num field="num_stories" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
+            <Field label="# Parking Spaces"><Num field="parking_spaces_count" placeholder="e.g. 4" details={details} setDetail={setDetail} /></Field>
+          </div>
+          <CheckGroup label="Parking" options={PARKING_OPTS} field="parking_types" details={details} setDetail={setDetail} />
+          <CheckGroup label="Roof" options={ROOF_OPTS} field="roof_types" details={details} setDetail={setDetail} />
+          <CheckGroup label="View" options={VIEW_OPTS} field="view_list" details={details} setDetail={setDetail} />
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Structural Remodel Year"><Num field="remodel_year" placeholder="e.g. 2019" details={details} setDetail={setDetail} /></Field>
+            <Field label="Basement Sq Ft"><Num field="basement_sqft" placeholder="e.g. 900" details={details} setDetail={setDetail} /></Field>
+            <Field label="Garage Sq Ft"><Num field="garage_sqft" placeholder="e.g. 440" details={details} setDetail={setDetail} /></Field>
+          </div>
+        </div>
+      </CollapsiblePanel>
+
+      <SectionTitle>Legacy Systems (informational)</SectionTitle>
+      <p className="text-xs -mt-2 mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Simple heating/cooling/flooring summary. Optional — the Utility Details above cover the full breakdown.</p>
+      <ToggleGroup label="Heating" value={details.heating || ''} onChange={v => setDetail('heating', v)}
+        options={[{ value: 'forced_air', label: 'Forced Air' }, { value: 'radiant', label: 'Radiant' }, { value: 'heat_pump', label: 'Heat Pump' }, { value: 'baseboard', label: 'Baseboard' }]} />
+      <ToggleGroup label="Cooling" value={details.cooling || ''} onChange={v => setDetail('cooling', v)}
+        options={[{ value: 'central', label: 'Central A/C' }, { value: 'mini_split', label: 'Mini-Split' }, { value: 'window', label: 'Window Units' }, { value: 'none', label: 'None' }]} />
+      <ToggleGroup label="Flooring" value={details.flooring || ''} onChange={v => setDetail('flooring', v)}
+        options={[{ value: 'hardwood', label: 'Hardwood' }, { value: 'carpet', label: 'Carpet' }, { value: 'tile', label: 'Tile' }, { value: 'mixed', label: 'Mixed' }]} />
     </>
   );
 }

@@ -259,6 +259,8 @@ export const CLIENT_WEIGHT_DEFAULTS = {
     items: [
       { key: 'bedrooms', label: 'Bedrooms', default: 'high',
         why: "Adding a bedroom isn't as simple as adding a wall. In most cities it requires egress, a window large enough to climb out of in an emergency. That means permitted structural work, not just a renovation. We weight this heavily because the bedroom count you see is largely the bedroom count you're getting." },
+      { key: 'finished_sq_ft', label: 'Finished Sq Ft', default: 'high',
+        why: "Interior square footage is the single biggest driver of how a home lives and what it's worth, and it's the number buyers filter on right after bedrooms and bathrooms. You can't add finished space without a major addition or finishing a basement, both real projects. We weight this heavily because the living area you see is essentially fixed." },
       { key: 'bathrooms', label: 'Bathrooms', default: 'high',
         why: "Adding a full bathroom requires plumbing rough-ins that aren't always available where you'd want the bathroom. Half baths are easier to add than full baths but still require permits and structural access. We weight this because the bathroom count shapes daily routines for everyone in the house." },
       { key: 'lot_size', label: 'Lot Size', default: 'high',

@@ -116,6 +116,7 @@ function SingleFamilyRequirement({ details, setDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <MinField label="Bedrooms" field="min_bedrooms" placeholder="e.g. 3" details={details} setDetail={setDetail} />
         <MinField label="Bathrooms" field="min_bathrooms" placeholder="e.g. 2" step="0.5" details={details} setDetail={setDetail} />
+        <MinField label="Finished Sq Ft" field="min_finished_sqft" placeholder="e.g. 1800" hint="Interior living area, scored" details={details} setDetail={setDetail} />
         <MinField label="Garage Spaces" field="min_garage" placeholder="e.g. 2" details={details} setDetail={setDetail} />
         <MinField label="Lot Size (sqft)" field="min_lot_sqft" placeholder="e.g. 6000" hint={details.min_lot_sqft ? `≈ ${(parseFloat(details.min_lot_sqft) / 43560).toFixed(2)} acres` : "Informational-adjacent, scored"} details={details} setDetail={setDetail} />
         <MinField label="Year Built" field="min_year_built" placeholder="e.g. 1990" hint="Informational" details={details} setDetail={setDetail} />
