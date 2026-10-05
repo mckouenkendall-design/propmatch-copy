@@ -13,6 +13,7 @@ import { calculateMatchScore, getScoreColor, getScoreLabel, parseDetails } from 
 import { itemsForPropertyType, IMPORTANCE_LABELS } from '@/utils/clientWeightDefaults';
 import FloatingMessageCompose from '@/components/messages/FloatingMessageCompose';
 import AgentContactModal from '@/components/shared/AgentContactModal';
+import MatchBreakdown from '@/components/matches/MatchBreakdown';
 
 const ACCENT   = '#00DBC5';
 const LAVENDER = '#818cf8';
@@ -1348,37 +1349,14 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
         <div style={{ flex:1, overflowY:'auto' }}>
           {tab==='analysis'&&(
             <div style={{ padding:'28px 32px' }}>
-              <div style={{ display:'flex', justifyContent:'center', marginBottom:'28px' }}><AnimatedBigScore score={totalScore} runKey={`${matchIndex}-${matchPost?.id}`}/></div>
-
-              {summaryRows.length>0&&(
-                <div style={{ marginBottom:'30px' }}>
-                  {/* Column headers: listing side (teal) vs requirement side (lavender).
-                      The agent's OWN post header is clickable → opens its edit screen. */}
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 56px 1fr', alignItems:'center', marginBottom:'6px' }}>
-                    <button type="button" disabled={!myIsListing} onClick={()=>myIsListing&&onEditMyPost&&onEditMyPost()}
-                      style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:'5px', paddingRight:'18px', background:'transparent', border:'none', cursor:myIsListing?'pointer':'default', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:ACCENT, textAlign:'right' }}
-                      onMouseEnter={e=>{if(myIsListing)e.currentTarget.style.textDecoration='underline';}}
-                      onMouseLeave={e=>{e.currentTarget.style.textDecoration='none';}}>
-                      {myIsListing?'Your Listing':'Their Listing'}{myIsListing&&<ExternalLink style={{width:'11px',height:'11px'}}/>}
-                    </button>
-                    <div/>
-                    <button type="button" disabled={myIsListing} onClick={()=>!myIsListing&&onEditMyPost&&onEditMyPost()}
-                      style={{ display:'flex', alignItems:'center', justifyContent:'flex-start', gap:'5px', paddingLeft:'18px', background:'transparent', border:'none', cursor:!myIsListing?'pointer':'default', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:LAVENDER, textAlign:'left' }}
-                      onMouseEnter={e=>{if(!myIsListing)e.currentTarget.style.textDecoration='underline';}}
-                      onMouseLeave={e=>{e.currentTarget.style.textDecoration='none';}}>
-                      {!myIsListing&&<ExternalLink style={{width:'11px',height:'11px'}}/>}{myIsListing?'Their Requirements':"Your Client's Requirements"}
-                    </button>
-                  </div>
-                  {/* Full scoring breakdown, revealed top-down (heaviest factor first) */}
-                  <div>
-                    <CascadeReveal items={summaryRows} trigger={stage>=1} step={90}>
-                      {(row,i)=>(
-                        <ComparisonRow label={row.label} leftValue={row.leftValue} rightValue={row.rightValue} score={row.score}/>
-                      )}
-                    </CascadeReveal>
-                  </div>
-                </div>
-              )}
+              <MatchBreakdown
+                listing={listing} requirement={requirement} matchResult={matchResult} myIsListing={myIsListing}
+                eyebrow={`${PT[listing.property_type]||listing.property_type} \u00b7 ${TX[listing.transaction_type]||listing.transaction_type}`}
+                title={matchPost.title||(myIsListing?'Their requirement':'Their listing')}
+                subline={`Against your ${myIsListing?'listing':'requirement'}${myPost.title?`: ${myPost.title}`:''}`}
+                runKey={`${matchIndex}-${matchPost?.id}`}
+                onEditMyPost={onEditMyPost}
+              />
 
               <div style={{ background:`${theirColor}06`, border:`1px solid ${theirColor}20`, borderRadius:'14px', padding:'20px', opacity:stage>=2?1:0, transform:stage>=2?'translateY(0)':'translateY(14px)', transition:'opacity 0.5s ease, transform 0.5s ease' }}>
                 <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'rgba(255,255,255,0.3)', margin:'0 0 14px' }}>{myIsListing?'Representing Agent':'Listing Agent'}</p>
