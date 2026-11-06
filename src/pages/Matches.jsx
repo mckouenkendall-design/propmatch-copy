@@ -1474,15 +1474,15 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
         }}>
 
         {/* Photo zone — taller for more image room */}
-        <div style={{ display:'flex', gap:'3px', height:'300px', position:'relative' }}>
+        <div style={{ display:'flex', gap:'3px', height:'300px', position:'relative', overflow:'hidden' }}>
           {!hasPhotos ? (
             /* No photos: full-width dark area with the score as the focal point */
-            <div style={{ flex:1 }}><NoPhotos/></div>
+            <div style={{ flex:1, minWidth:0, minHeight:0 }}><NoPhotos/></div>
           ) : (
             <>
               {/* Hero photo left */}
-              <div style={{ flex:'1.6 1 0', position:'relative', overflow:'hidden' }}>
-                <img src={hero} alt={listingPost.title} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+              <div style={{ flex:'1.6 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden' }}>
+                <img src={hero} alt={listingPost.title} style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
                 {/* Score badge floating top-right of hero */}
                 <div style={{ position:'absolute', top:'12px', right:'12px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px',
                   background:'rgba(14,19,24,0.82)', backdropFilter:'blur(6px)', borderRadius:'14px', padding:'8px 12px', border:`2px solid ${scoreColor}`, boxShadow:`0 0 16px ${scoreColor}55` }}>
@@ -1492,36 +1492,36 @@ function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
               </div>
               {/* Adaptive right side — only rendered when there are extra photos beyond the hero */}
               {grid.length>0 && (
-                <div style={{ flex:'1 1 0', display:'flex', flexDirection:'column', gap:'3px' }}>
+                <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, display:'flex', flexDirection:'column', gap:'3px' }}>
                   {grid.length===1 && (
-                    <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                      <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                    <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                      <img src={grid[0]} alt="Photo 2" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
                     </div>
                   )}
                   {grid.length===2 && (
                     <>
-                      <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                        <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                      <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                        <img src={grid[0]} alt="Photo 2" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
                       </div>
-                      <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                        <img src={grid[1]} alt="Photo 3" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                      <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                        <img src={grid[1]} alt="Photo 3" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
                       </div>
                     </>
                   )}
                   {grid.length>=3 && (
                     <>
                       {/* Photo 2 takes the top half */}
-                      <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                        <img src={grid[0]} alt="Photo 2" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                      <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                        <img src={grid[0]} alt="Photo 2" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
                       </div>
                       {/* Photos 3 and 4 split the bottom half (3 gets full width if no 4th) */}
-                      <div style={{ flex:1, display:'flex', gap:'3px' }}>
-                        <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                          <img src={grid[1]} alt="Photo 3" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                      <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, display:'flex', gap:'3px' }}>
+                        <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                          <img src={grid[1]} alt="Photo 3" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
                         </div>
                         {grid[2] && (
-                          <div style={{ flex:1, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                            <img src={grid[2]} alt="Photo 4" style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
+                          <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
+                            <img src={grid[2]} alt="Photo 4" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
                           </div>
                         )}
                       </div>
