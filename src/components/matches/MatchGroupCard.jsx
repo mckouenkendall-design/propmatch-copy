@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronRight, Building2, MapPin, Clock, Users } from 'lucide-react';
+import { Building2, MapPin, Clock, Users } from 'lucide-react';
 import { getScoreColor, parseDetails } from '@/utils/matchScore';
 import { buildRows } from '@/components/matches/MatchBreakdown';
 
@@ -252,7 +252,7 @@ export default function MatchGroupCard({ myPost, matches, onOpen, profileMap = {
         { Icon: MapPin, t: citiesText(myPost.cities) },
         { Icon: Building2, t: sizeText(myPost.min_size_sqft, myPost.max_size_sqft) },
         { t: budgetText(myPost) },
-        pd.headcount ? { Icon: Users, t: `${pd.headcount} people` } : null,
+        pd.headcount && !/\bpeople\b/i.test(headline) ? { Icon: Users, t: `${pd.headcount} people` } : null,
         pd.timeline && TIMELINE[pd.timeline] ? { Icon: Clock, t: TIMELINE[pd.timeline] } : null,
       ];
 
@@ -284,10 +284,6 @@ export default function MatchGroupCard({ myPost, matches, onOpen, profileMap = {
         {rest > 0 && <MoreTile count={rest} color={color} onClick={() => onOpen(myPost, matches[MAX_TILES], MAX_TILES)} />}
       </div>
 
-      <button onClick={() => onOpen(myPost, matches[0], 0)}
-        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: BODY, fontSize: '13px', fontWeight: 600, color }}>
-        Walk through all {matches.length} {matches.length === 1 ? 'match' : 'matches'} <ChevronRight style={{ width: '15px', height: '15px' }} />
-      </button>
     </section>
   );
 }

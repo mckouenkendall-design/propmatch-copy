@@ -3,7 +3,8 @@ import { supabase } from '@/api/supabaseClient';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { Building2, Search, Plus, Trash2, Loader2, LayoutGrid, List, Eye, Bookmark, Share2, Pencil } from 'lucide-react';
+import { Building2, Search, Plus, Trash2, Loader2, LayoutGrid, List, Pencil } from 'lucide-react';
+import { clientHeadline } from '@/components/matches/MatchGroupCard';
 import CreatePostModal from '../components/dashboard/CreatePostModal';
 import ListingWizard from '@/components/forms/ListingWizard';
 import RequirementWizard from '@/components/forms/RequirementWizard';
@@ -39,11 +40,8 @@ function PostCard({ post, isListing, onEdit, onDelete, deleting, view }) {
   const color = isListing ? ACCENT : LAVENDER;
   const Icon  = isListing ? Building2 : Search;
   const price = fmtPrice(post, isListing);
-  const views  = post.view_count  || 0;
-  const saves  = post.save_count  || 0;
-  const shares = post.share_count || 0;
   const chips = [
-    post.status ? post.status.toUpperCase() : 'ACTIVE',
+    post.status && post.status !== 'active' ? post.status.toUpperCase() : null,
     isListing && post.size_sqft ? `${parseFloat(post.size_sqft).toLocaleString()} SF` : null,
     !isListing && (post.min_size_sqft || post.max_size_sqft)
       ? `${post.min_size_sqft ? parseFloat(post.min_size_sqft).toLocaleString() : '0'}\u2013${post.max_size_sqft ? parseFloat(post.max_size_sqft).toLocaleString() : '\u221e'} SF`
@@ -53,15 +51,8 @@ function PostCard({ post, isListing, onEdit, onDelete, deleting, view }) {
 
   const loc = isListing
     ? [post.city, post.state].filter(Boolean).join(', ')
-    : (Array.isArray(post.cities) ? post.cities.join(', ') : post.cities) || '';
-
-  const StatRow = () => (
-    <div style={{ display:'flex', alignItems:'center', gap:'10px', fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.3)' }}>
-      <span style={{ display:'flex', alignItems:'center', gap:'3px' }}><Eye style={{ width:'11px', height:'11px' }}/> {views}</span>
-      <span style={{ display:'flex', alignItems:'center', gap:'3px' }}><Bookmark style={{ width:'11px', height:'11px' }}/> {saves}</span>
-      <span style={{ display:'flex', alignItems:'center', gap:'3px' }}><Share2 style={{ width:'11px', height:'11px' }}/> {shares}</span>
-    </div>
-  );
+    : (Array.isArray(post.cities) ? post.cities : String(post.cities || '').split(',')).map(c => String(c).replace(/,?\s*[A-Z]{2}$/, '').trim()).filter(Boolean).join(', ');
+  const title = isListing ? ([post.address, post.city].filter(Boolean).join(', ') || post.title) : clientHeadline(post);
 
   if (view === 'list') return (
     <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
@@ -70,14 +61,13 @@ function PostCard({ post, isListing, onEdit, onDelete, deleting, view }) {
         <Icon style={{ width:'17px', height:'17px', color }}/>
       </div>
       <div style={{ flex:1, minWidth:0 }}>
-        <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'14px', fontWeight:600, color:'rgba(255,255,255,0.9)', margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{post.title}</p>
+        <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'14px', fontWeight:600, color:'rgba(255,255,255,0.9)', margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</p>
         <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.38)', margin:0 }}>{loc}{loc && ' \u00b7 '}{PT[post.property_type] || post.property_type}</p>
       </div>
       {price && <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:700, color, flexShrink:0 }}>{price}</div>}
       <div style={{ display:'flex', gap:'5px', flexShrink:0 }}>
         {chips.map((c, i) => <span key={i} style={{ fontFamily:"'Inter',sans-serif", fontSize:'10px', fontWeight:600, color:'rgba(255,255,255,0.45)', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:'4px', padding:'2px 6px', textTransform:'uppercase' }}>{c}</span>)}
       </div>
-      <StatRow/>
       <div style={{ display:'flex', gap:'6px', flexShrink:0 }}>
         <button onClick={onEdit} style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', background:`${color}12`, border:`1px solid ${color}28`, borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'12px', fontWeight:500, color, cursor:'pointer' }}>
           <Pencil style={{ width:'10px', height:'10px' }}/> Edit
@@ -96,17 +86,15 @@ function PostCard({ post, isListing, onEdit, onDelete, deleting, view }) {
     <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{ background:hov?'rgba(255,255,255,0.07)':'rgba(255,255,255,0.04)', border:`1px solid ${hov?color+'30':'rgba(255,255,255,0.08)'}`, borderRadius:'14px', overflow:'hidden', transition:'all 0.18s', display:'flex', flexDirection:'column' }}>
       <div style={{ padding:'16px 16px 12px' }}>
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'12px' }}>
-          <div style={{ width:'44px', height:'44px', borderRadius:'11px', background:`${color}18`, border:`1px solid ${color}28`, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <Icon style={{ width:'20px', height:'20px', color }}/>
-          </div>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'10px' }}>
+          <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'10.5px', fontWeight:700, letterSpacing:'0.12em', color }}>{isListing ? 'LISTING' : 'CLIENT'}</span>
           <button onClick={onEdit}
             style={{ display:'flex', alignItems:'center', gap:'5px', padding:'5px 10px', background:`${color}12`, border:`1px solid ${color}28`, borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'11px', fontWeight:500, color, cursor:'pointer' }}>
             <Pencil style={{ width:'10px', height:'10px' }}/> Edit
           </button>
         </div>
-        <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'14px', fontWeight:600, color:'rgba(255,255,255,0.9)', margin:'0 0 3px', lineHeight:1.3, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{post.title}</p>
-        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.38)', margin:0 }}>
+        <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'16px', fontWeight:700, color:'white', margin:'0 0 4px', lineHeight:1.3, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{title}</p>
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'12.5px', color:'rgba(255,255,255,0.45)', margin:0 }}>
           {loc}{loc && ' \u00b7 '}{PT[post.property_type] || post.property_type}
         </p>
       </div>
@@ -124,7 +112,7 @@ function PostCard({ post, isListing, onEdit, onDelete, deleting, view }) {
       </div>
 
       <div style={{ padding:'8px 16px 14px', marginTop:'auto', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <StatRow/>
+        <span/>
         <button onClick={onDelete} disabled={deleting}
           style={{ padding:'5px 7px', background:'transparent', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'7px', cursor:'pointer', color:'rgba(255,255,255,0.25)', display:'flex', transition:'all 0.15s' }}
           onMouseEnter={e => { e.currentTarget.style.color='#ef4444'; e.currentTarget.style.borderColor='rgba(239,68,68,0.3)'; }}
@@ -169,6 +157,18 @@ export default function Inventory() {
     if(found){ setTab(found.postType==='listing'?'listings':'requirements'); setEditPost(found); window.history.replaceState({},''); }
   },[location.state?.openPostId, listings, requirements]);
 
+  // Open straight into "new post" when another page sends you here to create one.
+  useEffect(()=>{
+    if(location.state?.openCreate){ setShowCreate(true); window.history.replaceState({},''); }
+  },[location.state?.openCreate]);
+
+  // Land on the tab that has posts, unless the person picked one.
+  const pickedTabRef = React.useRef(false);
+  useEffect(()=>{
+    if(pickedTabRef.current||location.state?.openPostId)return;
+    if(tab==='listings'&&listings.length===0&&requirements.length>0)setTab('requirements');
+  },[listings.length,requirements.length,tab,location.state?.openPostId]);
+
   const posts = tab === 'listings'
     ? listings.map(l => ({ ...l, postType:'listing' }))
     : requirements.map(r => ({ ...r, postType:'requirement' }));
@@ -190,14 +190,14 @@ export default function Inventory() {
   };
 
   return (
-    <div style={{ maxWidth:'1100px', margin:'0 auto', padding:'48px 32px 60px' }}>
+    <div style={{ maxWidth:'1100px', margin:'0 auto', padding:'clamp(24px, 5vw, 48px) clamp(16px, 4vw, 32px) 60px' }}>
 
       <div style={{ marginBottom:'32px' }}>
-        <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:300, color:'white', margin:'0 0 6px' }}>
-          My Listings &amp; Client Requirements
+        <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:700, letterSpacing:'-0.01em', color:'white', margin:'0 0 8px' }}>
+          My Posts
         </h1>
         <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.4)', margin:0 }}>
-          Click Edit on any card to update it. Changes save instantly when you click Post.
+          Your listings and your clients' requirements. Every post is matched against every other agent's posts automatically.
         </p>
       </div>
 
@@ -207,7 +207,7 @@ export default function Inventory() {
             { key:'listings',     label:`Listings (${listings.length})`,         Icon:Building2, color:ACCENT   },
             { key:'requirements', label:`Requirements (${requirements.length})`, Icon:Search,    color:LAVENDER },
           ].map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
+            <button key={t.key} onClick={() => { pickedTabRef.current = true; setTab(t.key); }}
               style={{ display:'flex', alignItems:'center', gap:'7px', padding:'9px 18px', background:tab===t.key?`${t.color}18`:'transparent', border:tab===t.key?`1px solid ${t.color}40`:'none', borderRadius:'7px', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:500, color:tab===t.key?t.color:'rgba(255,255,255,0.5)', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
               <t.Icon style={{ width:'15px', height:'15px' }}/>{t.label}
             </button>

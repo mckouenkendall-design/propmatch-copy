@@ -1495,14 +1495,14 @@ export default function Matches() {
             </button>
           ))}
         </div>
-        <button onClick={()=>{setFilterSaved(f=>!f);if(filterSaved)setActiveTab('listings');}}
+        {(savedCount>0||filterSaved)&&<button onClick={()=>{setFilterSaved(f=>!f);if(filterSaved)setActiveTab('listings');}}
           disabled={savedCount===0&&!filterSaved}
           style={{ display:'flex', alignItems:'center', gap:'7px', padding:'8px 14px', background:filterSaved?`${ACCENT}15`:'rgba(255,255,255,0.05)', border:`1px solid ${filterSaved?ACCENT:'rgba(255,255,255,0.1)'}`, borderRadius:'8px', cursor:savedCount===0&&!filterSaved?'default':'pointer', fontFamily:"'Inter',sans-serif", fontSize:'13px', fontWeight:500, color:filterSaved?ACCENT:savedCount===0?'rgba(255,255,255,0.2)':'rgba(255,255,255,0.5)', transition:'all 0.15s', opacity:savedCount===0&&!filterSaved?0.5:1 }}>
           {filterSaved
             ? <><span style={{fontSize:'13px'}}>←</span> All Matches</>
             : <><BookmarkCheck style={{ width:'14px', height:'14px' }}/>{savedCount>0?`Saved (${savedCount})`:'Saved Matches'}</>
           }
-        </button>
+        </button>}
       </div>
       {currentGroups.length===0?(
         <div style={{ textAlign:'center', padding:'80px 32px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'16px' }}>

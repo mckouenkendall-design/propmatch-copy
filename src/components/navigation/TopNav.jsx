@@ -26,12 +26,14 @@ export default function TopNav() {
   const isBrokerageMember = user?.selected_plan === 'brokerage' || user?.selected_plan === 'broker_sponsored' || user?.brokerage_name;
 
   const mainNavItems = [
-    { label: 'Control Center', path: '/Dashboard' },
-    { label: 'My Matches',     path: '/Matches'   },
-    { label: 'My Posts',       path: '/Inventory' },
-    { label: 'Fish Tanks',     path: '/Groups'    },
-    { label: 'Inbox',          path: '/Messages'  },
-    { label: 'Insights',       path: '/Insights'  },
+    { label: 'Home',       path: '/Dashboard' },
+    { label: 'Matches',    path: '/Matches'   },
+    { label: 'My Posts',   path: '/Inventory' },
+    { label: 'Inbox',      path: '/Messages'  },
+    // Hidden for the beta to keep the product focused. The pages still work by URL.
+    // To bring them back, uncomment:
+    // { label: 'Fish Tanks', path: '/Groups'   },
+    // { label: 'Insights',   path: '/Insights' },
   ];
 
   const { logout } = useAuth();
@@ -109,8 +111,8 @@ export default function TopNav() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           <div className="hidden md:block"><GlobalSearch /></div>
           <NotificationBell />
-          <button className="lg:hidden" onClick={() => setMenuOpen(o => !o)} aria-label="Menu"
-            style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+          <button className="flex lg:hidden" onClick={() => setMenuOpen(o => !o)} aria-label="Menu"
+            style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
             {menuOpen ? <X style={{ width: '18px', height: '18px' }} /> : <Menu style={{ width: '18px', height: '18px' }} />}
           </button>
 
@@ -185,7 +187,7 @@ export default function TopNav() {
 
       {/* Small screens: menu drops down under the bar */}
       {menuOpen && (
-        <div className="lg:hidden" style={{ position: 'fixed', top: '64px', left: 0, right: 0, background: '#0E1318', boxShadow: '0 16px 32px rgba(0,0,0,0.45)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '8px 16px 16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <div className="flex lg:hidden" style={{ position: 'fixed', top: '64px', left: 0, right: 0, background: '#0E1318', boxShadow: '0 16px 32px rgba(0,0,0,0.45)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '8px 16px 16px', flexDirection: 'column', gap: '2px' }}>
           <div className="md:hidden" style={{ padding: '8px 0 10px' }}><GlobalSearch /></div>
           {[...mainNavItems, ...(isBrokerageMember ? [{ label: isBroker ? 'Brokerage Admin' : 'Brokerage', path: '/Teams' }] : [])].map(item => (
             <Link key={item.path} to={item.path}
