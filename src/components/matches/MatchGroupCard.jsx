@@ -20,7 +20,7 @@ const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : nu
 const money = (n) => '$' + Math.round(n).toLocaleString('en-US');
 const sf = (n) => `${Math.round(n).toLocaleString('en-US')} SF`;
 
-function photosOf(post) {
+export function photosOf(post) {
   const pd = parseDetails(post) || {};
   const toArr = (v) => {
     if (Array.isArray(v)) return v.filter(Boolean);
@@ -34,7 +34,7 @@ function photosOf(post) {
 }
 
 // A listing's asking price, shown the way the client's budget is written.
-function listingPrice(listing, req) {
+export function listingPrice(listing, req) {
   const price = num(listing.price), size = num(listing.size_sqft);
   if (price == null) return { main: 'Price on request', sub: null };
   const period = listing.price_period || '';
@@ -93,7 +93,7 @@ const FRIENDLY = { 'Fits People': 'Headcount', 'Number of Offices': 'Private off
 const COUNTED = /offices|rooms|workstations|fits people|parking|spaces|bedrooms|bathrooms|doors|bays/i;
 
 // One short line: the biggest gap, or that it checks every box.
-function quickRead(listing, requirement, m) {
+export function quickRead(listing, requirement, m) {
   try {
     const rows = buildRows(listing, requirement, m) || [];
     const gaps = rows.filter((r) => r.status !== 'match' && r.status !== 'bonus' && (r.delta ?? 0) >= 0.5).sort((a, b) => (b.delta ?? 0) - (a.delta ?? 0));
@@ -118,7 +118,7 @@ function quickRead(listing, requirement, m) {
   }
 }
 
-function ScorePill({ score, big }) {
+export function ScorePill({ score, big }) {
   const c = getScoreColor(score);
   return (
     <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: '4px', padding: big ? '6px 12px' : '4px 9px', borderRadius: '999px', background: 'rgba(10,14,18,0.82)', backdropFilter: 'blur(6px)', border: `1.5px solid ${c}`, boxShadow: `0 0 12px ${c}40` }}>

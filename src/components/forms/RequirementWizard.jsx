@@ -37,7 +37,7 @@ const validate = (data) => {
   return errors;
 };
 
-export default function RequirementWizard({ category, onClose, onSuccess, initialData, editMode }) {
+export default function RequirementWizard({ category, onClose, onSuccess, initialData, editMode, preset }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
@@ -109,7 +109,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     brokerage_id: user?.employing_broker_id || '',
   });
 
-  const [formData, setFormData] = useState(parseInitialData(initialData) || emptyRequirement());
+  const [formData, setFormData] = useState(parseInitialData(initialData) || { ...emptyRequirement(), ...(preset || {}) });
 
   const prepareSubmitData = (data) => {
     // Explicit allow-list of REAL requirements table columns. Spreading ...data

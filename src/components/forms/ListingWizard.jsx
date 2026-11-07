@@ -27,7 +27,7 @@ const buildTitle = (data) => {
   return `${type} ${tx}${loc ? ` in ${loc}` : ''}`;
 };
 
-export default function ListingWizard({ category, onClose, onSuccess, initialData, editMode }) {
+export default function ListingWizard({ category, onClose, onSuccess, initialData, editMode, preset }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
@@ -73,7 +73,7 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
     status: 'active',
   });
 
-  const [formData, setFormData] = useState(parseInitialData(initialData) || emptyListing());
+  const [formData, setFormData] = useState(parseInitialData(initialData) || { ...emptyListing(), ...(preset || {}) });
 
   const prepareSubmitData = (data) => {
     // Build the payload from an explicit allow-list of REAL listings table columns.

@@ -1,11 +1,12 @@
-import React, { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, ArrowRight } from 'lucide-react';
 import { calculateMatchScore, getScoreColor } from '@/utils/matchScore';
-import { clientHeadline } from '@/components/matches/MatchGroupCard';
+import { clientHeadline, photosOf, quickRead } from '@/components/matches/MatchGroupCard';
+import CreatePostModal, { MAIN_TYPES } from '@/components/dashboard/CreatePostModal';
 
 // Home. One job: show what is worth a call today, and get you posting.
 
@@ -78,10 +79,70 @@ function Empty({ text, cta, onClick }) {
   );
 }
 
+// The posting entry point. Big, obvious, one tap to start the right form.
+function Composer({ onStart }) {
+  return (
+    <section style={{ position: 'relative', overflow: 'hidden', borderRadius: '20px', padding: 'clamp(20px, 3.5vw, 32px)', background: 'radial-gradient(120% 140% at 0% 0%, rgba(129,140,248,0.20) 0%, rgba(129,140,248,0.05) 38%, rgba(0,219,197,0.06) 70%, rgba(255,255,255,0.02) 100%)', border: '1px solid rgba(129,140,248,0.28)' }}>
+      <h2 style={{ margin: '0 0 6px', fontFamily: HEAD, fontWeight: 800, fontSize: 'clamp(22px, 3vw, 28px)', letterSpacing: '-0.01em', color: 'white' }}>What is your client looking for?</h2>
+      <p style={{ margin: '0 0 20px', fontFamily: BODY, fontSize: '14.5px', color: 'rgba(255,255,255,0.6)', maxWidth: '560px', lineHeight: 1.5 }}>
+        Post it once. PropMatch checks it against every listing from every agent and shows you what fits, scored and explained.
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+        {MAIN_TYPES.map((t) => (
+          <button key={t.value} onClick={() => onStart('requirement', t.value)}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(129,140,248,0.22)'; e.currentTarget.style.borderColor = 'rgba(129,140,248,0.7)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(10,14,18,0.55)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '9px', padding: '11px 15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(10,14,18,0.55)', color: 'white', fontFamily: BODY, fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
+            <t.Icon style={{ width: '16px', height: '16px', color: LAVENDER }} /> {t.label}
+          </button>
+        ))}
+      </div>
+      <button onClick={() => onStart('listing', null)}
+        style={{ all: 'unset', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '18px', fontFamily: BODY, fontSize: '13.5px', fontWeight: 600, color: ACCENT }}>
+        Have a space instead? Post a listing <ArrowRight style={{ width: '14px', height: '14px' }} />
+      </button>
+    </section>
+  );
+}
+
+// The single best match, shown big: this is what is worth a call today.
+function Featured({ m, onOpen }) {
+  const mineIsListing = m.myPost.postType === 'listing';
+  const theirs = mineIsListing ? m.requirement : m.listing;
+  const photo = mineIsListing ? null : photosOf(m.listing)[0];
+  const read = quickRead(m.listing, m.requirement, m);
+  const c = getScoreColor(m.totalScore);
+  const title = mineIsListing ? clientHeadline(theirs) : place(theirs);
+  const price = mineIsListing ? null : monthly(theirs);
+  return (
+    <button onClick={onOpen}
+      style={{ all: 'unset', boxSizing: 'border-box', cursor: 'pointer', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', borderRadius: '20px', overflow: 'hidden', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.09)', width: '100%' }}>
+      <div style={{ position: 'relative', minHeight: '220px', background: 'radial-gradient(120% 90% at 30% 20%, #1c2a33 0%, #10171c 60%, #0c1115 100%)' }}>
+        {photo && <img src={photo} alt={title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
+        <span style={{ position: 'absolute', top: '14px', left: '14px', fontFamily: BODY, fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.12em', color: '#06201d', background: ACCENT, padding: '4px 9px', borderRadius: '6px' }}>BEST MATCH RIGHT NOW</span>
+      </div>
+      <div style={{ padding: 'clamp(18px, 3vw, 26px)', display: 'flex', flexDirection: 'column', gap: '10px', justifyContent: 'center', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <span style={{ fontFamily: HEAD, fontWeight: 800, fontSize: '44px', lineHeight: 1, color: c }}>{m.totalScore}</span>
+          <span style={{ fontFamily: BODY, fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.5)' }}>MATCH</span>
+        </div>
+        <div style={{ fontFamily: HEAD, fontWeight: 700, fontSize: 'clamp(18px, 2.2vw, 22px)', color: 'white', lineHeight: 1.25 }}>{title}</div>
+        <div style={{ fontFamily: BODY, fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>
+          For {nameOf(m.myPost)}{price ? ` · ${price}` : ''}
+        </div>
+        {read && <div style={{ fontFamily: BODY, fontSize: '13.5px', fontWeight: 600, color: read.tone === 'good' ? ACCENT : read.tone === 'gap' ? '#f5b453' : 'rgba(255,255,255,0.6)' }}>{read.text}</div>}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontFamily: BODY, fontSize: '14px', fontWeight: 700, color: ACCENT }}>See why it fits <ArrowRight style={{ width: '15px', height: '15px' }} /></span>
+      </div>
+    </button>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const email = user?.email;
+  const [composer, setComposer] = useState(null);
 
   const { data: myListings = [] } = useQuery({ queryKey: ['cc-my-listings', email], queryFn: async () => asArray(await supabase.from('listings').select('*').eq('created_by', email)), enabled: !!email });
   const { data: myRequirements = [] } = useQuery({ queryKey: ['cc-my-reqs', email], queryFn: async () => asArray(await supabase.from('requirements').select('*').eq('created_by', email)), enabled: !!email });
@@ -124,7 +185,9 @@ export default function Dashboard() {
         : 'No matches yet. They show up the moment another agent posts something that fits.';
 
   const openMatch = (myPostId) => navigate('/Matches', { state: { openPostId: myPostId } });
-  const newPost = () => navigate('/Inventory', { state: { openCreate: true } });
+  const newPost = () => setComposer({ type: 'requirement', pt: null });
+  const startPost = (type, pt) => setComposer({ type, pt });
+  const posted = () => { setComposer(null); queryClient.invalidateQueries(); };
 
   return (
     <div style={{ maxWidth: '1120px', margin: '0 auto', padding: 'clamp(24px, 5vw, 44px) clamp(16px, 4vw, 32px) 60px' }}>
@@ -133,16 +196,18 @@ export default function Dashboard() {
           <h1 style={{ margin: '0 0 6px', fontFamily: HEAD, fontWeight: 700, fontSize: 'clamp(26px, 3.4vw, 32px)', letterSpacing: '-0.01em', color: 'white' }}>{greeting()}, {firstName}</h1>
           <p style={{ margin: 0, fontFamily: BODY, fontSize: '14.5px', color: 'rgba(255,255,255,0.5)' }}>{subtitle}</p>
         </div>
-        <button onClick={newPost} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 18px', borderRadius: '10px', border: 'none', background: ACCENT, color: '#06201d', fontFamily: BODY, fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>
-          <Plus style={{ width: '16px', height: '16px' }} /> New post
-        </button>
       </header>
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+        <Composer onStart={startPost} />
+        {all[0] && <Featured m={all[0]} onOpen={() => openMatch(all[0].myPost.id)} />}
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '20px', alignItems: 'start' }}>
-        <Panel title="Best matches right now" action={all.length ? 'All matches' : null} onAction={() => navigate('/Matches')}>
-          {all.length === 0
-            ? <Empty text="Nothing yet. Matches appear here as soon as they exist." cta={myPosts.length ? null : 'Post a client requirement'} onClick={newPost} />
-            : all.slice(0, 6).map((m, i) => {
+        <Panel title="Also worth a look" action={all.length ? 'All matches' : null} onAction={() => navigate('/Matches')}>
+          {all.length <= 1
+            ? <Empty text={all.length ? 'That is the only match so far. More show up as other agents post.' : 'Nothing yet. Matches appear here as soon as they exist.'} cta={myPosts.length ? null : 'Post a client requirement'} onClick={newPost} />
+            : all.slice(1, 7).map((m, i) => {
               const theirs = m.myPost.postType === 'listing' ? m.requirement : m.listing;
               const title = m.myPost.postType === 'listing' ? clientHeadline(theirs) : place(theirs);
               const price = m.myPost.postType === 'listing' ? null : monthly(theirs);
@@ -179,6 +244,7 @@ export default function Dashboard() {
             })}
         </Panel>
       </div>
+      {composer && <CreatePostModal onClose={() => setComposer(null)} onSuccess={posted} presetType={composer.type} presetPropertyType={composer.pt} />}
     </div>
   );
 }
