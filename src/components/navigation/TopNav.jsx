@@ -1,7 +1,7 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
-import { User, Settings, LogOut } from 'lucide-react';
+import { User, Settings, LogOut, Menu, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +16,11 @@ const ACCENT = '#00DBC5';
 
 export default function TopNav() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+  const isActive = (path) => location.pathname.toLowerCase() === path.toLowerCase();
 
   const isBroker = user?.user_type === 'principal_broker';
   const isBrokerageMember = user?.selected_plan === 'brokerage' || user?.selected_plan === 'broker_sponsored' || user?.brokerage_name;
@@ -59,7 +63,7 @@ export default function TopNav() {
       position: 'fixed', top: 0, left: 0, right: 0, height: '64px',
       background: 'rgba(14, 19, 24, 0.95)', backdropFilter: 'blur(12px)',
       borderBottom: '1px solid rgba(255,255,255,0.08)', zIndex: 50,
-      display: 'flex', alignItems: 'center', padding: '0 32px',
+      display: 'flex', alignItems: 'center', padding: '0 clamp(12px, 3vw, 32px)',
     }}>
       <div style={{ maxWidth: '1400px', width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
 
@@ -76,15 +80,15 @@ export default function TopNav() {
           </svg>
         </Link>
 
-        {/* Center Nav */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
+        {/* Center Nav (wide screens) */}
+        <div className="hidden lg:flex" style={{ alignItems: 'center', gap: '2px', flex: 1, justifyContent: 'center' }}>
           {mainNavItems.map(item => (
             <Link
               key={item.path}
               to={item.path}
-              style={navLinkStyle}
+              style={isActive(item.path) ? { ...navLinkStyle, color: ACCENT, background: 'rgba(0,219,197,0.10)', fontWeight: 500 } : navLinkStyle}
               onMouseEnter={e => { e.currentTarget.style.color = ACCENT; e.currentTarget.style.background = 'rgba(0,219,197,0.08)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.background = 'transparent'; }}
+              onMouseLeave={e => { if (isActive(item.path)) return; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.background = 'transparent'; }}
             >
               {item.label}
             </Link>
@@ -103,8 +107,12 @@ export default function TopNav() {
 
         {/* Right Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-          <GlobalSearch />
+          <div className="hidden md:block"><GlobalSearch /></div>
           <NotificationBell />
+          <button className="lg:hidden" onClick={() => setMenuOpen(o => !o)} aria-label="Menu"
+            style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+            {menuOpen ? <X style={{ width: '18px', height: '18px' }} /> : <Menu style={{ width: '18px', height: '18px' }} />}
+          </button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -174,6 +182,19 @@ export default function TopNav() {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Small screens: menu drops down under the bar */}
+      {menuOpen && (
+        <div className="lg:hidden" style={{ position: 'fixed', top: '64px', left: 0, right: 0, background: '#0E1318', boxShadow: '0 16px 32px rgba(0,0,0,0.45)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '8px 16px 16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <div className="md:hidden" style={{ padding: '8px 0 10px' }}><GlobalSearch /></div>
+          {[...mainNavItems, ...(isBrokerageMember ? [{ label: isBroker ? 'Brokerage Admin' : 'Brokerage', path: '/Teams' }] : [])].map(item => (
+            <Link key={item.path} to={item.path}
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', padding: '12px 12px', borderRadius: '8px', textDecoration: 'none', color: isActive(item.path) ? ACCENT : 'rgba(255,255,255,0.85)', background: isActive(item.path) ? 'rgba(0,219,197,0.10)' : 'transparent' }}>
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
     </nav>
   );
 }

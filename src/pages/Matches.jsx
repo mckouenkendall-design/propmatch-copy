@@ -7,13 +7,14 @@ import {
   Building2, Search, TrendingUp, X, Mail, Phone, MessageCircle,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   Check, FileText, Loader2, Image,
-  Bookmark, BookmarkCheck, Share2, Printer, Copy, CheckCheck, ExternalLink
+  Bookmark, BookmarkCheck, Share2, Printer, Copy, CheckCheck
 } from 'lucide-react';
 import { calculateMatchScore, getScoreColor, getScoreLabel, parseDetails } from '@/utils/matchScore';
 import { itemsForPropertyType, IMPORTANCE_LABELS } from '@/utils/clientWeightDefaults';
 import FloatingMessageCompose from '@/components/messages/FloatingMessageCompose';
 import AgentContactModal from '@/components/shared/AgentContactModal';
 import MatchBreakdown from '@/components/matches/MatchBreakdown';
+import MatchGroupCard, { clientHeadline } from '@/components/matches/MatchGroupCard';
 
 const ACCENT   = '#00DBC5';
 const LAVENDER = '#818cf8';
@@ -1352,8 +1353,10 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
               <MatchBreakdown
                 listing={listing} requirement={requirement} matchResult={matchResult} myIsListing={myIsListing}
                 eyebrow={`${PT[listing.property_type]||listing.property_type} \u00b7 ${TX[listing.transaction_type]||listing.transaction_type}`}
-                title={matchPost.title||(myIsListing?'Their requirement':'Their listing')}
-                subline={`Against your ${myIsListing?'listing':'requirement'}${myPost.title?`: ${myPost.title}`:''}`}
+                title={myIsListing ? clientHeadline(matchPost) : ([matchPost.address, matchPost.city].filter(Boolean).join(', ') || matchPost.title || 'Their listing')}
+                subline={myIsListing
+                  ? `Looking for space like your listing at ${[myPost.address, myPost.city].filter(Boolean).join(', ') || myPost.title || 'your property'}`
+                  : `For your client: ${clientHeadline(myPost)}`}
                 runKey={`${matchIndex}-${matchPost?.id}`}
                 onEditMyPost={onEditMyPost}
               />
@@ -1396,194 +1399,6 @@ function MatchModal({ myPost, matchPost, matchResult, posterProfile, matchIndex,
 }
 
 // ─── Match Group Card ─────────────────────────────────────────────────────────
-function MatchGroupCard({ myPost, matches, onOpen, savedHook }) {
-  const [previewIdx,setPreviewIdx]=useState(0);
-  const [hov,setHov]=useState(false);
-  const [phraseHov,setPhraseHov]=useState(false);
-  const myIsListing=myPost.postType==='listing', myColor=myIsListing?ACCENT:LAVENDER;
-  const best=matches[previewIdx], scoreColor=getScoreColor(best.totalScore);
-
-  // The card always showcases the LISTING (it has photos + real property specs).
-  // On the listing side that's my own post; on the requirement side it's the
-  // matching listing (best.listing). Requirements have no photos to show.
-  const listingPost = myIsListing ? myPost : (best.listing || myPost);
-
-  // Pull all photos off the listing.
-  const listPd = parseDetails(listingPost);
-  const photos = (() => {
-    const toArr = (v) => {
-      if (Array.isArray(v) && v.length) return v;
-      if (typeof v === 'string') { try { const p = JSON.parse(v); if (Array.isArray(p) && p.length) return p; } catch {} }
-      return null;
-    };
-    const fromPd = toArr(listPd?.photo_urls);
-    if (fromPd) return fromPd;
-    const single = listPd?.photo_url || listingPost.photo_url;
-    if (single) return [single];
-    return [];
-  })();
-  const hero = photos[0] || null;
-  const grid = photos.slice(1,4); // up to 3 extra photos on the right (photos 2, 3, 4)
-  const hasPhotos = photos.length > 0;
-
-  // Specs come from the listing.
-  const RESIDENTIAL = ['single_family','condo','apartment','multi_family','multi_family_5','townhouse','manufactured','land_residential'];
-  const isResidential = RESIDENTIAL.includes(listingPost.property_type);
-  const beds = listPd?.bedrooms ?? listPd?.beds;
-  const baths = listPd?.bathrooms ?? listPd?.baths;
-  const sqft = listingPost.size_sqft ? `${parseFloat(listingPost.size_sqft).toLocaleString()} SF` : null;
-  const ptLabel = PT[listingPost.property_type] || listingPost.property_type;
-  const priceLine = priceStr(listingPost, true);
-  const addressLine = [listingPost.address, listingPost.city, listingPost.state].filter(Boolean).join(', ');
-  const detailBits = isResidential
-    ? [beds!=null?`${beds} bd`:null, baths!=null?`${baths} ba`:null, sqft, ptLabel].filter(Boolean)
-    : [sqft, ptLabel].filter(Boolean);
-
-  const nMatches = matches.length;
-
-  // Phrase flips by side. Listing side: someone wants YOUR LISTING.
-  // Requirement side: someone HAS a listing matching YOUR CLIENT'S REQUIREMENT.
-  const phrasePrefix = myIsListing
-    ? (nMatches>1 ? `${nMatches} people are looking for ` : 'Someone is looking for ')
-    : (nMatches>1 ? `${nMatches} listings match ` : 'Someone has a listing matching ');
-  const phraseBold = myIsListing ? 'YOUR LISTING' : "YOUR CLIENT'S REQUIREMENT";
-
-  // No-photo state: dark area with the score centered + "No photos listed".
-  const NoPhotos = () => (
-    <div style={{ width:'100%',height:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'10px',background:'#0E1318' }}>
-      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'3px',
-        background:'rgba(14,19,24,0.6)', borderRadius:'16px', padding:'14px 22px', border:`2px solid ${scoreColor}`, boxShadow:`0 0 20px ${scoreColor}55` }}>
-        <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'40px', fontWeight:800, color:scoreColor, lineHeight:1 }}>{best.totalScore}</span>
-        <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'9px', fontWeight:700, letterSpacing:'0.12em', color:'rgba(255,255,255,0.5)' }}>MATCH</span>
-      </div>
-      <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'12px', color:'rgba(255,255,255,0.35)' }}>No photos listed</span>
-    </div>
-  );
-
-  return(
-    <div>
-      {/* The card (not clickable — only the phrase in the details strip opens it) */}
-      <div
-        onMouseEnter={()=>setHov(true)}
-        onMouseLeave={()=>setHov(false)}
-        style={{
-          borderRadius:'16px', overflow:'hidden', background:'rgba(255,255,255,0.04)',
-          border:`2px solid ${phraseHov ? myColor+'33' : (hov?myColor:myColor+'55')}`,
-          boxShadow:phraseHov ? `0 0 8px ${myColor}12` : (hov?`0 0 26px ${myColor}45`:`0 0 12px ${myColor}1e`),
-          transition:'all 0.25s', position:'relative'
-        }}>
-
-        {/* Photo zone — taller for more image room */}
-        <div style={{ display:'flex', gap:'3px', height:'300px', position:'relative', overflow:'hidden' }}>
-          {!hasPhotos ? (
-            /* No photos: full-width dark area with the score as the focal point */
-            <div style={{ flex:1, minWidth:0, minHeight:0 }}><NoPhotos/></div>
-          ) : (
-            <>
-              {/* Hero photo left */}
-              <div style={{ flex:'1.6 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden' }}>
-                <img src={hero} alt={listingPost.title} style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                {/* Score badge floating top-right of hero */}
-                <div style={{ position:'absolute', top:'12px', right:'12px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px',
-                  background:'rgba(14,19,24,0.82)', backdropFilter:'blur(6px)', borderRadius:'14px', padding:'8px 12px', border:`2px solid ${scoreColor}`, boxShadow:`0 0 16px ${scoreColor}55` }}>
-                  <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'24px', fontWeight:800, color:scoreColor, lineHeight:1 }}>{best.totalScore}</span>
-                  <span style={{ fontFamily:"'Inter',sans-serif", fontSize:'8px', fontWeight:700, letterSpacing:'0.12em', color:'rgba(255,255,255,0.5)' }}>MATCH</span>
-                </div>
-              </div>
-              {/* Adaptive right side — only rendered when there are extra photos beyond the hero */}
-              {grid.length>0 && (
-                <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, display:'flex', flexDirection:'column', gap:'3px' }}>
-                  {grid.length===1 && (
-                    <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                      <img src={grid[0]} alt="Photo 2" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                    </div>
-                  )}
-                  {grid.length===2 && (
-                    <>
-                      <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                        <img src={grid[0]} alt="Photo 2" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                      </div>
-                      <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                        <img src={grid[1]} alt="Photo 3" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                      </div>
-                    </>
-                  )}
-                  {grid.length>=3 && (
-                    <>
-                      {/* Photo 2 takes the top half */}
-                      <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                        <img src={grid[0]} alt="Photo 2" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                      </div>
-                      {/* Photos 3 and 4 split the bottom half (3 gets full width if no 4th) */}
-                      <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, display:'flex', gap:'3px' }}>
-                        <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                          <img src={grid[1]} alt="Photo 3" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                        </div>
-                        {grid[2] && (
-                          <div style={{ flex:'1 1 0', minWidth:0, minHeight:0, position:'relative', overflow:'hidden', background:'#0E1318' }}>
-                            <img src={grid[2]} alt="Photo 4" style={{ position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Details strip — bottom third. The phrase is the only clickable element. */}
-        <div style={{ padding:'12px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', background:'rgba(255,255,255,0.02)', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ minWidth:0, flex:1 }}>
-            {priceLine && <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'18px',fontWeight:700,color:'white',lineHeight:1.15 }}>{priceLine}</div>}
-            {detailBits.length>0 && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'13px',color:'rgba(255,255,255,0.6)',margin:'2px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{detailBits.join(' \u00b7 ')}</div>}
-            {addressLine && <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'12px',color:'rgba(255,255,255,0.4)',margin:'2px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{addressLine}</div>}
-          </div>
-
-          {/* Right side: the clickable phrase (focal point), plus multi-match nav below it */}
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'10px', flexShrink:0 }}>
-            {/* Clickable phrase — the ONLY thing that opens the match. Always has a
-                bright colored border + glow; fills in on hover; is the card's focal point.
-                Teal for listings, lavender for requirements. */}
-            <button onClick={()=>onOpen(myPost,best,previewIdx)}
-              onMouseEnter={()=>setPhraseHov(true)}
-              onMouseLeave={()=>setPhraseHov(false)}
-              style={{
-                display:'inline-flex', alignItems:'center', gap:'7px', cursor:'pointer', textAlign:'left',
-                padding:'10px 16px', borderRadius:'10px',
-                border:`1.5px solid ${myColor}`,
-                background:phraseHov ? `${myColor}22` : `${myColor}0d`,
-                boxShadow:phraseHov ? `0 0 20px ${myColor}77, 0 0 6px ${myColor}55` : `0 0 14px ${myColor}55`,
-                transition:'all 0.2s'
-              }}>
-              <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',fontWeight:500,color:'rgba(255,255,255,0.85)' }}>
-                {phrasePrefix}<span style={{ fontWeight:800,color:myColor,letterSpacing:'0.02em' }}>{phraseBold}</span>
-              </span>
-              <ChevronRight style={{ width:'15px',height:'15px',color:myColor,flexShrink:0 }}/>
-            </button>
-
-            {/* Multiple-match navigator */}
-            {nMatches>1 && (
-              <div style={{ display:'flex',alignItems:'center',gap:'6px' }}>
-                <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i-1+nMatches)%nMatches);}}
-                  style={{ background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'6px',padding:'4px 6px',cursor:'pointer',display:'flex' }}>
-                  <ChevronLeft style={{width:'13px',height:'13px',color:'rgba(255,255,255,0.6)'}}/>
-                </button>
-                <span style={{ fontFamily:"'Inter',sans-serif",fontSize:'11px',color:'rgba(255,255,255,0.4)',minWidth:'30px',textAlign:'center' }}>{previewIdx+1}/{nMatches}</span>
-                <button onClick={e=>{e.stopPropagation();setPreviewIdx(i=>(i+1)%nMatches);}}
-                  style={{ background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'6px',padding:'4px 6px',cursor:'pointer',display:'flex' }}>
-                  <ChevronRight style={{width:'13px',height:'13px',color:'rgba(255,255,255,0.6)'}}/>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Matches() {
   const {user}=useAuth();
@@ -1657,18 +1472,24 @@ export default function Matches() {
     }
   },[openPostId,listingGroups,requirementGroups]);
 
+  const userPickedTabRef = useRef(false);
+  useEffect(()=>{
+    if(userPickedTabRef.current||openPostId)return;
+    if(activeTab==='listings'&&listingGroups.length===0&&requirementGroups.length>0)setActiveTab('requirements');
+  },[listingGroups.length,requirementGroups.length,activeTab,openPostId]);
+
   const navigate=(dir)=>{if(!modalState)return;const t=modalState.matches.length;setModalState(s=>({...s,matchIndex:(s.matchIndex+dir+t)%t}));};
   return(
-    <div style={{ maxWidth:'1200px', margin:'0 auto', padding:'48px 32px' }}>
+    <div style={{ maxWidth:'1200px', margin:'0 auto', padding:'clamp(24px, 5vw, 48px) clamp(16px, 4vw, 32px)' }}>
       <div style={{ marginBottom:'32px' }}>
-        <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:300, color:'white', margin:'0 0 6px' }}>{filterSaved?'Saved Matches':'My Matches'}</h1>
-        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.4)', margin:0 }}>{filterSaved?'Your bookmarked matches. Toggle between listings and requirements below.':'Matches scoring 30% or higher. Click any card to open the full analysis.'}</p>
+        <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:'32px', fontWeight:700, letterSpacing:'-0.01em', color:'white', margin:'0 0 8px' }}>{filterSaved?'Saved Matches':'My Matches'}</h1>
+        <p style={{ fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'rgba(255,255,255,0.4)', margin:0 }}>{filterSaved?'Your bookmarked matches. Toggle between listings and requirements below.':(()=>{const gs=activeTab==='listings'?listingGroups:requirementGroups;const n=gs.reduce((t,g)=>t+g.matches.length,0);const st=gs.reduce((t,g)=>t+g.matches.filter(m=>m.totalScore>=85).length,0);if(!n)return 'Every post you make is checked against every post from other agents. Matches show up here the moment they exist.';return activeTab==='listings'?`${n} ${n===1?'client is':'clients are'} looking for space like yours${st?`, ${st} of them a strong fit`:''}. Tap any match for the full breakdown.`:`${n} ${n===1?'space fits':'spaces fit'} your clients${st?`, ${st} of them strong`:''}. Tap any match for the full breakdown.`;})()}</p>
       </div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'28px', flexWrap:'wrap', gap:'10px' }}>
         <div style={{ display:'inline-flex', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'4px' }}>
           {[{key:'listings',label:'My Listings',color:ACCENT,Icon:Building2,count:listingGroups.length},{key:'requirements',label:'My Requirements',color:LAVENDER,Icon:Search,count:requirementGroups.length}].map(t=>(
-            <button key={t.key} onClick={()=>setActiveTab(t.key)}
-              style={{ padding:'10px 20px', background:activeTab===t.key?`${t.color}18`:'transparent', border:activeTab===t.key?`1px solid ${t.color}40`:'none', borderRadius:'7px', color:activeTab===t.key?t.color:'rgba(255,255,255,0.5)', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:500, display:'flex', alignItems:'center', gap:'8px', transition:'all 0.15s' }}>
+            <button key={t.key} onClick={()=>{userPickedTabRef.current=true;setActiveTab(t.key);}}
+              style={{ padding:'10px clamp(10px, 2.5vw, 20px)', whiteSpace:'nowrap', background:activeTab===t.key?`${t.color}18`:'transparent', border:activeTab===t.key?`1px solid ${t.color}40`:'none', borderRadius:'7px', color:activeTab===t.key?t.color:'rgba(255,255,255,0.5)', cursor:'pointer', fontFamily:"'Inter',sans-serif", fontSize:'14px', fontWeight:500, display:'flex', alignItems:'center', gap:'8px', transition:'all 0.15s' }}>
               <t.Icon style={{width:'15px',height:'15px'}}/>{t.label}
               <span style={{ padding:'1px 7px', borderRadius:'12px', fontSize:'11px', fontWeight:700, background:activeTab===t.key?`${t.color}22`:'rgba(255,255,255,0.08)', color:activeTab===t.key?t.color:'rgba(255,255,255,0.4)' }}>{t.count}</span>
             </button>
@@ -1688,8 +1509,8 @@ export default function Matches() {
           {filterSaved?(<><BookmarkCheck style={{width:'48px',height:'48px',color:`${ACCENT}30`,margin:'0 auto 16px',display:'block'}}/><h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'20px',fontWeight:400,color:'white',margin:'0 0 8px' }}>No saved matches</h3><p style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',color:'rgba(255,255,255,0.4)',margin:0 }}>Open any match and click Save to bookmark it here.</p></>):(<><TrendingUp style={{width:'48px',height:'48px',color:`${ACCENT}30`,margin:'0 auto 16px',display:'block'}}/><h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'20px',fontWeight:400,color:'white',margin:'0 0 8px' }}>No matches yet</h3><p style={{ fontFamily:"'Inter',sans-serif",fontSize:'14px',color:'rgba(255,255,255,0.4)',margin:0 }}>{activeTab==='listings'?"Your listings haven't matched with any requirements yet":"Your requirements haven't matched with any listings yet"}</p></>)}
         </div>
       ):(
-        <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
-          {currentGroups.map((g,i)=><MatchGroupCard key={i} myPost={g.myPost} matches={g.matches} onOpen={openModal} savedHook={savedHook}/>)}
+        <div style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
+          {currentGroups.map((g)=><MatchGroupCard key={g.myPost.id} myPost={g.myPost} matches={g.matches} onOpen={openModal} profileMap={profileMap}/>)}
         </div>
       )}
       {modalState&&(()=>{

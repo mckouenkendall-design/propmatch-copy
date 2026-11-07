@@ -22,7 +22,6 @@ const DISPLAY = "'Plus Jakarta Sans',sans-serif";
 
 const fmtMoney = (v) =>
   v >= 1000000 ? `$${(v / 1e6).toFixed(2).replace(/\.?0+$/, '')}M`
-  : v >= 10000 ? `$${Math.round(v / 1000)}K`
   : v < 100 ? `$${v.toFixed(2)}`
   : `$${Math.round(v).toLocaleString()}`;
 const fmtNum = (n) => (n >= 1000 ? Math.round(n).toLocaleString() : (Math.round(n * 100) / 100).toLocaleString());
@@ -84,7 +83,7 @@ const shortLabel = (label) => {
   if (l.startsWith('size')) return 'size';
   if (l === 'fits people') return 'headcount';
   if (l === 'number of offices') return 'private offices';
-  return l.replace(/\s*\(.*?\)\s*/g, '').trim();
+  return l.replace(/\s*\(.*?\)\s*/g, '').trim().replace(/\b(ada|hipaa|esfr|led|it|hvac)\b/g, (m) => m.toUpperCase());
 };
 
 // Build display rows from the scorer's breakdown.
