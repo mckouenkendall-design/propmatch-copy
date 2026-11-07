@@ -337,10 +337,10 @@ function OfficeRequirement({ details, setDetail }) {
     <>
       <SectionTitle>Space Requirements</SectionTitle>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Offices Needed"><Num field="offices_needed" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
-        <Field label="Conference Rooms Needed"><Num field="conf_rooms_needed" placeholder="e.g. 1" details={details} setDetail={setDetail} /></Field>
-        <Field label="Workstations Needed"><Num field="workstations_needed" placeholder="e.g. 30" details={details} setDetail={setDetail} /></Field>
-        <Field label="Headcount (people to seat)"><Num field="headcount" placeholder="e.g. 45" details={details} setDetail={setDetail} /></Field>
+        <Field label="Headcount (people to seat)"><Num field="headcount" placeholder="e.g. 22" details={details} setDetail={setDetail} /></Field>
+        <Field label="Private Offices Needed"><Num field="offices_needed" placeholder="e.g. 8" details={details} setDetail={setDetail} /></Field>
+        <Field label="Conference Rooms Needed"><Num field="conf_rooms_needed" placeholder="e.g. 2" details={details} setDetail={setDetail} /></Field>
+        <Field label="Open Workstations Needed"><Num field="workstations_needed" placeholder="e.g. 12" details={details} setDetail={setDetail} /></Field>
         <Field label="Min Parking Spaces Needed"><Num field="min_parking_spaces" placeholder="e.g. 20" details={details} setDetail={setDetail} /></Field>
       </div>
       <Field label="Preferred Build-Out" hint="What the space should be configured for">
@@ -752,11 +752,10 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
   return (
     <div className="space-y-6">
       <p className="text-sm -mt-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
-        Tell us what you need in a <strong className="capitalize">{type?.replace(/_/g, ' ')}</strong>{isSale ? ' purchase' : ' space'}.
+        Everything here is optional. Fill in what you know. Blank fields never count against a match.
       </p>
 
       {isSale && <SaleTypeSection type={type} details={details} setDetail={setDetail} />}
-      {isLease && type !== 'land' && <LeaseTermSection details={details} setDetail={setDetail} />}
 
       {type === 'office'          && <OfficeRequirement        details={details} setDetail={setDetail} />}
       {type === 'medical_office'  && <MedicalOfficeRequirement details={details} setDetail={setDetail} />}
@@ -767,8 +766,11 @@ export default function ReqStep2Commercial({ data, update, onNext }) {
 
       {showCriteria && <InvestmentCriteria type={type} details={details} setDetail={setDetail} />}
 
+      {/* Lease term sits after the space itself: it matters, but it isn't the first thing anyone knows. */}
+      {isLease && type !== 'land' && <LeaseTermSection details={details} setDetail={setDetail} />}
+
       <div className="flex justify-end pt-2">
-        <Button onClick={onNext} className="text-white gap-2" style={{ backgroundColor: '#00DBC5' }}>
+        <Button onClick={onNext} className="gap-2" style={{ backgroundColor: '#00DBC5', color: '#06201d', fontWeight: 700 }}>
           Next <ArrowRight className="w-4 h-4" />
         </Button>
       </div>

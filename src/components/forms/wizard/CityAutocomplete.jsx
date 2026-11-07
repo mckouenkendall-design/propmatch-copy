@@ -82,6 +82,15 @@ export default function CityAutocomplete({ value, onChange, placeholder = 'e.g. 
       if (selectedFromDropdown && onEnter && query.trim()) {
         onEnter(query.trim());
         setSelectedFromDropdown(false);
+      } else if (suggestions.length > 0) {
+        // Enter picks the top suggestion, so agents don't have to reach for the mouse.
+        select(suggestions[0]);
+      } else if (onEnter && /^[A-Za-z][A-Za-z .'-]*,\s*[A-Za-z]{2}$/.test(query.trim())) {
+        // Already typed as "City, ST": accept it.
+        const [c, st] = query.trim().split(/,\s*/);
+        const label = `${c.replace(/\b\w/g, (m) => m.toUpperCase())}, ${st.toUpperCase()}`;
+        onEnter(label);
+        setQuery(''); onChange('');
       } else if (query.trim()) {
         // User typed freeform text and hit Enter without selecting a suggestion.
         setShowMustSelectHint(true);
@@ -103,8 +112,8 @@ export default function CityAutocomplete({ value, onChange, placeholder = 'e.g. 
         style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${showMustSelectHint ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)'}`, color: 'white' }}
       />
       {showMustSelectHint && (
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#f87171', marginTop: '4px', position: 'absolute', left: 0 }}>
-          Please select a city from the dropdown suggestions.
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#f87171', marginTop: '6px' }}>
+          Pick a city from the list, or type it as City, ST (like Troy, MI).
         </p>
       )}
       {open && suggestions.length > 0 && (

@@ -230,6 +230,8 @@ export default function ReqStep3({ data, update, onSubmit, isLoading, editMode }
   const { user } = useAuth();
   const currentUserEmail = user?.email || '';
   const [termsAccepted, setTermsAccepted]           = useState(true);
+  const [editContact, setEditContact]               = useState(false);
+  const [editVisibility, setEditVisibility]         = useState(false);
   const [showTermsModal, setShowTermsModal]           = useState(false);
   const [groupsDropdownOpen, setGroupsDropdownOpen] = useState(false);
   const [groupSearchInput, setGroupSearchInput]     = useState('');
@@ -327,8 +329,7 @@ export default function ReqStep3({ data, update, onSubmit, isLoading, editMode }
   return (
     <div className="space-y-6" onClick={e => e.stopPropagation()}>
 
-      <SectionTitle>Additional Notes</SectionTitle>
-      <Field label="Notes for matching agents" hint="Any specific requirements, preferences, or context that would help with matching">
+      <Field label="Anything else the listing agent should know?" hint="Optional. Timing, must-haves, deal breakers, how flexible the client is.">
         <Textarea
           value={data.notes || ''}
           onChange={e => update({ notes: e.target.value })}
@@ -338,7 +339,23 @@ export default function ReqStep3({ data, update, onSubmit, isLoading, editMode }
         />
       </Field>
 
-            <SectionTitle>Contact Information</SectionTitle>
+      <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
+        <div className="flex items-center justify-between gap-3">
+          <div style={{ minWidth: 0 }}>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)', margin: 0 }}>Agents who match will contact</p>
+            <p className="text-sm font-semibold" style={{ color: 'white', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {[data.contact_agent_name, data.company_name].filter(Boolean).join(', ') || 'Add your contact info'}
+            </p>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {[data.contact_agent_email, data.contact_agent_phone].filter(Boolean).join(' \u00b7 ')}
+            </p>
+          </div>
+          <button type="button" onClick={() => setEditContact(v => !v)} className="text-sm font-semibold" style={{ color: ACCENT, background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
+            {editContact ? 'Done' : 'Edit'}
+          </button>
+        </div>
+      </div>
+      {editContact && (
       <div className="grid grid-cols-1 gap-4">
         <div className="grid grid-cols-2 gap-4">
           <Field label="Contact Name">
@@ -357,9 +374,20 @@ export default function ReqStep3({ data, update, onSubmit, isLoading, editMode }
           </Field>
         </div>
       </div>
+      )}
 
-      <SectionTitle>Visibility & Access</SectionTitle>
-      <Field label="Who can see this post?">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)', margin: 0 }}>Who can see it</p>
+          <p className="text-sm font-semibold" style={{ color: 'white', margin: '2px 0 0' }}>
+            {(VISIBILITY_OPTIONS.find(o => o.value === visibility) || VISIBILITY_OPTIONS[0]).label}{visibility === 'public' ? ' (best chance of a match)' : ''}
+          </p>
+        </div>
+        <button type="button" onClick={() => setEditVisibility(v => !v)} className="text-sm font-semibold" style={{ color: ACCENT, background: 'none', border: 'none', cursor: 'pointer' }}>
+          {editVisibility ? 'Done' : 'Change'}
+        </button>
+      </div>
+      {editVisibility && <Field label="Who can see this post?">
         <div className="space-y-2">
           {VISIBILITY_OPTIONS.map(opt => (
             <button key={opt.value} type="button" onClick={() => handleVisibilitySelect(opt.value)}
@@ -376,7 +404,7 @@ export default function ReqStep3({ data, update, onSubmit, isLoading, editMode }
             </button>
           ))}
         </div>
-      </Field>
+      </Field>}
 
       {visibility === 'team' && (
         <Field label="Select Fish Tank(s)" hint="Your post will only be visible in the selected tanks">
@@ -431,10 +459,10 @@ export default function ReqStep3({ data, update, onSubmit, isLoading, editMode }
               </svg>
             )}
           </div>
-          <span className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>
-            By posting, I confirm the information provided is accurate and agree to the{' '}
-            <span onClick={e => { e.stopPropagation(); setShowTermsModal(true); }} style={{ color: ACCENT, textDecoration: 'underline', textUnderlineOffset: '2px', cursor:'pointer' }}>PropMatch Terms of Service</span>
-            . I understand that other PropMatch users may contact me directly via email, phone, or in-app messaging based on this post.
+          <span className="text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            I confirm this is accurate and agree to the{' '}
+            <span onClick={e => { e.stopPropagation(); setShowTermsModal(true); }} style={{ color: ACCENT, textDecoration: 'underline', textUnderlineOffset: '2px', cursor:'pointer' }}>Terms of Service</span>
+            . Agents who match can reach out to me.
           </span>
         </label>
 
@@ -448,7 +476,7 @@ export default function ReqStep3({ data, update, onSubmit, isLoading, editMode }
           <Button onClick={handleSubmitClick} disabled={isLoading || !termsAccepted} className="gap-2 px-6"
             style={{ backgroundColor: (termsAccepted && !isLoading) ? ACCENT : 'rgba(255,255,255,0.3)', color: 'white' }}>
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-            {editMode ? 'Save Changes' : 'Submit Requirement'}
+            {editMode ? 'Save changes' : 'Post requirement'}
           </Button>
         </div>
       </div>

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import LocationAreaInput from '../wizard/LocationAreaInput';
@@ -103,6 +102,19 @@ export default function ReqStep1({ data, update, onNext }) {
 
   return (
     <div className="space-y-6">
+
+      {/* Who the client is, in a few words. This becomes the name on every match card. */}
+      <div className="space-y-1.5">
+        <Label style={{ color: 'rgba(255,255,255,0.9)' }}>Who is the client?</Label>
+        <input
+          value={(data.property_details || {}).client_label || ''}
+          onChange={e => update({ property_details: { ...(data.property_details || {}), client_label: e.target.value } })}
+          placeholder="e.g. Engineering firm, 22 people"
+          maxLength={60}
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px', height: '44px', width: '100%', padding: '0 14px', fontSize: '15px', outline: 'none' }}
+        />
+        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Just for you and the listing agent. No names needed. This is how the client shows up on your matches.</p>
+      </div>
 
       {/* Property Type */}
       <div className="space-y-2">

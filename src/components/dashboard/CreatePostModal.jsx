@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Building2, Stethoscope, ShoppingBag, Package, Map, Star, Home, Building, Hotel, Users, Truck, TreePine, BookOpen, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/api/supabaseClient';
+import { calculateMatchScore, getScoreColor } from '@/utils/matchScore';
+import { clientHeadline } from '@/components/matches/MatchGroupCard';
+import { X, Check, Building2, Stethoscope, ShoppingBag, Package, Map, Star, Home, Building, Hotel, Users, Truck, TreePine, BookOpen, ChevronDown } from 'lucide-react';
 import RequirementWizard from '../forms/RequirementWizard';
 import ListingWizard from '../forms/ListingWizard';
 import LoadTemplateModal from '../templates/LoadTemplateModal';
@@ -45,12 +49,79 @@ function TypeButton({ t, color, onPick, small }) {
   );
 }
 
+const placeOf = (p) => [p.address, p.city].filter(Boolean).join(', ') || p.title || 'Untitled';
+
+// Shown right after posting: the payoff. How many posts already fit, and the best few.
+function Posted({ postType, row, onSeeMatches, onDone }) {
+  const [state, setState] = useState({ loading: true, matches: [] });
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const isReq = postType === 'requirement';
+        const others = await supabase.from(isReq ? 'listings' : 'requirements').select('*').order('created_at', { ascending: false }).limit(300);
+        const list = (Array.isArray(others) ? others : []).filter((o) => o.created_by !== row.created_by && (o.visibility || 'public') === 'public');
+        const ms = list.map((o) => {
+          const r = isReq ? calculateMatchScore(o, row) : calculateMatchScore(row, o);
+          return r.isMatch ? { other: o, ...r } : null;
+        }).filter(Boolean).sort((a, b) => b.totalScore - a.totalScore);
+        if (alive) setState({ loading: false, matches: ms });
+      } catch {
+        if (alive) setState({ loading: false, matches: [] });
+      }
+    })();
+    return () => { alive = false; };
+  }, [postType, row]);
+
+  const isReq = postType === 'requirement';
+  const n = state.matches.length;
+  const who = isReq ? clientHeadline(row) : placeOf(row);
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(5,8,10,0.72)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+      <div role="dialog" aria-label="Posted" style={{ width: '100%', maxWidth: '520px', background: '#141a1f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', boxShadow: '0 30px 80px rgba(0,0,0,0.55)', padding: 'clamp(22px, 4vw, 30px)', textAlign: 'center' }}>
+        <div style={{ width: '52px', height: '52px', borderRadius: '50%', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${ACCENT}1f`, border: `1.5px solid ${ACCENT}` }}>
+          <Check style={{ width: '24px', height: '24px', color: ACCENT }} />
+        </div>
+        <h2 style={{ margin: '0 0 6px', fontFamily: HEAD, fontWeight: 800, fontSize: '24px', color: 'white' }}>Posted</h2>
+        <p style={{ margin: '0 0 20px', fontFamily: BODY, fontSize: '14.5px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+          {state.loading ? 'Checking it against everything on PropMatch...'
+            : n ? <><b style={{ color: 'white' }}>{n} {isReq ? (n === 1 ? 'listing already fits' : 'listings already fit') : (n === 1 ? 'client is already looking' : 'clients are already looking')}</b> {isReq ? `for ${who}.` : 'for space like this.'}</>
+              : isReq ? 'Nothing fits yet. The moment a listing that fits is posted, it shows up in your matches.' : 'No one is looking for this yet. The moment a client fits, you will see them in your matches.'}
+        </p>
+        {!state.loading && n > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px', textAlign: 'left' }}>
+            {state.matches.slice(0, 3).map((m, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <span style={{ fontFamily: HEAD, fontWeight: 800, fontSize: '17px', color: getScoreColor(m.totalScore), width: '34px' }}>{m.totalScore}</span>
+                <span style={{ fontFamily: BODY, fontSize: '14px', fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{isReq ? placeOf(m.other) : clientHeadline(m.other)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {n > 0 && <button onClick={onSeeMatches} style={{ padding: '12px 20px', borderRadius: '10px', border: 'none', background: ACCENT, color: '#06201d', fontFamily: BODY, fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>See {n === 1 ? 'the match' : `all ${n} matches`}</button>}
+          <button onClick={onDone} style={{ padding: '12px 20px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.8)', fontFamily: BODY, fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Done</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CreatePostModal({ onClose, onSuccess, presetType = null, presetPropertyType = null }) {
   const [postType, setPostType] = useState(presetType || 'requirement');
   const [picked, setPicked] = useState(() => (presetPropertyType ? ALL_TYPES.find((t) => t.value === presetPropertyType) || null : null));
   const [showMore, setShowMore] = useState(false);
   const [template, setTemplate] = useState(null);
   const [showLoadTemplate, setShowLoadTemplate] = useState(false);
+  const [posted, setPosted] = useState(null);
+  const navigate = useNavigate();
+
+  // The form saved. Show the payoff screen instead of just closing.
+  const handleSaved = (result) => {
+    const row = Array.isArray(result) ? result[0] : result;
+    if (row && row.id) setPosted(row);
+    else onSuccess?.();
+  };
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape' && !picked && !template) onClose(); };
@@ -63,6 +134,12 @@ export default function CreatePostModal({ onClose, onSuccess, presetType = null,
     else onClose();
   };
 
+  if (posted) {
+    return <Posted postType={postType} row={posted}
+      onDone={() => onSuccess?.()}
+      onSeeMatches={() => { onSuccess?.(); navigate('/Matches', { state: { openPostId: posted.id } }); }} />;
+  }
+
   if (showLoadTemplate) {
     return <LoadTemplateModal onClose={() => setShowLoadTemplate(false)}
       onLoad={({ data, templateType, category }) => { setShowLoadTemplate(false); setPostType(templateType); setTemplate({ data, category: category || data.property_category }); }} />;
@@ -70,12 +147,12 @@ export default function CreatePostModal({ onClose, onSuccess, presetType = null,
 
   if (template) {
     const W = postType === 'listing' ? ListingWizard : RequirementWizard;
-    return <W category={template.category} onClose={back} onSuccess={onSuccess} initialData={template.data} />;
+    return <W category={template.category} onClose={back} onSuccess={handleSaved} initialData={template.data} />;
   }
 
   if (picked) {
     const W = postType === 'listing' ? ListingWizard : RequirementWizard;
-    return <W category={picked.cat} onClose={back} onSuccess={onSuccess} preset={{ property_type: picked.value, property_category: picked.cat }} />;
+    return <W category={picked.cat} onClose={back} onSuccess={handleSaved} preset={{ property_type: picked.value, property_category: picked.cat }} />;
   }
 
   const isReq = postType === 'requirement';

@@ -234,8 +234,8 @@ export default function ListingWizard({ category, onClose, onSuccess, initialDat
                   <ArrowLeft className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
                 </Button>
                 <div>
-                  <h2 className="text-xl font-bold capitalize" style={{ color: 'white' }}>
-                    {editMode ? 'Edit Listing' : `${category} Listing`}
+                  <h2 className="text-xl font-bold" style={{ color: 'white' }}>
+                    {editMode ? 'Edit listing' : 'New listing'}
                   </h2>
                   <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
                     Step {step} of {STEPS.length}

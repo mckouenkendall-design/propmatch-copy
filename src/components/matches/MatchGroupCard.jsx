@@ -70,6 +70,8 @@ function sizeText(minV, maxV) {
 
 // "Engineering firm, 22 people, growing to about 26..." -> "Engineering firm, 22 people"
 export function clientHeadline(req) {
+  const label = String((parseDetails(req) || {}).client_label || '').trim();
+  if (label) return label;
   const notes = String(req.notes || '').trim();
   if (notes) {
     const first = notes.split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, '');

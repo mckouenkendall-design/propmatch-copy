@@ -12,7 +12,7 @@ import ReqStep3 from './requirement/Step3Notes';
 import ClientPriorityRanker from './requirement/ClientPriorityRanker';
 import { defaultWeightsForPropertyType, itemsForPropertyType } from '@/utils/clientWeightDefaults';
 
-const STEPS = ['General', 'Details', 'Post'];
+const STEPS = ['Basics', 'Details', 'Post'];
 
 const generateTitle = (data) => {
   const txMap = { lease: 'Lease', purchase: 'Purchase', rent: 'Rent' };
@@ -71,6 +71,8 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
       // price_is_tbd lives inside property_details so we don't need a DB migration.
       // Hoist it to top-level form state for the UI.
       price_is_tbd: !!pd.price_is_tbd,
+      // timeline lives in property_details too (no column for it).
+      timeline: data.timeline || pd.timeline || 'flexible',
       // client_weights (agent's per-client importance overrides) also live in
       // property_details. Hoist to top-level form state so the ranker can edit them.
       // Editing an existing requirement or loading a template carries them forward.
@@ -132,6 +134,8 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
     submitData.title = generateTitle(data);
     // Fold price_is_tbd into property_details so we don't need a DB column for it.
     const pd = { ...(data.property_details || {}), price_is_tbd: !!data.price_is_tbd };
+    // Move-in timeline has no column, so it rides along in property_details.
+    if (data.timeline) pd.timeline = data.timeline;
     // Fold client_weights (agent's per-client importance overrides) into
     // property_details too. Null when the agent used PropMatch defaults — the
     // scoring engine falls back to built-in weights when this is absent.
@@ -241,13 +245,9 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   // agent hasn't already set custom weights, show the choose-your-path modal.
   // Skip the modal entirely in edit mode — the agent can use "Edit Client
   // Priorities" if they want to change weights on an existing requirement.
-  const advanceFromStep1 = () => {
-    if (step === 1 && supportsRanking && !formData.client_weights && !editMode) {
-      setPriorityView('modal');
-    } else {
-      setStep(s => Math.min(s + 1, 3));
-    }
-  };
+  // Kendall, Nov 2026: no pop-up between steps. PropMatch defaults are used unless
+  // the agent opens "Client priorities" on the last step.
+  const advanceFromStep1 = () => setStep(s => Math.min(s + 1, 3));
 
   const next = () => {
     if (step === 1) advanceFromStep1();
@@ -289,7 +289,7 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
   const finishRanker = () => {
     setRankerDirty(false);
     setPriorityView(null);
-    setStep(editMode ? 1 : 2);
+    setStep(editMode ? 1 : 3);
   };
 
   // Back out of the ranker: if they made changes without saving, prompt first.
@@ -298,16 +298,14 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
       setShowUnsavedPrompt(true);
       return;
     }
-    if (priorityView === 'ranker' && !editMode) setPriorityView('modal');
-    else setPriorityView(null);
+    setPriorityView(null);
   };
 
   // Unsaved prompt: discard changes and go back.
   const discardAndBack = () => {
     setShowUnsavedPrompt(false);
     setRankerDirty(false);
-    if (!editMode) setPriorityView('modal');
-    else setPriorityView(null);
+    setPriorityView(null);
   };
 
   const COMMERCIAL_TYPES = ['office','medical_office','retail','industrial_flex','land','special_use'];
@@ -331,8 +329,8 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
                   <ArrowLeft className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.7)' }} />
                 </Button>
                 <div>
-                  <h2 className="text-xl font-bold capitalize" style={{ color: 'white' }}>
-                    {editMode ? 'Edit Requirement' : `${cat} Requirement`}
+                  <h2 className="text-xl font-bold" style={{ color: 'white' }}>
+                    {editMode ? 'Edit requirement' : 'New requirement'}
                   </h2>
                   <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
                     {priorityView ? 'Client Priorities' : `Step ${step} of 3`}
@@ -410,6 +408,21 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
             {!priorityView && step === 2 && cat === 'residential' && <ReqStep2Residential data={formData} update={update} onNext={next} />}
             {!priorityView && step === 3 && (
               <>
+                {supportsRanking && !editMode && (
+                  <button type="button"
+                    onClick={() => { if (!formData.client_weights) update({ client_weights: defaultWeightsForPropertyType(formData.property_type) }); setPriorityView('ranker'); }}
+                    style={{ width: '100%', marginBottom: '22px', padding: '14px 16px', borderRadius: '12px', textAlign: 'left',
+                      border: '1px solid rgba(129,140,248,0.35)', background: 'rgba(129,140,248,0.07)', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    <span>
+                      <span style={{ display: 'block', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 600, color: 'white' }}>Client priorities</span>
+                      <span style={{ display: 'block', fontFamily: "'Inter', sans-serif", fontSize: '12.5px', color: 'rgba(255,255,255,0.55)', marginTop: '2px' }}>
+                        {formData.client_weights ? 'Customized for this client' : 'Using PropMatch defaults. Optional: mark what matters most or what is a must-have.'}
+                      </span>
+                    </span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: '#818cf8', flexShrink: 0 }}>{formData.client_weights ? 'Edit' : 'Customize'}</span>
+                  </button>
+                )}
                 <ReqStep3
                   data={formData}
                   update={update}
@@ -428,11 +441,6 @@ export default function RequirementWizard({ category, onClose, onSuccess, initia
             )}
           </div>
 
-          {!priorityView && step === 2 && (
-            <div className="px-6 pb-4">
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Fields left blank will be treated as "No Preference" and will not impact the Match Score.</p>
-            </div>
-          )}
         </div>
       </div>
 
